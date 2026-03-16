@@ -69,20 +69,40 @@ export default function Home() {
           }
         }
       }
-      // Merge edits into trail details
+      // Merge trail_details.json edits
       if (edits.description !== undefined) mergedDetails[trailId].fullDescription = edits.description;
       if (edits.pros !== undefined) mergedDetails[trailId].pros = edits.pros;
       if (edits.others !== undefined) mergedDetails[trailId].others = edits.others;
       if (edits.leaders !== undefined) mergedDetails[trailId].leaders = edits.leaders;
     });
 
-    // Merge into trails.json (notes field)
+    // Merge into trails.json
     const mergedTrails = trails.map(trail => {
       const trailEdits = allEdits[trail.id];
-      if (trailEdits?.notes !== undefined) {
-        return { ...trail, notes: trailEdits.notes };
+      if (!trailEdits) return trail;
+
+      const updatedTrail = { ...trail };
+      
+      // Basic fields
+      if (trailEdits.fullName !== undefined) updatedTrail.fullName = trailEdits.fullName;
+      if (trailEdits.notes !== undefined) updatedTrail.notes = trailEdits.notes;
+      if (trailEdits.distance !== undefined) updatedTrail.distance = trailEdits.distance;
+      if (trailEdits.distanceExtended !== undefined) updatedTrail.distanceExtended = trailEdits.distanceExtended;
+      if (trailEdits.elevationStart !== undefined) updatedTrail.elevationStart = trailEdits.elevationStart;
+      if (trailEdits.elevationMax !== undefined) updatedTrail.elevationMax = trailEdits.elevationMax;
+      if (trailEdits.difficulty !== undefined) updatedTrail.difficulty = trailEdits.difficulty;
+      if (trailEdits.parking !== undefined) updatedTrail.parking = trailEdits.parking;
+      if (trailEdits.range !== undefined) updatedTrail.range = trailEdits.range;
+      
+      // Seasonal fields
+      if (trailEdits.bestSeason !== undefined || trailEdits.parkingInfo !== undefined || trailEdits.availableMonths !== undefined) {
+        if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
+        if (trailEdits.bestSeason !== undefined) updatedTrail.seasonal.bestSeason = trailEdits.bestSeason;
+        if (trailEdits.parkingInfo !== undefined) updatedTrail.seasonal.parkingInfo = trailEdits.parkingInfo;
+        if (trailEdits.availableMonths !== undefined) updatedTrail.seasonal.availableMonths = trailEdits.availableMonths;
       }
-      return trail;
+      
+      return updatedTrail;
     });
 
     // Download trail_details.json

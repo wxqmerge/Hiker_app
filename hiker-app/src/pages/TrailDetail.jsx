@@ -59,11 +59,27 @@ export default function TrailDetail() {
   // Get edited value or fallback to original
   const getEditedValue = (field) => {
     const details = getTrailDetails()?.[id];
+    
+    // trail_details.json fields
     if (field === 'description') return editedFields.description ?? details?.fullDescription;
-    if (field === 'notes') return editedFields.notes ?? trail.notes;
     if (field === 'pros') return editedFields.pros ?? details?.pros;
     if (field === 'others') return editedFields.others ?? details?.others;
     if (field === 'leaders') return editedFields.leaders ?? details?.leaders;
+    
+    // trails.json fields
+    if (field === 'notes') return editedFields.notes ?? trail.notes;
+    if (field === 'fullName') return editedFields.fullName ?? trail.fullName ?? trail.name;
+    if (field === 'distance') return editedFields.distance ?? trail.distance;
+    if (field === 'distanceExtended') return editedFields.distanceExtended ?? trail.distanceExtended;
+    if (field === 'elevationStart') return editedFields.elevationStart ?? trail.elevationStart;
+    if (field === 'elevationMax') return editedFields.elevationMax ?? trail.elevationMax;
+    if (field === 'difficulty') return editedFields.difficulty ?? trail.difficulty;
+    if (field === 'parking') return editedFields.parking ?? trail.parking;
+    if (field === 'range') return editedFields.range ?? trail.range;
+    if (field === 'bestSeason') return editedFields.bestSeason ?? trail.seasonal?.bestSeason;
+    if (field === 'parkingInfo') return editedFields.parkingInfo ?? trail.seasonal?.parkingInfo;
+    if (field === 'availableMonths') return editedFields.availableMonths ?? (trail.seasonal?.availableMonths || []);
+    
     return null;
   };
 
@@ -482,68 +498,209 @@ export default function TrailDetail() {
       {/* Edit Mode Overlay */}
       {isEditMode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Edit {trail.name}</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit {trail.name}</h2>
 
-              {/* Description */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={getEditedValue('description') || ''}
-                  onChange={(e) => updateField('description', e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-
-              {/* Notes */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  value={getEditedValue('notes') || ''}
-                  onChange={(e) => updateField('notes', e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-
-              {/* Pros */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pros</label>
-                <textarea
-                  value={getEditedValue('pros') || ''}
-                  onChange={(e) => updateField('pros', e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-
-              {/* Others */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Others</label>
-                <textarea
-                  value={getEditedValue('others') || ''}
-                  onChange={(e) => updateField('others', e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-
-              {/* Leaders */}
+              {/* Basic Information */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Trail Leaders (comma-separated)</label>
-                <input
-                  type="text"
-                  value={getEditedValue('leaders')?.join(', ') || ''}
-                  onChange={(e) => updateField('leaders', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                  placeholder="Leader 1, Leader 2, Leader 3"
-                />
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      value={getEditedValue('fullName') || ''}
+                      onChange={(e) => updateField('fullName', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+                    <select
+                      value={getEditedValue('difficulty') || ''}
+                      onChange={(e) => updateField('difficulty', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="">Select difficulty</option>
+                      <option value="Easy">Easy</option>
+                      <option value="Easy to Mod">Easy to Mod</option>
+                      <option value="Moderate">Moderate</option>
+                      <option value="Mod to Diff">Mod to Diff</option>
+                      <option value="Difficult">Difficult</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Parking</label>
+                    <input
+                      type="text"
+                      value={getEditedValue('parking') || ''}
+                      onChange={(e) => updateField('parking', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Range</label>
+                    <input
+                      type="number"
+                      value={getEditedValue('range') || ''}
+                      onChange={(e) => updateField('range', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Distance & Elevation */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Distance & Elevation</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Distance (miles)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={getEditedValue('distance') != null ? getEditedValue('distance') : ''}
+                      onChange={(e) => updateField('distance', e.target.value ? parseFloat(e.target.value) : '')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Extended Distance (miles)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={getEditedValue('distanceExtended') != null ? getEditedValue('distanceExtended') : ''}
+                      onChange={(e) => updateField('distanceExtended', e.target.value ? parseFloat(e.target.value) : '')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Elevation Start (ft)</label>
+                    <input
+                      type="number"
+                      value={getEditedValue('elevationStart') != null ? getEditedValue('elevationStart') : ''}
+                      onChange={(e) => updateField('elevationStart', e.target.value ? parseInt(e.target.value) : '')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Elevation Max (ft)</label>
+                    <input
+                      type="number"
+                      value={getEditedValue('elevationMax') != null ? getEditedValue('elevationMax') : ''}
+                      onChange={(e) => updateField('elevationMax', e.target.value ? parseInt(e.target.value) : '')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Seasonal Information */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Seasonal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Best Season</label>
+                    <input
+                      type="text"
+                      value={getEditedValue('bestSeason') || ''}
+                      onChange={(e) => updateField('bestSeason', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Parking Info</label>
+                    <input
+                      type="text"
+                      value={getEditedValue('parkingInfo') || ''}
+                      onChange={(e) => updateField('parkingInfo', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Available Months</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => (
+                      <label key={idx} className="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200">
+                        <input
+                          type="checkbox"
+                          checked={getEditedValue('availableMonths').includes(idx + 1)}
+                          onChange={(e) => {
+                            const months = [...getEditedValue('availableMonths')];
+                            if (e.target.checked) {
+                              months.push(idx + 1);
+                            } else {
+                              const i = months.indexOf(idx + 1);
+                              if (i > -1) months.splice(i, 1);
+                            }
+                            updateField('availableMonths', months.sort((a, b) => a - b));
+                          }}
+                          className="rounded"
+                        />
+                        <span className="text-sm">{month}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Trail Content */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Trail Content</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={getEditedValue('description') || ''}
+                      onChange={(e) => updateField('description', e.target.value)}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea
+                      value={getEditedValue('notes') || ''}
+                      onChange={(e) => updateField('notes', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pros</label>
+                    <textarea
+                      value={getEditedValue('pros') || ''}
+                      onChange={(e) => updateField('pros', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Others</label>
+                    <textarea
+                      value={getEditedValue('others') || ''}
+                      onChange={(e) => updateField('others', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Trail Leaders (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={getEditedValue('leaders')?.join(', ') || ''}
+                      onChange={(e) => updateField('leaders', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                      placeholder="Leader 1, Leader 2, Leader 3"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-3 pt-4 border-t">
                 <button
                   onClick={cancelEdits}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
