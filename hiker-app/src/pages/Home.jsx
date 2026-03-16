@@ -15,7 +15,9 @@ export default function Home() {
     // Load trail details from embedded data or fetch
     if (window.__EMBEDDED_DATA__?.trail_details) {
       setTrailDetails(window.__EMBEDDED_DATA__.trail_details);
-    } else {
+    }
+    // Only fetch if NOT running from file:// protocol
+    else if (window.location.protocol !== 'file:') {
       fetch('/data/trail_details.json')
         .then(res => res.json())
         .then(data => setTrailDetails(data))
