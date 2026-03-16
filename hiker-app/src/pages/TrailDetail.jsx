@@ -4,11 +4,16 @@ import { useTrails } from '../hooks/useTrails';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
 
+const EDIT_STORAGE_KEY = 'hiker-trail-edits';
+
 export default function TrailDetail() {
   const { id } = useParams();
   const { trails, loading } = useTrails();
   const [trailDetails, setTrailDetails] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedFields, setEditedFields] = useState({});
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   const trail = trails.find(t => t.id === id);
   const currentIndex = trails.findIndex(t => t.id === id);
@@ -20,8 +25,112 @@ export default function TrailDetail() {
       .catch(err => console.error('Error loading trail details:', err));
   }, []);
 
+  useEffect(() => {
+    if (trail) {
+      const savedEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
+      if (savedEdits[trail.id]) {
+        setEditedFields(savedEdits[trail.id]);
+      }
+    }
+  }, [trail]);
+
+  // Close settings menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showSettingsMenu && !e.target.closest('.fixed.bottom-6')) {
+        setShowSettingsMenu(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showSettingsMenu]);
+
   // Get trail details with fallback for ID mismatch
   const getTrailDetails = () => getTrailDetailsById(trailDetails, id);
+
+  // Get edited value or fallback to original
+  const getEditedValue = (field) => {
+    const details = getTrailDetails()?.[id];
+    if (field === 'description') return editedFields.description ?? details?.fullDescription;
+    if (field === 'notes') return editedFields.notes ?? trail.notes;
+    if (field === 'pros') return editedFields.pros ?? details?.pros;
+    if (field === 'others') return editedFields.others ?? details?.others;
+    if (field === 'leaders') return editedFields.leaders ?? details?.leaders;
+    return null;
+  };
+
+  // Start edit mode
+  const startEditMode = () => {
+    setIsEditMode(true);
+  };
+
+  // Save edits to localStorage
+  const saveEdits = () => {
+    const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
+    allEdits[trail.id] = { ...editedFields };
+    localStorage.setItem(EDIT_STORAGE_KEY, JSON.stringify(allEdits));
+    setIsEditMode(false);
+  };
+
+  // Cancel edits
+  const cancelEdits = () => {
+    setEditedFields({});
+    setIsEditMode(false);
+  };
+
+  // Export all trail edits to JSON file
+  const exportEdits = () => {
+    const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
+    const dataStr = JSON.stringify(allEdits, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'trail-edits.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Import trail edits from JSON file
+  const importEdits = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        localStorage.setItem(EDIT_STORAGE_KEY, JSON.stringify(imported));
+        alert('Edits imported successfully!');
+        window.location.reload();
+      } catch (err) {
+        alert('Error importing file: Invalid JSON format');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Export current trail's edits as report text with source values
+  const exportTrailEdits = () => {
+    const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
+    if (allEdits[trail.id]) {
+      const edits = allEdits[trail.id];
+      let text = `Trail: ${trail.name}\n\n`;
+      if (edits.description) text += `Description: ${edits.description}\n\n`;
+      if (edits.notes) text += `Notes: ${edits.notes}\n\n`;
+      if (edits.pros) text += `Pros: ${edits.pros}\n\n`;
+      if (edits.others) text += `Others: ${edits.others}\n\n`;
+      if (edits.leaders) text += `Leaders: ${edits.leaders.join(', ')}\n`;
+
+      navigator.clipboard.writeText(text);
+      alert('Trail edits copied to clipboard!');
+    }
+  };
+
+  // Update a field
+  const updateField = (field, value) => {
+    setEditedFields(prev => ({ ...prev, [field]: value }));
+  };
 
   const copyReport = async () => {
     await copyToClipboard(genReport(trail, getTrailDetails()), (status) => {
@@ -60,6 +169,8 @@ export default function TrailDetail() {
       </div>
     );
   }
+
+  const hasEdits = Object.keys(editedFields).length > 0;
 
   if (!trail) {
     return (
@@ -157,7 +268,14 @@ export default function TrailDetail() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           {/* Header */}
           <div className="bg-green-800 text-white p-6">
-            <h1 className="text-3xl font-bold mb-1">{trail.fullName || trail.name}</h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-3xl font-bold">{trail.fullName || trail.name}</h1>
+              {hasEdits && (
+                <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded">
+                  EDITED
+                </span>
+              )}
+            </div>
             <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${difficultyColors[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
               {trail.difficulty}
             </span>
@@ -214,17 +332,17 @@ export default function TrailDetail() {
             </div>
 
             {/* Full Description */}
-            {getTrailDetails()?.[id]?.fullDescription && (
+            {getEditedValue('description') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
-                <p className="text-gray-600 whitespace-pre-line">{getTrailDetails()[id].fullDescription}</p>
+                <p className="text-gray-600 whitespace-pre-line">{getEditedValue('description')}</p>
               </div>
             )}
 
             {/* Notes */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Notes</h3>
-              <p className="text-gray-600">{trail.notes}</p>
+              <p className="text-gray-600">{getEditedValue('notes')}</p>
             </div>
 
             {/* Seasonal Availability */}
@@ -253,27 +371,27 @@ export default function TrailDetail() {
             )}
 
             {/* Pros */}
-            {getTrailDetails()?.[id]?.pros && (
+            {getEditedValue('pros') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2 cursor-help" title="Field: pros">Pros</h3>
-                <p className="text-gray-600">{getTrailDetails()[id].pros}</p>
+                <p className="text-gray-600">{getEditedValue('pros')}</p>
               </div>
             )}
 
             {/* Others */}
-            {getTrailDetails()?.[id]?.others && (
+            {getEditedValue('others') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2 cursor-help" title="Field: others">Others</h3>
-                <p className="text-gray-600">{getTrailDetails()[id].others}</p>
+                <p className="text-gray-600">{getEditedValue('others')}</p>
               </div>
             )}
 
             {/* Leaders */}
-            {getTrailDetails()?.[id]?.leaders && getTrailDetails()[id].leaders.length > 0 && (
+            {getEditedValue('leaders') && getEditedValue('leaders').length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Trail Leaders</h3>
                 <div className="flex flex-wrap gap-2">
-                  {getTrailDetails()[id].leaders.map((leader, idx) => (
+                  {getEditedValue('leaders').map((leader, idx) => (
                     <span 
                       key={idx}
                       className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
@@ -286,7 +404,155 @@ export default function TrailDetail() {
             )}
           </div>
         </div>
+
+        {/* Settings Menu - Lower Right Corner */}
+        <div className="fixed bottom-6 right-6 flex gap-3">
+          {/* Settings Icon */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+              className="p-4 bg-gray-700 hover:bg-gray-800 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              title="Export/Import edits"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {showSettingsMenu && (
+              <div className="absolute bottom-full right-0 mb-3 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[180px] z-50">
+                <button
+                  onClick={() => { exportEdits(); setShowSettingsMenu(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export All Edits
+                </button>
+                <label className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Import Edits
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importEdits}
+                    className="hidden"
+                  />
+                </label>
+                {hasEdits && (
+                  <button
+                    onClick={() => { exportTrailEdits(); setShowSettingsMenu(false); }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    Copy This Trail's Edits
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Edit Icon */}
+          <button
+            onClick={startEditMode}
+            className="p-4 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-400"
+            title="Edit trail details"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+        </div>
       </main>
+
+      {/* Edit Mode Overlay */}
+      {isEditMode && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Edit {trail.name}</h2>
+
+              {/* Description */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={getEditedValue('description') || ''}
+                  onChange={(e) => updateField('description', e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+
+              {/* Notes */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  value={getEditedValue('notes') || ''}
+                  onChange={(e) => updateField('notes', e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+
+              {/* Pros */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pros</label>
+                <textarea
+                  value={getEditedValue('pros') || ''}
+                  onChange={(e) => updateField('pros', e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+
+              {/* Others */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Others</label>
+                <textarea
+                  value={getEditedValue('others') || ''}
+                  onChange={(e) => updateField('others', e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+
+              {/* Leaders */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trail Leaders (comma-separated)</label>
+                <input
+                  type="text"
+                  value={getEditedValue('leaders')?.join(', ') || ''}
+                  onChange={(e) => updateField('leaders', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                  placeholder="Leader 1, Leader 2, Leader 3"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={cancelEdits}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEdits}
+                  className="px-4 py-2 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
