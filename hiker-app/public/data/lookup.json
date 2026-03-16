@@ -1,0 +1,50 @@
+{
+  "difficulties": [
+    {
+      "code": "Difficult",
+      "order": 5,
+      "label": "Difficult"
+    },
+    {
+      "code": "Easy",
+      "order": 1,
+      "label": "Easy"
+    },
+    {
+      "code": "Easy to Mod",
+      "order": 2,
+      "label": "Easy to Mod"
+    },
+    {
+      "code": "Mod to Diff",
+      "order": 4,
+      "label": "Mod to Diff"
+    },
+    {
+      "code": "Moderate",
+      "order": 3,
+      "label": "Moderate"
+    }
+  ],
+  "parkingLevels": {
+    "Am Beau/Golden": "Parking level: Am Beau/Golden",
+    "Discover": "Parking level: Discover",
+    "Limited 4": "Parking level: Limited 4",
+    "NW Forest/Golden": "Parking level: NW Forest/Golden",
+    "Nat'l Park/Golden": "Parking level: Nat'l Park/Golden"
+  },
+  "months": [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ]
+}
