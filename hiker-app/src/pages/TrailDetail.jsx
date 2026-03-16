@@ -293,15 +293,15 @@ export default function TrailDetail() {
           {/* Header */}
           <div className="bg-green-800 text-white p-6">
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-bold">{trail.fullName || trail.name}</h1>
+              <h1 className="text-3xl font-bold">{getEditedValue('fullName') || trail.fullName || trail.name}</h1>
               {hasEdits && (
                 <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded">
                   EDITED
                 </span>
               )}
             </div>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${difficultyColors[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
-              {trail.difficulty}
+            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${difficultyColors[getEditedValue('difficulty')] || 'bg-gray-100 text-gray-800'}`}>
+              {getEditedValue('difficulty')}
             </span>
           </div>
 
@@ -315,8 +315,8 @@ export default function TrailDetail() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
                 <p className="text-2xl font-bold text-gray-800">
-                  {trail.distance?.toFixed(1) || 'N/A'}
-                  {trail.distanceExtended && ` / ${trail.distanceExtended.toFixed(1)}`}
+                  {getEditedValue('distance') != null ? getEditedValue('distance').toFixed(1) : 'N/A'}
+                  {getEditedValue('distanceExtended') != null && ` / ${getEditedValue('distanceExtended').toFixed(1)}`}
                 </p>
                 <p className="text-sm text-gray-500">miles</p>
               </div>
@@ -327,7 +327,7 @@ export default function TrailDetail() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
                 <p className="text-xl font-bold text-gray-800">
-                  {trail.elevationStart?.toLocaleString() || 'N/A'} ft - {trail.elevationMax?.toLocaleString() || 'N/A'} ft
+                  {getEditedValue('elevationStart') != null ? getEditedValue('elevationStart').toLocaleString() : 'N/A'} ft - {getEditedValue('elevationMax') != null ? getEditedValue('elevationMax').toLocaleString() : 'N/A'} ft
                 </p>
                 <p className="text-sm text-gray-500">elevation gain</p>
               </div>
@@ -337,18 +337,18 @@ export default function TrailDetail() {
                 <svg className="w-6 h-6 mx-auto text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                <p className="text-sm font-bold text-gray-800">{trail.parking || 'N/A'}</p>
+                <p className="text-sm font-bold text-gray-800">{getEditedValue('parking') || 'N/A'}</p>
                 <p className="text-sm text-gray-500">parking</p>
               </div>
 
               {/* Ride - Combined Range and Cost */}
-              {(trail.range || rideCost) && (
+              {(getEditedValue('range') || rideCost) && (
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
                   <svg className="w-6 h-6 mx-auto text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                   </svg>
                   <p className="text-xl font-bold text-gray-800">
-                    {rideCost || `Range: ${trail.range}`}
+                    {getEditedValue('range') ? getRideCost(parseInt(getEditedValue('range'))) || `Range: ${getEditedValue('range')}` : rideCost || 'N/A'}
                   </p>
                   <p className="text-sm text-gray-500">ride</p>
                 </div>
@@ -364,22 +364,24 @@ export default function TrailDetail() {
             )}
 
             {/* Notes */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Notes</h3>
-              <p className="text-gray-600">{getEditedValue('notes')}</p>
-            </div>
+            {getEditedValue('notes') && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Notes</h3>
+                <p className="text-gray-600">{getEditedValue('notes')}</p>
+              </div>
+            )}
 
             {/* Seasonal Availability */}
-            {trail.seasonal?.availableMonths?.length > 0 && (
+            {getEditedValue('availableMonths').length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Available Months</h3>
                 <div className="flex flex-wrap gap-2">
-                  {trail.seasonal.availableMonths.map(monthIdx => (
+                  {getEditedValue('availableMonths').map(monthIdx => (
                     <span 
                       key={monthIdx}
                       className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
                     >
-                      {monthNames[monthIdx]}
+                      {monthNames[monthIdx - 1]}
                     </span>
                   ))}
                 </div>
@@ -387,10 +389,10 @@ export default function TrailDetail() {
             )}
 
             {/* Best Season */}
-            {trail.seasonal?.bestSeason && (
+            {getEditedValue('bestSeason') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Best Season</h3>
-                <p className="text-gray-600">{trail.seasonal.bestSeason}</p>
+                <p className="text-gray-600">{getEditedValue('bestSeason')}</p>
               </div>
             )}
 
