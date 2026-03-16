@@ -12,11 +12,15 @@ export default function Home() {
   const [hasEdits, setHasEdits] = useState(false);
 
   useEffect(() => {
-    // Load trail details for merging
-    fetch('/data/trail_details.json')
-      .then(res => res.json())
-      .then(data => setTrailDetails(data))
-      .catch(err => console.error('Error loading trail details:', err));
+    // Load trail details from embedded data or fetch
+    if (window.__EMBEDDED_DATA__?.trail_details) {
+      setTrailDetails(window.__EMBEDDED_DATA__.trail_details);
+    } else {
+      fetch('/data/trail_details.json')
+        .then(res => res.json())
+        .then(data => setTrailDetails(data))
+        .catch(err => console.error('Error loading trail details:', err));
+    }
 
     // Check for edits in localStorage
     const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');

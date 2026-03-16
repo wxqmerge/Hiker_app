@@ -19,6 +19,13 @@ export default function TrailDetail() {
   const currentIndex = trails.findIndex(t => t.id === id);
 
   useEffect(() => {
+    // Check for embedded data (single-file standalone mode)
+    if (window.__EMBEDDED_DATA__?.trail_details) {
+      setTrailDetails(window.__EMBEDDED_DATA__.trail_details);
+      return;
+    }
+
+    // Fall back to fetch for dev mode
     fetch('/data/trail_details.json')
       .then(res => res.json())
       .then(data => setTrailDetails(data))

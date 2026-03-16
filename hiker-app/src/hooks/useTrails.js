@@ -9,6 +9,17 @@ export function useTrails() {
   useEffect(() => {
     async function loadData() {
       try {
+        // Check for embedded data (single-file standalone mode)
+        if (window.__EMBEDDED_DATA__) {
+          // trails.json has structure { trails: [...] }, so access .trails.trails
+          const trailsArray = window.__EMBEDDED_DATA__.trails?.trails || window.__EMBEDDED_DATA__.trails || [];
+          setTrails(Array.isArray(trailsArray) ? trailsArray : []);
+          setLookup(window.__EMBEDDED_DATA__.lookup);
+          setLoading(false);
+          return;
+        }
+
+        // Fall back to fetch for dev mode
         const [trailsRes, lookupRes] = await Promise.all([
           fetch('/data/trails.json'),
           fetch('/data/lookup.json')
