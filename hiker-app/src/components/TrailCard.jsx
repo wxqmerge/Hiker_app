@@ -16,10 +16,17 @@ export default function TrailCard({ trail, isActive = false }) {
   };
 
   useEffect(() => {
-    fetch('/data/trail_details.json')
-      .then(res => res.json())
-      .then(data => setTrailDetails(data))
-      .catch(err => console.error('Error loading trail details:', err));
+    // Check for embedded data (single-file standalone mode)
+    if (window.__EMBEDDED_DATA__?.trail_details) {
+      setTrailDetails(window.__EMBEDDED_DATA__.trail_details);
+    }
+    // Only fetch if NOT running from file:// protocol
+    else if (window.location.protocol !== 'file:') {
+      fetch('/data/trail_details.json')
+        .then(res => res.json())
+        .then(data => setTrailDetails(data))
+        .catch(err => console.error('Error loading trail details:', err));
+    }
   }, []);
 
   const handleCopy = async (e) => {

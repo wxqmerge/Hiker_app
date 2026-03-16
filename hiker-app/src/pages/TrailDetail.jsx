@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
@@ -8,6 +8,7 @@ const EDIT_STORAGE_KEY = 'hiker-trail-edits';
 
 export default function TrailDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { trails, loading } = useTrails();
   const [trailDetails, setTrailDetails] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -22,14 +23,14 @@ export default function TrailDetail() {
     // Check for embedded data (single-file standalone mode)
     if (window.__EMBEDDED_DATA__?.trail_details) {
       setTrailDetails(window.__EMBEDDED_DATA__.trail_details);
-      return;
     }
-
-    // Fall back to fetch for dev mode
-    fetch('/data/trail_details.json')
-      .then(res => res.json())
-      .then(data => setTrailDetails(data))
-      .catch(err => console.error('Error loading trail details:', err));
+    // Only fetch if NOT running from file:// protocol
+    else if (window.location.protocol !== 'file:') {
+      fetch('/data/trail_details.json')
+        .then(res => res.json())
+        .then(data => setTrailDetails(data))
+        .catch(err => console.error('Error loading trail details:', err));
+    }
   }, []);
 
   useEffect(() => {
@@ -148,13 +149,13 @@ export default function TrailDetail() {
 
   const goToPrevious = () => {
     if (currentIndex > 0) {
-      window.location.href = `/trail/${trails[currentIndex - 1].id}`;
+      navigate(`/trail/${trails[currentIndex - 1].id}`);
     }
   };
 
   const goToNext = () => {
     if (currentIndex < trails.length - 1) {
-      window.location.href = `/trail/${trails[currentIndex + 1].id}`;
+      navigate(`/trail/${trails[currentIndex + 1].id}`);
     }
   };
 
