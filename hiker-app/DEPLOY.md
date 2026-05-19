@@ -1,6 +1,6 @@
-# Deployment Guide - Hike Database Web App (Browse Mode)
+# Deployment Guide - Hike Database Web App
 
-This guide covers deploying the browse-only version of the hiking trail database.
+This guide covers deploying the hiking trail database app.
 
 ---
 
@@ -63,23 +63,30 @@ npm run preview
 
 This serves the production build at `http://localhost:4173`
 
+### Run Tests
+
+```bash
+cd hiker-app
+npm run test
+```
+
+### Run Linter
+
+```bash
+cd hiker-app
+npm run lint
+```
+
 ---
 
 ## What Gets Deployed
 
 ```
 hiker-app/dist/
-├── index.html          (0.4 KB)  - Entry point
-├── assets/
-│   ├── index.css      (~20 KB)  - Compiled styles
-│   └── index.js       (~253 KB) - Bundled React app
-└── data/              (copied from public/data)
-    ├── trails.json    (~95 KB)  - 179 trail records
-    ├── lookup.json    (~2.4 KB) - Reference data
-    └── trail_details.json (~10 KB)
+├── index.html          (~587 KB)  - Entry point with embedded data
 ```
 
-**Total size: ~380 KB** (gzipped to ~85 KB)
+**Total size: ~587 KB** (gzipped to ~144 KB)
 
 ---
 
@@ -90,13 +97,17 @@ hiker-app/dist/
 1. Edit `Hike Data Base.xls`
 2. Run extraction:
    ```bash
-   C:/Python314/python.exe D:\hiker\extract_trails_xls.py
+   python D:\hiker\extract_trails_xls.py
    ```
-3. Copy new data files:
+3. Match schedule hikes to trails:
+   ```bash
+   python D:\hiker\match_schedule.py
+   ```
+4. Copy new data files:
    ```bash
    copy D:\hiker\exported_data\*.json D:\hiker\hiker-app\public\data\
    ```
-4. Rebuild and redeploy:
+5. Rebuild and redeploy:
    ```bash
    cd hiker-app
    npm run build
@@ -140,3 +151,22 @@ npm install @tailwindcss/postcss
 ### Filters not working:
 - Clear browser cache
 - Check that data was extracted correctly
+
+### Schedule Builder issues:
+- Verify `schedule.json` was copied to `public/data/`
+- Check browser console for errors
+- Clear localStorage if schedule data is corrupted: `localStorage.removeItem('hiker-schedule')`
+
+---
+
+## Build Pipeline
+
+```
+Excel Files → extract_trails_xls.py → exported_data/*.json
+              ↓
+match_schedule.py → updated trails.json + schedule.json
+              ↓
+copy to hiker-app/public/data/
+              ↓
+npm run build → dist/index.html (~587 KB)
+```

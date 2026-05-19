@@ -38,7 +38,7 @@ Open `hiker-app/dist/index.html` in any browser. No server required - it works f
 
 | File | Description |
 |------|-------------|
-| `Hike Data BaseM.xls` | Main trail database (179 trails, 182 sheets) |
+| `Hike Data BaseM.xls` | Main trail database (178 trails, 182 sheets) |
 | `SOTHH schedule.xls` | Hike schedule (2022-2026, 17 quarters) |
 
 ### Extracted JSON Files
@@ -48,6 +48,7 @@ Open `hiker-app/dist/index.html` in any browser. No server required - it works f
 | `trails.json` | Main trail database with scores |
 | `trail_details.json` | Extended info (descriptions, leaders, pros, others) |
 | `lookup.json` | Reference data (difficulties, parking levels, months) |
+| `schedule.json` | Schedule hikes with trail IDs (456 hikes, 280 unique names, 134 matched trails) |
 
 ### Month Score System
 
@@ -90,10 +91,11 @@ Matches schedule hikes to trail IDs:
 - Uses fuzzy matching to match hike names to trail IDs
 - Calculates month scores based on schedule data
 - Updates `exported_data/trails.json` in-place
+- Generates `schedule.json` with `{day, hike, trail_id}` entries
 
 ## App Features
 
-- **Browse** all 178+ trails with grid layout
+- **Browse** all 178 trails with grid layout
 - **Search** across all fields (name, notes, parking, etc.)
 - **Filter** by distance, elevation, difficulty, months
 - **Sort** by Name, Popularity, Elevation (↑/↓), Distance (↑/↓), or Not Wilderness (non-◆ first, then alphabetical)
@@ -101,7 +103,28 @@ Matches schedule hikes to trail IDs:
 - **Edit** trail details (description, notes, pros, others, leaders, stats)
 - **Export Merged Data** - Downloads updated JSON files with your edits
 - **Copy Report** - Generate formatted text for trail reports
-- **Schedule Builder** - Select hikes from Excel schedule and export to text file
+- **Schedule Builder** - Two-panel drag-and-drop interface to schedule hikes across Wed/Fri dates, with import/export and debug mode
+
+## Schedule Builder
+
+The Schedule Builder provides a two-panel interface for planning monthly hikes:
+
+- **Left panel**: Available hikes (all 178 trails, filterable)
+- **Right panel**: Wed/Fri dates for selected month
+- **Drag-and-drop**: Hikes from left panel to dates, between dates to reschedule, back to left to unassign
+- **Scheduled section**: Toggle to view assigned hikes with day-number badges
+- **Import/Export**: Settings gear menu for schedule data, hike edits, and import
+- **Debug mode**: Toggle to show hike index badges and console logging
+- **Per-month storage**: Schedules stored in localStorage under `hiker-schedule` key
+- **Month score filtering**: Filter hikes by monthly availability scores
+
+### Storage
+
+| Key | Content |
+|-----|---------|
+| `hiker-schedule` | Per-month schedule: `{ "June": { 3: "trail-id", 5: "trail-id" } }` |
+| `hiker-schedule-debug` | Debug mode toggle (`true`/`false`) |
+| `hiker-trail-edits` | User edits to trail details |
 
 ## Monthly Availability Display
 
@@ -125,14 +148,16 @@ D:\hiker\
 ├── exported_data/
 │   ├── trails.json             # Main trail data
 │   ├── trail_details.json      # Extended trail info
-│   └── lookup.json             # Reference data
+│   ├── lookup.json             # Reference data
+│   └── schedule.json           # Schedule hikes with trail IDs
 └── hiker-app/                  # React application
     ├── public/data/            # JSON data files
     ├── src/
     │   ├── components/         # React components
     │   ├── pages/              # Page components
     │   ├── hooks/              # Custom hooks
-    │   └── utils/              # Utility functions
+    │   ├── utils/              # Utility functions
+    │   └── test/               # Test suite (157 tests)
     ├── dist/                   # Production build
     │   └── index.html          # Single-file app
     └── package.json

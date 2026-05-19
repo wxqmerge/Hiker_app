@@ -1,10 +1,10 @@
-# Hike Database Web App - Browse Mode
+# Hike Database Web App
 
 A static React web application for browsing hiking trail data from the Olympic Peninsula region.
 
 ## Overview
 
-This is a **read-only browse application** displaying 178 hiking trails with full search, filter, and navigation capabilities. Edit and add functionality is planned for future release.
+This app displays 178 hiking trails with full search, filter, and navigation capabilities. Includes a Schedule Builder for planning monthly hikes.
 
 ## Browse Features
 
@@ -15,13 +15,13 @@ This is a **read-only browse application** displaying 178 hiking trails with ful
   - Difficulty badge (Easy, Easy to Mod, Moderate, Mod to Diff, Difficult)
   - Distance with extended option (e.g., "5.0 mi / 5.5 mi")
   - Elevation range (e.g., "650' - 850'")
-  - Parking type (Discover, Nat'l Park/Golden, etc.)
+  - Parking type (Discover, Nat'l Park/Golden, N/A, etc.)
   - Ride cost (e.g., "ride-$5")
   - Available months (if seasonal)
   - Best season (if specified)
 
 ### Search & Filters
-- **Full-text search** - Searches trail names across all fields
+- **Full-text search** - Searches trail names across all fields (name, notes, parking, difficulty, seasonal months)
 - **Distance filter** - Slider to set maximum distance (0-20 miles)
 - **Elevation filter** - Slider to set maximum elevation (0-5000 ft)
 - **Difficulty filter** - Click to select one or more difficulty levels
@@ -64,23 +64,27 @@ This is a pleasant nature trail leaving from Loop "E" in the Heart of the Hills 
 - 60-89 minutes = ride-$7
 - >= 90 minutes = ride-$10
 
+## Schedule Builder
+
+Two-panel drag-and-drop interface for planning monthly hikes:
+
+- **Left panel**: Available hikes (all 178 trails, filterable with same filters as browse)
+- **Right panel**: Wed/Fri dates for selected month
+- **Drag-and-drop**: Hikes from left panel to dates, between dates to reschedule, back to left to unassign
+- **Scheduled section**: Toggle to view assigned hikes with day-number badges
+- **Import/Export**: Settings gear menu for schedule data, hike edits, and import
+- **Debug mode**: Toggle to show hike index badges and console logging
+- **Per-month storage**: Schedules stored in localStorage under `hiker-schedule` key
+
 ## Tech Stack
 
-- React 18 with Vite
-- React Router for navigation
-- Tailwind CSS for styling
+- React 19 with Vite 8
+- React Router (MemoryRouter)
+- Tailwind CSS 4
 - Static JSON data (no backend required)
+- Vitest + jsdom + testing-library (157 tests)
 
 ---
-
-## Future Plans
-
-**Edit/Add Mode** - Planned for future release:
-- Add new trails
-- Edit existing trail data
-- Upload trail photos
-- Map integration
-- User accounts and saved favorites
 
 ## Development
 
@@ -109,6 +113,18 @@ npm run build
 ```
 
 Production files will be in the `dist/` directory.
+
+### Run Tests
+
+```bash
+npm run test
+```
+
+### Run Linter
+
+```bash
+npm run lint
+```
 
 ## Deployment
 
@@ -161,8 +177,9 @@ Then run: `npm run deploy`
       "range": "76",
       "notes": "Trail highlights and notes",
       "seasonal": {
-        "availableMonths": [3, 4, 5],
-        "bestSeason": "Fall"
+        "Jan": 0, "Feb": 0, "Mar": 1, "Apr": 2,
+        "May": 3, "Jun": 2, "Jul": 0, "Aug": 0,
+        "Sep": 0, "Oct": 0, "Nov": 0, "Dec": 0
       },
       "difficultyOrder": 1
     }
@@ -197,6 +214,16 @@ Then run: `npm run deploy`
 }
 ```
 
+### schedule.json (Schedule hikes)
+```json
+{
+  "Jun": [
+    { "day": 3, "hike": "Elwha Delta (Place Road )", "trail_id": "elwha" },
+    { "day": 5, "hike": "Mt. Townsend", "trail_id": "mt-townsend" }
+  ]
+}
+```
+
 ## Updating Trail Data
 
 Trail data is stored in `public/data/trails.json`. To update:
@@ -204,10 +231,14 @@ Trail data is stored in `public/data/trails.json`. To update:
 1. Edit the source Excel file (`Hike Data Base.xls`)
 2. Run the extraction script:
    ```bash
-   C:/Python314/python.exe D:\hiker\extract_trails_xls.py
+   python D:\hiker\extract_trails_xls.py
    ```
-3. Copy new JSON files to `hiker-app/public/data/`
-4. Rebuild: `npm run build`
+3. Match schedule hikes to trails:
+   ```bash
+   python D:\hiker\match_schedule.py
+   ```
+4. Copy new JSON files to `hiker-app/public/data/`
+5. Rebuild: `npm run build`
 
 ## Project Structure
 
@@ -217,20 +248,32 @@ hiker-app/
 │   └── data/
 │       ├── trails.json          # Main trail database (178 trails)
 │       ├── lookup.json          # Reference data
-│       └── trail_details.json   # Extended trail info
+│       ├── trail_details.json   # Extended trail info
+│       └── schedule.json        # Schedule hikes with trail IDs
 ├── src/
 │   ├── components/
 │   │   ├── TrailCard.jsx        # Individual trail card
 │   │   ├── TrailList.jsx        # Trail grid/list
-│   │   ├── FilterPanel.jsx      # Search/filter controls
-│   │   └── TrailNavigation.jsx  # Navigation component (detail page)
+│   │   └── FilterPanel.jsx      # Search/filter controls
 │   ├── pages/
 │   │   ├── Home.jsx             # Main browse page
-│   │   └── TrailDetail.jsx      # Trail detail view
+│   │   ├── TrailDetail.jsx      # Trail detail view
+│   │   └── ScheduleBuilder.jsx  # Schedule builder
 │   ├── hooks/
-│   │   └── useTrails.js         # Data fetching & filtering
+│   │   ├── useTrails.js         # Data fetching & filtering
+│   │   ├── useTrailDetails.js   # Trail details loading
+│   │   └── useFilters.js        # Filter state & sorting
 │   ├── utils/
-│   │   └── report.js            # Report generation utilities
+│   │   ├── filterTrails.js      # Shared filter/sort logic
+│   │   ├── formatTrail.js       # Shared trail formatting
+│   │   ├── constants.js         # Shared constants
+│   │   ├── report.js            # Report generation utilities
+│   │   └── data.js              # Trail details access
+│   ├── test/                    # Test suite (157 tests)
+│   │   ├── utils/
+│   │   ├── hooks/
+│   │   ├── components/
+│   │   └── pages/
 │   ├── App.jsx                  # Router setup
 │   ├── main.jsx                 # Entry point
 │   └── index.css                # Global styles
