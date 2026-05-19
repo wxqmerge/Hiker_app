@@ -30,7 +30,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
     setFilters(prev => ({ ...prev, wilderness: !prev.wilderness }));
   };
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.search ||
     filters.distanceMin > 0 || filters.distanceMax < 20 ||
     filters.elevationMin > 0 || filters.elevationMax < 5000 ||
@@ -39,25 +39,20 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
     filters.wilderness;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-      {/* Search, Distance & Elevation on one line */}
-      <div className="flex gap-4 items-center mb-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3.5 mb-4">
+      <div className="flex flex-wrap items-center gap-2.5">
         {/* Search */}
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search trails by name..."
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="Search..."
+          value={filters.search}
+          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          className="w-52 px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
+        />
 
-        {/* Distance Range */}
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Max Distance: {filters.distanceMax} mi
-          </label>
+        {/* Distance */}
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          <span className="font-medium">Dist</span>
           <input
             type="range"
             min="0"
@@ -65,15 +60,14 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
             step="0.5"
             value={filters.distanceMax}
             onChange={(e) => setFilters({ ...filters, distanceMax: parseFloat(e.target.value) })}
-            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="w-24 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
           />
-        </div>
+          <span className="w-10">{filters.distanceMax}mi</span>
+        </label>
 
-        {/* Elevation Range */}
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Max Elevation: {filters.elevationMax} ft
-          </label>
+        {/* Elevation */}
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          <span className="font-medium">Elev</span>
           <input
             type="range"
             min="0"
@@ -81,20 +75,18 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
             step="100"
             value={filters.elevationMax}
             onChange={(e) => setFilters({ ...filters, elevationMax: parseInt(e.target.value) })}
-            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="w-24 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
           />
-        </div>
-      </div>
+          <span className="w-14">{filters.elevationMax}</span>
+        </label>
 
-      {/* Difficulty Filter */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
-        <div className="flex flex-wrap gap-2">
+        {/* Difficulty */}
+        <div className="flex gap-1.5">
           {difficulties.map(diff => (
             <button
               key={diff.code}
               onClick={() => toggleDifficulty(diff.code)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
                 filters.difficulties.includes(diff.code)
                   ? 'bg-green-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -104,17 +96,14 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Month Filter */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Available Months</label>
-        <div className="flex flex-wrap gap-2">
+        {/* Months */}
+        <div className="flex gap-1">
           {months.map((month, idx) => (
             <button
               key={idx}
               onClick={() => toggleMonth(idx)}
-              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+              className={`w-8 py-1 rounded text-sm font-medium transition-colors ${
                 filters.months.includes(idx)
                   ? 'bg-green-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -124,104 +113,101 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Sort Buttons */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-        <div className="flex flex-wrap gap-2">
+        {/* Sort */}
+        <div className="flex gap-1.5 ml-auto">
           <button
             onClick={() => setSortBy('name')}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
               filters.sortBy === 'name'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Name
+            A-Z
           </button>
           <button
             onClick={() => setSortBy('popularity')}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
               filters.sortBy === 'popularity'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Popularity
+            Pop
           </button>
           <button
             onClick={() => setSortBy('elevation-up')}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
               filters.sortBy === 'elevation-up'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Elevation ↑
+            Elev ↑
           </button>
           <button
             onClick={() => setSortBy('elevation-down')}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
               filters.sortBy === 'elevation-down'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Elevation ↓
+            Elev ↓
           </button>
           <button
             onClick={() => setSortBy('distance-up')}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
               filters.sortBy === 'distance-up'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Distance ↑
+            Dist ↑
           </button>
           <button
             onClick={() => setSortBy('distance-down')}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
               filters.sortBy === 'distance-down'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Distance ↓
+            Dist ↓
           </button>
           <button
             onClick={toggleWilderness}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
               filters.wilderness
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Wilderness
+            ◆
           </button>
           <button
             onClick={() => setSortBy('not-wilderness')}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
               filters.sortBy === 'not-wilderness'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Not Wilderness
+            ◆ off
           </button>
         </div>
-      </div>
 
-      {/* Reset Button */}
-      {hasActiveFilters && (
-        <button
-          onClick={resetFilters}
-          className="text-sm text-green-600 hover:text-green-800 font-medium"
-        >
-          Reset all filters
-        </button>
-      )}
+        {/* Reset */}
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="text-sm text-green-600 hover:text-green-800 font-medium px-2.5 py-1"
+          >
+            ✕
+          </button>
+        )}
+      </div>
     </div>
   );
 }
