@@ -9,7 +9,8 @@ This document describes all fields exported from the "Hike Data Base.xls" Excel 
 1. [trails.json](#trailsjson) - Main trail database
 2. [lookup.json](#lookupjson) - Reference/lookup data
 3. [trail_details.json](#trail_detailsjson) - Extended trail information
-4. [Source Field Mapping](#source-field-mapping) - Excel to JSON field mapping
+4. [schedule.json](#schedulejson) - Schedule hikes with trail IDs
+5. [Source Field Mapping](#source-field-mapping) - Excel to JSON field mapping
 
 ---
 
@@ -192,6 +193,53 @@ Full month names for display purposes.
 
 ---
 
+## schedule.json
+
+**Purpose:** Schedule hikes extracted from `SOTHH schedule.xls` with trail ID matching.
+
+**Structure:** `{ "Month": [ {entry}, ... ], ... }`
+
+### Fields
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `day` | integer | Day of month | `3` |
+| `hike` | string | Hike name from schedule | `"Elwha Delta (Place Road )"` |
+| `trail_id` | string | Matched trail ID from trails.json | `"elwha"` |
+
+**Example:**
+```json
+{
+  "Jun": [
+    { "day": 3, "hike": "Elwha Delta (Place Road )", "trail_id": "elwha" },
+    { "day": 5, "hike": "Mt. Townsend", "trail_id": "mt-townsend" },
+    { "day": 10, "hike": "Lover's Lane/Sol Duc Falls Loop", "trail_id": "lovers-lane" }
+  ]
+}
+```
+
+### Statistics
+
+| Metric | Value |
+|--------|-------|
+| Total hikes | 456 |
+| Unique hike names | 280 |
+| Matched to trails | 453 |
+| Unmatched | 3 |
+| Trails in schedule | 134 |
+| Months | 12 (Jan-Dec) |
+| Sheets | 17 (2022-2026) |
+
+### Unmatched Hikes
+
+| Hike Name | Reason |
+|-----------|--------|
+| `OAT (various sections)` | Too generic |
+| `NDLH (Low @ 2:17 -0.44 ft)` | Tidal info in name |
+| `NDLH (Low @12:11, 0.18 ft)` | Tidal info in name |
+
+---
+
 ## Source Field Mapping
 
 This section maps JSON fields back to their original Excel locations.
@@ -228,7 +276,7 @@ Each trail has its own sheet with detailed information:
 | B17 | Others | `trail_details.others` | Additional information |
 | B20 | Leaders | `trail_details.leaders` | Leader names separated by ";" or "," |
 
-### Seasonal Availability
+### Seasonal Availability (Historical)
 
 The Index sheet uses quarterly indicators:
 
@@ -240,6 +288,26 @@ The Index sheet uses quarterly indicators:
 | O | Q4 | December, January, February | 11, 0, 1 |
 
 A value of `"1"`, `"W"`, or `"Y"` indicates the trail is available during that quarter.
+
+### Month Scores (Current)
+
+The `seasonal` object now contains monthly scores (0-9) instead of `availableMonths`:
+
+```json
+{
+  "seasonal": {
+    "Jan": 0, "Feb": 0, "Mar": 0, "Apr": 2,
+    "May": 0, "Jun": 2, "Jul": 2, "Aug": 0,
+    "Sep": 0, "Oct": 0, "Nov": 0, "Dec": 6
+  }
+}
+```
+
+**Formula:** `score = base + (hike_count * 2)`, capped at 9.
+
+- **base = 1** if trail has quarter data in Excel
+- **base = 0** if no quarter data
+- **+2** for each actual hike done in that month from the schedule
 
 ---
 
@@ -350,6 +418,16 @@ This is a pleasant nature trail leaving from Loop "E" in the Heart of the Hills 
 | 2026-03-16 | UI: All stats displayed on one line (4 columns) |
 | 2026-03-16 | UI: Navigation buttons moved to top of trail detail page |
 | 2026-03-16 | UI: Metadata (Pros/Others/Leaders) hidden from browse cards |
+| 2026-05-19 | Added: schedule.json with trail IDs (456 hikes, 280 unique names, 134 matched trails) |
+| 2026-05-19 | Added: Schedule Builder with two-panel drag-and-drop interface |
+| 2026-05-19 | Added: match_schedule.py generates schedule.json with {day, hike, trail_id} entries |
+| 2026-05-19 | Added: Debug mode toggle in Schedule Builder settings |
+| 2026-05-19 | Added: Per-month schedule storage in localStorage |
+| 2026-05-19 | Added: 157 tests across 13 test files |
+| 2026-05-19 | Changed: seasonal object now uses month scores (0-9) instead of availableMonths array |
+| 2026-05-19 | Changed: Parking field uses "N/A" for missing values |
+| 2026-05-19 | Changed: Header uses full month names (June vs Jun) |
+| 2026-05-19 | Changed: Import/export functionality for schedule and hike edits |
 
 ---
 

@@ -11,10 +11,11 @@ A static React web application for browsing and managing SOTHH trail data. The a
 | Framework | React 19 |
 | Build Tool | Vite 8 |
 | Routing | React Router (MemoryRouter) |
-| Styling | CSS Modules |
+| Styling | Tailwind CSS 4 |
 | Data Format | JSON |
 | Source Data | Microsoft Excel (.xls) |
 | Processing | Python 3 |
+| Testing | Vitest + jsdom + testing-library |
 
 ## System Architecture
 
@@ -29,17 +30,17 @@ A static React web application for browsing and managing SOTHH trail data. The a
 │  ┌───────────────────────────────────────────────────┐  │
 │  │              Embedded React App                   │  │
 │  │                                                   │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │  │
-│  │  │  Home    │  │  Browse  │  │  TrailDetail │   │  │
-│  │  └──────────┘  └──────────┘  └──────────────┘   │  │
+│  │  ┌──────────┐  ┌──────────────────────┐         │  │
+│  │  │  Home    │  │  ScheduleBuilder     │         │  │
+│  │  └──────────┘  └──────────────────────┘         │  │
 │  │                                                   │  │
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │  │
-│  │  │  Search  │  │ Settings │  │  Schedule    │   │  │
+│  │  │  Search  │  │ Settings │  │  TrailDetail │   │  │
 │  │  └──────────┘  └──────────┘  └──────────────┘   │  │
 │  │                                                   │  │
 │  │  ┌───────────────────────────────────────────┐   │  │
 │  │  │           Custom Hooks                    │   │  │
-│  │  │  useTrails, useTrailDetail                │   │  │
+│  │  │  useTrails, useTrailDetails, useFilters   │   │  │
 │  │  └───────────────────────────────────────────┘   │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
@@ -64,6 +65,7 @@ Excel Files (.xls)
 │ trails.json          │
 │ trail_details.json   │
 │ lookup.json          │
+│ schedule.json        │
 └──────────┬───────────┘
            │
            ▼
@@ -76,6 +78,7 @@ Excel Files (.xls)
 ┌──────────────────────┐
 │ exported_data/       │  Updated JSON
 │ trails.json          │  (with scores)
+│ schedule.json        │  (with trail_ids)
 └──────────┬───────────┘
            │
            ▼
@@ -93,7 +96,7 @@ Excel Files (.xls)
            ▼
 ┌──────────────────────┐
 │ dist/index.html      │  Single standalone file
-│ (~525KB)             │
+│ (~587KB)             │
 └──────────────────────┘
 ```
 
@@ -107,7 +110,8 @@ App Start
     │   └── Absent → Fetch from /data/*.json (http:// protocol)
     │
     ├── Load trails.json → useTrails hook → React state
-    ├── Load trail_details.json → merge with trail data
+    ├── Load trail_details.json → useTrailDetails hook
+    ├── Load schedule.json → useTrails hook (returns schedule data)
     └── Load lookup.json → reference data (difficulty, parking, months)
 ```
 
@@ -118,35 +122,34 @@ App Start
 | Component | Path | Purpose |
 |-----------|------|---------|
 | Home | `src/pages/Home.jsx` | Landing page with quick actions, export button |
-| Browse | `src/pages/Browse.jsx` | Trail grid with search and filters |
 | TrailDetail | `src/pages/TrailDetail.jsx` | Full trail info with edit capability |
-| Schedule | `src/pages/Schedule.jsx` | Schedule/hike data display |
+| ScheduleBuilder | `src/pages/ScheduleBuilder.jsx` | Two-panel drag-and-drop schedule builder |
 
 ### Components
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| SearchBar | `src/components/SearchBar.jsx` | Unified search input |
 | FilterPanel | `src/components/FilterPanel.jsx` | Filter by distance, elevation, difficulty, months |
 | TrailCard | `src/components/TrailCard.jsx` | Trail summary card for grid |
-| TrailGrid | `src/components/TrailGrid.jsx` | Responsive grid layout |
-| MonthDots | `src/components/MonthDots.jsx` | Monthly availability visualization |
-| EditModal | `src/components/EditModal.jsx` | Edit trail details form |
-| SettingsMenu | `src/components/SettingsMenu.jsx` | Export/import/edit settings |
-| ReportModal | `src/components/ReportModal.jsx` | Trail report generation |
+| TrailList | `src/components/TrailList.jsx` | Responsive grid layout |
 
 ### Hooks
 
 | Hook | Path | Purpose |
 |------|------|---------|
-| useTrails | `src/hooks/useTrails.js` | Load, cache, and provide trail data |
-| useTrailDetail | `src/hooks/useTrailDetail.js` | Get specific trail by ID with details |
+| useTrails | `src/hooks/useTrails.js` | Load, cache, and provide trail data + schedule |
+| useTrailDetails | `src/hooks/useTrailDetails.js` | Get trail details with embedded data + fetch fallback |
+| useFilters | `src/hooks/useFilters.js` | Shared filter state and sorting |
 
 ### Utilities
 
 | Module | Path | Purpose |
 |--------|------|---------|
-| trailUtils | `src/utils/trailUtils.js` | Fuzzy matching, score calculation, formatting |
+| filterTrails | `src/utils/filterTrails.js` | Shared filter and sort logic (browse + schedule) |
+| formatTrail | `src/utils/formatTrail.js` | Shared trail formatting |
+| constants | `src/utils/constants.js` | Shared constants (months, difficulties, etc.) |
+| report | `src/utils/report.js` | Report generation utilities |
+| data | `src/utils/data.js` | Trail details access |
 
 ## Storage Strategy
 
@@ -162,7 +165,8 @@ JSON data is embedded directly into the HTML file at build time via a custom Vit
 | Key | Content |
 |-----|---------|
 | `hiker-trail-edits` | User edits to trail details (description, notes, pros, others, leaders, stats) |
-| `hiker-data-store` | Schedule data and month scores |
+| `hiker-schedule` | Per-month schedule: `{ "June": { 3: "trail-id", 5: "trail-id" } }` |
+| `hiker-schedule-debug` | Debug mode toggle (`true`/`false`) |
 
 ### Edit Data Structure
 
@@ -181,6 +185,21 @@ JSON data is embedded directly into the HTML file at build time via a custom Vit
 }
 ```
 
+### Schedule Data Structure
+
+```json
+{
+  "June": {
+    "3": "elwha",
+    "5": "mt-townsend",
+    "10": "lovers-lane"
+  },
+  "July": {
+    "1": "deer-park"
+  }
+}
+```
+
 ## Routing Strategy
 
 ### MemoryRouter (file:// protocol)
@@ -195,9 +214,8 @@ The app uses `MemoryRouter` instead of `BrowserRouter` to work with `file://` pr
 | Route | Page |
 |-------|------|
 | `/` | Home |
-| `/browse` | Browse trails |
 | `/trail/:id` | Trail detail |
-| `/schedule` | Schedule view |
+| `/schedule` | Schedule Builder |
 
 ## Build Pipeline
 
@@ -229,7 +247,15 @@ export default defineConfig({
 
 | File | Size | Description |
 |------|------|-------------|
-| `dist/index.html` | ~525KB | Single standalone HTML file with embedded JS, CSS, and data |
+| `dist/index.html` | ~587KB | Single standalone HTML file with embedded JS, CSS, and data |
+
+### Test Suite
+
+| Metric | Count |
+|--------|-------|
+| Test Files | 13 |
+| Tests | 157 |
+| Framework | Vitest + jsdom + testing-library |
 
 ## Data Models
 
@@ -238,24 +264,22 @@ export default defineConfig({
 ```json
 {
   "id": "anderson",
-  "name": "Anderson Lake",
+  "name": "And_Lk_TR",
   "fullName": "Anderson Lake State Park",
-  "distance": 4.2,
-  "elevation": 650,
-  "difficulty": "Easy",
-  "parking": "Level 3",
-  "range": "0.0 - 4.2",
-  "quarters": ["Q1", "Q2", "Q3", "Q4"],
+  "distance": 5,
+  "distanceExtended": 7.1,
+  "elevationStart": 250,
+  "elevationMax": 600,
+  "difficulty": "Easy to Mod",
+  "parking": "Discover",
+  "range": "30",
+  "notes": "Anderson Lake State Park",
   "seasonal": {
-    "Jan": 6, "Feb": 1, "Mar": 1, "Apr": 2,
+    "Jan": 0, "Feb": 0, "Mar": 0, "Apr": 2,
     "May": 0, "Jun": 2, "Jul": 2, "Aug": 0,
-    "Sep": 0, "Oct": 0, "Nov": 0, "Dec": 3
+    "Sep": 0, "Oct": 0, "Nov": 0, "Dec": 6
   },
-  "description": "...",
-  "notes": "...",
-  "pros": "...",
-  "others": "...",
-  "leader": "..."
+  "difficultyOrder": 2
 }
 ```
 
@@ -269,6 +293,16 @@ base = 1 if trail has quarters in Excel
 base = 0 if no quarters
 
 hike_count = number of hikes in schedule for that month
+```
+
+### Schedule Entry
+
+```json
+{
+  "day": 3,
+  "hike": "Elwha Delta (Place Road )",
+  "trail_id": "elwha"
+}
 ```
 
 ### Lookup Reference Data
@@ -292,10 +326,10 @@ hike_count = number of hikes in schedule for that month
 
 | Sheet | Content |
 |-------|---------|
-| Q1 2022 | Hike schedule Q1 2022 |
-| Q2 2022 | Hike schedule Q2 2022 |
+| 2Q22 Hikes | Hike schedule Q2 2022 |
+| 3Q22 Hikes | Hike schedule Q3 2022 |
 | ... | ... (17 quarters total, 2022-2026) |
-| Q4 2026 | Hike schedule Q4 2026 |
+| 2Q26 Hikes | Hike schedule Q2 2026 |
 
 ### Quarter Column Structures
 
@@ -304,6 +338,15 @@ The Excel file has 4 different column structures across quarters:
 - 9 columns: extended schedule
 - 10 columns: with additional details
 - 11 columns: full schedule
+
+### Quarter Mapping
+
+| Quarter | Months |
+|---------|--------|
+| Q1 | Dec, Jan, Feb |
+| Q2 | Mar, Apr, May |
+| Q3 | Jun, Jul, Aug |
+| Q4 | Sep, Oct, Nov |
 
 ## File Structure
 
@@ -318,37 +361,42 @@ D:\hiker\
 ├── exported_data/              # Extracted JSON data
 │   ├── trails.json             # Main trail database
 │   ├── trail_details.json      # Extended trail info
-│   └── lookup.json             # Reference data
+│   ├── lookup.json             # Reference data
+│   └── schedule.json           # Schedule hikes with trail IDs
 └── hiker-app/                  # React application
     ├── public/
-    │   ├── data/               # JSON data files (pre-build)
-    │   │   ├── trails.json
-    │   │   ├── trail_details.json
-    │   │   └── lookup.json
-    │   └── favicon.ico
+    │   └── data/               # JSON data files (pre-build)
+    │       ├── trails.json
+    │       ├── trail_details.json
+    │       ├── lookup.json
+    │       └── schedule.json
     ├── src/
     │   ├── App.jsx             # Root component (MemoryRouter)
     │   ├── main.jsx            # Entry point
     │   ├── index.css           # Global styles
     │   ├── components/         # Reusable components
-    │   │   ├── SearchBar.jsx
     │   │   ├── FilterPanel.jsx
     │   │   ├── TrailCard.jsx
-    │   │   ├── TrailGrid.jsx
-    │   │   ├── MonthDots.jsx
-    │   │   ├── EditModal.jsx
-    │   │   ├── SettingsMenu.jsx
-    │   │   └── ReportModal.jsx
+    │   │   └── TrailList.jsx
     │   ├── pages/              # Page components
     │   │   ├── Home.jsx
-    │   │   ├── Browse.jsx
     │   │   ├── TrailDetail.jsx
-    │   │   └── Schedule.jsx
+    │   │   └── ScheduleBuilder.jsx
     │   ├── hooks/              # Custom hooks
     │   │   ├── useTrails.js
-    │   │   └── useTrailDetail.js
-    │   └── utils/              # Utility functions
-    │       └── trailUtils.js
+    │   │   ├── useTrailDetails.js
+    │   │   └── useFilters.js
+    │   ├── utils/              # Utility functions
+    │   │   ├── filterTrails.js
+    │   │   ├── formatTrail.js
+    │   │   ├── constants.js
+    │   │   ├── report.js
+    │   │   └── data.js
+    │   └── test/               # Test suite
+    │       ├── utils/          # Utility tests
+    │       ├── hooks/          # Hook tests
+    │       ├── components/     # Component tests
+    │       └── pages/          # Page tests
     ├── dist/                   # Production build
     │   └── index.html          # Single standalone file
     ├── vite.config.js          # Build configuration
@@ -369,11 +417,12 @@ The app checks `window.location.protocol !== 'file:'` to decide between:
 
 ## Performance Considerations
 
-- **Single file deployment**: ~525KB total, gzips to ~135KB
+- **Single file deployment**: ~587KB total, gzips to ~144KB
 - **No network requests at runtime**: All data embedded
-- **localStorage caching**: Edits persist across sessions
+- **localStorage caching**: Edits and schedules persist across sessions
 - **MemoryRouter**: No hash or history API overhead
 - **React 19**: Latest optimizations
+- **Comprehensive test suite**: 157 tests across 13 files
 
 ## Security Considerations
 
