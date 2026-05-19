@@ -1,0 +1,1566 @@
+{
+  "Apr": [
+    {
+      "day": 1,
+      "hike": "OAT Mile 0 to Living Room"
+    },
+    {
+      "day": 1,
+      "hike": "Gnome Valley (aka Radio Tower)"
+    },
+    {
+      "day": 2,
+      "hike": "??Heart of the Forest"
+    },
+    {
+      "day": 3,
+      "hike": "Hike to ND Lighthouse (0.29 @11:02)"
+    },
+    {
+      "day": 3,
+      "hike": "Adventure Trail Mile Zero"
+    },
+    {
+      "day": 5,
+      "hike": "Foothills"
+    },
+    {
+      "day": 5,
+      "hike": "Miller Peninsula"
+    },
+    {
+      "day": 6,
+      "hike": "Mt Angeles Rd - Ennis Falls"
+    },
+    {
+      "day": 7,
+      "hike": "Cascade Rock"
+    },
+    {
+      "day": 8,
+      "hike": "OAT Joyce-Piedmont E. "
+    },
+    {
+      "day": 8,
+      "hike": "Dosewallips Cascades"
+    },
+    {
+      "day": 9,
+      "hike": "Larry Scott Trail - Milo Curry"
+    },
+    {
+      "day": 10,
+      "hike": "Heather Park"
+    },
+    {
+      "day": 10,
+      "hike": "Gibbs Lake"
+    },
+    {
+      "day": 12,
+      "hike": "*Graywolf"
+    },
+    {
+      "day": 12,
+      "hike": "Steam Donkey / Maple Valley"
+    },
+    {
+      "day": 13,
+      "hike": "Karpen Road"
+    },
+    {
+      "day": 14,
+      "hike": "Slab Camp / Duncan Flats"
+    },
+    {
+      "day": 15,
+      "hike": "Steam Donkey/Maple Valley"
+    },
+    {
+      "day": 15,
+      "hike": "Barnes Creek"
+    },
+    {
+      "day": 16,
+      "hike": "Discovery Bay Trail"
+    },
+    {
+      "day": 17,
+      "hike": "Lower Gray Wolf"
+    },
+    {
+      "day": 17,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 19,
+      "hike": "Lower Dungeness"
+    },
+    {
+      "day": 19,
+      "hike": "Lake Anderson"
+    },
+    {
+      "day": 20,
+      "hike": "E Elwha - Bare Bottom to Ranger St"
+    },
+    {
+      "day": 21,
+      "hike": "Notch Pass"
+    },
+    {
+      "day": 22,
+      "hike": "Five Waterfalls"
+    },
+    {
+      "day": 22,
+      "hike": "Layton Horse Camp"
+    },
+    {
+      "day": 23,
+      "hike": "?? Borderline Trail - Marmot Loop"
+    },
+    {
+      "day": 24,
+      "hike": "Marmot Pass"
+    },
+    {
+      "day": 24,
+      "hike": "Fort Townsend"
+    },
+    {
+      "day": 26,
+      "hike": "Dosewallips Cascades"
+    },
+    {
+      "day": 26,
+      "hike": "Gibbs Lake"
+    },
+    {
+      "day": 27,
+      "hike": "Lyre River - Campground"
+    },
+    {
+      "day": 28,
+      "hike": "Dosewallips Cascades"
+    },
+    {
+      "day": 29,
+      "hike": "Travis Spit (+0.77@9:36)"
+    },
+    {
+      "day": 29,
+      "hike": "W Elwha - Herrick Rd to Dam Site"
+    },
+    {
+      "day": 30,
+      "hike": "Waterfalls"
+    }
+  ],
+  "May": [
+    {
+      "day": 1,
+      "hike": "Blyn Tower from W Uncas Rd"
+    },
+    {
+      "day": 1,
+      "hike": "Waterfalls"
+    },
+    {
+      "day": 3,
+      "hike": "*Lena Lake"
+    },
+    {
+      "day": 3,
+      "hike": "Lower Big Quilcene to Bark Shanty"
+    },
+    {
+      "day": 4,
+      "hike": "Cassidy Creek"
+    },
+    {
+      "day": 5,
+      "hike": "Lower Gray Wolf"
+    },
+    {
+      "day": 6,
+      "hike": "Fort Townsend"
+    },
+    {
+      "day": 6,
+      "hike": "Lower Gray Wolf"
+    },
+    {
+      "day": 7,
+      "hike": "Gibbs Lake"
+    },
+    {
+      "day": 8,
+      "hike": "Burnt Hill from Louella Cabin"
+    },
+    {
+      "day": 8,
+      "hike": "Eden Valley West"
+    },
+    {
+      "day": 10,
+      "hike": "Elbo Creek / Buck Mt"
+    },
+    {
+      "day": 10,
+      "hike": "Lyre River (-1.68 @12:13 Cres Bch)"
+    },
+    {
+      "day": 11,
+      "hike": "Voice of America"
+    },
+    {
+      "day": 12,
+      "hike": "Lake Angeles"
+    },
+    {
+      "day": 13,
+      "hike": "Pats prairie"
+    },
+    {
+      "day": 13,
+      "hike": "Deer Ridge"
+    },
+    {
+      "day": 14,
+      "hike": "Lower Big Quil to Bark Shanty"
+    },
+    {
+      "day": 15,
+      "hike": "Switchback Trail to Victor Pass"
+    },
+    {
+      "day": 15,
+      "hike": "Newberry Hill / Guillemot Cove"
+    },
+    {
+      "day": 17,
+      "hike": "*Tubal Cain"
+    },
+    {
+      "day": 17,
+      "hike": "Spruce Railroad via East Beach Rd."
+    },
+    {
+      "day": 18,
+      "hike": "Eden Valley East"
+    },
+    {
+      "day": 19,
+      "hike": "Mt Walker"
+    },
+    {
+      "day": 20,
+      "hike": "Mount Zion"
+    },
+    {
+      "day": 20,
+      "hike": "Miller Peninsula"
+    },
+    {
+      "day": 21,
+      "hike": "Eden Valley West"
+    },
+    {
+      "day": 22,
+      "hike": " ?Mount Storm King"
+    },
+    {
+      "day": 22,
+      "hike": "Larry Scott Cape Geo to PT"
+    },
+    {
+      "day": 24,
+      "hike": "Smokey Bottom"
+    },
+    {
+      "day": 24,
+      "hike": "Camp Handy"
+    },
+    {
+      "day": 25,
+      "hike": "360 Road"
+    },
+    {
+      "day": 26,
+      "hike": "Whidbey Island for Camas"
+    },
+    {
+      "day": 27,
+      "hike": "Little River (to mile 3.5)"
+    },
+    {
+      "day": 27,
+      "hike": "Dungeness Spit"
+    },
+    {
+      "day": 28,
+      "hike": "Mt Zion"
+    },
+    {
+      "day": 29,
+      "hike": "Deer Hair Rock"
+    },
+    {
+      "day": 29,
+      "hike": "Ned Hill"
+    },
+    {
+      "day": 31,
+      "hike": "*Eagle Lake"
+    },
+    {
+      "day": 31,
+      "hike": "Chetzemoka Trail for Camas"
+    }
+  ],
+  "Jun": [
+    {
+      "day": 1,
+      "hike": "Place Road"
+    },
+    {
+      "day": 2,
+      "hike": "Madison Falls to Smokey Bottom"
+    },
+    {
+      "day": 3,
+      "hike": "Elwha Delta (-1.44@11:42)"
+    },
+    {
+      "day": 3,
+      "hike": "Mt Walker"
+    },
+    {
+      "day": 4,
+      "hike": "??Heart of the Forest"
+    },
+    {
+      "day": 5,
+      "hike": "Mount Townsend"
+    },
+    {
+      "day": 5,
+      "hike": "Fort Worden/N. Beach(Change)"
+    },
+    {
+      "day": 7,
+      "hike": "Glass Beach"
+    },
+    {
+      "day": 7,
+      "hike": "Mink Lake"
+    },
+    {
+      "day": 8,
+      "hike": "Steam Donkey / Maple Valley"
+    },
+    {
+      "day": 9,
+      "hike": "Elbo Creek / Buck Mt"
+    },
+    {
+      "day": 10,
+      "hike": "Lovers Lane"
+    },
+    {
+      "day": 10,
+      "hike": "Elbo Creek / Buck Mt"
+    },
+    {
+      "day": 11,
+      "hike": "Place Rd / Elwha (-1.88 @ 0955)"
+    },
+    {
+      "day": 12,
+      "hike": "Lake Angeles"
+    },
+    {
+      "day": 12,
+      "hike": "Hurricane Hill"
+    },
+    {
+      "day": 14,
+      "hike": "Klosche - Nanitch"
+    },
+    {
+      "day": 14,
+      "hike": "Larry Scott Trail"
+    },
+    {
+      "day": 15,
+      "hike": "Tubal Cain"
+    },
+    {
+      "day": 16,
+      "hike": "Mt Muller"
+    },
+    {
+      "day": 17,
+      "hike": "Hike Dungeness Spit (-3.06 @11:36)"
+    },
+    {
+      "day": 17,
+      "hike": "Mt Muller"
+    },
+    {
+      "day": 18,
+      "hike": "Spruce Railroad"
+    },
+    {
+      "day": 19,
+      "hike": "Slab Camp to Deer Ridge??"
+    },
+    {
+      "day": 19,
+      "hike": "Lake Anderson"
+    },
+    {
+      "day": 21,
+      "hike": "* Deer Hair Rock"
+    },
+    {
+      "day": 21,
+      "hike": "Mt Zion"
+    },
+    {
+      "day": 22,
+      "hike": "Spruce Railroad"
+    },
+    {
+      "day": 23,
+      "hike": "Mt Townsend via Little Quil Trail"
+    },
+    {
+      "day": 24,
+      "hike": "Mt Townsend"
+    },
+    {
+      "day": 25,
+      "hike": "? Camp Handy"
+    },
+    {
+      "day": 26,
+      "hike": "Elwha Beach off of Place Road"
+    },
+    {
+      "day": 28,
+      "hike": "*Boulder Shelter"
+    },
+    {
+      "day": 28,
+      "hike": "Teal Lake / Timberton Loop"
+    },
+    {
+      "day": 29,
+      "hike": "Mt Zion / Sleepy Hollow"
+    },
+    {
+      "day": 30,
+      "hike": "Tubal Cain"
+    }
+  ],
+  "Jan": [
+    {
+      "day": 1,
+      "hike": "ODT (^Hollywood Beach @ 10 am)"
+    },
+    {
+      "day": 1,
+      "hike": "ODT near Hollywood Beach"
+    },
+    {
+      "day": 2,
+      "hike": "Little River??"
+    },
+    {
+      "day": 2,
+      "hike": "Mount Pleasant or Snowshoe"
+    },
+    {
+      "day": 3,
+      "hike": "Johnson Creek"
+    },
+    {
+      "day": 4,
+      "hike": "Voice of America"
+    },
+    {
+      "day": 5,
+      "hike": "Little River"
+    },
+    {
+      "day": 7,
+      "hike": "OAT + Lower Elwha Dam Site"
+    },
+    {
+      "day": 8,
+      "hike": "Lower Big Quilcene to Bark Shanty"
+    },
+    {
+      "day": 9,
+      "hike": "Elbo Creek / Buck Mountain"
+    },
+    {
+      "day": 10,
+      "hike": "West Elwha Dam Site"
+    },
+    {
+      "day": 11,
+      "hike": "OAT - Mile Zero to Living Room"
+    },
+    {
+      "day": 12,
+      "hike": "Foothills"
+    },
+    {
+      "day": 13,
+      "hike": "Whiskey Bend Rd to Glines Dam"
+    },
+    {
+      "day": 14,
+      "hike": "Burnt Hill"
+    },
+    {
+      "day": 15,
+      "hike": "Dungeness Trails @ River Road"
+    },
+    {
+      "day": 16,
+      "hike": "Miller Peninsula - Thompson Spit"
+    },
+    {
+      "day": 18,
+      "hike": "Dungeness Trails"
+    },
+    {
+      "day": 19,
+      "hike": "Snowshoe"
+    },
+    {
+      "day": 20,
+      "hike": "Cassidy Creek"
+    },
+    {
+      "day": 21,
+      "hike": "Anderson Lake South Loop (DNR)"
+    },
+    {
+      "day": 22,
+      "hike": "OAT - Mile 0 to Living Room"
+    },
+    {
+      "day": 23,
+      "hike": "Barnes Creek??"
+    },
+    {
+      "day": 24,
+      "hike": "Dungeness Levee"
+    },
+    {
+      "day": 25,
+      "hike": "Spruce RR - heading west"
+    },
+    {
+      "day": 26,
+      "hike": "Cassidy Creek to Road End"
+    },
+    {
+      "day": 28,
+      "hike": "Heather Park Trail??"
+    },
+    {
+      "day": 29,
+      "hike": "Robin Hill"
+    },
+    {
+      "day": 30,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 31,
+      "hike": "Teal Lake / Timberton Trails"
+    }
+  ],
+  "Feb": [
+    {
+      "day": 1,
+      "hike": "Verne Samuelson Tr (Matt lead)"
+    },
+    {
+      "day": 2,
+      "hike": "Elwha (New Route)"
+    },
+    {
+      "day": 3,
+      "hike": "Dan Kelly Towers"
+    },
+    {
+      "day": 4,
+      "hike": "Gibbs Lake"
+    },
+    {
+      "day": 5,
+      "hike": "Dungeness Levee Footpath"
+    },
+    {
+      "day": 6,
+      "hike": "Griff Creek??"
+    },
+    {
+      "day": 7,
+      "hike": "Larry Scott Trail - Milo Curry TH"
+    },
+    {
+      "day": 8,
+      "hike": "Eden Valley West"
+    },
+    {
+      "day": 9,
+      "hike": "Snowshoe"
+    },
+    {
+      "day": 11,
+      "hike": "Miller Peninsula-Manzanita Trail"
+    },
+    {
+      "day": 12,
+      "hike": "Burnt Hill"
+    },
+    {
+      "day": 14,
+      "hike": "Heart of the Forest"
+    },
+    {
+      "day": 15,
+      "hike": "Marymere Falls to Bridge #1"
+    },
+    {
+      "day": 16,
+      "hike": "Burnt Hill"
+    },
+    {
+      "day": 17,
+      "hike": "Little River"
+    },
+    {
+      "day": 18,
+      "hike": "Dungeness Levee at Schoolhouse"
+    },
+    {
+      "day": 19,
+      "hike": "Chetzemoka Trail"
+    },
+    {
+      "day": 20,
+      "hike": "Burnt Hill"
+    },
+    {
+      "day": 21,
+      "hike": "Robin Hill"
+    },
+    {
+      "day": 22,
+      "hike": "Gibson Spit(Low@11:30, 3.13 ft)"
+    },
+    {
+      "day": 23,
+      "hike": "Duckabush:  Little Hump/Big Hump"
+    },
+    {
+      "day": 25,
+      "hike": "Lena Lake"
+    },
+    {
+      "day": 26,
+      "hike": "Fort Townsend (Old)"
+    },
+    {
+      "day": 27,
+      "hike": "Dosewallips"
+    },
+    {
+      "day": 28,
+      "hike": "Radio Tower"
+    }
+  ],
+  "Mar": [
+    {
+      "day": 1,
+      "hike": "Snowshoe"
+    },
+    {
+      "day": 1,
+      "hike": "Old Fort Townsend"
+    },
+    {
+      "day": 3,
+      "hike": "Stripped Peak(Jeanne lead)"
+    },
+    {
+      "day": 4,
+      "hike": "Lower Big Quil to Bark Shanty"
+    },
+    {
+      "day": 5,
+      "hike": "Dungeness Spit (to 3.5 miles)"
+    },
+    {
+      "day": 6,
+      "hike": "Little River??"
+    },
+    {
+      "day": 6,
+      "hike": "Lake Crescent / Moments in Time"
+    },
+    {
+      "day": 8,
+      "hike": "Cascade Rock"
+    },
+    {
+      "day": 8,
+      "hike": "Chetzemoka Park & Trail"
+    },
+    {
+      "day": 10,
+      "hike": "Fort Flagler (Rick lead)"
+    },
+    {
+      "day": 11,
+      "hike": "Robin Hill"
+    },
+    {
+      "day": 12,
+      "hike": "Manzanita/Bluff trail miller penninsula"
+    },
+    {
+      "day": 13,
+      "hike": "Elwha to Whiskey Bend "
+    },
+    {
+      "day": 13,
+      "hike": "Lyre River Conservation Area"
+    },
+    {
+      "day": 15,
+      "hike": "NDLH (Low @ 2:17 -0.44 ft)"
+    },
+    {
+      "day": 15,
+      "hike": "Madison Falls to Altair CG"
+    },
+    {
+      "day": 18,
+      "hike": "Dungeness (Reservoir) Trails"
+    },
+    {
+      "day": 19,
+      "hike": "Little River Trail"
+    },
+    {
+      "day": 20,
+      "hike": "Smokey Bottom / Boulder Creek??"
+    },
+    {
+      "day": 20,
+      "hike": "Pat's Prairie"
+    },
+    {
+      "day": 22,
+      "hike": "Hurricane Ridge"
+    },
+    {
+      "day": 22,
+      "hike": "Eden Valley East"
+    },
+    {
+      "day": 23,
+      "hike": "Travis Spit"
+    },
+    {
+      "day": 24,
+      "hike": "NDLH (Low @12:11, 0.18 ft)"
+    },
+    {
+      "day": 25,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 25,
+      "hike": "Little River"
+    },
+    {
+      "day": 26,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 27,
+      "hike": "Cascade Rock??"
+    },
+    {
+      "day": 27,
+      "hike": "Travis Spit (or Gibson Spit)"
+    },
+    {
+      "day": 29,
+      "hike": "Deadfall to Mt Zion"
+    },
+    {
+      "day": 29,
+      "hike": "Radio Tower"
+    },
+    {
+      "day": 31,
+      "hike": "Foothills Trails"
+    }
+  ],
+  "Oct": [
+    {
+      "day": 1,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 2,
+      "hike": "Steam Donkey / Maple Valley Trails"
+    },
+    {
+      "day": 2,
+      "hike": "Maple Valley / Steam Donkey"
+    },
+    {
+      "day": 3,
+      "hike": "??Elwha Pack Trail"
+    },
+    {
+      "day": 4,
+      "hike": "? Sol Duc to Potholes"
+    },
+    {
+      "day": 4,
+      "hike": "Steam Donkey / Maple Valley"
+    },
+    {
+      "day": 5,
+      "hike": "Ft. Flagler (8.6 at 3pm)"
+    },
+    {
+      "day": 6,
+      "hike": "Blyn Mtn / Salmon Creek"
+    },
+    {
+      "day": 7,
+      "hike": "Deer Ridge (Benches & Beyond)"
+    },
+    {
+      "day": 8,
+      "hike": "??Lovers' Lane / Salmon Cascades"
+    },
+    {
+      "day": 9,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 10,
+      "hike": "??Mink Lake"
+    },
+    {
+      "day": 11,
+      "hike": "Elwha Fish Hatchery to mouth"
+    },
+    {
+      "day": 12,
+      "hike": "Steam Donkey/M.V./Rocky Brook"
+    },
+    {
+      "day": 13,
+      "hike": "Three Forks"
+    },
+    {
+      "day": 14,
+      "hike": "Sleepy Hollow/Mt. Zion"
+    },
+    {
+      "day": 15,
+      "hike": "North Kitsap Heritage Park"
+    },
+    {
+      "day": 16,
+      "hike": "Spruce Railroad"
+    },
+    {
+      "day": 17,
+      "hike": "??Griff Creek"
+    },
+    {
+      "day": 18,
+      "hike": "Fort Townsend"
+    },
+    {
+      "day": 19,
+      "hike": "Travis Spit (8.3@2:30pm)"
+    },
+    {
+      "day": 20,
+      "hike": "Griff creek"
+    },
+    {
+      "day": 21,
+      "hike": "Mt. Townsend/Silver Lake"
+    },
+    {
+      "day": 22,
+      "hike": "??Heart of the Forest"
+    },
+    {
+      "day": 23,
+      "hike": "Larry Scott Trail--Milo Curry"
+    },
+    {
+      "day": 25,
+      "hike": "Gibbs Lake"
+    },
+    {
+      "day": 26,
+      "hike": "**Lover's Lane / Salmon Casc"
+    },
+    {
+      "day": 27,
+      "hike": "Heather Park"
+    },
+    {
+      "day": 28,
+      "hike": "West Elwha - Herrick Road"
+    },
+    {
+      "day": 29,
+      "hike": "Larry Scott Trail"
+    },
+    {
+      "day": 30,
+      "hike": "Eden Valley East"
+    },
+    {
+      "day": 31,
+      "hike": "??Heather Park"
+    }
+  ],
+  "Nov": [
+    {
+      "day": 1,
+      "hike": "North Kitsap Heritage Park"
+    },
+    {
+      "day": 2,
+      "hike": "OAT to Living Room"
+    },
+    {
+      "day": 3,
+      "hike": "Sleepy Hollow - Mt Zion - Gold Ck"
+    },
+    {
+      "day": 4,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 6,
+      "hike": "North Kitsap Heritage Park"
+    },
+    {
+      "day": 7,
+      "hike": "??Smokey Bottom from Madison Falls"
+    },
+    {
+      "day": 8,
+      "hike": "Miller Peninsula from ESB Road"
+    },
+    {
+      "day": 9,
+      "hike": "Heart of The Forest"
+    },
+    {
+      "day": 10,
+      "hike": "Notch Pass / Quil Ridge"
+    },
+    {
+      "day": 11,
+      "hike": "Blyn Mt / Salmon Creek*"
+    },
+    {
+      "day": 12,
+      "hike": "??OAT Mile 0-Living Room"
+    },
+    {
+      "day": 13,
+      "hike": "Voice of America"
+    },
+    {
+      "day": 14,
+      "hike": "Mt Walker"
+    },
+    {
+      "day": 15,
+      "hike": "Peabody Creek"
+    },
+    {
+      "day": 16,
+      "hike": "Gibbs Lake"
+    },
+    {
+      "day": 17,
+      "hike": "Elwha to Whiskey Bend"
+    },
+    {
+      "day": 18,
+      "hike": "Griff Creek"
+    },
+    {
+      "day": 19,
+      "hike": "Voice of America"
+    },
+    {
+      "day": 20,
+      "hike": "Disc Golf @ Rainshadow"
+    },
+    {
+      "day": 21,
+      "hike": "? Kloshe Nanitch"
+    },
+    {
+      "day": 22,
+      "hike": "Reservoir Trails"
+    },
+    {
+      "day": 23,
+      "hike": "Miller Peninsula"
+    },
+    {
+      "day": 24,
+      "hike": "Cassidy Creek"
+    },
+    {
+      "day": 25,
+      "hike": "Gold Creek"
+    },
+    {
+      "day": 26,
+      "hike": "Cassidy Creek (bike trail)"
+    },
+    {
+      "day": 27,
+      "hike": "Dungeness Trails from River Road"
+    },
+    {
+      "day": 28,
+      "hike": "??Pack Trail"
+    },
+    {
+      "day": 29,
+      "hike": "Karpen Road"
+    },
+    {
+      "day": 30,
+      "hike": "Johnson Creek/Burnt Hill"
+    }
+  ],
+  "Dec": [
+    {
+      "day": 1,
+      "hike": "Barnes Creek"
+    },
+    {
+      "day": 2,
+      "hike": "Whidbey Island or Ft. Worden"
+    },
+    {
+      "day": 3,
+      "hike": "Anderson Lake"
+    },
+    {
+      "day": 4,
+      "hike": "Port Gamble Heritage Forest"
+    },
+    {
+      "day": 5,
+      "hike": "Burnt Hill from Johnson Creek"
+    },
+    {
+      "day": 6,
+      "hike": "Anderson Lake - South side"
+    },
+    {
+      "day": 7,
+      "hike": "Lake Anderson State Park"
+    },
+    {
+      "day": 8,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 9,
+      "hike": "Mt. Pleasant"
+    },
+    {
+      "day": 10,
+      "hike": "ODT Railroad Bridge Park West"
+    },
+    {
+      "day": 11,
+      "hike": "Voice of America"
+    },
+    {
+      "day": 12,
+      "hike": "Fort Flagler"
+    },
+    {
+      "day": 13,
+      "hike": "Port Gamble Heritage Forest"
+    },
+    {
+      "day": 14,
+      "hike": "Pt. Gamble Forest Heritage"
+    },
+    {
+      "day": 15,
+      "hike": "Whiskey Creek"
+    },
+    {
+      "day": 16,
+      "hike": "Spruce R.R. from W. End"
+    },
+    {
+      "day": 17,
+      "hike": "Miller Peninsula to Discovery Bay"
+    },
+    {
+      "day": 18,
+      "hike": "Verne Samuelson"
+    },
+    {
+      "day": 19,
+      "hike": "Burnt Hill from Johnson Creek"
+    },
+    {
+      "day": 20,
+      "hike": "VOA / Dungeness County Park"
+    },
+    {
+      "day": 21,
+      "hike": "Cat Lake"
+    },
+    {
+      "day": 22,
+      "hike": "W Spruce RR (Lk Cres Lodge)"
+    },
+    {
+      "day": 23,
+      "hike": "Hurricane Snowshoe/Deer Pk."
+    },
+    {
+      "day": 24,
+      "hike": "Robin Hill"
+    },
+    {
+      "day": 25,
+      "hike": "Discovery Bay Trail (Late Start 9:30am)"
+    },
+    {
+      "day": 26,
+      "hike": "??Cascade Rock"
+    },
+    {
+      "day": 27,
+      "hike": "Verne Samuelson"
+    },
+    {
+      "day": 28,
+      "hike": "Pt. Ludlow: Timberton/Teal"
+    },
+    {
+      "day": 29,
+      "hike": "Lake Angeles"
+    },
+    {
+      "day": 30,
+      "hike": "Joyce Piedmont East"
+    },
+    {
+      "day": 31,
+      "hike": "??Spruce Railroad"
+    }
+  ],
+  "Jul": [
+    {
+      "day": 1,
+      "hike": "Canada Day - COHO @ 7:30"
+    },
+    {
+      "day": 2,
+      "hike": "Canada Day - take Coho to Victoria"
+    },
+    {
+      "day": 3,
+      "hike": "Fort Flagler (-2.3 ft @ 0845)"
+    },
+    {
+      "day": 5,
+      "hike": "Wolf Creek"
+    },
+    {
+      "day": 5,
+      "hike": "Ft Worden fr NB (-3.46@noon)"
+    },
+    {
+      "day": 6,
+      "hike": "Lena Lake"
+    },
+    {
+      "day": 7,
+      "hike": "Tunnel Creek"
+    },
+    {
+      "day": 8,
+      "hike": "Big Hump - Little Hump"
+    },
+    {
+      "day": 9,
+      "hike": "Anderson Lake"
+    },
+    {
+      "day": 10,
+      "hike": "??Canada Day"
+    },
+    {
+      "day": 12,
+      "hike": "? ? Marmot Pass"
+    },
+    {
+      "day": 12,
+      "hike": "Victoria"
+    },
+    {
+      "day": 13,
+      "hike": "Griff Peak"
+    },
+    {
+      "day": 14,
+      "hike": "Silver Lake via Mt Townsend"
+    },
+    {
+      "day": 15,
+      "hike": "Ozette Triangle"
+    },
+    {
+      "day": 16,
+      "hike": "Peabody Creek"
+    },
+    {
+      "day": 17,
+      "hike": "Karpen Road"
+    },
+    {
+      "day": 19,
+      "hike": "? ??  Buckhorn Pass"
+    },
+    {
+      "day": 19,
+      "hike": "Blue Mountain - Goa Road"
+    },
+    {
+      "day": 20,
+      "hike": "Barnes Creek"
+    },
+    {
+      "day": 21,
+      "hike": "West Elwha to Altair"
+    },
+    {
+      "day": 22,
+      "hike": "Klahane to Sunrise to Visitor Ctr"
+    },
+    {
+      "day": 23,
+      "hike": "M0 OAT to Living Room"
+    },
+    {
+      "day": 24,
+      "hike": "Old Mt Angeles Road"
+    },
+    {
+      "day": 26,
+      "hike": "Maiden Peak"
+    },
+    {
+      "day": 26,
+      "hike": "Place Road Elwha Beach"
+    },
+    {
+      "day": 27,
+      "hike": "Gibbs Lake"
+    },
+    {
+      "day": 28,
+      "hike": "Miller Peninsula"
+    },
+    {
+      "day": 29,
+      "hike": "Boulder Shelter"
+    },
+    {
+      "day": 30,
+      "hike": "Heart of the Forest"
+    },
+    {
+      "day": 31,
+      "hike": "Eden Valley East"
+    }
+  ],
+  "Aug": [
+    {
+      "day": 2,
+      "hike": "?? Badger Valley"
+    },
+    {
+      "day": 2,
+      "hike": "Crown Park to Reservation"
+    },
+    {
+      "day": 3,
+      "hike": "Royal Creek"
+    },
+    {
+      "day": 4,
+      "hike": "Ozette Tri (Low @9:15, -1.82) 7am Start"
+    },
+    {
+      "day": 5,
+      "hike": "Deer Hair Rock"
+    },
+    {
+      "day": 6,
+      "hike": "Madison Falls to Altair"
+    },
+    {
+      "day": 7,
+      "hike": "Peabody Creek"
+    },
+    {
+      "day": 9,
+      "hike": "? Mt Townsend v Ltl Quil Trl 835"
+    },
+    {
+      "day": 9,
+      "hike": "Ft Flagler"
+    },
+    {
+      "day": 10,
+      "hike": "Fort Flagler"
+    },
+    {
+      "day": 11,
+      "hike": "Lower Grey Wolf"
+    },
+    {
+      "day": 12,
+      "hike": "Marmot Pass"
+    },
+    {
+      "day": 13,
+      "hike": "Little River"
+    },
+    {
+      "day": 14,
+      "hike": "Mt Zion"
+    },
+    {
+      "day": 16,
+      "hike": "Heather Park"
+    },
+    {
+      "day": 16,
+      "hike": "OAT Mile 0 to Living Room"
+    },
+    {
+      "day": 17,
+      "hike": "Striped Peak"
+    },
+    {
+      "day": 18,
+      "hike": "Deer Ridge - Benches"
+    },
+    {
+      "day": 19,
+      "hike": "Deer Park to Maiden Peak"
+    },
+    {
+      "day": 20,
+      "hike": "Royal Creek"
+    },
+    {
+      "day": 21,
+      "hike": "Boundary Trail / Marmot Loop"
+    },
+    {
+      "day": 23,
+      "hike": "? Bogachiel River Trail"
+    },
+    {
+      "day": 23,
+      "hike": "Little River"
+    },
+    {
+      "day": 24,
+      "hike": "River Shelter to Camp Handy"
+    },
+    {
+      "day": 25,
+      "hike": "*Marmot Pass"
+    },
+    {
+      "day": 26,
+      "hike": "Badger Valley to Moose Lake"
+    },
+    {
+      "day": 27,
+      "hike": "Camp Handy / Grindstone Meadow"
+    },
+    {
+      "day": 28,
+      "hike": "Little River"
+    },
+    {
+      "day": 30,
+      "hike": "Slab Camp to Deer Ridge"
+    },
+    {
+      "day": 30,
+      "hike": "Dungeness Schoolhouse - Levee"
+    },
+    {
+      "day": 31,
+      "hike": "Peabody Creek"
+    }
+  ],
+  "Sep": [
+    {
+      "day": 1,
+      "hike": "*Duck - Little Hump to Big Hump"
+    },
+    {
+      "day": 2,
+      "hike": "Little Divide"
+    },
+    {
+      "day": 3,
+      "hike": "Place Road to Elwha Beach"
+    },
+    {
+      "day": 4,
+      "hike": "Madison Falls TH to Altair"
+    },
+    {
+      "day": 6,
+      "hike": "Griff Creek"
+    },
+    {
+      "day": 6,
+      "hike": "Granny's East"
+    },
+    {
+      "day": 7,
+      "hike": "Hurricane Hill"
+    },
+    {
+      "day": 8,
+      "hike": "Deer Park to Maiden Peak        "
+    },
+    {
+      "day": 9,
+      "hike": "Tunnel Creek - Valhalla"
+    },
+    {
+      "day": 10,
+      "hike": "Mink Lake"
+    },
+    {
+      "day": 11,
+      "hike": "Mink Lake"
+    },
+    {
+      "day": 12,
+      "hike": "Royal Creek"
+    },
+    {
+      "day": 13,
+      "hike": "?  ? Silver Lake v Mt Townsend"
+    },
+    {
+      "day": 14,
+      "hike": "Upper Big Quilcene"
+    },
+    {
+      "day": 15,
+      "hike": "North Fork Sol Duc"
+    },
+    {
+      "day": 16,
+      "hike": "Deer Lake - Pot Holes"
+    },
+    {
+      "day": 18,
+      "hike": "? Royal Creek"
+    },
+    {
+      "day": 20,
+      "hike": "Sunrise Ridge / Victor Pass "
+    },
+    {
+      "day": 20,
+      "hike": "Upper Part of Lower Dungeness River Trail"
+    },
+    {
+      "day": 21,
+      "hike": "Mink Lake"
+    },
+    {
+      "day": 22,
+      "hike": "Snider Ridge"
+    },
+    {
+      "day": 23,
+      "hike": "Switchback to Lake Angeles"
+    },
+    {
+      "day": 24,
+      "hike": "Lillian Ridge"
+    },
+    {
+      "day": 25,
+      "hike": "Lovers' Lane & Salmon Cascades"
+    },
+    {
+      "day": 27,
+      "hike": "Lake Angeles"
+    },
+    {
+      "day": 27,
+      "hike": "Lovers Lane - Salmon Cascades"
+    },
+    {
+      "day": 28,
+      "hike": "Little River"
+    },
+    {
+      "day": 29,
+      "hike": "Gold Creek/Lower Dungeness T.H."
+    },
+    {
+      "day": 30,
+      "hike": "Heather Park"
+    }
+  ]
+}
