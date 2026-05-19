@@ -11,21 +11,18 @@
       "difficulty": "Easy",
       "notes": "360 Road/Lookout Hill Rd. off of Palo Alto Rd.",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "18",
@@ -42,21 +39,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Anderson Lake State Park",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 6
       },
       "parking": "Discover",
       "range": "30",
@@ -73,21 +67,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Anderson Lake State Park - DNR",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "30",
@@ -104,21 +95,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Anderson Lake State Park - ODT",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Discover",
       "range": "30",
@@ -135,12 +123,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Aurora Creek - Sourdough Mt.",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "range": "53",
       "difficultyOrder": 4
@@ -156,12 +150,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Aurora Ridge - Eagle Lake◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -178,12 +178,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Badger Valley/Elk Mt. Cut-off◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "85",
@@ -200,12 +206,18 @@
       "difficulty": "Difficult",
       "notes": "Badger Valley to Moose Lake from Obstruction Point◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 4,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "85",
@@ -222,15 +234,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Barnes Creek◆︎",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Nat'l Park/Golden",
       "range": "51",
@@ -247,15 +262,18 @@
       "difficulty": "Easy",
       "notes": "Blue Mt. - Rain Shadow Trail◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "63",
@@ -272,21 +290,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Blyn Towers/ Salmon Creek",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "29",
@@ -303,21 +318,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Blyn Tower from W Uncas Rd",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "29",
@@ -334,18 +346,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Bogachiel River",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "120",
@@ -362,18 +374,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Boulder Creek◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -390,12 +402,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Boulder Shelter◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "71",
@@ -412,21 +430,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Borderline Trail to Marmot Loop from Deer Park Rd.",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "35",
@@ -443,12 +458,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Buckhorn Lake◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "range": "86",
@@ -465,12 +486,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Buckhorn Pass◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "86",
@@ -487,21 +514,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Burnt Hill from Johnson Creek",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 6,
+        "Feb": 6,
+        "Mar": 6,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 6
       },
       "parking": "Discover",
       "range": "10",
@@ -518,21 +542,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Burnt Hill cabin loop",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Discover",
       "range": "10",
@@ -549,21 +570,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Burnt Hill from Louella Cabin",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "16",
       "difficultyOrder": 4
@@ -579,15 +597,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Camp Handy◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 2,
+        "Jun": 4,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "71",
@@ -604,21 +625,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Cascade Rock◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 4,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 4
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -635,18 +653,18 @@
       "difficulty": "Moderate",
       "notes": "Cassidy Creek (Bike)",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 4,
+        "Feb": 0,
+        "Mar": 4,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 4,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "15",
@@ -663,18 +681,18 @@
       "difficulty": "Moderate",
       "notes": "Cassidy Creek",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Discover",
       "range": "15",
@@ -691,21 +709,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Cat Lake on Miller Peninsula",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Discover",
       "range": "20",
@@ -722,12 +737,18 @@
       "difficulty": "Easy",
       "notes": "Chetzemoka Park Historical Walk",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 4,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "44",
       "difficultyOrder": 1
@@ -743,21 +764,18 @@
       "difficulty": "Easy",
       "notes": "Crown Park to Reservation",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "30",
       "difficultyOrder": 1
@@ -773,21 +791,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Dan Kelly/Lk Aldwell Towers",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "difficultyOrder": 4
@@ -803,15 +818,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Deadfall - Mt. Zion◆︎",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 4,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 4
@@ -827,12 +845,18 @@
       "difficulty": "Difficult",
       "notes": "Deer Park to 3 Forks◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -849,8 +873,18 @@
       "difficulty": "Difficult",
       "notes": "Deer Hair Rock/Elwha Overlook◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "64",
@@ -867,8 +901,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Deer Lake to Potholes◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 4,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "90",
@@ -885,15 +929,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Deer Park down to Benches◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 4,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -910,18 +957,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Deer Park - DNR Roads",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Discover",
       "range": "60",
@@ -938,8 +985,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Deer Park to Maiden Peak◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 2,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -956,15 +1013,18 @@
       "difficulty": "Easy",
       "notes": "Discovery Bay Trail--Diamond Point",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Discover",
       "range": "55",
@@ -981,21 +1041,18 @@
       "difficulty": "Easy",
       "notes": "Disc Golf @ Rainshadow",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "range": "16",
       "difficultyOrder": 1
@@ -1011,15 +1068,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Deer Park DNR Snowshoe",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 6,
+        "Feb": 2,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "60",
@@ -1036,12 +1096,18 @@
       "difficulty": "Moderate",
       "notes": "Dosewallips Cascades",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 6,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 4,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "66",
@@ -1058,21 +1124,18 @@
       "difficulty": "Easy",
       "notes": "Dungeness Trails from River Road",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 4,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 4,
+        "Oct": 0,
+        "Nov": 4,
+        "Dec": 2
       },
       "parking": "Discover",
       "range": "6",
@@ -1089,18 +1152,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Dungeness Fish Hatchery to Clink Bridge",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Discover",
       "difficultyOrder": 2
@@ -1116,21 +1179,18 @@
       "difficulty": "Easy",
       "notes": "Dungeness Levee at Schoolhouse",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 4,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "16",
       "difficultyOrder": 1
@@ -1146,21 +1206,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Dungeness Spit / New Dungeness Lighthouse",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 2,
+        "May": 2,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "16",
@@ -1177,15 +1234,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Elbo Creek / Buck Mountain",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 4,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "46",
@@ -1202,21 +1262,18 @@
       "difficulty": "Easy",
       "notes": "Elwha Delta (Place Road )",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 8,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "42",
       "difficultyOrder": 1
@@ -1232,12 +1289,18 @@
       "difficulty": "Easy",
       "notes": "Elwha Fish Hatchery ",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "37",
       "difficultyOrder": 1
@@ -1253,21 +1316,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Elwha (Stock) Route◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -1284,12 +1344,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Elwha to Whiskey Bend",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 2
       },
       "range": "40",
       "difficultyOrder": 4
@@ -1305,12 +1371,18 @@
       "difficulty": "Difficult",
       "notes": "Elwha R.S. - Elwha Overlook (Deer Hair Rock)◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "range": "40",
       "difficultyOrder": 5
@@ -1326,15 +1398,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Falls View Canyon",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 2
@@ -1350,15 +1425,18 @@
       "difficulty": "Moderate",
       "notes": "Foothills Trails",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 4,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "42",
@@ -1375,21 +1453,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Fort Townsend (Old)",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 2,
+        "Apr": 2,
+        "May": 2,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "40",
@@ -1406,21 +1481,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Fort Flagler Historical State Park",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 6,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 4,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Discover",
       "range": "50",
@@ -1437,21 +1509,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Fort Worden/N. Beach",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 4,
+        "Feb": 0,
+        "Mar": 6,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 8,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 4
       },
       "parking": "Discover",
       "range": "45",
@@ -1468,21 +1537,18 @@
       "difficulty": "Easy",
       "notes": "Gibbs Lake County Park",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 4,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 2,
+        "Dec": 0
       },
       "range": "41",
       "difficultyOrder": 1
@@ -1498,21 +1564,18 @@
       "difficulty": "Easy",
       "notes": "Gibson Spit / Port Williams Beach Walk",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "difficultyOrder": 1
     },
@@ -1527,12 +1590,18 @@
       "difficulty": "Easy",
       "notes": "Glass Beach from N. Beach/Port Townsend",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "50",
       "difficultyOrder": 1
@@ -1548,21 +1617,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Glines Canyon Dam & Beyond",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -1579,21 +1645,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Glines Canyon East Overlook",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -1610,21 +1673,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Goa Rd. off of Blue Mt. Rd.",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "difficultyOrder": 2
     },
@@ -1639,15 +1699,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Gold Creek",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 4
@@ -1663,21 +1726,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Granny's East",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "difficultyOrder": 2
@@ -1693,8 +1753,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Griff Creek◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 4,
+        "Nov": 2,
+        "Dec": 2
       },
       "range": "40",
       "difficultyOrder": 4
@@ -1710,15 +1780,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Griff Creek (creative route)◆︎",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Am Beau/Golden",
       "difficultyOrder": 4
@@ -1734,15 +1807,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Grindstone Flats/Meadow◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 2
@@ -1758,12 +1834,18 @@
       "difficulty": "Moderate",
       "notes": "Grand Ridge from Obstruction Point◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "85",
@@ -1780,21 +1862,18 @@
       "difficulty": "Easy",
       "notes": "Guillemot Cove Nature Reserve",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "difficultyOrder": 1
     },
@@ -1809,21 +1888,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Heart of the Forest◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "32",
@@ -1840,8 +1916,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Heather Park / Pass◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 2,
+        "Oct": 4,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "33",
@@ -1858,15 +1944,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Hurricane Hill",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -1883,12 +1972,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Hurricane Ridge - Snowshoeing",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -1905,21 +2000,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Johnson Creek/Burnt Hill Cabin",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "Discover",
       "difficultyOrder": 2
@@ -1935,18 +2027,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Joyce-Piedmont W. (Crescent Descent)",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Discover",
       "difficultyOrder": 2
@@ -1962,18 +2054,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Karpen Road/State Forest Road",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "Discover",
       "difficultyOrder": 2
@@ -1989,15 +2081,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Kloshe Nanitch at Snider Ridge",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "difficultyOrder": 4
@@ -2013,15 +2108,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Kloshe Nanitch",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "65",
@@ -2038,15 +2136,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Lake Angeles◆︎",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 4,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Nat'l Park/Golden",
       "range": "36",
@@ -2063,12 +2164,18 @@
       "difficulty": "Difficult",
       "notes": "Lake Angeles/Heather Park Loop◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Am Beau/Golden",
       "range": "35",
@@ -2085,21 +2192,18 @@
       "difficulty": "Easy",
       "notes": "Larry Scott -- Cape George",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "difficultyOrder": 1
@@ -2115,21 +2219,18 @@
       "difficulty": "Easy",
       "notes": "Larry Scott Trail--Milo Curry",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 2,
+        "Mar": 6,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 4,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 4,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Discover",
       "range": "33",
@@ -2146,12 +2247,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Lena Lake",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "82",
@@ -2168,8 +2275,18 @@
       "difficulty": "Difficult",
       "notes": "Little Divide Trail◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "difficultyOrder": 5
@@ -2185,12 +2302,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Lillian Ridge◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "85",
@@ -2207,8 +2330,18 @@
       "difficulty": "Moderate",
       "notes": "Little Hump/Big Hump at the Duckabush",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "70",
@@ -2225,15 +2358,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Little Hump/Murhut Falls/Ranger Hole",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "70",
@@ -2250,21 +2386,18 @@
       "difficulty": "Moderate",
       "notes": "Little River◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 4,
+        "Feb": 2,
+        "Mar": 6,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 6,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "40",
@@ -2281,21 +2414,18 @@
       "difficulty": "Moderate",
       "notes": "Louella Cabin / Patty Pat Hill Loop",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Limited 4",
       "difficultyOrder": 3
@@ -2311,12 +2441,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Lover's Lane/Sol Duc Falls Loop◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "81",
@@ -2333,21 +2469,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Lower W. Elwha Dam Site",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "difficultyOrder": 2
@@ -2363,15 +2496,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Lower Dungeness River Trail - (Lower Section)",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 4
@@ -2387,18 +2523,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Lower Dungeness - Upper",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 4,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 2
@@ -2414,18 +2550,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Old/Lower Gray Wolf◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 4,
+        "May": 4,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "24",
@@ -2442,8 +2578,18 @@
       "difficulty": "Moderate",
       "notes": "Lower Big Quilcene Trail (Upper)",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "53",
@@ -2460,21 +2606,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Lower Big Quilcene to Bark Shanty",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 4,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "60",
@@ -2491,12 +2634,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Lyre River Conservation Area & DNR Campground",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 2,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "difficultyOrder": 2
     },
@@ -2511,21 +2660,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Madison Falls to Altair Campground up Elwha River",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 2,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -2542,18 +2688,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Madison Falls to Smoky Bottom",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -2570,21 +2716,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Madison Falls to Whiskey Bend",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -2601,8 +2744,18 @@
       "difficulty": "Difficult",
       "notes": "Marmot Pass, Quilcene",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 4,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "81",
@@ -2619,21 +2772,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Marymere Falls / Barnes Creek◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "50",
@@ -2650,8 +2800,18 @@
       "difficulty": "Difficult",
       "notes": "Mount McDonald",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "40.0",
       "difficultyOrder": 5
@@ -2667,21 +2827,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Miller Peninsula to Discovery Bay",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 2
       },
       "parking": "Discover",
       "range": "19",
@@ -2698,21 +2855,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Miller Peninsula from ESB",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "19",
@@ -2729,21 +2883,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Miller Peninsula ",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Discover",
       "range": "19",
@@ -2760,21 +2911,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Miller Peninsula to Thompson Spit",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "19",
@@ -2791,12 +2939,18 @@
       "difficulty": "Moderate",
       "notes": "Mink Lake◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 6,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "84",
@@ -2813,21 +2967,18 @@
       "difficulty": "Easy",
       "notes": "Marymere Falls/Moments in Time",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "50",
@@ -2844,21 +2995,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Mt. Angeles Road",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "40",
       "difficultyOrder": 2
@@ -2874,15 +3022,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Mount Angeles Meadow◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -2899,8 +3050,18 @@
       "difficulty": "Moderate",
       "notes": "Mt. Angeles Rd. to Foothills Trails (E.)",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "30",
       "difficultyOrder": 3
@@ -2916,12 +3077,18 @@
       "difficulty": "Difficult",
       "notes": "Mt. Muller ",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 4,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "63",
@@ -2938,18 +3105,18 @@
       "difficulty": "Moderate",
       "notes": "Mt. Pleasant",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 4,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Discover",
       "range": "30",
@@ -2966,8 +3133,18 @@
       "difficulty": "Difficult",
       "notes": "Mt. Townsend◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "60",
@@ -2984,21 +3161,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Mt. Walker",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "46",
@@ -3015,15 +3189,18 @@
       "difficulty": "Moderate",
       "notes": "Mt. Zion",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "range": "43",
@@ -3040,12 +3217,18 @@
       "difficulty": "Moderate",
       "notes": "N. Fork Sol Duc◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "difficultyOrder": 3
@@ -3061,15 +3244,18 @@
       "difficulty": "Moderate",
       "notes": "Ned Hill L/O (near Slab Camp)",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 3
@@ -3085,21 +3271,18 @@
       "difficulty": "Easy",
       "notes": "Newberry Hill Heritage Park",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "difficultyOrder": 1
     },
@@ -3114,21 +3297,18 @@
       "difficulty": "Easy to Mod",
       "notes": "N. Kitsap Heritage Park",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 4,
+        "Dec": 0
       },
       "range": "60",
       "difficultyOrder": 2
@@ -3144,15 +3324,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Notch Pass",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 4
@@ -3168,18 +3351,18 @@
       "difficulty": "Easy to Mod",
       "notes": "OAT - Adventure to Llama Trail",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "difficultyOrder": 2
@@ -3195,21 +3378,18 @@
       "difficulty": "Easy to Mod",
       "notes": "OAT-Eden Valley East",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "50",
@@ -3226,21 +3406,18 @@
       "difficulty": "Easy to Mod",
       "notes": "OAT-Eden Valley West",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 4,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "50",
@@ -3257,12 +3434,18 @@
       "difficulty": "Mod to Diff",
       "notes": "OAT-Eden Valley East to Lower Dam",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Discover",
       "range": "45",
@@ -3279,21 +3462,18 @@
       "difficulty": "Easy to Mod",
       "notes": "OAT--Joyce Access",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Discover",
       "range": "60",
@@ -3310,21 +3490,18 @@
       "difficulty": "Easy to Mod",
       "notes": "OAT--Joyce-Piedmont E. ",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "60",
@@ -3341,21 +3518,18 @@
       "difficulty": "Easy to Mod",
       "notes": "OAT - Mile 0 to Living Room",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 4,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 4,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "40",
@@ -3372,12 +3546,18 @@
       "difficulty": "Moderate",
       "notes": "Obstruction Point Road Snowshoe",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "70",
@@ -3394,12 +3574,18 @@
       "difficulty": "Moderate",
       "notes": "Obstruction Point To Maiden Peak◆︎",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "70",
@@ -3416,21 +3602,18 @@
       "difficulty": "Easy",
       "notes": "ODT -- Hollywood Beach/Morse Creek",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 4,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "30",
       "difficultyOrder": 1
@@ -3446,8 +3629,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Ozette Triangle◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "132",
@@ -3464,8 +3657,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Pack trail from Herrick road◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 4,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 4,
+        "Nov": 2,
+        "Dec": 4
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -3482,18 +3685,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Pat's Prairie",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 2
@@ -3509,21 +3712,18 @@
       "difficulty": "Moderate",
       "notes": "Peabody Creek",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 4,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "30",
@@ -3540,21 +3740,18 @@
       "difficulty": "Easy",
       "notes": "Port Gamble Heritage Forest Park",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 6
       },
       "range": "52",
       "difficultyOrder": 1
@@ -3570,21 +3767,18 @@
       "difficulty": "Easy",
       "notes": "Port Williams Beach",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "difficultyOrder": 1
     },
@@ -3599,15 +3793,18 @@
       "difficulty": "Difficult",
       "notes": "Pyramid Mt.",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "76",
@@ -3624,21 +3821,18 @@
       "difficulty": "Easy",
       "notes": "Radio Tower off Blue Mt Road",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 2,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "20",
@@ -3655,15 +3849,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Rainbow Falls",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 2
@@ -3679,21 +3876,18 @@
       "difficulty": "Easy",
       "notes": "Robin Hill Farm County Park",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 2,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 6
       },
       "range": "13",
       "difficultyOrder": 1
@@ -3709,8 +3903,18 @@
       "difficulty": "Moderate",
       "notes": "Royal Creek◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 4,
+        "Jul": 0,
+        "Aug": 4,
+        "Sep": 4,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "72",
@@ -3727,8 +3931,18 @@
       "difficulty": "Mod to Diff",
       "notes": "River Shelter to Camp Handy at Dungeness River◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 4
@@ -3744,12 +3958,18 @@
       "difficulty": "Moderate",
       "notes": "Royal Lake/Basin◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 3
@@ -3765,12 +3985,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Silver Lake from Mt. Townsend◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 4
@@ -3786,12 +4012,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Silver Lake via Silver Lake Way Trail◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "range": "85",
@@ -3808,21 +4040,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Slab Camp to the Benches◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "range": "30",
@@ -3839,8 +4068,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Slab Camp to Deer Ridge◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "30",
@@ -3857,15 +4096,18 @@
       "difficulty": "Moderate",
       "notes": "Slab Camp to Duncan Flats◆︎",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "30",
@@ -3882,15 +4124,18 @@
       "difficulty": "Moderate",
       "notes": "Slab Camp to Slide Camp◆︎",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "30",
@@ -3907,8 +4152,18 @@
       "difficulty": "Moderate",
       "notes": "Sleepy Hollow",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "35",
@@ -3925,8 +4180,18 @@
       "difficulty": "Moderate",
       "notes": "Sleepy Hollow/Mt Zion",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 2,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "35",
@@ -3943,18 +4208,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Smokey Bottom - Boulder Creek◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -3971,12 +4236,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Snider Ridge",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "difficultyOrder": 4
@@ -3992,21 +4263,18 @@
       "difficulty": "Easy",
       "notes": "Spruce RR-East",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 4
       },
       "parking": "Nat'l Park/Golden",
       "range": "53",
@@ -4023,21 +4291,18 @@
       "difficulty": "Easy",
       "notes": "Spruce R.R. - West",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "68",
@@ -4054,12 +4319,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Steam Donkey / Maple Valley Trails",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 2,
+        "Apr": 4,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 8,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Discover",
       "range": "68",
@@ -4076,21 +4347,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Storm King◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "54",
@@ -4107,8 +4375,18 @@
       "difficulty": "Moderate",
       "notes": "Striped Peak-Long",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 4,
+        "Feb": 0,
+        "Mar": 6,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 2,
+        "Sep": 0,
+        "Oct": 4,
+        "Nov": 2,
+        "Dec": 2
       },
       "range": "50.0",
       "difficultyOrder": 3
@@ -4124,12 +4402,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Striped Peak",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "range": "50.0",
       "difficultyOrder": 2
@@ -4145,12 +4429,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Sunrise Ridge Snowshoe",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -4167,8 +4457,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Switchback Trail / Victor Pass / Klahhane Ridge◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "52",
@@ -4185,18 +4485,18 @@
       "difficulty": "Easy",
       "notes": "Teal Lake",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "difficultyOrder": 1
     },
@@ -4211,18 +4511,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Timberton Loop at Port Ludlow",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 2,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "difficultyOrder": 2
     },
@@ -4237,21 +4537,18 @@
       "difficulty": "Easy",
       "notes": "Travis Spit ",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 4,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "difficultyOrder": 1
     },
@@ -4266,8 +4563,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Tubal Cain / Tull Canyon ◆︎",
       "seasonal": {
-        "availableMonths": [],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 4,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "83",
@@ -4284,12 +4591,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Tunnel Creek / Valhalla◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 2,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "NW Forest/Golden",
       "range": "75",
@@ -4306,12 +4619,18 @@
       "difficulty": "Difficult",
       "notes": "Tyler Peak/Baldy◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "NW Forest/Golden",
       "range": "75",
@@ -4328,21 +4647,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Verne Samuelson County Park Trail – P.A.",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 2,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 4
       },
       "range": "30",
       "difficultyOrder": 2
@@ -4358,21 +4674,18 @@
       "difficulty": "Easy",
       "notes": "Victoria/Canada",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 8,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "26",
       "difficultyOrder": 1
@@ -4388,21 +4701,18 @@
       "difficulty": "Easy",
       "notes": "Voice of America/Dungeness Recreation Area",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 4,
+        "Dec": 2
       },
       "parking": "Nat'l Park/Golden",
       "range": "16",
@@ -4419,15 +4729,18 @@
       "difficulty": "Moderate",
       "notes": "W. Elwha/Herrick Rd. to Altair & Upper Dam Site◆︎",
       "seasonal": {
-        "availableMonths": [
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 2,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 2,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 2,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
@@ -4444,15 +4757,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Waterfalls ",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 4,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Nat'l Park/Golden",
       "range": "100",
@@ -4469,12 +4785,18 @@
       "difficulty": "Moderate",
       "notes": "Wolf Creek - Snowshoe◆︎",
       "seasonal": {
-        "availableMonths": [
-          3,
-          4,
-          5
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -4491,15 +4813,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Wolf Creek Trail to Madison Falls◆︎",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          9,
-          10,
-          11,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 1,
+        "Oct": 1,
+        "Nov": 1,
+        "Dec": 1
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
@@ -4516,15 +4841,18 @@
       "difficulty": "Easy to Mod",
       "notes": "Whidbey Island",
       "seasonal": {
-        "availableMonths": [
-          1,
-          2,
-          6,
-          7,
-          8,
-          12
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 2,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "range": "47",
       "difficultyOrder": 2
@@ -4540,12 +4868,18 @@
       "difficulty": "Mod to Diff",
       "notes": "Whiskey Creek",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 0,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 2
       },
       "parking": "Discover",
       "range": "48",
@@ -4562,12 +4896,18 @@
       "difficulty": "Moderate",
       "notes": "Wolf Creek - 1/2 Way Down◆︎",
       "seasonal": {
-        "availableMonths": [
-          9,
-          10,
-          11
-        ],
-        "bestSeason": ""
+        "Jan": 0,
+        "Feb": 0,
+        "Mar": 0,
+        "Apr": 0,
+        "May": 0,
+        "Jun": 0,
+        "Jul": 2,
+        "Aug": 0,
+        "Sep": 0,
+        "Oct": 0,
+        "Nov": 0,
+        "Dec": 0
       },
       "parking": "Am Beau/Golden",
       "range": "60",
