@@ -1,32 +1,11 @@
+import { formatTrailLine } from './formatTrail';
+
 // Generate formatted report text from trail data
 // Format: Trail Name◆︎  [Difficulty]  distance / elevation  parking  ride-$X
 //         [newline + description]
 export function generateReportText(trail, trailDetails = null) {
-  // Strip trailing ◆︎ from name (some Excel data has it embedded)
-  let name = trail.fullName || trail.name;
-  name = name.replace(/◆︎+$/, '');
-  const difficulty = `[${trail.difficulty}]`;
-  
-  let distanceText = `${trail.distance?.toFixed(1) || 'N/A'}`;
-  if (trail.distanceExtended) {
-    distanceText += `-${trail.distanceExtended.toFixed(1)}`;
-  }
-  
-  const elevStart = trail.elevationStart?.toLocaleString() || '0';
-  const elevMax = trail.elevationMax?.toLocaleString() || elevStart;
-  const elevationText = `${elevStart}'-${elevMax}'`;
-  
-  const parking = trail.parking || '';
-  const rideCost = trail.range ? getRideCost(parseInt(trail.range)) : '';
-  
-  // Format: Name◆︎  [Difficulty]  distance / elevation  parking  ride-$X
-  let report = `${name}◆︎  ${difficulty}\t${distanceText} / ${elevationText}\t${parking}`;
-  
-  // Add ride cost if present
-  if (rideCost) {
-    report += `\t${rideCost}`;
-  }
-  
+  let report = formatTrailLine(trail);
+
   // Append description if available
   if (trailDetails && trailDetails[trail.id]) {
     let description = trailDetails[trail.id].fullDescription || '';

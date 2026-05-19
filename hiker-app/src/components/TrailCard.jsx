@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
+import { MONTH_ABBR } from '../utils/constants';
 
 export default function TrailCard({ trail, isActive = false }) {
   const [copied, setCopied] = useState(false);
@@ -40,7 +41,7 @@ export default function TrailCard({ trail, isActive = false }) {
   const rideCost = trail.range ? getRideCost(parseInt(trail.range)) : null;
   const seasonal = trail.seasonal || {};
   const bestSeason = seasonal.bestSeason || '';
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = MONTH_ABBR;
   const scoreMonths = Object.entries(seasonal)
     .filter(([k, v]) => typeof v === 'number' && v > 0 && !['bestSeason', 'parkingInfo', 'availableMonths'].includes(k))
     .sort(([a], [b]) => {

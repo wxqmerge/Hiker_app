@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
+import { MONTH_ABBR } from '../utils/constants';
 
 const EDIT_STORAGE_KEY = 'hiker-trail-edits';
 
@@ -59,7 +60,7 @@ export default function TrailDetail() {
   // Derive available months from seasonal dict
   const getAvailableMonthsFromSeasonal = (seasonal) => {
     if (!seasonal) return [];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthNames = MONTH_ABBR;
     const monthIndexMap = {};
     monthNames.forEach((m, i) => { monthIndexMap[m] = i + 1; });
     return Object.entries(seasonal)
@@ -138,7 +139,7 @@ export default function TrailDetail() {
         localStorage.setItem(EDIT_STORAGE_KEY, JSON.stringify(imported));
         alert('Edits imported successfully!');
         window.location.reload();
-      } catch (err) {
+      } catch {
         alert('Error importing file: Invalid JSON format');
       }
     };
@@ -194,7 +195,7 @@ export default function TrailDetail() {
     'Difficult': 'bg-red-200 text-red-900'
   };
 
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = MONTH_ABBR;
   const rideCost = trail?.range ? getRideCost(parseInt(trail.range)) : null;
 
   if (loading) {
@@ -635,7 +636,7 @@ export default function TrailDetail() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Available Months</label>
                   <div className="flex flex-wrap gap-2">
-                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => (
+                    {MONTH_ABBR.map((month, idx) => (
                       <label key={idx} className="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200">
                         <input
                           type="checkbox"

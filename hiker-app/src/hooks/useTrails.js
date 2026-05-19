@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { MONTH_ABBR } from '../utils/constants';
 
 export function useTrails() {
   const [trails, setTrails] = useState([]);
@@ -69,7 +70,7 @@ export function useFilters(trails) {
           trail.seasonal?.parkingInfo,
           // Search seasonal months
           ...Object.entries(trail.seasonal || [])
-            .filter(([k, v]) => typeof v === 'number' && v > 0)
+            .filter(([, v]) => typeof v === 'number' && v > 0)
             .map(([k]) => k.toLowerCase())
         ].filter(Boolean).join(' ').toLowerCase();
         
@@ -98,7 +99,7 @@ export function useFilters(trails) {
       // Month filter
       if (filters.months.length > 0) {
         const seasonal = trail.seasonal || {};
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthNames = MONTH_ABBR;
         const matchesMonth = filters.months.some(monthIdx => {
           const monthName = monthNames[monthIdx];
           if (!monthName) return false;
@@ -122,7 +123,7 @@ export function useFilters(trails) {
     if (filters.sortBy === 'name') {
       sorted.sort((a, b) => (a.fullName || a.name || '').localeCompare(b.fullName || b.name || ''));
     } else if (filters.sortBy === 'popularity') {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNames = MONTH_ABBR;
       const selectedMonthNames = filters.months.length > 0 ? filters.months.map(i => monthNames[i]) : monthNames;
       sorted.sort((a, b) => {
         const seasonalA = a.seasonal || {};

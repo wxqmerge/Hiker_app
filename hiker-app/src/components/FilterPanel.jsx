@@ -1,6 +1,8 @@
+import { MONTH_NAMES } from '../utils/constants';
+
 export default function FilterPanel({ filters, setFilters, lookup, resetFilters }) {
   const difficulties = lookup?.difficulties || [];
-  const months = lookup?.months || ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const months = lookup?.months || MONTH_NAMES;
 
   const toggleDifficulty = (difficulty) => {
     setFilters(prev => ({
@@ -26,14 +28,6 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
 
   const toggleWilderness = () => {
     setFilters(prev => ({ ...prev, wilderness: !prev.wilderness }));
-  };
-
-  const getSortLabel = (label, active) => {
-    const current = filters.sortBy;
-    if (active && (current === label || current.startsWith(label + '-'))) {
-      return label + (current.endsWith('-up') ? ' ↑' : ' ↓');
-    }
-    return label;
   };
 
   const hasActiveFilters = 
