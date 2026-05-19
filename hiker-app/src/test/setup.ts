@@ -100,12 +100,12 @@ window.__EMBEDDED_DATA__ = {
   },
   schedule: {
     Jun: [
-      { day: 1, hike: 'Rainier' },
-      { day: 3, hike: 'Stevens' },
-      { day: 5, hike: 'Easy Path' },
+      { day: 1, hike: 'Rainier Hike', trail_id: 'trail-1' },
+      { day: 3, hike: 'Stevens Hike', trail_id: 'trail-2' },
+      { day: 5, hike: 'Easy Path Hike', trail_id: 'trail-3' },
     ],
     Jul: [
-      { day: 1, hike: 'Rainier' },
+      { day: 1, hike: 'Rainier Hike', trail_id: 'trail-1' },
     ],
   },
 };

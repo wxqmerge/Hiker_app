@@ -209,6 +209,16 @@ const hikeTrailMap = useMemo(() => {
         const trail = trailMap[trailId];
         if (!trail) return null;
         const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
+        let hikeName = null;
+        if (scheduleData) {
+          for (const monthHikes of Object.values(scheduleData)) {
+            const found = monthHikes.find(h => h.trail_id === trailId);
+            if (found) {
+              hikeName = found.hike;
+              break;
+            }
+          }
+        }
         return (
           <div
             key={day}
@@ -218,7 +228,7 @@ const hikeTrailMap = useMemo(() => {
             className="cursor-grab active:cursor-grabbing"
           >
             <div className="relative">
-              <TrailCard trail={trail} isActive={false} />
+              <TrailCard trail={trail} hikeName={hikeName} isActive={false} />
               <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center">
                 {day}
               </div>
@@ -232,7 +242,7 @@ const hikeTrailMap = useMemo(() => {
         );
       })
       .filter(Boolean);
-  }, [wedFriDates, assignedHikes, trailMap, trailIndexToId, handleDragStart, handleDragEnd, debugMode]);
+  }, [wedFriDates, assignedHikes, trailMap, trailIndexToId, handleDragStart, handleDragEnd, debugMode, scheduleData]);
 
   const handleDropOnDate = (targetDay) => {
     if (!dragData) return;
@@ -415,7 +425,7 @@ const hikeTrailMap = useMemo(() => {
           className="cursor-grab active:cursor-grabbing"
         >
           <div className="relative">
-            <TrailCard trail={trail} isActive={false} />
+            <TrailCard trail={trail} hikeName={item.hike} isActive={false} />
             {debugMode && (
               <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                 {item.hikeIndex}
