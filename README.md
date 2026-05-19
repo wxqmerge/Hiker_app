@@ -95,7 +95,8 @@ Matches schedule hikes to trail IDs:
 - **Browse** all 178+ trails with grid layout
 - **Search** across all fields (name, notes, parking, etc.)
 - **Filter** by distance, elevation, difficulty, months
-- **Sort** by Name, Popularity, Elevation (↑/↓), or Distance (↑/↓)
+- **Sort** by Name, Popularity, Elevation (↑/↓), Distance (↑/↓), or Not Wilderness (non-◆ first, then alphabetical)
+- **Filter** by Wilderness (trails with "Diamond" in the name)
 - **Trail Detail** pages with full information
 - **Edit** trail details (description, notes, pros, others, leaders, stats)
 - **Export Merged Data** - Downloads updated JSON files with your edits

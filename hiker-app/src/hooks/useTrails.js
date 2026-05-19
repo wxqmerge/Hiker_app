@@ -51,7 +51,8 @@ export function useFilters(trails) {
     elevationMax: 5000,
     difficulties: [],
     months: [],
-    sortBy: 'name'
+    sortBy: 'name',
+    wilderness: false
   });
 
   const filteredTrails = useMemo(() => {
@@ -106,6 +107,12 @@ export function useFilters(trails) {
         if (!matchesMonth) return false;
       }
 
+      // Wilderness filter
+      if (filters.wilderness) {
+        const name = trail.fullName || trail.name || '';
+        if (!name.includes('\u25C6')) return false;
+      }
+
       return true;
     });
   }, [trails, filters]);
@@ -132,6 +139,13 @@ export function useFilters(trails) {
       sorted.sort((a, b) => (a.distance || 0) - (b.distance || 0));
     } else if (filters.sortBy === 'distance-down') {
       sorted.sort((a, b) => (b.distance || 0) - (a.distance || 0));
+    } else if (filters.sortBy === 'not-wilderness') {
+      sorted.sort((a, b) => {
+        const aWild = (a.fullName || a.name || '').includes('\u25C6') ? 1 : 0;
+        const bWild = (b.fullName || b.name || '').includes('\u25C6') ? 1 : 0;
+        if (aWild !== bWild) return aWild - bWild;
+        return (a.fullName || a.name || '').localeCompare(b.fullName || b.name || '');
+      });
     }
     return sorted;
   }, [filteredTrails, filters.sortBy, filters.months]);
@@ -143,9 +157,10 @@ export function useFilters(trails) {
       distanceMax: 20,
       elevationMin: 0,
       elevationMax: 5000,
-      difficulties: [],
+  difficulties: [],
       months: [],
-   sortBy: 'name'
+      sortBy: 'name',
+      wilderness: false
     });
   };
 
