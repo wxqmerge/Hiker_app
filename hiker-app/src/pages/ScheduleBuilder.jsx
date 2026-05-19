@@ -11,6 +11,20 @@ import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const SCHEDULE_STORAGE_KEY = 'hiker-schedule';
 
+function normalizeScheduleStore(store) {
+  if (!store || typeof store !== 'object') return {};
+  const normalized = {};
+  Object.entries(store).forEach(([month, days]) => {
+    normalized[month] = {};
+    if (typeof days === 'object' && days !== null) {
+      Object.entries(days).forEach(([day, val]) => {
+        normalized[month][day] = typeof val === 'string' ? val : (val?.hike || null);
+      });
+    }
+  });
+  return normalized;
+}
+
 export default function ScheduleBuilder() {
   const { trails, loading, lookup } = useTrails();
   const { filters, setFilters } = useFilters(trails);
@@ -23,15 +37,24 @@ export default function ScheduleBuilder() {
   });
   const [scheduleStore, setScheduleStore] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(SCHEDULE_STORAGE_KEY));
-      return saved && typeof saved === 'object' ? saved : {};
+      const raw = JSON.parse(localStorage.getItem(SCHEDULE_STORAGE_KEY));
+      const normalized = normalizeScheduleStore(raw);
+      if (JSON.stringify(normalized) !== JSON.stringify(raw)) {
+        localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(normalized));
+      }
+      return normalized;
     } catch {
       return {};
     }
   });
 
   const assignedHikes = useMemo(() => {
-    return scheduleStore[MONTH_NAMES[selectedMonth]] || {};
+    const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
+    const result = {};
+    Object.entries(raw).forEach(([day, val]) => {
+      result[day] = typeof val === 'string' ? val : (val?.hike || null);
+    });
+    return result;
   }, [scheduleStore, selectedMonth]);
 
   const [dragData, setDragData] = useState(null);
@@ -52,7 +75,11 @@ export default function ScheduleBuilder() {
     setScheduleStore(prev => {
       const current = prev[monthName] || {};
       const next = updater(current);
-      const newStore = { ...prev, [monthName]: next };
+      const normalized = {};
+      Object.entries(next).forEach(([day, val]) => {
+        normalized[day] = typeof val === 'string' ? val : (val?.hike || null);
+      });
+      const newStore = { ...prev, [monthName]: normalized };
       localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(newStore));
       return newStore;
     });
@@ -72,13 +99,15 @@ export default function ScheduleBuilder() {
   const uniqueHikes = useMemo(() => {
     const seen = new Set();
     return allScheduleHikes.filter(h => {
-      if (seen.has(h.hike)) return false;
-      seen.add(h.hike);
+      const key = h.hike.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
   }, [allScheduleHikes]);
 
   const hikeTrailMap = useMemo(() => {
+     const seen = new Set();
      return uniqueHikes.map(h => {
        const trail = trails.find(t => {
          const name = (t.fullName || t.name).toLowerCase();
@@ -86,7 +115,7 @@ export default function ScheduleBuilder() {
          return name.includes(hikeKey) || hikeKey.includes(name.substring(0, 8));
        });
        return { ...h, trail };
-     }).filter(h => h.trail);
+     }).filter(h => h.trail && !seen.has(h.hike.toLowerCase()) && (seen.add(h.hike.toLowerCase()), true));
    }, [uniqueHikes, trails]);
 
   const filteredHikes = useMemo(() => {
@@ -211,6 +240,48 @@ export default function ScheduleBuilder() {
     URL.revokeObjectURL(url);
   };
 
+  const exportHikeEdits = () => {
+    const editsStr = localStorage.getItem('hiker-trail-edits') || '{}';
+    const blob = new Blob([editsStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trail-edits-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importHikeEdits = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (typeof imported !== 'object' || Array.isArray(imported)) {
+          alert('Invalid edits file format');
+          return;
+        }
+        localStorage.setItem('hiker-trail-edits', JSON.stringify(imported));
+        alert('Hike edits imported successfully!');
+        setShowSettings(false);
+      } catch {
+        alert('Error importing file: Invalid JSON format');
+      }
+    };
+    reader.readAsText(file);
+    setShowSettings(false);
+  };
+
+  const clearSchedule = () => {
+    if (confirm('Clear all schedule data?')) {
+      setScheduleStore({});
+      localStorage.removeItem(SCHEDULE_STORAGE_KEY);
+      setShowSettings(false);
+    }
+  };
+
   const importSchedule = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -223,8 +294,18 @@ export default function ScheduleBuilder() {
           alert('Invalid schedule file format');
           return;
         }
-        setScheduleStore(prev => ({ ...prev, ...imported }));
-        localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify({ ...scheduleStore, ...imported }));
+        setScheduleStore(prev => {
+          const merged = { ...prev, ...imported };
+          const normalized = {};
+          Object.entries(merged).forEach(([month, days]) => {
+            normalized[month] = {};
+            Object.entries(days).forEach(([day, val]) => {
+              normalized[month][day] = typeof val === 'string' ? val : (val?.hike || null);
+            });
+          });
+          localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(normalized));
+          return normalized;
+        });
         alert(`Imported ${Object.keys(imported).length} months of schedules`);
         setShowSettings(false);
       } catch {
@@ -344,6 +425,27 @@ export default function ScheduleBuilder() {
                   </svg>
                   Export All
                 </button>
+                <button
+                  onClick={exportHikeEdits}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export Hike Edits
+                </button>
+                <label className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Import Hike Edits
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importHikeEdits}
+                    className="hidden"
+                  />
+                </label>
                 <label className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -356,6 +458,15 @@ export default function ScheduleBuilder() {
                     className="hidden"
                   />
                 </label>
+                <button
+                  onClick={clearSchedule}
+                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Clear All Data
+                </button>
               </div>
             )}
           </div>
