@@ -1,6 +1,7 @@
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import TrailDetail from './pages/TrailDetail';
+import ScheduleBuilder from './pages/ScheduleBuilder';
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/trail/:id" element={<TrailDetail />} />
+        <Route path="/schedule" element={<ScheduleBuilder />} />
       </Routes>
     </MemoryRouter>
   );

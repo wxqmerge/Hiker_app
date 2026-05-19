@@ -12,7 +12,7 @@ export default defineConfig({
     {
       name: 'embed-json-data',
       transformIndexHtml(html) {
-        const jsonFiles = ['trails.json', 'trail_details.json', 'lookup.json'];
+        const jsonFiles = ['trails.json', 'trail_details.json', 'lookup.json', 'schedule.json'];
         const injections = [];
 
         jsonFiles.forEach(file => {
