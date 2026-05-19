@@ -255,7 +255,7 @@ def match_hike(hike_name, trails):
     
     return best_match, best_score
 
-def extract_schedule_to_json(schedule_path, output_path):
+def extract_schedule_to_json(schedule_path, output_path, trails):
     """Extract schedule hikes to JSON for the web app."""
     print('Extracting schedule data to JSON...')
     xl = pd.ExcelFile(schedule_path)
@@ -269,9 +269,30 @@ def extract_schedule_to_json(schedule_path, output_path):
     
     print(f'Total hikes extracted: {len(all_hikes)}')
     
+    # Match hikes to trail IDs
+    matched_count = 0
+    unmatched_count = 0
+    hikes_with_ids = []
+    for hike in all_hikes:
+        trail_id, score = match_hike(hike['hike'], trails)
+        if trail_id:
+            matched_count += 1
+            hikes_with_ids.append({
+                'month': hike['month'],
+                'day': hike['day'],
+                'hike': hike['hike'],
+                'trail_id': trail_id
+            })
+        else:
+            unmatched_count += 1
+            if unmatched_count <= 10:
+                print(f'  UNMATCHED ({score}): {hike["hike"]}')
+    
+    print(f'  Matched: {matched_count}, Unmatched: {unmatched_count}')
+    
     # Group by month
     hikes_by_month = {}
-    for hike in all_hikes:
+    for hike in hikes_with_ids:
         month = hike['month']
         if month not in hikes_by_month:
             hikes_by_month[month] = []
@@ -279,7 +300,8 @@ def extract_schedule_to_json(schedule_path, output_path):
         if day:
             hikes_by_month[month].append({
                 'day': int(day),
-                'hike': hike['hike']
+                'hike': hike['hike'],
+                'trail_id': hike['trail_id']
             })
     
     # Sort days within each month
@@ -297,8 +319,15 @@ def main():
     trails_path = r'D:\hiker\exported_data\trails.json'
     schedule_json_path = r'D:\hiker\exported_data\schedule.json'
     
+    # Load trails data first
+    print('Loading trails data...')
+    with open(trails_path, 'r', encoding='utf-8') as f:
+        trails_data = json.load(f)
+    trails = trails_data['trails']
+    print(f'Loaded {len(trails)} trails')
+    
     # Extract schedule data to JSON first
-    extract_schedule_to_json(schedule_path, schedule_json_path)
+    extract_schedule_to_json(schedule_path, schedule_json_path, trails)
     
     print()
     print('Loading schedule file...')
