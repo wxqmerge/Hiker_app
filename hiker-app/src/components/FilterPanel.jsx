@@ -20,6 +20,18 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
     }));
   };
 
+  const setSortBy = (sortBy) => {
+    setFilters(prev => ({ ...prev, sortBy }));
+  };
+
+  const getSortLabel = (label, active) => {
+    const current = filters.sortBy;
+    if (active && (current === label || current.startsWith(label + '-'))) {
+      return label + (current.endsWith('-up') ? ' ↑' : ' ↓');
+    }
+    return label;
+  };
+
   const hasActiveFilters = 
     filters.search ||
     filters.distanceMin > 0 || filters.distanceMax < 20 ||
@@ -112,6 +124,73 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
               {month.substring(0, 3)}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Sort Buttons */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSortBy('name')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.sortBy === 'name'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Name
+          </button>
+          <button
+            onClick={() => setSortBy('popularity')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.sortBy === 'popularity'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Popularity
+          </button>
+          <button
+            onClick={() => setSortBy('elevation-up')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.sortBy === 'elevation-up'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Elevation ↑
+          </button>
+          <button
+            onClick={() => setSortBy('elevation-down')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.sortBy === 'elevation-down'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Elevation ↓
+          </button>
+          <button
+            onClick={() => setSortBy('distance-up')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.sortBy === 'distance-up'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Distance ↑
+          </button>
+          <button
+            onClick={() => setSortBy('distance-down')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.sortBy === 'distance-down'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Distance ↓
+          </button>
         </div>
       </div>
 
