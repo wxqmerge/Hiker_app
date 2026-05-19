@@ -46,11 +46,11 @@ class TrailExtractor:
         COL_DISTANCE_EXT = 2  # C  
         COL_ELEV_START = 3    # D
         COL_ELEV_MAX = 4      # E
-        COL_RANGE = 7         # H
-        COL_Q1 = 8            # I
-        COL_Q2 = 9            # J
-        COL_Q3 = 10           # K
-        COL_Q4 = 11           # L
+        COL_RANGE = 6         # G
+        COL_Q1 = 7            # H
+        COL_Q2 = 8            # I
+        COL_Q3 = 11           # L
+        COL_Q4 = 15           # P
         COL_DIFFICULTY = 17   # R
         COL_SHORT_NAME = 18   # S
         COL_FULL_NAME = 0     # A
@@ -99,8 +99,10 @@ class TrailExtractor:
                 COL_Q4: [12, 1, 2]    # Q4 - Winter
             }
             for col, months in quarters.items():
-                if pd.notna(row[col]) and str(row[col]) in ['1', 'W', 'Y']:
-                    available_months.extend(months)
+                if pd.notna(row[col]):
+                    val = str(row[col]).strip()
+                    if val in ['1', '2', '3', 'W', 'Y']:
+                        available_months.extend(months)
             available_months = sorted(list(set(available_months)))
             
             trail = {
@@ -333,7 +335,7 @@ class TrailExtractor:
         return {'trails': trails, 'details': details, 'lookup': lookup}
 
 if __name__ == '__main__':
-    xls_path = r'D:\hiker\Hike Data Base.xls'
+    xls_path = r'D:\hiker\Hike Data BaseM.xls'
     output_dir = r'D:\hiker\exported_data'
     
     extractor = TrailExtractor(xls_path)
