@@ -50,7 +50,8 @@ export function useFilters(trails) {
     elevationMin: 0,
     elevationMax: 5000,
     difficulties: [],
-    months: []
+    months: [],
+    sortBy: 'name'
   });
 
   const filteredTrails = useMemo(() => {
@@ -109,6 +110,32 @@ export function useFilters(trails) {
     });
   }, [trails, filters]);
 
+  const sortedTrails = useMemo(() => {
+    const sorted = [...filteredTrails];
+    if (filters.sortBy === 'name') {
+      sorted.sort((a, b) => (a.fullName || a.name || '').localeCompare(b.fullName || b.name || ''));
+    } else if (filters.sortBy === 'popularity') {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const selectedMonthNames = filters.months.length > 0 ? filters.months.map(i => monthNames[i]) : monthNames;
+      sorted.sort((a, b) => {
+        const seasonalA = a.seasonal || {};
+        const seasonalB = b.seasonal || {};
+        const scoreA = selectedMonthNames.reduce((sum, m) => sum + (seasonalA[m] || 0), 0);
+        const scoreB = selectedMonthNames.reduce((sum, m) => sum + (seasonalB[m] || 0), 0);
+        return scoreB - scoreA;
+      });
+    } else if (filters.sortBy === 'elevation-up') {
+      sorted.sort((a, b) => (a.elevationStart || 0) - (b.elevationStart || 0));
+    } else if (filters.sortBy === 'elevation-down') {
+      sorted.sort((a, b) => (b.elevationStart || 0) - (a.elevationStart || 0));
+    } else if (filters.sortBy === 'distance-up') {
+      sorted.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+    } else if (filters.sortBy === 'distance-down') {
+      sorted.sort((a, b) => (b.distance || 0) - (a.distance || 0));
+    }
+    return sorted;
+  }, [filteredTrails, filters.sortBy, filters.months]);
+
   const resetFilters = () => {
     setFilters({
       search: '',
@@ -117,9 +144,10 @@ export function useFilters(trails) {
       elevationMin: 0,
       elevationMax: 5000,
       difficulties: [],
-      months: []
+      months: [],
+   sortBy: 'name'
     });
   };
 
-  return { filters, setFilters, filteredTrails, resetFilters };
+  return { filters, setFilters, sortedTrails, resetFilters };
 }

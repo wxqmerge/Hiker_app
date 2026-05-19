@@ -95,6 +95,7 @@ Matches schedule hikes to trail IDs:
 - **Browse** all 178+ trails with grid layout
 - **Search** across all fields (name, notes, parking, etc.)
 - **Filter** by distance, elevation, difficulty, months
+- **Sort** by Name, Popularity, Elevation (↑/↓), or Distance (↑/↓)
 - **Trail Detail** pages with full information
 - **Edit** trail details (description, notes, pros, others, leaders, stats)
 - **Export Merged Data** - Downloads updated JSON files with your edits
@@ -102,7 +103,14 @@ Matches schedule hikes to trail IDs:
 
 ## Monthly Availability Display
 
-The app shows monthly availability as colored dots. Higher scores (more hikes) are displayed with more intensity.
+The app shows monthly availability as text labels (e.g., "Apr, Jun, Jul, Dec"). Higher scores (more hikes) in the `seasonal` dict indicate more popular months.
+
+## Sort Behavior
+
+- **Name** — alphabetical by trail name (default)
+- **Popularity** — sorted by sum of scores for selected months. When no months are selected, all 12 months are used.
+- **Elevation ↑/↓** — sorted by `elevationStart` (ascending or descending)
+- **Distance ↑/↓** — sorted by `distance` (ascending or descending)
 
 ## File Structure
 

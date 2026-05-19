@@ -7,7 +7,7 @@ const EDIT_STORAGE_KEY = 'hiker-trail-edits';
 
 export default function Home() {
   const { trails, lookup, loading, error } = useTrails();
-  const { filters, setFilters, filteredTrails, resetFilters } = useFilters(trails);
+  const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails);
   const [trailDetails, setTrailDetails] = useState(null);
   const [hasEdits, setHasEdits] = useState(false);
 
@@ -149,7 +149,7 @@ export default function Home() {
         <div className="mb-6 flex items-baseline gap-3">
           <h2 className="text-2xl font-bold text-gray-900">Browse Trails</h2>
           <p className="text-gray-600 text-sm">
-            Showing {filteredTrails.length} of {trails.length} trails
+            Showing {sortedTrails.length} of {trails.length} trails
           </p>
         </div>
 
@@ -160,7 +160,7 @@ export default function Home() {
           resetFilters={resetFilters}
         />
 
-        <TrailList trails={filteredTrails} />
+        <TrailList trails={sortedTrails} />
 
         {/* Export Merged Data Button */}
         {hasEdits && (
