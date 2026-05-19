@@ -11,12 +11,13 @@ export default defineConfig({
     viteSingleFile(),
     {
       name: 'embed-json-data',
-      transformIndexHtml(html) {
+      transformIndexHtml() {
         const jsonFiles = ['trails.json', 'trail_details.json', 'lookup.json', 'schedule.json'];
         const injections = [];
 
         jsonFiles.forEach(file => {
           try {
+            // eslint-disable-next-line no-undef
             const filePath = resolve(process.cwd(), 'public', 'data', file);
             const data = readFileSync(filePath, 'utf-8');
             
@@ -53,4 +54,14 @@ export default defineConfig({
       }
     }
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      exclude: ['node_modules/', 'src/test/', 'dist/'],
+    },
+  },
 })
