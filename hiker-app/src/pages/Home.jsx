@@ -4,6 +4,7 @@ import { useTrails, useFilters } from '../hooks/useTrails';
 import FilterPanel from '../components/FilterPanel';
 import TrailList from '../components/TrailList';
 import { useTrailDetails } from '../hooks/useTrailDetails';
+import { downloadBlob } from '../utils/io';
 
 const EDIT_STORAGE_KEY = 'hiker-trail-edits';
 
@@ -96,25 +97,11 @@ export default function Home() {
     });
 
     // Download trail_details.json
-    const detailsStr = JSON.stringify(mergedDetails, null, 2);
-    const detailsBlob = new Blob([detailsStr], { type: 'application/json' });
-    const detailsUrl = URL.createObjectURL(detailsBlob);
-    const detailsA = document.createElement('a');
-    detailsA.href = detailsUrl;
-    detailsA.download = 'trail_details.json';
-    detailsA.click();
-    URL.revokeObjectURL(detailsUrl);
+    downloadBlob(JSON.stringify(mergedDetails, null, 2), 'trail_details.json');
 
     // Wait a moment then download trails.json
     setTimeout(() => {
-      const trailsStr = JSON.stringify(mergedTrails, null, 2);
-      const trailsBlob = new Blob([trailsStr], { type: 'application/json' });
-      const trailsUrl = URL.createObjectURL(trailsBlob);
-      const trailsA = document.createElement('a');
-      trailsA.href = trailsUrl;
-      trailsA.download = 'trails.json';
-      trailsA.click();
-      URL.revokeObjectURL(trailsUrl);
+      downloadBlob(JSON.stringify(mergedTrails, null, 2), 'trails.json');
 
       // Clear localStorage after successful export
       localStorage.removeItem(EDIT_STORAGE_KEY);
