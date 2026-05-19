@@ -26,10 +26,9 @@ function normalizeScheduleStore(store) {
 }
 
 export default function ScheduleBuilder() {
-  const { trails, loading, lookup } = useTrails();
+  const { trails, loading, lookup, schedule: scheduleData } = useTrails();
   const { filters, setFilters } = useFilters(trails);
   const trailDetails = useTrailDetails();
-  const [scheduleData] = useState(() => window.__EMBEDDED_DATA__?.schedule || null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     const nextMonth = (now.getMonth() + 1) % 12;
@@ -98,25 +97,33 @@ export default function ScheduleBuilder() {
 
   const uniqueHikes = useMemo(() => {
     const seen = new Set();
-    return allScheduleHikes.filter(h => {
+    return allScheduleHikes.reduce((acc, h) => {
       const key = h.hike.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+      if (!seen.has(key)) {
+        seen.add(key);
+        acc.push(h);
+      }
+      return acc;
+    }, []);
   }, [allScheduleHikes]);
 
   const hikeTrailMap = useMemo(() => {
-     const seen = new Set();
-     return uniqueHikes.map(h => {
-       const trail = trails.find(t => {
-         const name = (t.fullName || t.name).toLowerCase();
-         const hikeKey = h.hike.toLowerCase().substring(0, 8);
-         return name.includes(hikeKey) || hikeKey.includes(name.substring(0, 8));
-       });
-       return { ...h, trail };
-     }).filter(h => h.trail && !seen.has(h.hike.toLowerCase()) && (seen.add(h.hike.toLowerCase()), true));
-   }, [uniqueHikes, trails]);
+    const seen = new Set();
+    return uniqueHikes.reduce((acc, h) => {
+      const trail = trails.find(t => {
+        const name = (t.fullName || t.name).toLowerCase();
+        const hikeKey = h.hike.toLowerCase().substring(0, 8);
+        return name.includes(hikeKey) || hikeKey.includes(name.substring(0, 8));
+      });
+      if (!trail) return acc;
+      const key = h.hike.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        acc.push({ ...h, trail });
+      }
+      return acc;
+    }, []);
+  }, [uniqueHikes, trails]);
 
   const filteredHikes = useMemo(() => {
      const filtered = filterTrails(hikeTrailMap, filters);
