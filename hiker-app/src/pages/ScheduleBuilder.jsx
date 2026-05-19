@@ -4,14 +4,17 @@ import { useTrails, useFilters } from '../hooks/useTrails';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS } from '../utils/constants';
-import { formatTrailLine } from '../utils/formatTrail';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
+import { generateReportText } from '../utils/report';
+import { getTrailDetailsById } from '../utils/data';
+import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const SCHEDULE_STORAGE_KEY = 'hiker-schedule';
 
 export default function ScheduleBuilder() {
   const { trails, loading, lookup } = useTrails();
   const { filters, setFilters } = useFilters(trails);
+  const trailDetails = useTrailDetails();
   const [scheduleData] = useState(() => window.__EMBEDDED_DATA__?.schedule || null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -238,29 +241,21 @@ export default function ScheduleBuilder() {
 
     for (const day of wedFriDates) {
       const assigned = assignedHikes[day];
+      const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
 
       if (!assigned) {
-        const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
         output += `${dayOfWeek}, ${month} ${day}\tTBD\n\n`;
         continue;
       }
 
       const trail = matchTrail(assigned.hike);
-      const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
-
       if (trail) {
-        output += `${dayOfWeek}, ${month} ${day}\t${formatTrailLine(trail)}\n`;
-
-        if (trail.seasonal?.bestSeason) {
-          output += `Season: ${trail.seasonal.bestSeason}\n`;
-        }
-        if (trail.notes && trail.notes !== trail.fullName) {
-          output += `${trail.notes}\n`;
-        }
+        const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
+        const report = generateReportText(trail, detailsForTrail);
+        output += `${dayOfWeek}, ${month} ${day}\t${report}\n\n`;
       } else {
-        output += `${dayOfWeek}, ${month} ${day}\t${assigned.hike}\t(No match)\n`;
+        output += `${dayOfWeek}, ${month} ${day}\t${assigned.hike}\n\n`;
       }
-      output += '\n';
     }
 
     const blob = new Blob([output], { type: 'text/plain' });
