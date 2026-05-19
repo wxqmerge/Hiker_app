@@ -145,8 +145,9 @@ const hikeTrailMap = useMemo(() => {
       if (assignedSet.has(h.hike.toLowerCase())) return acc;
       const trail = trails.find(t => {
         const name = (t.fullName || t.name).toLowerCase();
-        const hikeKey = h.hike.toLowerCase().substring(0, 8);
-        return name.includes(hikeKey) || hikeKey.includes(name.substring(0, 8));
+        const hikeKey = h.hike.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const trailKey = name.replace(/[^a-z0-9]/g, '');
+        return trailKey.includes(hikeKey) || hikeKey.includes(trailKey);
       });
       if (!trail || usedTrailIds.has(trail.id)) return acc;
       const key = h.hike.toLowerCase();
