@@ -3,30 +3,19 @@ import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
 import FilterPanel from '../components/FilterPanel';
 import TrailList from '../components/TrailList';
+import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const EDIT_STORAGE_KEY = 'hiker-trail-edits';
 
 export default function Home() {
   const { trails, lookup, loading, error } = useTrails();
   const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails);
-  const [trailDetails, setTrailDetails] = useState(null);
+  const trailDetails = useTrailDetails();
   const [hasEdits, setHasEdits] = useState(false);
 
   useEffect(() => {
-    // Load trail details from embedded data or fetch
-    if (window.__EMBEDDED_DATA__?.trail_details) {
-      setTrailDetails(window.__EMBEDDED_DATA__.trail_details);
-    }
-    // Only fetch if NOT running from file:// protocol
-    else if (window.location.protocol !== 'file:') {
-      fetch('/data/trail_details.json')
-        .then(res => res.json())
-        .then(data => setTrailDetails(data))
-        .catch(err => console.error('Error loading trail details:', err));
-    }
-
-    // Check for edits in localStorage
     const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasEdits(Object.keys(allEdits).length > 0);
   }, []);
 
