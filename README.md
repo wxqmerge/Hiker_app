@@ -15,7 +15,7 @@ Open `hiker-app/dist/index.html` in any browser. No server required - it works f
    ```bash
    python D:\hiker\extract_trails_xls.py
    ```
-3. Match schedule hikes to trails:
+3. Match schedule hikes to trails (also generates schedule.json):
    ```bash
    python D:\hiker\match_schedule.py
    ```
@@ -24,6 +24,7 @@ Open `hiker-app/dist/index.html` in any browser. No server required - it works f
    copy D:\hiker\exported_data\trails.json D:\hiker\hiker-app\public\data\trails.json
    copy D:\hiker\exported_data\trail_details.json D:\hiker\hiker-app\public\data\trail_details.json
    copy D:\hiker\exported_data\lookup.json D:\hiker\hiker-app\public\data\lookup.json
+   copy D:\hiker\exported_data\schedule.json D:\hiker\hiker-app\public\data\schedule.json
    ```
 5. Rebuild the app:
    ```bash
@@ -96,11 +97,11 @@ Matches schedule hikes to trail IDs:
 - **Search** across all fields (name, notes, parking, etc.)
 - **Filter** by distance, elevation, difficulty, months
 - **Sort** by Name, Popularity, Elevation (↑/↓), Distance (↑/↓), or Not Wilderness (non-◆ first, then alphabetical)
-- **Filter** by Wilderness (trails with "Diamond" in the name)
 - **Trail Detail** pages with full information
 - **Edit** trail details (description, notes, pros, others, leaders, stats)
 - **Export Merged Data** - Downloads updated JSON files with your edits
 - **Copy Report** - Generate formatted text for trail reports
+- **Schedule Builder** - Select hikes from Excel schedule and export to text file
 
 ## Monthly Availability Display
 

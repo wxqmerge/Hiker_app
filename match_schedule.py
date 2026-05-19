@@ -159,7 +159,7 @@ def parse_quarter_sheet(xl, sheet_name):
             
             hikes.append({
                 'month': current_month,
-                'day': day_val,
+                'day': day_val if day_val else '',
                 'hike': hike_val
             })
     
@@ -255,10 +255,52 @@ def match_hike(hike_name, trails):
     
     return best_match, best_score
 
+def extract_schedule_to_json(schedule_path, output_path):
+    """Extract schedule hikes to JSON for the web app."""
+    print('Extracting schedule data to JSON...')
+    xl = pd.ExcelFile(schedule_path)
+    
+    all_hikes = []
+    for sheet in xl.sheet_names:
+        hikes = parse_quarter_sheet(xl, sheet)
+        all_hikes.extend(hikes)
+        if hikes:
+            print(f'  {sheet}: {len(hikes)} hikes')
+    
+    print(f'Total hikes extracted: {len(all_hikes)}')
+    
+    # Group by month
+    hikes_by_month = {}
+    for hike in all_hikes:
+        month = hike['month']
+        if month not in hikes_by_month:
+            hikes_by_month[month] = []
+        day = hike['day']
+        if day:
+            hikes_by_month[month].append({
+                'day': int(day),
+                'hike': hike['hike']
+            })
+    
+    # Sort days within each month
+    for month in hikes_by_month:
+        hikes_by_month[month].sort(key=lambda x: x['day'])
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(hikes_by_month, f, indent=2)
+    
+    print(f'[OK] Saved {len(hikes_by_month)} months to {output_path}')
+    return hikes_by_month
+
 def main():
     schedule_path = r'D:\hiker\SOTHH schedule.xls'
     trails_path = r'D:\hiker\exported_data\trails.json'
+    schedule_json_path = r'D:\hiker\exported_data\schedule.json'
     
+    # Extract schedule data to JSON first
+    extract_schedule_to_json(schedule_path, schedule_json_path)
+    
+    print()
     print('Loading schedule file...')
     xl = pd.ExcelFile(schedule_path)
     
