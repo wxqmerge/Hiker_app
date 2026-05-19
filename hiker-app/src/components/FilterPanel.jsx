@@ -24,6 +24,10 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
     setFilters(prev => ({ ...prev, sortBy }));
   };
 
+  const toggleWilderness = () => {
+    setFilters(prev => ({ ...prev, wilderness: !prev.wilderness }));
+  };
+
   const getSortLabel = (label, active) => {
     const current = filters.sortBy;
     if (active && (current === label || current.startsWith(label + '-'))) {
@@ -37,7 +41,8 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
     filters.distanceMin > 0 || filters.distanceMax < 20 ||
     filters.elevationMin > 0 || filters.elevationMax < 5000 ||
     filters.difficulties.length > 0 ||
-    filters.months.length > 0;
+    filters.months.length > 0 ||
+    filters.wilderness;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
@@ -190,6 +195,26 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
             }`}
           >
             Distance ↓
+          </button>
+          <button
+            onClick={toggleWilderness}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.wilderness
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Wilderness
+          </button>
+          <button
+            onClick={() => setSortBy('not-wilderness')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.sortBy === 'not-wilderness'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Not Wilderness
           </button>
         </div>
       </div>
