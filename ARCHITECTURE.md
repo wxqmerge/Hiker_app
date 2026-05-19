@@ -65,7 +65,6 @@ Excel Files (.xls)
 │ trails.json          │
 │ trail_details.json   │
 │ lookup.json          │
-│ schedule.json        │
 └──────────┬───────────┘
            │
            ▼
@@ -78,7 +77,7 @@ Excel Files (.xls)
 ┌──────────────────────┐
 │ exported_data/       │  Updated JSON
 │ trails.json          │  (with scores)
-│ schedule.json        │  (with trail_ids)
+│ schedule.json        │  (generated, with trail_ids)
 └──────────┬───────────┘
            │
            ▼
@@ -96,7 +95,7 @@ Excel Files (.xls)
            ▼
 ┌──────────────────────┐
 │ dist/index.html      │  Single standalone file
-│ (~587KB)             │
+│ (~582KB)             │
 └──────────────────────┘
 ```
 
@@ -121,7 +120,7 @@ App Start
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| Home | `src/pages/Home.jsx` | Landing page with quick actions, export button |
+| Home | `src/pages/Home.jsx` | Landing page with trail grid, filters, conditional export button |
 | TrailDetail | `src/pages/TrailDetail.jsx` | Full trail info with edit capability |
 | ScheduleBuilder | `src/pages/ScheduleBuilder.jsx` | Two-panel drag-and-drop schedule builder |
 
@@ -139,7 +138,7 @@ App Start
 |------|------|---------|
 | useTrails | `src/hooks/useTrails.js` | Load, cache, and provide trail data + schedule |
 | useTrailDetails | `src/hooks/useTrailDetails.js` | Get trail details with embedded data + fetch fallback |
-| useFilters | `src/hooks/useFilters.js` | Shared filter state and sorting |
+| useFilters | `src/hooks/useTrails.js` | Shared filter state and sorting (co-located with `useTrails`) |
 
 ### Utilities
 
@@ -164,8 +163,8 @@ JSON data is embedded directly into the HTML file at build time via a custom Vit
 
 | Key | Content |
 |-----|---------|
-| `hiker-trail-edits` | User edits to trail details (description, notes, pros, others, leaders, stats) |
-| `hiker-schedule` | Per-month schedule: `{ "June": { 3: "trail-id", 5: "trail-id" } }` |
+| `hiker-trail-edits` | User edits to trail details (description, notes, fullName, distance, elevation, difficulty, parking, range, bestSeason, parkingInfo, availableMonths, pros, others, leaders) |
+| `hiker-schedule` | Per-month schedule: `{ "June": { 3: { trail_id: "elwha", hike: "Elwha Delta" }, 5: { trail_id: "mt-townsend", hike: "Mt. Townsend" } } }` |
 | `hiker-schedule-debug` | Debug mode toggle (`true`/`false`) |
 
 ### Edit Data Structure
@@ -175,12 +174,19 @@ JSON data is embedded directly into the HTML file at build time via a custom Vit
   "trail-id": {
     "description": "edited description",
     "notes": "edited notes",
+    "fullName": "edited trail name",
+    "distance": 5.2,
+    "distanceExtended": 7.1,
+    "elevationStart": 800,
+    "elevationMax": 1200,
+    "difficulty": "Moderate",
+    "parking": "Lot",
+    "range": "30",
+    "bestSeason": "Summer",
+    "parkingInfo": "Free parking available",
     "pros": "edited pros",
     "others": "edited others",
-    "leader": "edited leader",
-    "distance": 5.2,
-    "elevation": 800,
-    "difficulty": "Moderate"
+    "leaders": ["Alice", "Bob"]
   }
 }
 ```
@@ -190,12 +196,12 @@ JSON data is embedded directly into the HTML file at build time via a custom Vit
 ```json
 {
   "June": {
-    "3": "elwha",
-    "5": "mt-townsend",
-    "10": "lovers-lane"
+    "3": { "trail_id": "elwha", "hike": "Elwha Delta (Place Road )" },
+    "5": { "trail_id": "mt-townsend", "hike": "Mt. Townsend" },
+    "10": { "trail_id": "lovers-lane", "hike": "Lovers Lane" }
   },
   "July": {
-    "1": "deer-park"
+    "1": { "trail_id": "deer-park", "hike": "Deer Park" }
   }
 }
 ```
@@ -226,13 +232,12 @@ The app uses `MemoryRouter` instead of `BrowserRouter` to work with `file://` pr
 export default defineConfig({
   plugins: [
     react(),
-    jsonEmbedPlugin(),  // Custom plugin
-    singlefilePlugin()  // Inline assets
-  ],
-  build: {
-    inlineDynamicImports: false,
-    assetsInlineLimit: 0  // Inline everything
-  }
+    viteSingleFile(),  // Inline assets
+    {
+      name: 'embed-json-data',  // Custom: reads public/data/*.json, injects window.__EMBEDDED_DATA__
+      transformIndexHtml() { ... }
+    }
+  ]
 })
 ```
 
@@ -247,7 +252,7 @@ export default defineConfig({
 
 | File | Size | Description |
 |------|------|-------------|
-| `dist/index.html` | ~587KB | Single standalone HTML file with embedded JS, CSS, and data |
+| `dist/index.html` | ~582KB | Single standalone HTML file with embedded JS, CSS, and data |
 
 ### Test Suite
 
@@ -333,11 +338,11 @@ hike_count = number of hikes in schedule for that month
 
 ### Quarter Column Structures
 
-The Excel file has 4 different column structures across quarters:
-- 6 columns: basic schedule
-- 9 columns: extended schedule
-- 10 columns: with additional details
-- 11 columns: full schedule
+The Index sheet has fixed quarter columns:
+- Q1 (col H): Dec, Jan, Feb
+- Q2 (col I): Mar, Apr, May
+- Q3 (col L): Jun, Jul, Aug
+- Q4 (col P): Sep, Oct, Nov
 
 ### Quarter Mapping
 
@@ -383,9 +388,8 @@ D:\hiker\
     │   │   ├── TrailDetail.jsx
     │   │   └── ScheduleBuilder.jsx
     │   ├── hooks/              # Custom hooks
-    │   │   ├── useTrails.js
-    │   │   ├── useTrailDetails.js
-    │   │   └── useFilters.js
+    │   │   ├── useTrails.js       # (also contains useFilters)
+    │   │   └── useTrailDetails.js
     │   ├── utils/              # Utility functions
     │   │   ├── filterTrails.js
     │   │   ├── formatTrail.js
@@ -411,13 +415,15 @@ D:\hiker\
 | `file://` | MemoryRouter | Embedded data | N/A |
 | `http://` | MemoryRouter | Fetch from /data/ | Blocked |
 
-The app checks `window.location.protocol !== 'file:'` to decide between:
-1. Embedded data (no fetch needed)
+`useTrailDetails` checks `window.location.protocol !== 'file:'` to decide between:
+1. Embedded data (no fetch needed, file://)
 2. Fetch from server (fails on file:// due to CORS)
+
+`useTrails` checks `window.__EMBEDDED_DATA__` for embedded data, falling back to `fetch('/data/*.json')`.
 
 ## Performance Considerations
 
-- **Single file deployment**: ~587KB total, gzips to ~144KB
+- **Single file deployment**: ~582KB total, gzips to ~144KB
 - **No network requests at runtime**: All data embedded
 - **localStorage caching**: Edits and schedules persist across sessions
 - **MemoryRouter**: No hash or history API overhead

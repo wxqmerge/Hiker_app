@@ -1,8 +1,9 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
+import { downloadBlob, createImportFileInput } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
@@ -42,20 +43,22 @@ export default function TrailDetail() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showSettingsMenu]);
 
-  // Get trail details with fallback for ID mismatch
-  const getTrailDetails = () => getTrailDetailsById(trailDetails, id);
+ // Get trail details with fallback for ID mismatch
+  const trailDetailsResult = useMemo(() => getTrailDetailsById(trailDetails, id), [trailDetails, id]);
 
-// Derive available months from seasonal dict
-  const getAvailableMonthsFromSeasonal = (seasonal) => {
+  // Derive available months from seasonal dict
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const availableMonthsFromSeasonal = useMemo(() => {
+    const seasonal = trail?.seasonal;
     if (!seasonal) return [];
     return Object.entries(seasonal)
       .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
       .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
-  };
+  }, [trail?.seasonal]);
 
   // Get edited value or fallback to original
   const getEditedValue = (field) => {
-    const details = getTrailDetails()?.[id];
+    const details = trailDetailsResult?.[id];
     
     // trail_details.json fields
     if (field === 'description') return editedFields.description ?? details?.fullDescription;
@@ -75,7 +78,7 @@ export default function TrailDetail() {
     if (field === 'range') return editedFields.range ?? trail.range;
     if (field === 'bestSeason') return editedFields.bestSeason ?? trail.seasonal?.bestSeason;
     if (field === 'parkingInfo') return editedFields.parkingInfo ?? trail.seasonal?.parkingInfo;
-    if (field === 'availableMonths') return editedFields.availableMonths ?? getAvailableMonthsFromSeasonal(trail.seasonal);
+    if (field === 'availableMonths') return editedFields.availableMonths ?? availableMonthsFromSeasonal;
     
     return null;
   };
@@ -102,33 +105,19 @@ export default function TrailDetail() {
   // Export all trail edits to JSON file
   const exportEdits = () => {
     const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
-    const dataStr = JSON.stringify(allEdits, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'trail-edits.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(JSON.stringify(allEdits, null, 2), 'trail-edits.json');
   };
 
   // Import trail edits from JSON file
-  const importEdits = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target.result);
+  const importEdits = () => {
+    createImportFileInput(
+      (imported) => {
         localStorage.setItem(EDIT_STORAGE_KEY, JSON.stringify(imported));
         alert('Edits imported successfully!');
         window.location.reload();
-      } catch {
-        alert('Error importing file: Invalid JSON format');
-      }
-    };
-    reader.readAsText(file);
+      },
+      (msg) => alert(msg)
+    );
   };
 
   // Export current trail's edits as report text with source values
@@ -141,7 +130,10 @@ export default function TrailDetail() {
       if (edits.notes) text += `Notes: ${edits.notes}\n\n`;
       if (edits.pros) text += `Pros: ${edits.pros}\n\n`;
       if (edits.others) text += `Others: ${edits.others}\n\n`;
-      if (edits.leaders) text += `Leaders: ${edits.leaders.join(', ')}\n`;
+      if (edits.leaders) {
+      const leaders = Array.isArray(edits.leaders) ? edits.leaders : [edits.leaders];
+      text += `Leaders: ${leaders.join(', ')}\n`;
+    }
 
       navigator.clipboard.writeText(text);
       alert('Trail edits copied to clipboard!');
@@ -154,7 +146,7 @@ export default function TrailDetail() {
   };
 
   const copyReport = async () => {
-    await copyToClipboard(genReport(trail, getTrailDetails()), (status) => {
+    await copyToClipboard(genReport(trail, trailDetailsResult?.[id]), (status) => {
       setCopied(status);
       if (status) setTimeout(() => setCopied(false), 2000);
     });
@@ -445,18 +437,12 @@ export default function TrailDetail() {
                   </svg>
                   Export All Edits
                 </button>
-                <label className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer">
+                <button onClick={() => { importEdits(); setShowSettingsMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Import Edits
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={importEdits}
-                    className="hidden"
-                  />
-                </label>
+                </button>
                 {hasEdits && (
                   <button
                     onClick={() => { exportTrailEdits(); setShowSettingsMenu(false); }}

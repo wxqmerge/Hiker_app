@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { filterTrails, sortTrails } from '../../utils/filterTrails';
-import { MONTH_ABBR } from '../utils/constants';
 
 const mockTrails = [
   {

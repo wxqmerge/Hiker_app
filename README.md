@@ -10,121 +10,19 @@ Open `hiker-app/dist/index.html` in any browser. No server required - it works f
 
 ### Update Trail Data
 
-1. Update the Excel file: `D:\hiker\Hike Data BaseM.xls`
-2. Run the extraction script:
-   ```bash
-   python D:\hiker\extract_trails_xls.py
-   ```
-3. Match schedule hikes to trails (also generates schedule.json):
-   ```bash
-   python D:\hiker\match_schedule.py
-   ```
-4. Copy data to the app:
-   ```bash
-   copy D:\hiker\exported_data\trails.json D:\hiker\hiker-app\public\data\trails.json
-   copy D:\hiker\exported_data\trail_details.json D:\hiker\hiker-app\public\data\trail_details.json
-   copy D:\hiker\exported_data\lookup.json D:\hiker\hiker-app\public\data\lookup.json
-   copy D:\hiker\exported_data\schedule.json D:\hiker\hiker-app\public\data\schedule.json
-   ```
-5. Rebuild the app:
-   ```bash
-   cd D:\hiker\hiker-app
-   npm run build
-   ```
-
-## Data Structure
-
-### Source Files
-
-| File | Description |
-|------|-------------|
-| `Hike Data BaseM.xls` | Main trail database (178 trails, 182 sheets) |
-| `SOTHH schedule.xls` | Hike schedule (2022-2026, 17 quarters) |
-
-### Extracted JSON Files
-
-| File | Description |
-|------|-------------|
-| `trails.json` | Main trail database with scores |
-| `trail_details.json` | Extended info (descriptions, leaders, pros, others) |
-| `lookup.json` | Reference data (difficulties, parking levels, months) |
-| `schedule.json` | Schedule hikes with trail IDs (456 hikes, 280 unique names, 134 matched trails) |
-
-### Month Score System
-
-Each trail has month scores (0-9) for Jan through Dec:
-
-```json
-{
-  "seasonal": {
-    "Jan": 3,
-    "Feb": 1,
-    "Mar": 1,
-    ...
-  }
-}
-```
-
-**Formula:**
-```
-score = base + (hike_count * 2)
-score = min(score, 9)
-```
-
-- **base = 1** if trail has quarter data in Excel (seasonally available)
-- **base = 0** if no quarter data
-- **+2** for each actual hike done in that month from the schedule
-
-## Scripts
-
-### extract_trails_xls.py
-
-Extracts trail data from `Hike Data BaseM.xls`:
-- Reads Index sheet (distance, elevation, difficulty, quarters)
-- Reads individual trail sheets (parking, range, descriptions)
-- Outputs to `exported_data/`
-
-### match_schedule.py
-
-Matches schedule hikes to trail IDs:
-- Parses all 17 quarter sheets from `SOTHH schedule.xls`
-- Uses fuzzy matching to match hike names to trail IDs
-- Calculates month scores based on schedule data
-- Updates `exported_data/trails.json` in-place
-- Generates `schedule.json` with `{day, hike, trail_id}` entries
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full data pipeline, scripts, and build process.
 
 ## App Features
 
 - **Browse** all 178 trails with grid layout
-- **Search** across all fields (name, notes, parking, etc.)
+- **Search** across trail names, notes, difficulty, parking, and hike names
 - **Filter** by distance, elevation, difficulty, months
 - **Sort** by Name, Popularity, Elevation (↑/↓), Distance (↑/↓), or Not Wilderness (non-◆ first, then alphabetical)
 - **Trail Detail** pages with full information
-- **Edit** trail details (description, notes, pros, others, leaders, stats)
+- **Edit** trail details (description, notes, fullName, distance, elevation, difficulty, parking, range, pros, others, leaders, and more)
 - **Export Merged Data** - Downloads updated JSON files with your edits
 - **Copy Report** - Generate formatted text for trail reports
-- **Schedule Builder** - Two-panel drag-and-drop interface to schedule hikes across Wed/Fri dates, with import/export and debug mode
-
-## Schedule Builder
-
-The Schedule Builder provides a two-panel interface for planning monthly hikes:
-
-- **Left panel**: Available hikes (all 178 trails, filterable)
-- **Right panel**: Wed/Fri dates for selected month
-- **Drag-and-drop**: Hikes from left panel to dates, between dates to reschedule, back to left to unassign
-- **Scheduled section**: Toggle to view assigned hikes with day-number badges
-- **Import/Export**: Settings gear menu for schedule data, hike edits, and import
-- **Debug mode**: Toggle to show hike index badges and console logging
-- **Per-month storage**: Schedules stored in localStorage under `hiker-schedule` key
-- **Month score filtering**: Filter hikes by monthly availability scores
-
-### Storage
-
-| Key | Content |
-|-----|---------|
-| `hiker-schedule` | Per-month schedule: `{ "June": { 3: "trail-id", 5: "trail-id" } }` |
-| `hiker-schedule-debug` | Debug mode toggle (`true`/`false`) |
-| `hiker-trail-edits` | User edits to trail details |
+- **Schedule Builder** - Two-panel drag-and-drop interface for planning hikes on Wed/Fri dates
 
 ## Monthly Availability Display
 
@@ -139,29 +37,7 @@ The app shows monthly availability as text labels (e.g., "Apr, Jun, Jul, Dec"). 
 
 ## File Structure
 
-```
-D:\hiker\
-├── Hike Data BaseM.xls        # Source database
-├── SOTHH schedule.xls          # Hike schedule
-├── extract_trails_xls.py       # Data extraction script
-├── match_schedule.py           # Schedule matching script
-├── exported_data/
-│   ├── trails.json             # Main trail data
-│   ├── trail_details.json      # Extended trail info
-│   ├── lookup.json             # Reference data
-│   └── schedule.json           # Schedule hikes with trail IDs
-└── hiker-app/                  # React application
-    ├── public/data/            # JSON data files
-    ├── src/
-    │   ├── components/         # React components
-    │   ├── pages/              # Page components
-    │   ├── hooks/              # Custom hooks
-    │   ├── utils/              # Utility functions
-    │   └── test/               # Test suite (157 tests)
-    ├── dist/                   # Production build
-    │   └── index.html          # Single-file app
-    └── package.json
-```
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project layout.
 
 ## Troubleshooting
 

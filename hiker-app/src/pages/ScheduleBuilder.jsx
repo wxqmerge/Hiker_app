@@ -7,6 +7,7 @@ import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
+import { downloadBlob, createImportFileInput } from '../utils/io';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const SCHEDULE_STORAGE_KEY = 'hiker-schedule';
@@ -19,13 +20,12 @@ function debugLog(...args) {
   }
 }
 
-function debugLogSearchChange(search, hikeTrailMapLen, filteredLen, sortedLen, assigned, matchedHikes) {
+function debugLogSearchChange(search, hikeTrailMapLen, filteredLen, sortedLen, assigned) {
   if (search !== prevSearch) {
     if (search) {
       console.clear();
       debugLog('search =', search, '| hikeTrailMap =', hikeTrailMapLen, '| filtered =', filteredLen, '| sorted =', sortedLen);
       if (assigned.length) debugLog('assignedHikes =', assigned);
-      debugLog('matched hikes:', matchedHikes);
     }
     prevSearch = search;
   }
@@ -81,7 +81,7 @@ export default function ScheduleBuilder() {
       if (typeof val === 'string') {
         result[day] = { trail_id: val, hike: null };
       } else if (val && typeof val === 'object') {
-        result[day] = { trail_id: val.trail_id || val, hike: val.hike || null };
+        result[day] = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null };
       } else {
         result[day] = { trail_id: null, hike: null };
       }
@@ -139,16 +139,11 @@ export default function ScheduleBuilder() {
   }, [trails]);
 
 const hikeTrailMap = useMemo(() => {
-    const seenTrailIds = new Set();
     const assignedSet = new Set(Object.values(assignedHikes).map(v => v?.trail_id).filter(Boolean));
     const result = [];
     trails.forEach((t, idx) => {
       if (assignedSet.has(t.id)) return;
-      const key = t.id;
-      if (!seenTrailIds.has(key)) {
-        seenTrailIds.add(key);
-        result.push({ hike: t.fullName || t.name, trail: t, hikeIndex: idx + 1, trailId: t.id });
-      }
+      result.push({ hike: t.fullName || t.name, trail: t, hikeIndex: idx + 1, trailId: t.id });
     });
     if (localStorage.getItem(DEBUG_STORAGE_KEY) === 'true') {
       debugLog('trails =', trails.length, '| hikeTrailMap =', result.length);
@@ -162,7 +157,7 @@ const hikeTrailMap = useMemo(() => {
     if (debugMode) {
       const search = filters.search;
       const assigned = Object.values(assignedHikes).filter(Boolean);
-      debugLogSearchChange(search, hikeTrailMap.length, filtered.length, sorted.length, assigned, sorted.map(s => s.trailId));
+      debugLogSearchChange(search, hikeTrailMap.length, filtered.length, sorted.length, assigned);
     }
     return sorted;
   }, [hikeTrailMap, filters, debugMode, assignedHikes]);
@@ -193,7 +188,13 @@ const hikeTrailMap = useMemo(() => {
   }, []);
 
   const scheduledCards = useMemo(() => {
-    return wedFriDates
+    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+    const allDays = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, selectedMonth, day);
+      if (date.getDay() === 3 || date.getDay() === 5) allDays.push(day);
+    }
+    return allDays
       .filter(day => assignedHikes[day]?.trail_id)
       .map(day => {
         const { trail_id: trailId, hike: hikeName } = assignedHikes[day];
@@ -210,8 +211,9 @@ const hikeTrailMap = useMemo(() => {
           >
             <div className="relative">
               <TrailCard trail={trail} hikeName={hikeName} isActive={false} />
-              <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center">
+              <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
                 {day}
+                <span className="text-[8px]">{new Date(year, selectedMonth, day).getDay() === 3 ? 'W' : 'F'}</span>
               </div>
               {debugMode && hikeIdx && (
                 <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
@@ -223,7 +225,7 @@ const hikeTrailMap = useMemo(() => {
         );
       })
       .filter(Boolean);
-  }, [wedFriDates, assignedHikes, trailMap, trailIndexToId, handleDragStart, handleDragEnd, debugMode]);
+  }, [assignedHikes, trailMap, trailIndexToId, handleDragStart, handleDragEnd, debugMode, selectedMonth]);
 
   const handleDropOnDate = (targetDay) => {
     if (!dragData) return;
@@ -232,6 +234,11 @@ const hikeTrailMap = useMemo(() => {
     const trailId = trailIndexToId[hikeIndex] || dragData.trailId;
 
     if (sourceDay === targetDay) {
+      setDragData(null);
+      return;
+    }
+
+    if (!trailId) {
       setDragData(null);
       return;
     }
@@ -273,47 +280,26 @@ const hikeTrailMap = useMemo(() => {
   };
 
   const exportSchedule = () => {
-    const dataStr = JSON.stringify(scheduleStore, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `hiker-schedule-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(JSON.stringify(scheduleStore, null, 2), `hiker-schedule-${new Date().toISOString().split('T')[0]}.json`);
   };
 
   const exportHikeEdits = () => {
     const editsStr = localStorage.getItem('hiker-trail-edits') || '{}';
-    const blob = new Blob([editsStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `trail-edits-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(editsStr, `trail-edits-${new Date().toISOString().split('T')[0]}.json`);
   };
 
-  const importHikeEdits = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target.result);
+  const importHikeEdits = () => {
+    createImportFileInput(
+      (imported) => {
         if (typeof imported !== 'object' || Array.isArray(imported)) {
           alert('Invalid edits file format');
           return;
         }
         localStorage.setItem('hiker-trail-edits', JSON.stringify(imported));
         alert('Hike edits imported successfully!');
-        setShowSettings(false);
-      } catch {
-        alert('Error importing file: Invalid JSON format');
-      }
-    };
-    reader.readAsText(file);
+      },
+      (msg) => alert(msg)
+    );
     setShowSettings(false);
   };
 
@@ -325,14 +311,9 @@ const hikeTrailMap = useMemo(() => {
     }
   };
 
-  const importSchedule = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target.result);
+  const importSchedule = () => {
+    createImportFileInput(
+      (imported) => {
         if (typeof imported !== 'object' || Array.isArray(imported)) {
           alert('Invalid schedule file format');
           return;
@@ -357,11 +338,9 @@ const hikeTrailMap = useMemo(() => {
         });
         alert(`Imported ${Object.keys(imported).length} months of schedules`);
         setShowSettings(false);
-      } catch {
-        alert('Error importing file: Invalid JSON format');
-      }
-    };
-    reader.readAsText(file);
+      },
+      (msg) => alert(msg)
+    );
     setShowSettings(false);
   };
 
@@ -388,22 +367,14 @@ const hikeTrailMap = useMemo(() => {
       }
     }
 
-    const blob = new Blob([output], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${month.toLowerCase()}_${year}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(output, `${month.toLowerCase()}_${year}.txt`, 'text/plain');
   };
 
- const hikeCards = useMemo(() => {
-    const seenTrailIds = new Set();
-    return filteredHikes.reduce((cards, item) => {
-      const trail = item.trail;
-      if (!trail || seenTrailIds.has(trail.id)) return cards;
-      seenTrailIds.add(trail.id);
-      cards.push(
+const hikeCards = useMemo(() => {
+     return filteredHikes.reduce((cards, item) => {
+       const trail = item.trail;
+       if (!trail) return cards;
+       cards.push(
         <div
           key={trail.id}
           draggable
@@ -495,30 +466,18 @@ const hikeTrailMap = useMemo(() => {
                   </svg>
                   Export Hike Edits
                 </button>
-                <label className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer">
+                <button onClick={importHikeEdits} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Import Hike Edits
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={importHikeEdits}
-                    className="hidden"
-                  />
-                </label>
-                <label className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer">
+                </button>
+                <button onClick={importSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Import
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={importSchedule}
-                    className="hidden"
-                  />
-                </label>
+                </button>
                 <button
                   onClick={() => {
                     const next = !debugMode;
@@ -553,10 +512,10 @@ const hikeTrailMap = useMemo(() => {
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
           >
-            {MONTH_NAMES.map((name, idx) => {
-              const monthAbbr = name.substring(0, 3);
-              const count = scheduleData[monthAbbr] ? scheduleData[monthAbbr].length : 0;
-              return (
+             {MONTH_NAMES.map((name, idx) => {
+                const monthAbbr = name.substring(0, 3);
+                const count = scheduleData[monthAbbr] ? Object.keys(scheduleData[monthAbbr]).length : 0;
+                return (
                 <option key={idx} value={idx}>
                   {name} ({count} hikes)
                 </option>
