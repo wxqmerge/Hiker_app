@@ -5,7 +5,7 @@ import { getTrailDetailsById } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
-export default function TrailCard({ trail, isActive = false }) {
+export default function TrailCard({ trail, isActive = false, hikeName }) {
   const [copied, setCopied] = useState(false);
   const trailDetails = useTrailDetails();
 
@@ -42,7 +42,7 @@ export default function TrailCard({ trail, isActive = false }) {
         className="block p-4"
       >
         <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-bold text-gray-900">{trail.fullName || trail.name}</h3>
+          <h3 className="text-lg font-bold text-gray-900">{hikeName || trail.fullName || trail.name}</h3>
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${DIFFICULTY_COLORS[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
             {trail.difficulty}
           </span>
