@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
 import FilterPanel from '../components/FilterPanel';
@@ -32,6 +32,17 @@ export default function ScheduleBuilder() {
 
   const [dragData, setDragData] = useState(null);
   const [showScheduled, setShowScheduled] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showSettings && !e.target.closest('.relative')) {
+        setShowSettings(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showSettings]);
 
   const updateMonthSchedule = useCallback((monthName, updater) => {
     setScheduleStore(prev => {
@@ -204,6 +215,41 @@ export default function ScheduleBuilder() {
     });
   };
 
+  const exportSchedule = () => {
+    const dataStr = JSON.stringify(scheduleStore, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hiker-schedule-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importSchedule = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (typeof imported !== 'object' || Array.isArray(imported)) {
+          alert('Invalid schedule file format');
+          return;
+        }
+        setScheduleStore(prev => ({ ...prev, ...imported }));
+        localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify({ ...scheduleStore, ...imported }));
+        alert(`Imported ${Object.keys(imported).length} months of schedules`);
+        setShowSettings(false);
+      } catch {
+        alert('Error importing file: Invalid JSON format');
+      }
+    };
+    reader.readAsText(file);
+    setShowSettings(false);
+  };
+
   const handleExport = () => {
     const month = MONTH_NAMES[selectedMonth];
     let output = `Over-the-Hill Hike Descriptions -- ${month}, ${year}\n`;
@@ -300,6 +346,42 @@ export default function ScheduleBuilder() {
           >
             Scheduled ({assignedCount})
           </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              title="Import/Export schedule"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+            </button>
+            {showSettings && (
+              <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[160px] z-50">
+                <button
+                  onClick={exportSchedule}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export All
+                </button>
+                <label className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Import
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importSchedule}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
