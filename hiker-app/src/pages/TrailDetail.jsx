@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
-import { MONTH_ABBR } from '../utils/constants';
+import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
+import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const EDIT_STORAGE_KEY = 'hiker-trail-edits';
 
@@ -11,7 +12,7 @@ export default function TrailDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { trails, loading } = useTrails();
-  const [trailDetails, setTrailDetails] = useState(null);
+  const trailDetails = useTrailDetails();
   const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedFields, setEditedFields] = useState({});
@@ -21,23 +22,10 @@ export default function TrailDetail() {
   const currentIndex = trails.findIndex(t => t.id === id);
 
   useEffect(() => {
-    // Check for embedded data (single-file standalone mode)
-    if (window.__EMBEDDED_DATA__?.trail_details) {
-      setTrailDetails(window.__EMBEDDED_DATA__.trail_details);
-    }
-    // Only fetch if NOT running from file:// protocol
-    else if (window.location.protocol !== 'file:') {
-      fetch('/data/trail_details.json')
-        .then(res => res.json())
-        .then(data => setTrailDetails(data))
-        .catch(err => console.error('Error loading trail details:', err));
-    }
-  }, []);
-
-  useEffect(() => {
     if (trail) {
       const savedEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
       if (savedEdits[trail.id]) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEditedFields(savedEdits[trail.id]);
       }
     }
@@ -57,15 +45,12 @@ export default function TrailDetail() {
   // Get trail details with fallback for ID mismatch
   const getTrailDetails = () => getTrailDetailsById(trailDetails, id);
 
-  // Derive available months from seasonal dict
+// Derive available months from seasonal dict
   const getAvailableMonthsFromSeasonal = (seasonal) => {
     if (!seasonal) return [];
-const monthNames = MONTH_ABBR;
-    const monthIndexMap = {};
-    monthNames.forEach((m, i) => { monthIndexMap[m] = i + 1; });
     return Object.entries(seasonal)
-      .filter(([k, v]) => typeof v === 'number' && v > 0 && monthIndexMap[k] !== undefined)
-      .map(([k]) => monthIndexMap[k]);
+      .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
+      .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
   };
 
   // Get edited value or fallback to original
@@ -187,15 +172,6 @@ const monthNames = MONTH_ABBR;
     }
   };
 
-  const difficultyColors = {
-    'Easy': 'bg-green-200 text-green-900',
-    'Easy to Mod': 'bg-lime-200 text-lime-900',
-    'Moderate': 'bg-yellow-200 text-yellow-900',
-    'Mod to Diff': 'bg-orange-200 text-orange-900',
-    'Difficult': 'bg-red-200 text-red-900'
-  };
-
-  const monthNames = MONTH_ABBR;
   const rideCost = trail?.range ? getRideCost(parseInt(trail.range)) : null;
 
   if (loading) {
@@ -312,7 +288,7 @@ const monthNames = MONTH_ABBR;
                 </span>
               )}
             </div>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${difficultyColors[getEditedValue('difficulty')] || 'bg-gray-100 text-gray-800'}`}>
+            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${DIFFICULTY_COLORS[getEditedValue('difficulty')] || 'bg-gray-100 text-gray-800'}`}>
               {getEditedValue('difficulty')}
             </span>
           </div>
@@ -393,7 +369,7 @@ const monthNames = MONTH_ABBR;
                       key={monthIdx}
                       className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
                     >
-                      {monthNames[monthIdx - 1]}
+                      {MONTH_ABBR[monthIdx - 1]}
                     </span>
                   ))}
                 </div>

@@ -20,3 +20,11 @@ export const DEFAULT_FILTERS = {
   sortBy: 'name',
   wilderness: false
 };
+
+export const DIFFICULTY_COLORS = {
+  'Easy': 'bg-green-200 text-green-900',
+  'Easy to Mod': 'bg-lime-200 text-lime-900',
+  'Moderate': 'bg-yellow-200 text-yellow-900',
+  'Mod to Diff': 'bg-orange-200 text-orange-900',
+  'Difficult': 'bg-red-200 text-red-900'
+};

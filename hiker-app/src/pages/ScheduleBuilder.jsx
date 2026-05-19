@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
-import { MONTH_NAMES, MONTH_ABBR, DAY_NAMES, DEFAULT_FILTERS } from '../utils/constants';
+import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS } from '../utils/constants';
 import { formatTrailLine } from '../utils/formatTrail';
+import { filterTrails, sortTrails } from '../utils/filterTrails';
 
 const SCHEDULE_STORAGE_KEY = 'hiker-schedule';
 
@@ -74,40 +75,21 @@ export default function ScheduleBuilder() {
     });
   }, [allScheduleHikes]);
 
-   const filteredHikes = useMemo(() => {
-    let result = uniqueHikes;
+  const hikeTrailMap = useMemo(() => {
+     return uniqueHikes.map(h => {
+       const trail = trails.find(t => {
+         const name = (t.fullName || t.name).toLowerCase();
+         const hikeKey = h.hike.toLowerCase().substring(0, 8);
+         return name.includes(hikeKey) || hikeKey.includes(name.substring(0, 8));
+       });
+       return { ...h, trail };
+     }).filter(h => h.trail);
+   }, [uniqueHikes, trails]);
 
-    if (filters.search.trim()) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(h => h.hike.toLowerCase().includes(q));
-    }
-
-    result = result.filter(h => {
-      const hikeLower = h.hike.toLowerCase();
-      const hikeKey = hikeLower.substring(0, 8);
-      const trail = trails.find(t => {
-        const name = (t.fullName || t.name).toLowerCase();
-        return name.includes(hikeKey) || hikeKey.includes(name.substring(0, 8));
-      });
-      if (!trail) return true;
-
-      if (filters.distanceMax < 20 && trail.distance != null && trail.distance > filters.distanceMax) return false;
-      if (filters.elevationMax < 5000 && trail.elevationStart != null && trail.elevationStart > filters.elevationMax) return false;
-      if (filters.difficulties.length > 0 && !filters.difficulties.includes(trail.difficulty)) return false;
-      if (filters.months.length > 0) {
-        const seasonal = trail.seasonal || {};
-        const hasMonth = filters.months.some(mIdx => {
-          const monthName = MONTH_ABBR[mIdx];
-          return monthName && seasonal[monthName] > 0;
-        });
-        if (!hasMonth) return false;
-      }
-
-      return true;
-    });
-
-    return result;
-  }, [uniqueHikes, filters, trails]);
+  const filteredHikes = useMemo(() => {
+     const filtered = filterTrails(hikeTrailMap, filters);
+     return sortTrails(filtered, filters, 'hike');
+   }, [hikeTrailMap, filters]);
 
   const wedFriDates = useMemo(() => {
     const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
@@ -134,13 +116,13 @@ export default function ScheduleBuilder() {
     });
   }, [trails]);
 
-  const handleDragStart = (hike, sourceDay) => {
+  const handleDragStart = useCallback((hike, sourceDay) => {
     setDragData({ hike, sourceDay });
-  };
+  }, []);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDragData(null);
-  };
+  }, []);
 
   const scheduledCards = useMemo(() => {
     return wedFriDates
@@ -312,7 +294,7 @@ export default function ScheduleBuilder() {
   }
 
   const hikeCards = filteredHikes.map((hike) => {
-    const trail = matchTrail(hike.hike);
+    const trail = hike.trail;
     if (!trail) return null;
     return (
       <div

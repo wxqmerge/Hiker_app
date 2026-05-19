@@ -1,34 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
-import { MONTH_ABBR } from '../utils/constants';
+import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
+import { useTrailDetails } from '../hooks/useTrailDetails';
 
 export default function TrailCard({ trail, isActive = false }) {
   const [copied, setCopied] = useState(false);
-  const [trailDetails, setTrailDetails] = useState(null);
-  
-  const difficultyColors = {
-    'Easy': 'bg-green-200 text-green-900',
-    'Easy to Mod': 'bg-lime-200 text-lime-900',
-    'Moderate': 'bg-yellow-200 text-yellow-900',
-    'Mod to Diff': 'bg-orange-200 text-orange-900',
-    'Difficult': 'bg-red-200 text-red-900'
-  };
-
-  useEffect(() => {
-    // Check for embedded data (single-file standalone mode)
-    if (window.__EMBEDDED_DATA__?.trail_details) {
-      setTrailDetails(window.__EMBEDDED_DATA__.trail_details);
-    }
-    // Only fetch if NOT running from file:// protocol
-    else if (window.location.protocol !== 'file:') {
-      fetch('/data/trail_details.json')
-        .then(res => res.json())
-        .then(data => setTrailDetails(data))
-        .catch(err => console.error('Error loading trail details:', err));
-    }
-  }, []);
+  const trailDetails = useTrailDetails();
 
   const handleCopy = async (e) => {
     e.preventDefault();
@@ -64,7 +43,7 @@ export default function TrailCard({ trail, isActive = false }) {
       >
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-bold text-gray-900">{trail.fullName || trail.name}</h3>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${difficultyColors[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${DIFFICULTY_COLORS[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
             {trail.difficulty}
           </span>
         </div>
