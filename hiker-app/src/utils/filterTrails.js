@@ -6,9 +6,9 @@ export function filterTrails(items, filters) {
     const t = item.trail || item;
 
     if (filters.search?.trim()) {
-      const searchLower = filters.search.toLowerCase();
+      const searchLower = filters.search.toLowerCase().replace(/[^a-z0-9]/g, '');
       const searchText = [
-        item.hikeName || item.hike,
+        item.hike,
         t.name,
         t.fullName,
         t.notes,
@@ -18,7 +18,7 @@ export function filterTrails(items, filters) {
         ...Object.entries(t.seasonal || [])
           .filter(([, v]) => typeof v === 'number' && v > 0)
           .map(([k]) => k.toLowerCase())
-      ].filter(Boolean).join(' ').toLowerCase();
+      ].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]/g, '');
       
       if (!searchText.includes(searchLower)) return false;
     }
