@@ -4,6 +4,7 @@ import { filterTrails, sortTrails } from '../utils/filterTrails';
 export function useTrails() {
   const [trails, setTrails] = useState([]);
   const [lookup, setLookup] = useState(null);
+  const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -14,6 +15,9 @@ export function useTrails() {
           const trailsArray = window.__EMBEDDED_DATA__.trails?.trails || window.__EMBEDDED_DATA__.trails || [];
           setTrails(Array.isArray(trailsArray) ? trailsArray : []);
           setLookup(window.__EMBEDDED_DATA__.lookup);
+          if (window.__EMBEDDED_DATA__.schedule) {
+            setSchedule(window.__EMBEDDED_DATA__.schedule);
+          }
           setLoading(false);
           return;
         }
@@ -37,7 +41,7 @@ export function useTrails() {
     loadData();
   }, []);
 
-  return { trails, lookup, loading, error };
+  return { trails, lookup, schedule, loading, error };
 }
 
 export function useFilters(trails) {
