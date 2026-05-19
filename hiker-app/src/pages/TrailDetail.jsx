@@ -56,6 +56,17 @@ export default function TrailDetail() {
   // Get trail details with fallback for ID mismatch
   const getTrailDetails = () => getTrailDetailsById(trailDetails, id);
 
+  // Derive available months from seasonal dict
+  const getAvailableMonthsFromSeasonal = (seasonal) => {
+    if (!seasonal) return [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthIndexMap = {};
+    monthNames.forEach((m, i) => { monthIndexMap[m] = i + 1; });
+    return Object.entries(seasonal)
+      .filter(([k, v]) => typeof v === 'number' && v > 0 && monthIndexMap[k] !== undefined)
+      .map(([k]) => monthIndexMap[k]);
+  };
+
   // Get edited value or fallback to original
   const getEditedValue = (field) => {
     const details = getTrailDetails()?.[id];
@@ -78,7 +89,7 @@ export default function TrailDetail() {
     if (field === 'range') return editedFields.range ?? trail.range;
     if (field === 'bestSeason') return editedFields.bestSeason ?? trail.seasonal?.bestSeason;
     if (field === 'parkingInfo') return editedFields.parkingInfo ?? trail.seasonal?.parkingInfo;
-    if (field === 'availableMonths') return editedFields.availableMonths ?? (trail.seasonal?.availableMonths || []);
+    if (field === 'availableMonths') return editedFields.availableMonths ?? getAvailableMonthsFromSeasonal(trail.seasonal);
     
     return null;
   };

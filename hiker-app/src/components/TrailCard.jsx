@@ -38,10 +38,18 @@ export default function TrailCard({ trail, isActive = false }) {
   };
 
   const rideCost = trail.range ? getRideCost(parseInt(trail.range)) : null;
-  const months = trail.seasonal?.availableMonths || [];
-  const bestSeason = trail.seasonal?.bestSeason || '';
+  const seasonal = trail.seasonal || {};
+  const bestSeason = seasonal.bestSeason || '';
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const availableMonthsStr = months.map(m => monthNames[m - 1]).join(', ') || 'Year-round';
+  const scoreMonths = Object.entries(seasonal)
+    .filter(([k, v]) => typeof v === 'number' && v > 0 && !['bestSeason', 'parkingInfo', 'availableMonths'].includes(k))
+    .sort(([a], [b]) => {
+      const ai = monthNames.indexOf(a);
+      const bi = monthNames.indexOf(b);
+      return ai - bi;
+    })
+    .map(([m]) => m);
+  const availableMonthsStr = scoreMonths.length > 0 ? scoreMonths.join(', ') : 'Year-round';
 
   return (
     <div className={`rounded-lg shadow-sm hover:shadow-md transition-all border-2 overflow-hidden ${
@@ -105,7 +113,7 @@ export default function TrailCard({ trail, isActive = false }) {
           )}
           
           {/* Seasonal Availability */}
-          {months.length > 0 && (
+          {scoreMonths.length > 0 && (
             <div className="flex items-center gap-1 text-gray-700">
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

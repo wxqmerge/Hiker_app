@@ -66,10 +66,9 @@ export function useFilters(trails) {
           trail.parking,
           trail.seasonal?.parkingInfo,
           // Search seasonal months
-          ...trail.seasonal?.availableMonths.map(m => {
-            const months = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-            return months[m] || '';
-          })
+          ...Object.entries(trail.seasonal || [])
+            .filter(([k, v]) => typeof v === 'number' && v > 0)
+            .map(([k]) => k.toLowerCase())
         ].filter(Boolean).join(' ').toLowerCase();
         
         if (!searchText.includes(searchLower)) return false;
@@ -96,8 +95,13 @@ export function useFilters(trails) {
 
       // Month filter
       if (filters.months.length > 0) {
-        const availableMonths = trail.seasonal?.availableMonths || [];
-        const matchesMonth = filters.months.some(m => availableMonths.includes(m));
+        const seasonal = trail.seasonal || {};
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const matchesMonth = filters.months.some(monthIdx => {
+          const monthName = monthNames[monthIdx];
+          if (!monthName) return false;
+          return seasonal[monthName] > 0;
+        });
         if (!matchesMonth) return false;
       }
 
