@@ -131,14 +131,14 @@ export default function ScheduleBuilder() {
     return wedFriDates
       .filter(day => assignedHikes[day])
       .map(day => {
-        const hike = assignedHikes[day];
-        const trail = matchTrail(hike.hike);
+        const hikeName = assignedHikes[day];
+        const trail = matchTrail(hikeName);
         if (!trail) return null;
         return (
           <div
             key={day}
             draggable
-            onDragStart={() => handleDragStart(hike, day)}
+            onDragStart={() => handleDragStart(hikeName, day)}
             onDragEnd={handleDragEnd}
             className="cursor-grab active:cursor-grabbing"
           >
@@ -240,21 +240,21 @@ export default function ScheduleBuilder() {
     let output = `Over-the-Hill Hike Descriptions -- ${month}, ${year}\n`;
 
     for (const day of wedFriDates) {
-      const assigned = assignedHikes[day];
+      const hikeName = assignedHikes[day];
       const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
 
-      if (!assigned) {
+      if (!hikeName) {
         output += `${dayOfWeek}, ${month} ${day}\tTBD\n\n`;
         continue;
       }
 
-      const trail = matchTrail(assigned.hike);
+      const trail = matchTrail(hikeName);
       if (trail) {
         const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
         const report = generateReportText(trail, detailsForTrail);
         output += `${dayOfWeek}, ${month} ${day}\t${report}\n\n`;
       } else {
-        output += `${dayOfWeek}, ${month} ${day}\t${assigned.hike}\n\n`;
+        output += `${dayOfWeek}, ${month} ${day}\t${hikeName}\n\n`;
       }
     }
 
@@ -288,14 +288,14 @@ export default function ScheduleBuilder() {
     );
   }
 
-  const hikeCards = filteredHikes.map((hike) => {
-    const trail = hike.trail;
+  const hikeCards = filteredHikes.map((item) => {
+    const trail = item.trail;
     if (!trail) return null;
     return (
       <div
-        key={`${hike.day}-${hike.hike}`}
+        key={item.hike}
         draggable
-        onDragStart={() => handleDragStart(hike, null)}
+        onDragStart={() => handleDragStart(item.hike, null)}
         onDragEnd={handleDragEnd}
         className="cursor-grab active:cursor-grabbing"
       >
@@ -449,7 +449,7 @@ export default function ScheduleBuilder() {
                 <div className="space-y-3">
                   {wedFriDates.map((day) => {
                     const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
-                    const assigned = assignedHikes[day];
+                    const hikeName = assignedHikes[day];
 
                     return (
                       <div
@@ -462,7 +462,7 @@ export default function ScheduleBuilder() {
                           handleDropOnDate(day);
                         }}
                         className={`border-2 rounded-lg p-3 transition-all ${
-                          assigned
+                          hikeName
                             ? 'border-green-300 bg-green-50'
                             : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
                         }`}
@@ -478,14 +478,14 @@ export default function ScheduleBuilder() {
                               <div className="text-xs text-gray-500">{dayOfWeek}</div>
                             </div>
                             <div className="w-px h-8 bg-gray-200"></div>
-                            {assigned ? (
+                            {hikeName ? (
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-gray-900 truncate">
-                                  {assigned.hike}
+                                  {hikeName}
                                 </div>
-                                {matchTrail(assigned.hike) && (
+                                {matchTrail(hikeName) && (
                                   <div className="text-xs text-gray-500 truncate">
-                                    ({matchTrail(assigned.hike).fullName || matchTrail(assigned.hike).name})
+                                    ({matchTrail(hikeName).fullName || matchTrail(hikeName).name})
                                   </div>
                                 )}
                               </div>
@@ -495,7 +495,7 @@ export default function ScheduleBuilder() {
                               </div>
                             )}
                           </div>
-                          {assigned && (
+                          {hikeName && (
                             <button
                               onClick={() => removeHike(day)}
                               className="ml-3 text-red-400 hover:text-red-600 transition-colors"
