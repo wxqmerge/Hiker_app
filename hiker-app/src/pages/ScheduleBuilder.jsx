@@ -97,7 +97,7 @@ export default function ScheduleBuilder() {
 
   const uniqueHikes = useMemo(() => {
     const seen = new Set();
-    return allScheduleHikes.reduce((acc, h) => {
+    const result = allScheduleHikes.reduce((acc, h) => {
       const key = h.hike.toLowerCase();
       if (!seen.has(key)) {
         seen.add(key);
@@ -105,25 +105,33 @@ export default function ScheduleBuilder() {
       }
       return acc;
     }, []);
+    console.log('[ScheduleBuilder] allScheduleHikes count:', allScheduleHikes.length);
+    console.log('[ScheduleBuilder] uniqueHikes:', result.map(h => h.hike));
+    return result;
   }, [allScheduleHikes]);
 
   const hikeTrailMap = useMemo(() => {
-    const seen = new Set();
-    return uniqueHikes.reduce((acc, h) => {
+    const seenHikes = new Set();
+    const usedTrailIds = new Set();
+    const assignedSet = new Set(Object.values(assignedHikes).map(h => h.toLowerCase()));
+    const result = uniqueHikes.reduce((acc, h) => {
+      if (assignedSet.has(h.hike.toLowerCase())) return acc;
       const trail = trails.find(t => {
         const name = (t.fullName || t.name).toLowerCase();
         const hikeKey = h.hike.toLowerCase().substring(0, 8);
         return name.includes(hikeKey) || hikeKey.includes(name.substring(0, 8));
       });
-      if (!trail) return acc;
+      if (!trail || usedTrailIds.has(trail.id)) return acc;
       const key = h.hike.toLowerCase();
-      if (!seen.has(key)) {
-        seen.add(key);
+      if (!seenHikes.has(key)) {
+        seenHikes.add(key);
+        usedTrailIds.add(trail.id);
         acc.push({ ...h, trail });
       }
       return acc;
     }, []);
-  }, [uniqueHikes, trails]);
+    return result;
+  }, [uniqueHikes, trails, assignedHikes]);
 
   const filteredHikes = useMemo(() => {
      const filtered = filterTrails(hikeTrailMap, filters);
