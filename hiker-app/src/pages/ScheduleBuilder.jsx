@@ -40,11 +40,11 @@ function normalizeScheduleStore(store) {
       Object.entries(days).forEach(([day, val]) => {
         if (typeof val === 'string') {
           // Legacy format - trail ID as string
-          normalized[month][day] = val;
+          normalized[month][day] = { trail_id: val, hike: null };
         } else if (val?.trail_id) {
-          normalized[month][day] = val.trail_id;
+          normalized[month][day] = { trail_id: val.trail_id, hike: val.hike || null };
         } else {
-          normalized[month][day] = null;
+          normalized[month][day] = { trail_id: null, hike: null };
         }
       });
     }
@@ -78,7 +78,13 @@ export default function ScheduleBuilder() {
     const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
     const result = {};
     Object.entries(raw).forEach(([day, val]) => {
-      result[day] = val || null;
+      if (typeof val === 'string') {
+        result[day] = { trail_id: val, hike: null };
+      } else if (val && typeof val === 'object') {
+        result[day] = { trail_id: val.trail_id || val, hike: val.hike || null };
+      } else {
+        result[day] = { trail_id: null, hike: null };
+      }
     });
     return result;
   }, [scheduleStore, selectedMonth]);
@@ -108,11 +114,7 @@ export default function ScheduleBuilder() {
     setScheduleStore(prev => {
       const current = prev[monthName] || {};
       const next = updater(current);
-      const normalized = {};
-      Object.entries(next).forEach(([day, val]) => {
-        normalized[day] = typeof val === 'string' ? val : (val?.hike || null);
-      });
-      const newStore = { ...prev, [monthName]: normalized };
+      const newStore = { ...prev, [monthName]: next };
       localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(newStore));
       return newStore;
     });
@@ -138,32 +140,21 @@ export default function ScheduleBuilder() {
 
 const hikeTrailMap = useMemo(() => {
     const seenTrailIds = new Set();
-    const assignedSet = new Set(Object.values(assignedHikes));
+    const assignedSet = new Set(Object.values(assignedHikes).map(v => v?.trail_id).filter(Boolean));
     const result = [];
     trails.forEach((t, idx) => {
       if (assignedSet.has(t.id)) return;
       const key = t.id;
       if (!seenTrailIds.has(key)) {
         seenTrailIds.add(key);
-        // Find the hike name from schedule data (or use trail name)
-        let hikeName = t.fullName || t.name;
-        if (scheduleData) {
-          for (const monthHikes of Object.values(scheduleData)) {
-            const found = monthHikes.find(h => h.trail_id === t.id);
-            if (found) {
-              hikeName = found.hike;
-              break;
-            }
-          }
-        }
-        result.push({ hike: hikeName, trail: t, hikeIndex: idx + 1, trailId: t.id });
+        result.push({ hike: t.fullName || t.name, trail: t, hikeIndex: idx + 1, trailId: t.id });
       }
     });
     if (localStorage.getItem(DEBUG_STORAGE_KEY) === 'true') {
       debugLog('trails =', trails.length, '| hikeTrailMap =', result.length);
     }
     return result;
-  }, [trails, assignedHikes, scheduleData]);
+  }, [trails, assignedHikes]);
 
   const filteredHikes = useMemo(() => {
     const filtered = filterTrails(hikeTrailMap, filters);
@@ -190,11 +181,11 @@ const hikeTrailMap = useMemo(() => {
   }, [selectedMonth]);
 
   const assignedCount = useMemo(() => {
-    return Object.keys(assignedHikes).length;
+    return Object.values(assignedHikes).filter(v => v?.trail_id).length;
   }, [assignedHikes]);
 
-  const handleDragStart = useCallback((hikeIndex, sourceDay) => {
-    setDragData({ hikeIndex, sourceDay });
+  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName) => {
+    setDragData({ hikeIndex, sourceDay, hikeName });
   }, []);
 
   const handleDragEnd = useCallback(() => {
@@ -203,27 +194,17 @@ const hikeTrailMap = useMemo(() => {
 
   const scheduledCards = useMemo(() => {
     return wedFriDates
-      .filter(day => assignedHikes[day])
+      .filter(day => assignedHikes[day]?.trail_id)
       .map(day => {
-        const trailId = assignedHikes[day];
+        const { trail_id: trailId, hike: hikeName } = assignedHikes[day];
         const trail = trailMap[trailId];
         if (!trail) return null;
         const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
-        let hikeName = null;
-        if (scheduleData) {
-          for (const monthHikes of Object.values(scheduleData)) {
-            const found = monthHikes.find(h => h.trail_id === trailId);
-            if (found) {
-              hikeName = found.hike;
-              break;
-            }
-          }
-        }
         return (
           <div
             key={day}
             draggable
-            onDragStart={() => hikeIdx && handleDragStart(Number(hikeIdx[0]), day)}
+            onDragStart={() => hikeIdx && handleDragStart(Number(hikeIdx[0]), day, hikeName)}
             onDragEnd={handleDragEnd}
             className="cursor-grab active:cursor-grabbing"
           >
@@ -242,12 +223,12 @@ const hikeTrailMap = useMemo(() => {
         );
       })
       .filter(Boolean);
-  }, [wedFriDates, assignedHikes, trailMap, trailIndexToId, handleDragStart, handleDragEnd, debugMode, scheduleData]);
+  }, [wedFriDates, assignedHikes, trailMap, trailIndexToId, handleDragStart, handleDragEnd, debugMode]);
 
   const handleDropOnDate = (targetDay) => {
     if (!dragData) return;
 
-    const { hikeIndex, sourceDay } = dragData;
+    const { hikeIndex, sourceDay, hikeName } = dragData;
     const trailId = trailIndexToId[hikeIndex] || dragData.trailId;
 
     if (sourceDay === targetDay) {
@@ -260,7 +241,7 @@ const hikeTrailMap = useMemo(() => {
       if (sourceDay !== null && sourceDay !== undefined) {
         delete next[sourceDay];
       }
-      next[targetDay] = trailId;
+      next[targetDay] = { trail_id: trailId, hike: hikeName || null };
       return next;
     });
     setDragData(null);
@@ -362,7 +343,13 @@ const hikeTrailMap = useMemo(() => {
           Object.entries(merged).forEach(([month, days]) => {
             normalized[month] = {};
             Object.entries(days).forEach(([day, val]) => {
-              normalized[month][day] = typeof val === 'string' ? val : (val?.hike || null);
+              if (typeof val === 'string') {
+                normalized[month][day] = { trail_id: val, hike: null };
+              } else if (val?.trail_id) {
+                normalized[month][day] = { trail_id: val.trail_id, hike: val.hike || null };
+              } else {
+                normalized[month][day] = { trail_id: null, hike: null };
+              }
             });
           });
           localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(normalized));
@@ -383,7 +370,7 @@ const hikeTrailMap = useMemo(() => {
     let output = `Over-the-Hill Hike Descriptions -- ${month}, ${year}\n`;
 
     for (const day of wedFriDates) {
-      const trailId = assignedHikes[day];
+      const { trail_id: trailId } = assignedHikes[day];
       const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
 
       if (!trailId) {
@@ -420,12 +407,12 @@ const hikeTrailMap = useMemo(() => {
         <div
           key={trail.id}
           draggable
-          onDragStart={() => handleDragStart(item.hikeIndex, null)}
+          onDragStart={() => handleDragStart(item.hikeIndex, null, item.hike)}
           onDragEnd={handleDragEnd}
           className="cursor-grab active:cursor-grabbing"
         >
           <div className="relative">
-            <TrailCard trail={trail} hikeName={item.hike} isActive={false} />
+            <TrailCard trail={trail} isActive={false} />
             {debugMode && (
               <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                 {item.hikeIndex}
@@ -651,20 +638,8 @@ const hikeTrailMap = useMemo(() => {
                 <div className="space-y-3">
                   {wedFriDates.map((day) => {
                     const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
-                    const trailId = assignedHikes[day];
+const { trail_id: trailId, hike: hikeName } = assignedHikes[day] || { trail_id: null, hike: null };
                     const trail = trailMap[trailId];
-
-                    // Find the hike name from schedule data
-                    let hikeName = null;
-                    if (trailId && scheduleData) {
-                      for (const monthHikes of Object.values(scheduleData)) {
-                        const found = monthHikes.find(h => h.trail_id === trailId);
-                        if (found) {
-                          hikeName = found.hike;
-                          break;
-                        }
-                      }
-                    }
 
                     return (
                       <div
@@ -712,7 +687,7 @@ const hikeTrailMap = useMemo(() => {
                               </div>
                             )}
                           </div>
-                          {hikeName && (
+                          {trailId && (
                             <button
                               onClick={() => removeHike(day)}
                               className="ml-3 text-red-400 hover:text-red-600 transition-colors"
