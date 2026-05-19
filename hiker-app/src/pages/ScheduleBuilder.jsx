@@ -10,6 +10,25 @@ import { getTrailDetailsById } from '../utils/data';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const SCHEDULE_STORAGE_KEY = 'hiker-schedule';
+const DEBUG_STORAGE_KEY = 'hiker-schedule-debug';
+let prevSearch = null;
+
+function debugLog(...args) {
+  if (localStorage.getItem(DEBUG_STORAGE_KEY) === 'true') {
+    console.log('[ScheduleBuilder]', ...args);
+  }
+}
+
+function debugLogSearchChange(search, hikeTrailMapLen, filteredLen, sortedLen, assigned, matchedHikes) {
+  if (search !== prevSearch) {
+    if (search) {
+      debugLog('search =', search, '| hikeTrailMap =', hikeTrailMapLen, '| filtered =', filteredLen, '| sorted =', sortedLen);
+      if (assigned.length) debugLog('assignedHikes =', assigned);
+      debugLog('matched hikes:', matchedHikes);
+    }
+    prevSearch = search;
+  }
+}
 
 function normalizeScheduleStore(store) {
   if (!store || typeof store !== 'object') return {};
@@ -59,6 +78,13 @@ export default function ScheduleBuilder() {
   const [dragData, setDragData] = useState(null);
   const [showScheduled, setShowScheduled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [debugMode, setDebugMode] = useState(() => {
+    try {
+      return localStorage.getItem(DEBUG_STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -105,12 +131,13 @@ export default function ScheduleBuilder() {
       }
       return acc;
     }, []);
-    console.log('[ScheduleBuilder] allScheduleHikes count:', allScheduleHikes.length);
-    console.log('[ScheduleBuilder] uniqueHikes:', result.map(h => h.hike));
+    if (localStorage.getItem(DEBUG_STORAGE_KEY) === 'true') {
+      debugLog('allScheduleHikes =', allScheduleHikes.length, '| uniqueHikes =', result.length);
+    }
     return result;
   }, [allScheduleHikes]);
 
-  const hikeTrailMap = useMemo(() => {
+const hikeTrailMap = useMemo(() => {
     const seenHikes = new Set();
     const usedTrailIds = new Set();
     const assignedSet = new Set(Object.values(assignedHikes).map(h => h.toLowerCase()));
@@ -126,7 +153,7 @@ export default function ScheduleBuilder() {
       if (!seenHikes.has(key)) {
         seenHikes.add(key);
         usedTrailIds.add(trail.id);
-        acc.push({ ...h, trail });
+        acc.push({ hike: h.hike, trail, hikeName: h.hike });
       }
       return acc;
     }, []);
@@ -134,9 +161,15 @@ export default function ScheduleBuilder() {
   }, [uniqueHikes, trails, assignedHikes]);
 
   const filteredHikes = useMemo(() => {
-     const filtered = filterTrails(hikeTrailMap, filters);
-     return sortTrails(filtered, filters, 'hike');
-   }, [hikeTrailMap, filters]);
+      const filtered = filterTrails(hikeTrailMap, filters);
+      const sorted = sortTrails(filtered, filters, 'hike');
+      if (debugMode) {
+        const search = filters.search;
+        const assigned = Object.values(assignedHikes).filter(Boolean);
+        debugLogSearchChange(search, hikeTrailMap.length, filtered.length, sorted.length, assigned, sorted.map(s => s.hike));
+      }
+      return sorted;
+    }, [hikeTrailMap, filters, debugMode, assignedHikes]);
 
   const wedFriDates = useMemo(() => {
     const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
@@ -473,6 +506,23 @@ export default function ScheduleBuilder() {
                     className="hidden"
                   />
                 </label>
+                <button
+                  onClick={() => {
+                    const next = !debugMode;
+                    setDebugMode(next);
+                    localStorage.setItem(DEBUG_STORAGE_KEY, String(next));
+                  }}
+                  className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
+                    debugMode
+                      ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  Debug Mode {debugMode ? 'ON' : 'OFF'}
+                </button>
                 <button
                   onClick={clearSchedule}
                   className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-2"

@@ -8,7 +8,7 @@ export function filterTrails(items, filters) {
     if (filters.search?.trim()) {
       const searchLower = filters.search.toLowerCase();
       const searchText = [
-        item.hike,
+        item.hikeName || item.hike,
         t.name,
         t.fullName,
         t.notes,
