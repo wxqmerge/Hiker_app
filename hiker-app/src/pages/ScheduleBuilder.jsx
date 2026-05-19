@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
 import FilterPanel from '../components/FilterPanel';
@@ -17,7 +17,7 @@ export default function ScheduleBuilder() {
     const nextMonth = (now.getMonth() + 1) % 12;
     return nextMonth;
   });
-  const [assignedHikes, setAssignedHikes] = useState(() => {
+  const [scheduleStore, setScheduleStore] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(SCHEDULE_STORAGE_KEY));
       return saved && typeof saved === 'object' ? saved : {};
@@ -25,33 +25,46 @@ export default function ScheduleBuilder() {
       return {};
     }
   });
-  const [dragData, setDragData] = useState(null);
 
-  useEffect(() => {
-    localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(assignedHikes));
-  }, [assignedHikes]);
+  const assignedHikes = useMemo(() => {
+    return scheduleStore[MONTH_NAMES[selectedMonth]] || {};
+  }, [scheduleStore, selectedMonth]);
+
+  const [dragData, setDragData] = useState(null);
+  const [showScheduled, setShowScheduled] = useState(false);
+
+  const updateMonthSchedule = useCallback((monthName, updater) => {
+    setScheduleStore(prev => {
+      const current = prev[monthName] || {};
+      const next = updater(current);
+      const newStore = { ...prev, [monthName]: next };
+      localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(newStore));
+      return newStore;
+    });
+  }, []);
 
   const year = 2026;
 
-  const monthHikes = useMemo(() => {
+  const allScheduleHikes = useMemo(() => {
     if (!scheduleData) return [];
-    const monthAbbr = MONTH_ABBR[selectedMonth];
-    return scheduleData[monthAbbr] || [];
-  }, [scheduleData, selectedMonth]);
+    const all = [];
+    Object.values(scheduleData).forEach(monthHikes => {
+      all.push(...monthHikes);
+    });
+    return all;
+  }, [scheduleData]);
 
-  const assignedDays = useMemo(() => {
-    const days = new Set();
-    Object.keys(assignedHikes).forEach(d => days.add(parseInt(d)));
-    return days;
-  }, [assignedHikes]);
+  const uniqueHikes = useMemo(() => {
+    const seen = new Set();
+    return allScheduleHikes.filter(h => {
+      if (seen.has(h.hike)) return false;
+      seen.add(h.hike);
+      return true;
+    });
+  }, [allScheduleHikes]);
 
-  const availableHikes = useMemo(() => {
-    const assignedDaysArr = Array.from(assignedDays);
-    return monthHikes.filter(h => !assignedDaysArr.includes(h.day));
-  }, [monthHikes, assignedDays]);
-
-  const filteredHikes = useMemo(() => {
-    let result = availableHikes;
+   const filteredHikes = useMemo(() => {
+    let result = uniqueHikes;
 
     if (filters.search.trim()) {
       const q = filters.search.toLowerCase();
@@ -83,7 +96,7 @@ export default function ScheduleBuilder() {
     });
 
     return result;
-  }, [availableHikes, filters, trails]);
+  }, [uniqueHikes, filters, trails]);
 
   const wedFriDates = useMemo(() => {
     const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
@@ -118,6 +131,33 @@ export default function ScheduleBuilder() {
     setDragData(null);
   };
 
+  const scheduledCards = useMemo(() => {
+    return wedFriDates
+      .filter(day => assignedHikes[day])
+      .map(day => {
+        const hike = assignedHikes[day];
+        const trail = matchTrail(hike.hike);
+        if (!trail) return null;
+        return (
+          <div
+            key={day}
+            draggable
+            onDragStart={() => handleDragStart(hike, day)}
+            onDragEnd={handleDragEnd}
+            className="cursor-grab active:cursor-grabbing"
+          >
+            <div className="relative">
+              <TrailCard trail={trail} isActive={false} />
+              <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center">
+                {day}
+              </div>
+            </div>
+          </div>
+        );
+      })
+      .filter(Boolean);
+  }, [wedFriDates, assignedHikes, matchTrail, handleDragStart, handleDragEnd]);
+
   const handleDropOnDate = (targetDay) => {
     if (!dragData) return;
 
@@ -128,7 +168,7 @@ export default function ScheduleBuilder() {
       return;
     }
 
-    setAssignedHikes(prev => {
+    updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
       const next = { ...prev };
       if (sourceDay !== null && sourceDay !== undefined) {
         delete next[sourceDay];
@@ -148,7 +188,7 @@ export default function ScheduleBuilder() {
       return;
     }
 
-    setAssignedHikes(prev => {
+    updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
       const next = { ...prev };
       delete next[sourceDay];
       return next;
@@ -157,7 +197,7 @@ export default function ScheduleBuilder() {
   };
 
   const removeHike = (day) => {
-    setAssignedHikes(prev => {
+    updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
       const next = { ...prev };
       delete next[day];
       return next;
@@ -250,6 +290,31 @@ export default function ScheduleBuilder() {
           <Link to="/" className="text-green-700 hover:text-green-900 font-medium text-sm">
             Browse Trails
           </Link>
+          <button
+            onClick={() => setShowScheduled(!showScheduled)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              showScheduled
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Scheduled ({assignedCount})
+          </button>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
+          >
+            {MONTH_NAMES.map((name, idx) => {
+              const monthAbbr = name.substring(0, 3);
+              const count = scheduleData[monthAbbr] ? scheduleData[monthAbbr].length : 0;
+              return (
+                <option key={idx} value={idx}>
+                  {name} ({count} hikes)
+                </option>
+              );
+            })}
+          </select>
           <p className="text-gray-600 text-sm ml-auto">
             {assignedCount}/{wedFriDates.length} dates filled
           </p>
@@ -261,6 +326,26 @@ export default function ScheduleBuilder() {
           lookup={lookup}
           resetFilters={() => setFilters({ ...DEFAULT_FILTERS })}
         />
+
+        {/* Scheduled Hikes Section */}
+        {showScheduled && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-4">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-800">
+                Assigned Hikes ({scheduledCards.length})
+              </h3>
+            </div>
+            <div className="p-4">
+              {scheduledCards.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No hikes assigned yet</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {scheduledCards}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-6">
           {/* Left Panel - Available Hikes */}
@@ -298,25 +383,10 @@ export default function ScheduleBuilder() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-800">
-                  {MONTH_NAMES[selectedMonth]} {year} — Wed/Fri
+                  {year} — Wed/Fri Dates
                 </h3>
               </div>
               <div className="p-4">
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-4 focus:ring-green-500 focus:border-green-500"
-                >
-                  {MONTH_NAMES.map((name, idx) => {
-                    const monthAbbr = name.substring(0, 3);
-                    const count = scheduleData[monthAbbr] ? scheduleData[monthAbbr].length : 0;
-                    return (
-                      <option key={idx} value={idx}>
-                        {name} ({count} hikes)
-                      </option>
-                    );
-                  })}
-                </select>
                 <div className="space-y-3">
                   {wedFriDates.map((day) => {
                     const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
