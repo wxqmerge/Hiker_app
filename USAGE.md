@@ -17,7 +17,17 @@ Click any trail card to see its full details (description, pros, cons, leader in
 
 ### Editing Trail Data
 
-Each trail detail page has editable fields. Changes are saved to your browser's local storage and persist across sessions. Use **Export Merged Data** on the Home page to download your edits as JSON files.
+Each trail detail page has editable fields. Changes are saved to IndexedDB immediately and persist across sessions and app rebuilds. Use **Trail Manager** (`/trails`) to manage trails with search, index numbers, and CRUD operations.
+
+### Trail Manager
+
+Navigate to **Trail Manager** (`/trails`) to:
+- **View** all trails with index numbers, distance, and difficulty
+- **Search** by trail name, full name, or ID
+- **Add** new trails with the "New Trail" button
+- **Edit** trails (navigates to trail detail page)
+- **Delete** trails with confirmation
+- **Import/Export** trail data as JSON for backup or Excel export
 
 ## Schedule Builder
 
@@ -84,15 +94,15 @@ Debug mode is controlled by a localStorage key and does not affect functionality
 
 ## Data Persistence
 
-All user data is stored in your browser's local storage:
+Trail data is stored in IndexedDB (`hiker-trails` database). Schedule data is stored in localStorage:
 
-| Key | Content |
-|-----|---------|
-| `hiker-trail-edits` | Trail edits from browse/detail pages |
-| `hiker-schedule` | Per-month schedule data (all months) |
-| `hiker-schedule-debug` | Debug mode toggle (`true`/`false`) |
+| Storage | Key/DB | Content |
+|---------|--------|---------|
+| IndexedDB | `hiker-trails` | Trail data and edits (persists across rebuilds) |
+| localStorage | `hiker-schedule` | Per-month schedule data (all months) |
+| localStorage | `hiker-schedule-debug` | Debug mode toggle (`true`/`false`) |
 
-Clearing browser data will remove all schedules and edits. Use Export before clearing.
+Clearing browser data will remove all schedules and trail data. Use Export before clearing.
 
 ## Technical Notes
 

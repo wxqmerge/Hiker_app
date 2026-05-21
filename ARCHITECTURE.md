@@ -40,8 +40,20 @@ A static React web application for browsing and managing SOTHH trail data. The a
 │  │                                                   │  │
 │  │  ┌───────────────────────────────────────────┐   │  │
 │  │  │           Custom Hooks                    │   │  │
-│  │  │  useTrails, useTrailDetails, useFilters   │   │  │
+│  │  │  useTrailStore, useTrails, useFilters     │   │  │
 │  │  └───────────────────────────────────────────┘   │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│              Browser IndexedDB                          │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  hiker-trails (DB)                                │  │
+│  │  ┌─────────────┐  ┌─────────────┐                │  │
+│  │  │  trails     │  │  details    │                │  │
+│  │  │  (key: id)  │  │  (key: id)  │                │  │
+│  │  └─────────────┘  └─────────────┘                │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -104,14 +116,17 @@ Excel Files (.xls)
 ```
 App Start
     │
-    ├── Check for embedded data (window.__EMBEDDED_DATA__)
-    │   ├── Present → Use embedded data (file:// protocol)
-    │   └── Absent → Fetch from /data/*.json (http:// protocol)
+    ├── useTrailStore initializes IndexedDB (hiker-trails)
+    │   │
+    │   ├── DB empty? → Seed from embedded data
+    │   └── DB has data? → Smart merge:
+    │       ├── Add new trails from embedded data
+    │       └── Preserve existing trail edits
     │
-    ├── Load trails.json → useTrails hook → React state
-    ├── Load trail_details.json → useTrailDetails hook
-    ├── Load schedule.json → useTrails hook (returns schedule data)
-    └── Load lookup.json → reference data (difficulty, parking, months)
+    ├── useTrails reads from IndexedDB via useTrailStore
+    ├── useTrailDetails reads from IndexedDB via useTrailStore
+    ├── schedule.json → useTrails hook (embedded, static reference)
+    └── lookup.json → reference data (embedded, static reference)
 ```
 
 ## Component Architecture
@@ -120,8 +135,9 @@ App Start
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| Home | `src/pages/Home.jsx` | Landing page with trail grid, filters, conditional export button |
-| TrailDetail | `src/pages/TrailDetail.jsx` | Full trail info with edit capability |
+| Home | `src/pages/Home.jsx` | Landing page with trail grid, filters, links to Trail Manager |
+| TrailDetail | `src/pages/TrailDetail.jsx` | Full trail info with edit capability, persists to IndexedDB |
+| TrailManager | `src/pages/TrailManager.jsx` | CRUD interface for trails with search, index numbers, import/export |
 | ScheduleBuilder | `src/pages/ScheduleBuilder.jsx` | Two-panel drag-and-drop schedule builder |
 
 ### Components
@@ -136,8 +152,9 @@ App Start
 
 | Hook | Path | Purpose |
 |------|------|---------|
-| useTrails | `src/hooks/useTrails.js` | Load, cache, and provide trail data + schedule |
-| useTrailDetails | `src/hooks/useTrailDetails.js` | Get trail details with embedded data + fetch fallback |
+| useTrailStore | `src/hooks/useTrailStore.js` | IndexedDB CRUD operations with smart merge on seed |
+| useTrails | `src/hooks/useTrails.js` | Read trail data from IndexedDB via useTrailStore |
+| useTrailDetails | `src/hooks/useTrailDetails.js` | Read trail details from IndexedDB via useTrailStore |
 | useFilters | `src/hooks/useTrails.js` | Shared filter state and sorting (co-located with `useTrails`) |
 
 ### Utilities
@@ -159,37 +176,30 @@ JSON data is embedded directly into the HTML file at build time via a custom Vit
 - Works from `file://` protocol
 - Single file deployment
 
+### IndexedDB (Trail Data)
+
+Trail data and edits are stored in IndexedDB (`hiker-trails` database) with two object stores:
+- `trails` (keyPath: `id`) — Main trail records
+- `details` (keyPath: `id`) — Extended trail details
+
+**Smart Merge on Seed:** On app load, embedded data is merged with IndexedDB:
+- New trails from embedded data are added to the database
+- Existing trail edits in IndexedDB are preserved
+- This allows rebuilding the app without losing user edits
+
 ### localStorage Keys
 
 | Key | Content |
 |-----|---------|
-| `hiker-trail-edits` | User edits to trail details (description, notes, fullName, distance, elevation, difficulty, parking, range, bestSeason, parkingInfo, availableMonths, pros, others, leaders) |
 | `hiker-schedule` | Per-month schedule: `{ "June": { 3: { trail_id: "elwha", hike: "Elwha Delta" }, 5: { trail_id: "mt-townsend", hike: "Mt. Townsend" } } }` |
 | `hiker-schedule-debug` | Debug mode toggle (`true`/`false`) |
 
-### Edit Data Structure
+### Export Formats
 
-```json
-{
-  "trail-id": {
-    "description": "edited description",
-    "notes": "edited notes",
-    "fullName": "edited trail name",
-    "distance": 5.2,
-    "distanceExtended": 7.1,
-    "elevationStart": 800,
-    "elevationMax": 1200,
-    "difficulty": "Moderate",
-    "parking": "Lot",
-    "range": "30",
-    "bestSeason": "Summer",
-    "parkingInfo": "Free parking available",
-    "pros": "edited pros",
-    "others": "edited others",
-    "leaders": ["Alice", "Bob"]
-  }
-}
-```
+| Format | File | Purpose |
+|--------|------|---------|
+| `trail-data-export.json` | Full backup for app import | `{ trails: { trails: [...] }, trailDetails: {...} }` |
+| `export_for_excel.json` | Python script input | `{ trails: [...], trail_details: {...} }` |
 
 ### Schedule Data Structure
 
@@ -221,6 +231,7 @@ The app uses `MemoryRouter` instead of `BrowserRouter` to work with `file://` pr
 |-------|------|
 | `/` | Home |
 | `/trail/:id` | Trail detail |
+| `/trails` | Trail Manager (CRUD) |
 | `/schedule` | Schedule Builder |
 
 ## Build Pipeline
@@ -357,13 +368,15 @@ The Index sheet has fixed quarter columns:
 
 ```
 D:\hiker\
-├── Hike Data BaseM.xls        # Source trail database
-├── SOTHH schedule.xls          # Source hike schedule
+├── Hike Data BaseM.xls        # Source trail database (NEVER committed)
+├── SOTHH schedule.xls          # Source hike schedule (NEVER committed)
 ├── README.md                   # User documentation
 ├── ARCHITECTURE.md             # This file
+├── USAGE.md                    # Usage guide
 ├── extract_trails_xls.py       # Excel extraction script
 ├── match_schedule.py           # Schedule matching script
-├── exported_data/              # Extracted JSON data
+├── export_to_xls.py            # JSON → Excel export script
+├── exported_data/              # Extracted JSON data (NEVER committed)
 │   ├── trails.json             # Main trail database
 │   ├── trail_details.json      # Extended trail info
 │   ├── lookup.json             # Reference data
@@ -386,8 +399,10 @@ D:\hiker\
     │   ├── pages/              # Page components
     │   │   ├── Home.jsx
     │   │   ├── TrailDetail.jsx
+    │   │   ├── TrailManager.jsx
     │   │   └── ScheduleBuilder.jsx
     │   ├── hooks/              # Custom hooks
+    │   │   ├── useTrailStore.js   # IndexedDB CRUD with smart merge
     │   │   ├── useTrails.js       # (also contains useFilters)
     │   │   └── useTrailDetails.js
     │   ├── utils/              # Utility functions
@@ -395,8 +410,10 @@ D:\hiker\
     │   │   ├── formatTrail.js
     │   │   ├── constants.js
     │   │   ├── report.js
-    │   │   └── data.js
+    │   │   ├── data.js
+    │   │   └── io.js             # File import/export utilities
     │   └── test/               # Test suite
+    │       ├── setup.ts        # IndexedDB mock (fake-indexeddb)
     │       ├── utils/          # Utility tests
     │       ├── hooks/          # Hook tests
     │       ├── components/     # Component tests
@@ -423,12 +440,13 @@ D:\hiker\
 
 ## Performance Considerations
 
-- **Single file deployment**: ~582KB total, gzips to ~144KB
+- **Single file deployment**: ~590KB total, gzips to ~145KB
 - **No network requests at runtime**: All data embedded
-- **localStorage caching**: Edits and schedules persist across sessions
+- **IndexedDB storage**: ~50MB+ capacity, native browser persistence, works with `file://` protocol
+- **Smart merge on seed**: Adds new trails from embedded data without losing user edits
 - **MemoryRouter**: No hash or history API overhead
 - **React 19**: Latest optimizations
-- **Comprehensive test suite**: 157 tests across 13 files
+- **Comprehensive test suite**: 157 tests across 13 files with IndexedDB mocks
 
 ## Security Considerations
 
