@@ -1,47 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
+import { useTrailStore } from './useTrailStore';
 
 export function useTrails() {
-  const [trails, setTrails] = useState([]);
-  const [lookup, setLookup] = useState(null);
-  const [schedule, setSchedule] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { trails, trailDetails, loading } = useTrailStore();
+  const lookup = useMemo(() => window.__EMBEDDED_DATA__?.lookup ?? null, []);
+  const schedule = useMemo(() => window.__EMBEDDED_DATA__?.schedule ?? null, []);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        if (window.__EMBEDDED_DATA__) {
-          const trailsArray = window.__EMBEDDED_DATA__.trails?.trails || window.__EMBEDDED_DATA__.trails || [];
-          setTrails(Array.isArray(trailsArray) ? trailsArray : []);
-          setLookup(window.__EMBEDDED_DATA__.lookup);
-          if (window.__EMBEDDED_DATA__.schedule) {
-            setSchedule(window.__EMBEDDED_DATA__.schedule);
-          }
-          setLoading(false);
-          return;
-        }
-
-        const [trailsRes, lookupRes] = await Promise.all([
-          fetch('/data/trails.json'),
-          fetch('/data/lookup.json')
-        ]);
-        
-        const trailsData = await trailsRes.json();
-        const lookupData = await lookupRes.json();
-        
-        setTrails(trailsData.trails || []);
-        setLookup(lookupData);
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  return { trails, lookup, schedule, loading, error };
+  return { trails, lookup, schedule, trailDetails, loading };
 }
 
 export function useFilters(trails) {

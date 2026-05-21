@@ -1,5 +1,26 @@
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
+import * as fakeIndexedDB from 'fake-indexeddb';
+import { beforeAll, afterAll, beforeEach } from 'vitest';
+
+// Mock indexedDB for tests
+Object.defineProperty(globalThis, 'indexedDB', { value: fakeIndexedDB.indexedDB, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBRequest', { value: fakeIndexedDB.IDBRequest, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBFactory', { value: fakeIndexedDB.IDBFactory, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBDatabase', { value: fakeIndexedDB.IDBDatabase, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBObjectStore', { value: fakeIndexedDB.IDBObjectStore, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBIndex', { value: fakeIndexedDB.IDBIndex, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBKeyRange', { value: fakeIndexedDB.IDBKeyRange, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBTransaction', { value: fakeIndexedDB.IDBTransaction, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBCursor', { value: fakeIndexedDB.IDBCursor, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBCursorWithValue', { value: fakeIndexedDB.IDBCursorWithValue, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBVersionChangeEvent', { value: fakeIndexedDB.IDBVersionChangeEvent, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'IDBOpenDBRequest', { value: fakeIndexedDB.IDBOpenDBRequest, writable: true, configurable: true });
+
+// Clear IndexedDB between tests so each test gets a fresh seed
+beforeEach(() => {
+  try { fakeIndexedDB.forceCloseDatabase('hiker-trails'); } catch {}
+});
 
 // Mock window.location for file:// protocol checks
 Object.defineProperty(window, 'location', {
