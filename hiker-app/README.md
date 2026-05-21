@@ -4,7 +4,7 @@ A static React web application for browsing hiking trail data from the Olympic P
 
 ## Overview
 
-This app displays 178 hiking trails with full search, filter, and navigation capabilities. Includes a Schedule Builder for planning monthly hikes.
+This app displays 178 hiking trails with full search, filter, and navigation capabilities. Includes a Schedule Builder for planning monthly hikes and a Trail Manager for CRUD operations. All trail data is stored in IndexedDB for persistence across sessions and rebuilds.
 
 ## Browse Features
 
@@ -64,6 +64,18 @@ This is a pleasant nature trail leaving from Loop "E" in the Heart of the Hills 
 - 60-89 minutes = ride-$7
 - >= 90 minutes = ride-$10
 
+## Trail Manager
+
+Navigate to `/trails` to manage your trail data:
+
+- **Index Numbers** — Each trail shows its position in the list
+- **Search** — Filter by trail name, full name, or ID
+- **New Trail** — Create a new trail with a generated ID
+- **Edit** — Navigate to trail detail page to modify fields
+- **Delete** — Remove trails with confirmation dialog
+- **Import/Export** — Backup and restore trail data as JSON
+- **Export for Excel** — Generate `export_for_excel.json` for Python script
+
 ## Schedule Builder
 
 Two-panel drag-and-drop interface for planning monthly hikes:
@@ -81,8 +93,9 @@ Two-panel drag-and-drop interface for planning monthly hikes:
 - React 19 with Vite 8
 - React Router (MemoryRouter)
 - Tailwind CSS 4
-- Static JSON data (no backend required)
-- Vitest + jsdom + testing-library (157 tests)
+- IndexedDB via `idb` library (trail data persistence)
+- Static JSON data embedded at build time (no backend required)
+- Vitest + jsdom + testing-library + fake-indexeddb (157 tests)
 
 ---
 
@@ -258,8 +271,10 @@ hiker-app/
 │   ├── pages/
 │   │   ├── Home.jsx             # Main browse page
 │   │   ├── TrailDetail.jsx      # Trail detail view
+│   │   ├── TrailManager.jsx     # Trail CRUD management
 │   │   └── ScheduleBuilder.jsx  # Schedule builder
 │   ├── hooks/
+│   │   ├── useTrailStore.js     # IndexedDB CRUD with smart merge
 │   │   ├── useTrails.js         # Data fetching & filtering
 │   │   ├── useTrailDetails.js   # Trail details loading
 │   │   └── useFilters.js        # Filter state & sorting
@@ -268,8 +283,10 @@ hiker-app/
 │   │   ├── formatTrail.js       # Shared trail formatting
 │   │   ├── constants.js         # Shared constants
 │   │   ├── report.js            # Report generation utilities
-│   │   └── data.js              # Trail details access
+│   │   ├── data.js              # Trail details access
+│   │   └── io.js                # File import/export utilities
 │   ├── test/                    # Test suite (157 tests)
+│   │   ├── setup.ts             # IndexedDB mock (fake-indexeddb)
 │   │   ├── utils/
 │   │   ├── hooks/
 │   │   ├── components/

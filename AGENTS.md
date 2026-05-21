@@ -10,20 +10,29 @@
 2. Run `python extract_trails_xls.py` → writes `exported_data/trails.json`, `trail_details.json`, `lookup.json`
 3. Run `python match_schedule.py` → updates `exported_data/trails.json` with month scores
 4. Copy JSON to `hiker-app/public/data/`
-5. `cd hiker-app && npm run build` → single `dist/index.html` (~525KB) with all data embedded
+5. `cd hiker-app && npm run build` → single `dist/index.html` (~590KB) with all data embedded
+6. **IndexedDB smart merge**: On app load, embedded data seeds IndexedDB. New trails are added; existing edits are preserved.
 
 ## Runtime data loading
 - Uses **MemoryRouter** (not BrowserRouter) — required for `file://` protocol
-- `useTrails()` checks `window.__EMBEDDED_DATA__` first (embedded mode), falls back to `fetch('/data/*.json')` (dev mode)
-- The check is `if (window.__EMBEDDED_DATA__)` — it does NOT check protocol for embedded data
-- `TrailDetail.jsx` and `Home.jsx` also check `window.location.protocol !== 'file:'` before fetching trail_details.json
+- `useTrailStore()` initializes IndexedDB (`hiker-trails` DB) with smart merge from embedded data
+- `useTrails()` reads from IndexedDB via `useTrailStore`
+- `useTrailDetails()` reads from IndexedDB via `useTrailStore`
+- `lookup` and `schedule` are static reference data from `window.__EMBEDDED_DATA__`
 
-## Edit persistence
-- User edits stored in **localStorage** key `hiker-trail-edits`
-- Structure: `{ [trailId]: { description, notes, pros, others, leaders, distance, ... } }`
-- `getEditedValue(field)` in TrailDetail.jsx returns edited value or falls back to original
-- "Export Merged Data" button on Home page merges edits into JSON and downloads files
-- After export, localStorage is cleared
+## Trail data persistence (IndexedDB)
+- Trail data and edits stored in **IndexedDB** (`hiker-trails` database)
+- Two object stores: `trails` (keyPath: `id`), `details` (keyPath: `id`)
+- Smart merge on seed: New trails from embedded data are added; existing edits preserved
+- `useTrailStore` provides CRUD: `saveTrail()`, `saveTrailDetail()`, `deleteTrail()`, `exportJSON()`, `importJSON()`
+- Schedule state remains in **localStorage** (`hiker-schedule` key)
+
+## Export formats
+- **Export JSON** (`trail-data-export.json`): Full backup for app import
+  - Format: `{ trails: { trails: [...] }, trailDetails: {...} }`
+- **Export for Excel** (`export_for_excel.json`): Python script input
+  - Format: `{ trails: [...], trail_details: {...} }`
+- Run `python export_to_xls.py` to convert JSON back to Excel format
 
 ## Editable fields (all from TrailDetail.jsx `getEditedValue`)
 - **trails.json fields**: `notes`, `fullName`, `distance`, `distanceExtended`, `elevationStart`, `elevationMax`, `difficulty`, `parking`, `range`, `bestSeason`, `parkingInfo`, `availableMonths`
@@ -39,11 +48,13 @@
 - Build: `cd hiker-app && npm run build`
 - Lint: `cd hiker-app && npm run lint`
 - Preview: `cd hiker-app && npm run preview`
-- No test or typecheck scripts exist
+- Test: `cd hiker-app && npm run test:run` (157 tests, uses `fake-indexeddb` mock)
 
 ## Routing (App.jsx)
 - `/` → Home (browse page with filters)
 - `/trail/:id` → TrailDetail
+- `/trails` → TrailManager (CRUD interface)
+- `/schedule` → ScheduleBuilder
 - Browse is NOT a separate route — it's the Home page with filters
 
 ## Excel extraction quirks

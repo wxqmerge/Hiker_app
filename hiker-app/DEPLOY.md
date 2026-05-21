@@ -114,6 +114,13 @@ hiker-app/dist/
    vercel --prod  # or your deploy method
    ```
 
+**Note:** Existing trail edits in IndexedDB are preserved across rebuilds (smart merge). New trails from embedded data are added; existing trail edits are kept.
+
+### To export trail data to Excel:
+
+1. In Trail Manager (`/trails`), click "Export for Excel"
+2. Run `python D:\hiker\export_to_xls.py` to convert `export_for_excel.json` back to Excel format
+
 ---
 
 ## Environment Variables (Not Needed)
@@ -168,5 +175,7 @@ match_schedule.py → updated trails.json + schedule.json
               ↓
 copy to hiker-app/public/data/
               ↓
-npm run build → dist/index.html (~587 KB)
+npm run build → dist/index.html (~590 KB)
+              ↓
+App load → IndexedDB smart merge (preserves edits, adds new trails)
 ```

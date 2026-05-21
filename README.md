@@ -20,9 +20,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full data pipeline, scripts, and 
 - **Sort** by Name, Popularity, Elevation (↑/↓), Distance (↑/↓), or Not Wilderness (non-◆ first, then alphabetical)
 - **Trail Detail** pages with full information
 - **Edit** trail details (description, notes, fullName, distance, elevation, difficulty, parking, range, pros, others, leaders, and more)
-- **Export Merged Data** - Downloads updated JSON files with your edits
+- **Trail Manager** - CRUD interface for adding, editing, and deleting trails with search and index numbers
 - **Copy Report** - Generate formatted text for trail reports
 - **Schedule Builder** - Two-panel drag-and-drop interface for planning hikes on Wed/Fri dates
+- **Persistent Storage** - All trail edits stored in IndexedDB, persisting across sessions and rebuilds
+- **Import/Export** - Export trail data as JSON for backup or Excel export
 
 ## Monthly Availability Display
 
@@ -53,6 +55,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project layout.
 - Run both scripts in order: extract first, then match
 - Copy updated JSON files to `hiker-app/public/data/`
 - Rebuild with `npm run build`
+- **Note**: Existing trail edits in IndexedDB are preserved across rebuilds (smart merge)
+
+### Export trail data to Excel
+1. In Trail Manager (`/trails`), click "Export for Excel"
+2. Run `python export_to_xls.py` to convert `export_for_excel.json` back to Excel format
 
 ## License
 
