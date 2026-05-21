@@ -498,14 +498,12 @@ export default function TrailManager() {
   };
 
   const handleExportForExcel = async () => {
-    // Export in format expected by export_to_xls.py
-    const data = await exportJSON();
-    // Format: separate trails.json and trail_details.json for the Python script
-    downloadBlob(JSON.stringify({ trails: data.trails.trails }, null, 2), 'trails.json');
-    setTimeout(() => {
-      downloadBlob(JSON.stringify(data.trailDetails, null, 2), 'trail_details.json');
-    }, 500);
-  };
+     const data = await exportJSON();
+     downloadBlob(
+       JSON.stringify({ trails: data.trails.trails, trail_details: data.trailDetails }, null, 2),
+       'export_for_excel.json'
+     );
+   };
 
   if (loading) {
     return (
@@ -561,6 +559,7 @@ export default function TrailManager() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
+                  <th className="text-right px-2 py-3 text-sm font-semibold text-gray-700 w-12">#</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Name</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Distance</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Difficulty</th>
@@ -568,8 +567,9 @@ export default function TrailManager() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTrails.map(trail => (
+                {filteredTrails.map((trail, index) => (
                   <tr key={trail.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="px-2 py-3 text-right text-sm text-gray-400">{index + 1}</td>
                     <td className="px-4 py-3">
                       <Link to={`/trail/${trail.id}`} className="text-green-700 hover:text-green-900 font-medium">
                         {trail.name}
@@ -819,21 +819,17 @@ def month_to_quarters(months):
     return quarters
 
 def main():
-    # Read input files
-    trails_path = Path('trails.json')
-    details_path = Path('trail_details.json')
-    
-    if not trails_path.exists():
-        print("Error: trails.json not found. Run 'Export for Excel' from the app first.")
+    data_path = Path('export_for_excel.json')
+
+    if not data_path.exists():
+        print("Error: export_for_excel.json not found. Run 'Export for Excel' from the app first.")
         return
-    
-    with open(trails_path) as f:
-        trails_data = json.load(f)
-    
-    trails = trails_data.get('trails', trails_data) if isinstance(trails_data, dict) else trails_data
-    
-    with open(details_path) as f:
-        details_data = json.load(f)
+
+    with open(data_path) as f:
+        data = json.load(f)
+
+    trails = data.get('trails', [])
+    details_data = data.get('trail_details', {})
     
     # Create workbook
     wb = Workbook()
@@ -995,12 +991,13 @@ Expected: Successful build, `dist/index.html` created
 1. Open `dist/index.html` in browser — trails load from embedded data
 2. Edit a trail — changes persist across page navigation
 3. Refresh page — edits are preserved (IndexedDB)
-4. Navigate to `/trails` — trail manager shows all trails
-5. Delete a trail — it's removed from list and detail page
-6. Create new trail — it appears in list and is editable
-7. Export JSON — downloads correct format
-8. Export for Excel — downloads `trails.json` and `trail_details.json`
-9. Run `python export_to_xls.py` — produces `hiker_export.xlsx`
+4. Navigate to `/trails` — trail manager shows all trails with index numbers
+5. Search for trails — filters by name, fullName, and ID
+6. Delete a trail — it's removed from list and detail page
+7. Create new trail — it appears in list and is editable
+8. Export JSON — downloads `trail-data-export.json` (for app import)
+9. Export for Excel — downloads single `export_for_excel.json`
+10. Run `python export_to_xls.py` — produces `hiker_export.xlsx`
 
 - [ ] **Step 4: Commit**
 
