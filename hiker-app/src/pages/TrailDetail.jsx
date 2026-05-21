@@ -1,19 +1,17 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { useTrails } from '../hooks/useTrails';
+import { useTrailStore } from '../hooks/useTrailStore';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
 import { downloadBlob, createImportFileInput } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
-import { useTrailDetails } from '../hooks/useTrailDetails';
-
-const EDIT_STORAGE_KEY = 'hiker-trail-edits';
 
 export default function TrailDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { trails, loading } = useTrails();
-  const trailDetails = useTrailDetails();
+  const { trailDetails, saveTrail, saveTrailDetail, exportJSON, importJSON: importTrailData } = useTrailStore();
   const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedFields, setEditedFields] = useState({});
@@ -22,17 +20,6 @@ export default function TrailDetail() {
   const trail = trails.find(t => t.id === id);
   const currentIndex = trails.findIndex(t => t.id === id);
 
-  useEffect(() => {
-    if (trail) {
-      const savedEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
-      if (savedEdits[trail.id]) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setEditedFields(savedEdits[trail.id]);
-      }
-    }
-  }, [trail]);
-
-  // Close settings menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (showSettingsMenu && !e.target.closest('.fixed.bottom-6')) {
@@ -43,30 +30,24 @@ export default function TrailDetail() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showSettingsMenu]);
 
- // Get trail details with fallback for ID mismatch
   const trailDetailsResult = useMemo(() => getTrailDetailsById(trailDetails, id), [trailDetails, id]);
 
-  // Derive available months from seasonal dict
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const availableMonthsFromSeasonal = useMemo(() => {
     const seasonal = trail?.seasonal;
     if (!seasonal) return [];
     return Object.entries(seasonal)
       .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
       .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
-  }, [trail?.seasonal]);
+  }, [trail]);
 
-  // Get edited value or fallback to original
   const getEditedValue = (field) => {
     const details = trailDetailsResult?.[id];
-    
-    // trail_details.json fields
+
     if (field === 'description') return editedFields.description ?? details?.fullDescription;
     if (field === 'pros') return editedFields.pros ?? details?.pros;
     if (field === 'others') return editedFields.others ?? details?.others;
     if (field === 'leaders') return editedFields.leaders ?? details?.leaders;
-    
-    // trails.json fields
+
     if (field === 'notes') return editedFields.notes ?? trail.notes;
     if (field === 'fullName') return editedFields.fullName ?? trail.fullName ?? trail.name;
     if (field === 'distance') return editedFields.distance ?? trail.distance;
@@ -79,68 +60,95 @@ export default function TrailDetail() {
     if (field === 'bestSeason') return editedFields.bestSeason ?? trail.seasonal?.bestSeason;
     if (field === 'parkingInfo') return editedFields.parkingInfo ?? trail.seasonal?.parkingInfo;
     if (field === 'availableMonths') return editedFields.availableMonths ?? availableMonthsFromSeasonal;
-    
+
     return null;
   };
 
-  // Start edit mode
   const startEditMode = () => {
+    setEditedFields({});
     setIsEditMode(true);
   };
 
-  // Save edits to localStorage
-  const saveEdits = () => {
-    const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
-    allEdits[trail.id] = { ...editedFields };
-    localStorage.setItem(EDIT_STORAGE_KEY, JSON.stringify(allEdits));
+  const saveEdits = async () => {
+    const updatedTrail = { ...trail };
+    if (editedFields.fullName !== undefined) updatedTrail.fullName = editedFields.fullName;
+    if (editedFields.distance !== undefined) updatedTrail.distance = editedFields.distance;
+    if (editedFields.distanceExtended !== undefined) updatedTrail.distanceExtended = editedFields.distanceExtended;
+    if (editedFields.elevationStart !== undefined) updatedTrail.elevationStart = editedFields.elevationStart;
+    if (editedFields.elevationMax !== undefined) updatedTrail.elevationMax = editedFields.elevationMax;
+    if (editedFields.difficulty !== undefined) updatedTrail.difficulty = editedFields.difficulty;
+    if (editedFields.parking !== undefined) updatedTrail.parking = editedFields.parking;
+    if (editedFields.range !== undefined) updatedTrail.range = editedFields.range;
+    if (editedFields.notes !== undefined) updatedTrail.notes = editedFields.notes;
+
+    if (editedFields.bestSeason !== undefined || editedFields.parkingInfo !== undefined || editedFields.availableMonths !== undefined) {
+      if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
+      if (editedFields.bestSeason !== undefined) updatedTrail.seasonal.bestSeason = editedFields.bestSeason;
+      if (editedFields.parkingInfo !== undefined) updatedTrail.seasonal.parkingInfo = editedFields.parkingInfo;
+      if (editedFields.availableMonths !== undefined) updatedTrail.seasonal.availableMonths = editedFields.availableMonths;
+    }
+
+    await saveTrail(updatedTrail);
+
+    const updatedDetail = {};
+    if (editedFields.description !== undefined) updatedDetail.fullDescription = editedFields.description;
+    if (editedFields.pros !== undefined) updatedDetail.pros = editedFields.pros;
+    if (editedFields.others !== undefined) updatedDetail.others = editedFields.others;
+    if (editedFields.leaders !== undefined) updatedDetail.leaders = editedFields.leaders;
+
+    if (Object.keys(updatedDetail).length > 0) {
+      await saveTrailDetail(trail.id, updatedDetail);
+    }
+
     setIsEditMode(false);
   };
 
-  // Cancel edits
   const cancelEdits = () => {
     setEditedFields({});
     setIsEditMode(false);
   };
 
-  // Export all trail edits to JSON file
-  const exportEdits = () => {
-    const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
-    downloadBlob(JSON.stringify(allEdits, null, 2), 'trail-edits.json');
+  const exportEdits = async () => {
+    const data = await exportJSON();
+    downloadBlob(JSON.stringify(data, null, 2), 'trail-data.json');
   };
 
-  // Import trail edits from JSON file
   const importEdits = () => {
     createImportFileInput(
-      (imported) => {
-        localStorage.setItem(EDIT_STORAGE_KEY, JSON.stringify(imported));
-        alert('Edits imported successfully!');
+      async (imported) => {
+        await importTrailData(imported);
+        alert('Data imported successfully!');
         window.location.reload();
       },
       (msg) => alert(msg)
     );
   };
 
-  // Export current trail's edits as report text with source values
   const exportTrailEdits = () => {
-    const allEdits = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || '{}');
-    if (allEdits[trail.id]) {
-      const edits = allEdits[trail.id];
-      let text = `Trail: ${trail.name}\n\n`;
-      if (edits.description) text += `Description: ${edits.description}\n\n`;
-      if (edits.notes) text += `Notes: ${edits.notes}\n\n`;
-      if (edits.pros) text += `Pros: ${edits.pros}\n\n`;
-      if (edits.others) text += `Others: ${edits.others}\n\n`;
-      if (edits.leaders) {
-      const leaders = Array.isArray(edits.leaders) ? edits.leaders : [edits.leaders];
-      text += `Leaders: ${leaders.join(', ')}\n`;
+    let text = `Trail: ${trail.name}\n\n`;
+
+    const desc = getEditedValue('description');
+    if (desc) text += `Description: ${desc}\n\n`;
+
+    const notes = getEditedValue('notes');
+    if (notes) text += `Notes: ${notes}\n\n`;
+
+    const pros = getEditedValue('pros');
+    if (pros) text += `Pros: ${pros}\n\n`;
+
+    const others = getEditedValue('others');
+    if (others) text += `Others: ${others}\n\n`;
+
+    const leaders = getEditedValue('leaders');
+    if (leaders) {
+      const leaderArr = Array.isArray(leaders) ? leaders : [leaders];
+      text += `Leaders: ${leaderArr.join(', ')}\n`;
     }
 
-      navigator.clipboard.writeText(text);
-      alert('Trail edits copied to clipboard!');
-    }
+    navigator.clipboard.writeText(text);
+    alert('Trail edits copied to clipboard!');
   };
 
-  // Update a field
   const updateField = (field, value) => {
     setEditedFields(prev => ({ ...prev, [field]: value }));
   };
@@ -190,10 +198,8 @@ export default function TrailDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="container mx-auto px-4 py-3 max-w-3xl">
-        {/* Top Navigation Bar */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            {/* Left side: Back + Trail position */}
             <div className="flex items-center gap-4">
               <Link to="/" className="text-green-700 hover:text-green-900 font-medium flex items-center gap-1">
                 ← Browse
@@ -204,12 +210,10 @@ export default function TrailDetail() {
               </div>
             </div>
 
-            {/* Center: Trail name */}
             <div className="text-center flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-800 truncate">{trail.fullName || trail.name}</p>
             </div>
 
-            {/* Right side: Navigation + Copy Report */}
             <div className="flex items-center gap-2">
               <button
                 onClick={goToPrevious}
@@ -270,7 +274,6 @@ export default function TrailDetail() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {/* Header */}
           <div className="bg-green-800 text-white p-6">
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-3xl font-bold">{getEditedValue('fullName') || trail.fullName || trail.name}</h1>
@@ -285,11 +288,8 @@ export default function TrailDetail() {
             </span>
           </div>
 
-          {/* Content */}
           <div className="p-6">
-            {/* Stats Grid - All on one line */}
             <div className="grid grid-cols-4 gap-4 mb-6">
-              {/* Distance */}
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <svg className="w-6 h-6 mx-auto text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -300,8 +300,7 @@ export default function TrailDetail() {
                 </p>
                 <p className="text-sm text-gray-500">miles</p>
               </div>
-              
-              {/* Elevation Gain */}
+
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <svg className="w-6 h-6 mx-auto text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -312,7 +311,6 @@ export default function TrailDetail() {
                 <p className="text-sm text-gray-500">elevation gain</p>
               </div>
 
-              {/* Parking */}
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <svg className="w-6 h-6 mx-auto text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -321,7 +319,6 @@ export default function TrailDetail() {
                 <p className="text-sm text-gray-500">parking</p>
               </div>
 
-              {/* Ride - Combined Range and Cost */}
               {(getEditedValue('range') || rideCost) && (
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
                   <svg className="w-6 h-6 mx-auto text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,7 +332,6 @@ export default function TrailDetail() {
               )}
             </div>
 
-            {/* Full Description */}
             {getEditedValue('description') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
@@ -343,7 +339,6 @@ export default function TrailDetail() {
               </div>
             )}
 
-            {/* Notes */}
             {getEditedValue('notes') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Notes</h3>
@@ -351,13 +346,12 @@ export default function TrailDetail() {
               </div>
             )}
 
-            {/* Seasonal Availability */}
             {getEditedValue('availableMonths').length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Available Months</h3>
                 <div className="flex flex-wrap gap-2">
                   {getEditedValue('availableMonths').map(monthIdx => (
-                    <span 
+                    <span
                       key={monthIdx}
                       className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
                     >
@@ -368,7 +362,6 @@ export default function TrailDetail() {
               </div>
             )}
 
-            {/* Best Season */}
             {getEditedValue('bestSeason') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Best Season</h3>
@@ -376,7 +369,6 @@ export default function TrailDetail() {
               </div>
             )}
 
-            {/* Pros */}
             {getEditedValue('pros') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2 cursor-help" title="Field: pros">Pros</h3>
@@ -384,7 +376,6 @@ export default function TrailDetail() {
               </div>
             )}
 
-            {/* Others */}
             {getEditedValue('others') && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2 cursor-help" title="Field: others">Others</h3>
@@ -392,13 +383,12 @@ export default function TrailDetail() {
               </div>
             )}
 
-            {/* Leaders */}
             {getEditedValue('leaders') && getEditedValue('leaders').length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Trail Leaders</h3>
                 <div className="flex flex-wrap gap-2">
                   {getEditedValue('leaders').map((leader, idx) => (
-                    <span 
+                    <span
                       key={idx}
                       className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
                     >
@@ -411,21 +401,18 @@ export default function TrailDetail() {
           </div>
         </div>
 
-        {/* Settings Menu - Lower Right Corner */}
         <div className="fixed bottom-6 right-6 flex gap-3">
-          {/* Settings Icon */}
           <div className="relative">
             <button
               onClick={() => setShowSettingsMenu(!showSettingsMenu)}
               className="p-4 bg-gray-700 hover:bg-gray-800 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400"
-              title="Export/Import edits"
+              title="Export/Import data"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
             </button>
 
-            {/* Dropdown Menu */}
             {showSettingsMenu && (
               <div className="absolute bottom-full right-0 mb-3 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[180px] z-50">
                 <button
@@ -435,30 +422,27 @@ export default function TrailDetail() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Export All Edits
+                  Export All Data
                 </button>
                 <button onClick={() => { importEdits(); setShowSettingsMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Import Edits
+                  Import Data
                 </button>
-                {hasEdits && (
-                  <button
-                    onClick={() => { exportTrailEdits(); setShowSettingsMenu(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    Copy This Trail's Edits
-                  </button>
-                )}
+                <button
+                  onClick={() => { exportTrailEdits(); setShowSettingsMenu(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                  Copy This Trail's Info
+                </button>
               </div>
             )}
           </div>
 
-          {/* Edit Icon */}
           <button
             onClick={startEditMode}
             className="p-4 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-400"
@@ -471,14 +455,12 @@ export default function TrailDetail() {
         </div>
       </main>
 
-      {/* Edit Mode Overlay */}
       {isEditMode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit {trail.name}</h2>
 
-              {/* Basic Information */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -527,7 +509,6 @@ export default function TrailDetail() {
                 </div>
               </div>
 
-              {/* Distance & Elevation */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Distance & Elevation</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -572,7 +553,6 @@ export default function TrailDetail() {
                 </div>
               </div>
 
-              {/* Seasonal Information */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Seasonal Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -622,7 +602,6 @@ export default function TrailDetail() {
                 </div>
               </div>
 
-              {/* Trail Content */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Trail Content</h3>
                 <div className="space-y-4">
@@ -675,7 +654,6 @@ export default function TrailDetail() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <button
                   onClick={cancelEdits}

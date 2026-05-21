@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
+import { useTrailStore } from '../hooks/useTrailStore';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS } from '../utils/constants';
@@ -56,6 +57,7 @@ export default function ScheduleBuilder() {
   const { trails, loading, lookup, schedule: scheduleData } = useTrails();
   const { filters, setFilters } = useFilters(trails);
   const trailDetails = useTrailDetails();
+  const { exportJSON, importJSON: importTrailData } = useTrailStore();
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     const nextMonth = (now.getMonth() + 1) % 12;
@@ -283,20 +285,20 @@ const hikeTrailMap = useMemo(() => {
     downloadBlob(JSON.stringify(scheduleStore, null, 2), `hiker-schedule-${new Date().toISOString().split('T')[0]}.json`);
   };
 
-  const exportHikeEdits = () => {
-    const editsStr = localStorage.getItem('hiker-trail-edits') || '{}';
-    downloadBlob(editsStr, `trail-edits-${new Date().toISOString().split('T')[0]}.json`);
+  const exportHikeEdits = async () => {
+    const data = await exportJSON();
+    downloadBlob(JSON.stringify(data, null, 2), `trail-data-${new Date().toISOString().split('T')[0]}.json`);
   };
 
   const importHikeEdits = () => {
     createImportFileInput(
-      (imported) => {
+      async (imported) => {
         if (typeof imported !== 'object' || Array.isArray(imported)) {
-          alert('Invalid edits file format');
+          alert('Invalid data file format');
           return;
         }
-        localStorage.setItem('hiker-trail-edits', JSON.stringify(imported));
-        alert('Hike edits imported successfully!');
+        await importTrailData(imported);
+        alert('Trail data imported successfully!');
       },
       (msg) => alert(msg)
     );
