@@ -30,7 +30,7 @@ def main():
         print("Error: export_for_excel.json not found. Run 'Export for Excel' from the app first.")
         return
 
-    with open(data_path) as f:
+    with open(data_path, encoding='utf-8') as f:
         data = json.load(f)
 
     trails = data.get('trails', [])
