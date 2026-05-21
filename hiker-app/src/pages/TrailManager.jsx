@@ -66,10 +66,10 @@ export default function TrailManager() {
 
   const handleExportForExcel = async () => {
     const data = await exportJSON();
-    downloadBlob(JSON.stringify({ trails: data.trails.trails }, null, 2), 'trails.json');
-    setTimeout(() => {
-      downloadBlob(JSON.stringify(data.trailDetails, null, 2), 'trail_details.json');
-    }, 500);
+    downloadBlob(
+      JSON.stringify({ trails: data.trails.trails, trail_details: data.trailDetails }, null, 2),
+      'export_for_excel.json'
+    );
   };
 
   if (loading) {
