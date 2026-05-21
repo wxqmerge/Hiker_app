@@ -24,20 +24,17 @@ def month_to_quarters(months):
 
 
 def main():
-    trails_path = Path('trails.json')
-    details_path = Path('trail_details.json')
+    data_path = Path('export_for_excel.json')
 
-    if not trails_path.exists():
-        print("Error: trails.json not found. Run 'Export for Excel' from the app first.")
+    if not data_path.exists():
+        print("Error: export_for_excel.json not found. Run 'Export for Excel' from the app first.")
         return
 
-    with open(trails_path) as f:
-        trails_data = json.load(f)
+    with open(data_path) as f:
+        data = json.load(f)
 
-    trails = trails_data.get('trails', trails_data) if isinstance(trails_data, dict) else trails_data
-
-    with open(details_path) as f:
-        details_data = json.load(f)
+    trails = data.get('trails', [])
+    details_data = data.get('trail_details', {})
 
     wb = Workbook()
 
