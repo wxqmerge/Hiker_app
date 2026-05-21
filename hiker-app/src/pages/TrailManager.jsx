@@ -124,6 +124,7 @@ export default function TrailManager() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
+                  <th className="text-right px-2 py-3 text-sm font-semibold text-gray-700 w-12">#</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Name</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Distance</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Difficulty</th>
@@ -131,8 +132,9 @@ export default function TrailManager() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTrails.map(trail => (
+                {filteredTrails.map((trail, index) => (
                   <tr key={trail.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="px-2 py-3 text-right text-sm text-gray-400">{index + 1}</td>
                     <td className="px-4 py-3">
                       <Link to={`/trail/${trail.id}`} className="text-green-700 hover:text-green-900 font-medium">
                         {trail.name}
