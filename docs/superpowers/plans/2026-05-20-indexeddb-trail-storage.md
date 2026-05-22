@@ -1,6 +1,6 @@
 # IndexedDB Trail Storage Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace localStorage with IndexedDB for persistent trail data, add trail CRUD management page, and add Excel export capability.
 
@@ -33,12 +33,12 @@
 **Files:**
 - Modify: `hiker-app/package.json`
 
-- [ ] **Step 1: Install idb**
+- [x] **Step 1: Install idb**
 
 Run: `cd hiker-app && npm install idb`
 Expected: `idb` added to dependencies
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add hiker-app/package.json hiker-app/package-lock.json
@@ -50,7 +50,7 @@ git commit -m "deps: add idb for IndexedDB wrapper"
 **Files:**
 - Create: `hiker-app/src/hooks/useTrailStore.js`
 
-- [ ] **Step 1: Write the hook**
+- [x] **Step 1: Write the hook**
 
 The hook provides these methods:
 - `trails` — reactive trail array (state)
@@ -233,7 +233,7 @@ export function useTrailStore() {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add hiker-app/src/hooks/useTrailStore.js
@@ -249,7 +249,7 @@ git commit -m "feat: add useTrailStore IndexedDB hook with smart merge"
 **Files:**
 - Modify: `hiker-app/src/hooks/useTrails.js`
 
-- [ ] **Step 1: Replace data loading with useTrailStore**
+- [x] **Step 1: Replace data loading with useTrailStore**
 
 Replace the `useTrails` hook to use `useTrailStore` for data. The hook should:
 1. Call `useTrailStore()` to get trails, trailDetails, loading
@@ -285,7 +285,7 @@ export function useFilters(trails) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add hiker-app/src/hooks/useTrails.js
@@ -297,7 +297,7 @@ git commit -m "refactor: useTrails reads from IndexedDB via useTrailStore"
 **Files:**
 - Modify: `hiker-app/src/hooks/useTrailDetails.js`
 
-- [ ] **Step 1: Replace with useTrailStore**
+- [x] **Step 1: Replace with useTrailStore**
 
 ```javascript
 import { useTrailStore } from './useTrailStore';
@@ -308,7 +308,7 @@ export function useTrailDetails() {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add hiker-app/src/hooks/useTrailDetails.js
@@ -324,7 +324,7 @@ git commit -m "refactor: useTrailDetails reads from IndexedDB via useTrailStore"
 **Files:**
 - Modify: `hiker-app/src/pages/TrailDetail.jsx`
 
-- [ ] **Step 1: Replace localStorage with IndexedDB calls**
+- [x] **Step 1: Replace localStorage with IndexedDB calls**
 
 Changes needed:
 1. Remove `EDIT_STORAGE_KEY` constant
@@ -395,11 +395,11 @@ const importEdits = () => {
 };
 ```
 
-- [ ] **Step 2: Remove localStorage references**
+- [x] **Step 2: Remove localStorage references**
 
 Remove all `localStorage.getItem(EDIT_STORAGE_KEY)` and `localStorage.setItem(EDIT_STORAGE_KEY)` calls. The `useEffect` that loads saved edits on mount should be removed since IndexedDB now provides the data reactively.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add hiker-app/src/pages/TrailDetail.jsx
@@ -415,7 +415,7 @@ git commit -m "refactor: TrailDetail uses IndexedDB instead of localStorage"
 **Files:**
 - Create: `hiker-app/src/pages/TrailManager.jsx`
 
-- [ ] **Step 1: Write the TrailManager page**
+- [x] **Step 1: Write the TrailManager page**
 
 This page provides:
 - Searchable trail list with edit/delete buttons
@@ -619,7 +619,7 @@ export default function TrailManager() {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add hiker-app/src/pages/TrailManager.jsx
@@ -635,7 +635,7 @@ git commit -m "feat: add TrailManager page with CRUD operations"
 **Files:**
 - Modify: `hiker-app/src/App.jsx`
 
-- [ ] **Step 1: Add TrailManager route**
+- [x] **Step 1: Add TrailManager route**
 
 ```javascript
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -660,7 +660,7 @@ function App() {
 export default App;
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add hiker-app/src/App.jsx
@@ -672,7 +672,7 @@ git commit -m "feat: add /trails route for trail management"
 **Files:**
 - Modify: `hiker-app/src/pages/Home.jsx`
 
-- [ ] **Step 1: Simplify Home page**
+- [x] **Step 1: Simplify Home page**
 
 Changes:
 1. Remove `exportMergedData` function (no longer needed — edits are persisted immediately)
@@ -699,7 +699,7 @@ Changes:
 
 Remove the entire `exportMergedData` function and the floating bar JSX.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add hiker-app/src/pages/Home.jsx
@@ -711,7 +711,7 @@ git commit -m "refactor: simplify Home page, link to trail manager"
 **Files:**
 - Modify: `hiker-app/src/pages/ScheduleBuilder.jsx`
 
-- [ ] **Step 1: Update trail edit references**
+- [x] **Step 1: Update trail edit references**
 
 Changes:
 1. Replace `exportHikeEdits` (line 286) to use `useTrailStore` export
@@ -743,7 +743,7 @@ const importHikeEdits = () => {
 };
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add hiker-app/src/pages/ScheduleBuilder.jsx
@@ -759,7 +759,7 @@ git commit -m "refactor: ScheduleBuilder uses IndexedDB for trail data export/im
 **Files:**
 - Create: `export_to_xls.py` (root directory, alongside `extract_trails_xls.py`)
 
-- [ ] **Step 1: Write the Python script**
+- [x] **Step 1: Write the Python script**
 
 This script reads `trails.json` and `trail_details.json` and writes them to the Excel format matching `Hike Data BaseM.xls`.
 
@@ -963,7 +963,7 @@ if __name__ == '__main__':
     main()
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add export_to_xls.py
@@ -976,17 +976,17 @@ git commit -m "feat: add export_to_xls.py for JSON to Excel export"
 
 ### Task 11: Build and verify
 
-- [ ] **Step 1: Run lint**
+- [x] **Step 1: Run lint**
 
 Run: `cd hiker-app && npm run lint`
 Expected: No errors
 
-- [ ] **Step 2: Run build**
+- [x] **Step 2: Run build**
 
 Run: `cd hiker-app && npm run build`
 Expected: Successful build, `dist/index.html` created
 
-- [ ] **Step 3: Manual verification checklist**
+- [x] **Step 3: Manual verification checklist**
 
 1. Open `dist/index.html` in browser — trails load from embedded data
 2. Edit a trail — changes persist across page navigation
@@ -999,7 +999,7 @@ Expected: Successful build, `dist/index.html` created
 9. Export for Excel — downloads single `export_for_excel.json`
 10. Run `python export_to_xls.py` — produces `hiker_export.xlsx`
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
