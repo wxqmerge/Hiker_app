@@ -10,11 +10,20 @@ for arg in "$@"; do
     esac
 done
 
+# Load local deployment config
+DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$DEPLOY_DIR/.env" ]; then
+    source "$DEPLOY_DIR/.env"
+fi
+
+SERVICE="${SERVICE_NAME:-hiker}"
+DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
+
 ERRORS=0
 WARNINGS=0
 DIR="$(pwd)"
-NGINX_CONF="/etc/nginx/sites-available/hiker"
-NGINX_ENABLED="/etc/nginx/sites-enabled/hiker"
+NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
+NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -75,15 +84,16 @@ echo ""
 echo "--- Nginx ---"
 if [ -f "$NGINX_CONF" ]; then
     pass "Nginx config exists at $NGINX_CONF"
-    if grep -q "root /var/www/hiker/dist" "$NGINX_CONF"; then
-        pass "Nginx root points to /var/www/hiker/dist"
+    if grep -q "$DEPLOY_PATH/dist" "$NGINX_CONF"; then
+        pass "Nginx root points to correct path"
     else
-        warn "Nginx root may not point to /var/www/hiker/dist"
+        warn "Nginx root may not point to $DEPLOY_PATH/dist"
     fi
 else
     fail "Nginx config missing at $NGINX_CONF"
     if [ "$FIX" = true ]; then
         echo "  Fix: sudo cp deploy/hiker.conf $NGINX_CONF"
+        echo "  Fix: sudo sed -i 's|DEPLOY_PLACEHOLDER|$(basename $DEPLOY_PATH)|g' $NGINX_CONF"
     fi
 fi
 
@@ -150,6 +160,7 @@ else
     echo "Quick fixes:"
     echo "  npm install && npm run build"
     echo "  sudo cp deploy/hiker.conf $NGINX_CONF"
+    echo "  sudo sed -i 's|DEPLOY_PLACEHOLDER|$(basename $DEPLOY_PATH)|g' $NGINX_CONF"
     echo "  sudo ln -s $NGINX_CONF $NGINX_ENABLED"
     echo "  sudo nginx -t && sudo systemctl reload nginx"
 fi
