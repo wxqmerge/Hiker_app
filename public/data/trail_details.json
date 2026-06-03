@@ -446,7 +446,7 @@
     "others": "This is a good alternative to the too busy and popular Mt. Walker.  Lunch spot gained ~ 2,356' & at 3,259'"
   },
   "elwha": {
-    "fullDescription": "Beach access off of Place Rd. off Hwy. 112. Interesting to see the w. side of the mouth of the Elwha R. and explore the beach seeing  where the free-flowing Elwha has gone.  \"This sandy beach on the Strait was formed after the dams on the Elwha River were removed in 2011 and 2014, gradually releasing many tons of sediment\".  A fun surprise of driftwood sculptures can be seen like \"Lone Guardian\" (Mac the dog).  One can go to the rt., as well along the west banks of the Elwha.  Bring binoculars for any bird watching. Pros Other",
+    "fullDescription": "Beach access off of Place Rd. off Hwy. 112. Interesting to see the w. side of the mouth of the Elwha R. and explore the beach seeing where the free-flowing Elwha has gone.  \"This sandy beach on the Strait was formed after the dams on the Elwha River were removed in 2011 and 2014, gradually releasing many tons of sediment\".  A fun surprise of driftwood sculptures can be seen like \"Lone Guardian\" (Mac the dog).  One can go to the rt., as well along the west banks of the Elwha.  Bring binoculars for any bird watching. Pros Other",
     "leaders": [
       "Bev"
     ],
@@ -1098,6 +1098,26 @@
     "others": "Avoid hunting season"
   },
   "mt-townsend": {
+    "fullDescription": "May do the less traditional and less busy approach up Mt. Townsend: either the Little Quilcene Trail #835 from over Bon Jon Pass or the Dirty Face Ridge approach across from Tubal Cain.  If do the normal approach, climb steadily for 3 mi.; left at Silver Lake junction looking west to Silver Creek Valley at a small gap and then follow couple switchbacks down to valley below and ascend up to Silver Lake. Pros Other",
+    "leaders": [
+      "Debbie",
+      "Jeanne",
+      "Pat"
+    ],
+    "pros": "Little Quilcene Trail over Little River Summit from Bon Jon Pass:  Shortest @~ 7.5-7.8 mi. & 2,100'/2,231'/2,315'/2,475'. 15-20% grade.  (Check stats)",
+    "others": "Customize this one depending upon which approach is taken."
+  },
+  "mt-townsend-835": {
+    "fullDescription": "We'll do the less busy approach up Mt. Townsend via the Little Quilcene Trail #835 from Bon Jon Pass. Phlox should be blooming and views in the last third of the hike and at the top are fabulous on a clear day.   Of the multiple approaches up Mount Townsend, this option has the shortest distance with the least elevation gain Pros Other",
+    "leaders": [
+      "Debbie",
+      "Jeanne",
+      "Pat"
+    ],
+    "pros": "Little Quilcene Trail over Little River Summit from Bon Jon Pass:  Shortest @~ 7.5-7.8 mi. & 2,100'/2,231'/2,315'/2,475'. 15-20% grade.  (Check stats)",
+    "others": "Customize this one depending upon which approach is taken."
+  },
+  "mt-townsend-from": {
     "fullDescription": "May do the less traditional and less busy approach up Mt. Townsend: either the Little Quilcene Trail #835 from over Bon Jon Pass or the Dirty Face Ridge approach across from Tubal Cain.  If do the normal approach, climb steadily for 3 mi.; left at Silver Lake junction looking west to Silver Creek Valley at a small gap and then follow couple switchbacks down to valley below and ascend up to Silver Lake. Pros Other",
     "leaders": [
       "Debbie",
