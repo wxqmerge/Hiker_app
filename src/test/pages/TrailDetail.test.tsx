@@ -19,7 +19,7 @@ describe('TrailDetail', () => {
     }, { timeout: 3000 });
   });
 
-  it('renders Back to browse link', async () => {
+  it('renders Back to Browse link', async () => {
     const { default: TrailDetail } = await import('../../pages/TrailDetail');
     render(
       <MemoryRouter initialEntries={['/trail/nonexistent']}>
@@ -27,7 +27,7 @@ describe('TrailDetail', () => {
       </MemoryRouter>
     );
     await waitFor(() => {
-      expect(screen.getByText('Back to browse')).toBeInTheDocument();
+      expect(screen.getByText('Back to Browse')).toBeInTheDocument();
     }, { timeout: 3000 });
   });
 });
