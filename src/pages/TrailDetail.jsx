@@ -253,7 +253,7 @@ export default function TrailDetail() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl text-gray-800 mb-2">Trail not found</h2>
-          <Link to="/" className="text-green-600 hover:underline">Back to browse</Link>
+          <Link to="/" className="text-green-600 hover:underline">Back to Browse</Link>
         </div>
       </div>
     );
