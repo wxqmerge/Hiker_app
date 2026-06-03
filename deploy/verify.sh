@@ -13,7 +13,6 @@ done
 ERRORS=0
 WARNINGS=0
 DIR="$(pwd)"
-NGINX_HTML="/var/www/hiker"
 NGINX_CONF="/etc/nginx/sites-available/hiker"
 NGINX_ENABLED="/etc/nginx/sites-enabled/hiker"
 
@@ -76,10 +75,15 @@ echo ""
 echo "--- Nginx ---"
 if [ -f "$NGINX_CONF" ]; then
     pass "Nginx config exists at $NGINX_CONF"
+    if grep -q "root /var/www/hiker/dist" "$NGINX_CONF"; then
+        pass "Nginx root points to /var/www/hiker/dist"
+    else
+        warn "Nginx root may not point to /var/www/hiker/dist"
+    fi
 else
     fail "Nginx config missing at $NGINX_CONF"
     if [ "$FIX" = true ]; then
-        echo "  Fix: sudo cp /opt/hiker/deploy/hiker.conf $NGINX_CONF"
+        echo "  Fix: sudo cp deploy/hiker.conf $NGINX_CONF"
     fi
 fi
 
@@ -119,26 +123,7 @@ else
     warn "systemctl not available (non-Linux?)"
 fi
 
-# 6. Deployed files
-echo ""
-echo "--- Deployed Files ---"
-if [ -d "$NGINX_HTML" ]; then
-    pass "Deploy directory exists: $NGINX_HTML"
-    DEPLOYED_FILES=$(find "$NGINX_HTML" -type f 2>/dev/null | wc -l)
-    echo "  Files: $DEPLOYED_FILES"
-    if [ -f "$NGINX_HTML/index.html" ]; then
-        pass "index.html deployed"
-    else
-        fail "index.html not deployed"
-    fi
-else
-    fail "Deploy directory missing: $NGINX_HTML"
-    if [ "$FIX" = true ]; then
-        echo "  Fix: mkdir -p $NGINX_HTML"
-    fi
-fi
-
-# 7. HTTP check
+# 6. HTTP check
 echo ""
 echo "--- HTTP Check ---"
 if command -v curl &>/dev/null; then
@@ -167,7 +152,6 @@ else
     echo "  sudo cp deploy/hiker.conf $NGINX_CONF"
     echo "  sudo ln -s $NGINX_CONF $NGINX_ENABLED"
     echo "  sudo nginx -t && sudo systemctl reload nginx"
-    echo "  sudo cp -r dist/* $NGINX_HTML/"
 fi
 
 exit $ERRORS
