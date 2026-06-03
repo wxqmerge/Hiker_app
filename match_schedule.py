@@ -416,8 +416,12 @@ def main():
             score = min(score, 9)
             month_scores[month] = score
         
-        # Update seasonal data (convert old format to new format)
+        # Update seasonal data - preserve bestSeason if it exists
+        old_seasonal = trail.get('seasonal', {})
+        old_best_season = old_seasonal.get('bestSeason', '') if isinstance(old_seasonal, dict) else ''
         trail['seasonal'] = month_scores
+        if old_best_season:
+            trail['seasonal']['bestSeason'] = old_best_season
         updated_count += 1
     
     print(f'Updated {updated_count} trails with month scores')

@@ -197,13 +197,21 @@ class TrailExtractor:
                 except:
                     pass
                 
+                # Read season from G4 (row 3, col 6)
+                try:
+                    season_raw = df.iloc[3, 6]
+                    season = str(season_raw) if pd.notna(season_raw) else ''
+                except:
+                    season = ''
+                
                 detail = {
                     'fullDescription': full_description,
                     'pros': pros if pros else None,
                     'others': others if others else None,
                     'leaders': leaders,
                     'range': range_str if range_str else None,
-                    'parking': parking if parking else None
+                    'parking': parking if parking else None,
+                    'season': season
                 }
                 
                 # Match sheet name to trail ID using short_name_to_id mapping
@@ -236,7 +244,7 @@ class TrailExtractor:
         return details
     
     def merge_details_into_trails(self, trails, details):
-        """Merge parking and range from details into main trail records"""
+        """Merge parking, range, and season from details into main trail records"""
         print("\nMerging trail details into main records...")
         
         merged_count = 0
@@ -248,6 +256,8 @@ class TrailExtractor:
                     trail['parking'] = detail['parking']
                 if detail.get('range'):
                     trail['range'] = detail['range']
+                if detail.get('season'):
+                    trail['seasonal']['bestSeason'] = detail['season']
                 merged_count += 1
         
         print(f"  Merged details for {merged_count} trails")
