@@ -37,3 +37,13 @@ scripts/test-downloads/
 # Extracted hike data - DO NOT COMMIT
 exported_data/
 extracted_data/
+
+# Python
+__pycache__/
+*.pyc
+
+# Excel export temp file
+export_for_excel.json
+
+# Temp/comparison scripts
+compare_trails*.py
