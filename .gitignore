@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Deployment directory (should never be checked in)
+sothh_app
+
+# Local deployment config (contains server paths)
+deploy/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

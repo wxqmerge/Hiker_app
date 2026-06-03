@@ -6,7 +6,13 @@
 # Don't exit on error - keep SSH session alive
 # We handle errors manually below
 
-SERVICE="${1:-hiker}"
+# Load local deployment config
+DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$DEPLOY_DIR/.env" ]; then
+    source "$DEPLOY_DIR/.env"
+fi
+
+SERVICE="${1:-${SERVICE_NAME:-hiker}}"
 DIR="$(pwd)"
 
 echo "=== Deploying $SERVICE ==="
