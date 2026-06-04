@@ -6,6 +6,7 @@ param(
 $Url = $Url.TrimEnd('/')
 $ErrorActionPreference = 'Stop'
 
+Clear-Host
 $Errors = 0
 $Warnings = 0
 
