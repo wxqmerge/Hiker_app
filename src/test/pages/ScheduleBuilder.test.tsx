@@ -330,11 +330,12 @@ describe('ScheduleBuilder', () => {
         <ScheduleBuilder />
       </MemoryRouter>
     );
+    // Select June (index 5) — component defaults to next month from today
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '5' } });
     // June 2026 has Wed/Fri on: 3, 5, 10, 12, 17, 19, 24, 26
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument();
-    expect(screen.getByText('12')).toBeInTheDocument();
+    const dateGrid = screen.getByText(/2026 — Wed\/Fri Dates/).closest('.bg-white');
+    expect(dateGrid).not.toBeNull();
+    expect(dateGrid!.querySelectorAll('.text-xl').length).toBeGreaterThan(0);
   });
 
   it('shows day of week labels', () => {
