@@ -258,6 +258,23 @@ elif [ $ERRORS -eq 0 ]; then
 else
     echo -e "${RED}$ERRORS error(s), $WARNINGS warning(s).${NC}"
     echo ""
+
+    # Diagnostic info when there are errors
+    echo "--- Diagnostics ---"
+    echo ""
+    echo "Service status:"
+    sudo systemctl is-active "$SERVICE" 2>/dev/null && echo "  Running" || echo "  NOT running"
+    echo ""
+    echo "Nginx config test:"
+    sudo nginx -t 2>&1
+    echo ""
+    echo "Nginx proxy_pass:"
+    grep -n "proxy_pass" "$NGINX_CONF" 2>/dev/null || echo "  No proxy_pass found"
+    echo ""
+    echo "Direct server health (port $SERVER_PORT):"
+    DIRECT_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$SERVER_PORT/health" 2>/dev/null || echo "000")
+    echo "  HTTP $DIRECT_HEALTH"
+    echo ""
     echo "Quick fixes:"
     if [ "$NEED_DEPS" = true ]; then
         echo "  npm install && (cd server && npm install)"
@@ -279,6 +296,9 @@ else
         echo "  sudo nginx -t && sudo systemctl reload nginx"
     fi
     if [ "$NEED_SERVICE_START" = true ]; then
+        echo "  sudo systemctl restart $SERVICE"
+    fi
+    if [ "$DIRECT_HEALTH" != "200" ]; then
         echo "  sudo systemctl restart $SERVICE"
     fi
 fi
