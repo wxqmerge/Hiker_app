@@ -162,6 +162,13 @@ echo "  ADMIN_API_KEY: (set)"
 DOMAIN="$(basename "$DIR").example.com"
 echo "  DOMAIN: $DOMAIN"
 
+if grep -q '^PORT=' "$ENV_FILE"; then
+    SERVER_PORT=$(grep '^PORT=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')
+else
+    SERVER_PORT=3000
+fi
+echo "  PORT: $SERVER_PORT"
+
 # 4. Clean stale build artifacts
 echo "[4/10] Cleaning stale build artifacts..."
 if [ -d "dist" ]; then
@@ -291,8 +298,10 @@ if [ -f "$NGINX_CONF" ]; then
     if ! grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
         sudo sed -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_CONF"
         echo "  Updated server_name to $DOMAIN"
-    else
-        echo "  server_name already correct"
+    fi
+    if ! grep -q "proxy_pass.*localhost:$SERVER_PORT" "$NGINX_CONF"; then
+        sudo sed -i "s|proxy_pass http://localhost:[0-9]*;|proxy_pass http://localhost:$SERVER_PORT;|" "$NGINX_CONF"
+        echo "  Updated proxy_pass to localhost:$SERVER_PORT"
     fi
     if sudo nginx -t 2>&1 | grep -q "syntax is ok"; then
         sudo systemctl reload nginx
@@ -305,6 +314,7 @@ else
     echo "  WARNING: $NGINX_CONF not found — copying from deploy/hiker.conf"
     sudo cp deploy/hiker.conf "$NGINX_CONF"
     sudo sed -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_CONF"
+    sudo sed -i "s|proxy_pass http://localhost:3000;|proxy_pass http://localhost:$SERVER_PORT;|" "$NGINX_CONF"
     NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
     if [ ! -f "$NGINX_ENABLED" ]; then
         sudo ln -s "$NGINX_CONF" "$NGINX_ENABLED"

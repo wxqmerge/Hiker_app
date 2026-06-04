@@ -23,6 +23,11 @@ ERRORS=0
 WARNINGS=0
 DIR="$(pwd)"
 DOMAIN="$(basename "$DIR").example.com"
+if [ -f "$DIR/server/.env" ] && grep -q '^PORT=' "$DIR/server/.env"; then
+    SERVER_PORT=$(grep '^PORT=' "$DIR/server/.env" | head -1 | cut -d= -f2- | tr -d '[:space:]')
+else
+    SERVER_PORT=3000
+fi
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
 
@@ -133,11 +138,10 @@ echo ""
 echo "--- Nginx ---"
 if [ -f "$NGINX_CONF" ]; then
     pass "Nginx config exists at $NGINX_CONF"
-    if grep -q "proxy_pass.*localhost:3000" "$NGINX_CONF"; then
-        pass "Proxy to Express configured"
+   if grep -q "proxy_pass.*localhost:$SERVER_PORT" "$NGINX_CONF"; then
+        pass "Proxy to Express configured (port $SERVER_PORT)"
     else
         warn "Proxy to Express not configured — all requests will fail"
-        NEED_NGINX_CONF=true
     fi
     if grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
         pass "server_name matches $DOMAIN"
@@ -207,7 +211,7 @@ if command -v curl &>/dev/null; then
         fail "HTTP $HTTP_CODE from localhost (frontend)"
     fi
 
-    HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/health 2>/dev/null || echo "000")
+    HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$SERVER_PORT/health 2>/dev/null || echo "000")
     if [ "$HEALTH_CODE" = "200" ]; then
         pass "HTTP 200 from /health (server)"
     else
