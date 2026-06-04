@@ -125,6 +125,7 @@ export default function TrailDetail() {
     if (field === 'range') return editedFields.range ?? trail.range;
     if (field === 'bestSeason') return normalizeSeason(editedFields.bestSeason ?? trail.seasonal?.bestSeason);
     if (field === 'availableMonths') return editedFields.availableMonths ?? availableMonthsFromSeasonal;
+    if (field === 'altNames') return editedFields.altNames ?? trail.altNames;
 
     return null;
   };
@@ -145,6 +146,7 @@ export default function TrailDetail() {
     if (editedFields.parking !== undefined) updatedTrail.parking = editedFields.parking;
     if (editedFields.range !== undefined) updatedTrail.range = editedFields.range;
     if (editedFields.notes !== undefined) updatedTrail.notes = editedFields.notes;
+    if (editedFields.altNames !== undefined) updatedTrail.altNames = editedFields.altNames;
 
     if (editedFields.bestSeason !== undefined || editedFields.availableMonths !== undefined) {
       if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
@@ -462,6 +464,22 @@ export default function TrailDetail() {
                 </div>
               </div>
             )}
+
+            {getEditedValue('altNames') && getEditedValue('altNames').length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Alternate Names</h3>
+                <div className="flex flex-wrap gap-2">
+                  {getEditedValue('altNames').map((name, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -729,6 +747,16 @@ export default function TrailDetail() {
                       onChange={(e) => updateField('leaders', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                       placeholder="Leader 1, Leader 2, Leader 3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Alternate Names (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={getEditedValue('altNames')?.join(', ') || ''}
+                      onChange={(e) => updateField('altNames', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                      placeholder="Schedule name 1, Schedule name 2"
                     />
                   </div>
                 </div>
