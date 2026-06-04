@@ -27,7 +27,10 @@
       },
       "parking": "Discover",
       "range": "18",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "360 Road"
+      ]
     },
     {
       "id": "anderson",
@@ -56,7 +59,11 @@
       },
       "parking": "Discover",
       "range": "30",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Anderson Lake",
+        "Lake Anderson State Park"
+      ]
     },
     {
       "id": "anderson-lake",
@@ -85,7 +92,10 @@
       },
       "parking": "Discover",
       "range": "30",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Anderson Lake South Loop (DNR)"
+      ]
     },
     {
       "id": "anderson-lake-state",
@@ -171,7 +181,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "*Eagle Lake",
+        "Aurora Ridge"
+      ]
     },
     {
       "id": "badger",
@@ -229,7 +243,13 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "85",
-      "difficultyOrder": 5
+      "difficultyOrder": 5,
+      "altNames": [
+        "Badger Valley to Moose Lake",
+        "Moose Lake",
+        "Obstr Pt - Badger - Elk Mt",
+        "♎︎ Badger Valley"
+      ]
     },
     {
       "id": "barnes",
@@ -258,7 +278,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "51",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Barnes Creek",
+        "Barnes Creek◆︎"
+      ]
     },
     {
       "id": "blue",
@@ -316,7 +340,11 @@
       },
       "parking": "Discover",
       "range": "29",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Blyn Mt / Salmon Creek*",
+        "Blyn Mtn / Salmon Creek"
+      ]
     },
     {
       "id": "blyn-tower",
@@ -345,7 +373,10 @@
       },
       "parking": "Discover",
       "range": "29",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Blyn Tower from W Uncas Rd"
+      ]
     },
     {
       "id": "bogachiel",
@@ -374,7 +405,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "120",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "♎ Bogachiel River Trail"
+      ]
     },
     {
       "id": "boulder",
@@ -432,7 +466,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "71",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "*Boulder Shelter",
+        "Boulder Shelter"
+      ]
     },
     {
       "id": "borderline",
@@ -461,7 +499,11 @@
       },
       "parking": "Discover",
       "range": "35",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Boundary Trail / Marmot Loop",
+        "◆︎ Borderline Trail - Marmot Loop"
+      ]
     },
     {
       "id": "buckhorn",
@@ -519,7 +561,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "86",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Buckhorn Pass",
+        "◆ ♎︎  Buckhorn Pass"
+      ]
     },
     {
       "id": "burnt",
@@ -548,7 +594,12 @@
       },
       "parking": "Discover",
       "range": "10",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Burnt Hill",
+        "Burnt Hill from Johnson Creek",
+        "Johnson Creek"
+      ]
     },
     {
       "id": "burnt-hill",
@@ -605,7 +656,10 @@
         "bestSeason": "Any"
       },
       "range": "16",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Burnt Hill from Louella Cabin"
+      ]
     },
     {
       "id": "camp",
@@ -634,7 +688,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "71",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Camp Handy",
+        "◆ Camp Handy"
+      ]
     },
     {
       "id": "cascade",
@@ -663,7 +721,12 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Cascade Rock",
+        "Cascade Rock◆︎",
+        "◆︎Cascade Rock"
+      ]
     },
     {
       "id": "cassidy",
@@ -692,7 +755,11 @@
       },
       "parking": "Discover",
       "range": "15",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Cassidy Creek",
+        "Cassidy Creek (bike trail)"
+      ]
     },
     {
       "id": "cassidy-creek",
@@ -750,7 +817,10 @@
       },
       "parking": "Discover",
       "range": "20",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Cat Lake"
+      ]
     },
     {
       "id": "chetzemoka",
@@ -778,7 +848,13 @@
         "bestSeason": "May"
       },
       "range": "44",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Chetzemoka (čičməhán) Trail",
+        "Chetzemoka Park & Trail",
+        "Chetzemoka Trail",
+        "Chetzemoka Trail for Camas"
+      ]
     },
     {
       "id": "crown",
@@ -806,7 +882,10 @@
         "bestSeason": "Any"
       },
       "range": "30",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Crown Park to Reservation"
+      ]
     },
     {
       "id": "dan",
@@ -834,7 +913,10 @@
         "bestSeason": "Any"
       },
       "parking": "Discover",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Dan Kelly Towers"
+      ]
     },
     {
       "id": "deadfall",
@@ -862,7 +944,11 @@
         "bestSeason": "Spring/Summer"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Deadfall to Mt Zion",
+        "Mt Zion"
+      ]
     },
     {
       "id": "deer",
@@ -920,7 +1006,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "64",
-      "difficultyOrder": 5
+      "difficultyOrder": 5,
+      "altNames": [
+        "* Deer Hair Rock",
+        "Deer Hair Rock"
+      ]
     },
     {
       "id": "deer-lake",
@@ -949,7 +1039,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "90",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Deer Lake - Pot Holes",
+        "Potholes"
+      ]
     },
     {
       "id": "deer-park",
@@ -978,7 +1072,13 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "*Deer Ridge Benches",
+        "Deer Ridge (Benches & Beyond)",
+        "Deer Ridge - Benches",
+        "Deer Ridge Benches"
+      ]
     },
     {
       "id": "deer-park---dnr",
@@ -1036,7 +1136,13 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Deer Park to Maiden Peak",
+        "Deer Park to Maiden Peak        ",
+        "Maiden Peak",
+        "Maiden Peak from Deer Park"
+      ]
     },
     {
       "id": "discovery",
@@ -1065,7 +1171,11 @@
       },
       "parking": "Discover",
       "range": "55",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Discovery Bay Trail",
+        "Discovery Bay Trail (Late Start 9:30am)"
+      ]
     },
     {
       "id": "disc",
@@ -1093,7 +1203,10 @@
         "bestSeason": "Any"
       },
       "range": "16",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Disc Golf @ Rainshadow"
+      ]
     },
     {
       "id": "deer-park-dnr",
@@ -1122,7 +1235,10 @@
       },
       "parking": "Discover",
       "range": "60",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Snowshoe"
+      ]
     },
     {
       "id": "dosewallips",
@@ -1151,7 +1267,12 @@
       },
       "parking": "NW Forest/Golden",
       "range": "66",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Dosewallips",
+        "Dosewallips Cascades",
+        "Dosewallips Cascades & Campground"
+      ]
     },
     {
       "id": "dungeness",
@@ -1180,7 +1301,16 @@
       },
       "parking": "Discover",
       "range": "6",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Dungeness (Reservoir) Trails",
+        "Dungeness Trails",
+        "Dungeness Trails @ River Road",
+        "Dungeness Trails from River Road",
+        "Gold Creek/Lower Dungeness T.H.",
+        "Upper Part of Lower Dungeness River Trail",
+        "VOA / Dungeness County Park"
+      ]
     },
     {
       "id": "dungeness-fish",
@@ -1236,7 +1366,13 @@
         "bestSeason": "Any"
       },
       "range": "16",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Dungeness Levee",
+        "Dungeness Levee Footpath",
+        "Dungeness Levee at Schoolhouse",
+        "Dungeness Schoolhouse - Levee"
+      ]
     },
     {
       "id": "dungeness-spit",
@@ -1265,7 +1401,12 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "16",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Dungeness Spit",
+        "Dungeness Spit (to 3.5 miles)",
+        "Hike Dungeness Spit (-3.06 @11:36)"
+      ]
     },
     {
       "id": "elbo",
@@ -1294,7 +1435,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "46",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Elbo Creek / Buck Mountain",
+        "Elbo Creek / Buck Mt"
+      ]
     },
     {
       "id": "elwha",
@@ -1322,7 +1467,15 @@
         "bestSeason": "any"
       },
       "range": "42",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Elwha Beach off of Place Road",
+        "Elwha Delta (-1.44@11:42)",
+        "Place Rd / Elwha (-1.88 @ 0955)",
+        "Place Road",
+        "Place Road Elwha Beach",
+        "Place Road to Elwha Beach"
+      ]
     },
     {
       "id": "elwha-fish",
@@ -1350,7 +1503,10 @@
         "bestSeason": "Fall"
       },
       "range": "37",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Elwha Fish Hatchery to mouth"
+      ]
     },
     {
       "id": "elwha-stock",
@@ -1379,7 +1535,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "E Elwha - Bare Bottom to Ranger St",
+        "Elwha (New Route)"
+      ]
     },
     {
       "id": "elwha-to",
@@ -1407,7 +1567,11 @@
         "bestSeason": "Summer,fall"
       },
       "range": "40",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Elwha to Whiskey Bend",
+        "Elwha to Whiskey Bend "
+      ]
     },
     {
       "id": "elwha-rs",
@@ -1492,7 +1656,11 @@
       },
       "parking": "Discover",
       "range": "42",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Foothills",
+        "Foothills Trails"
+      ]
     },
     {
       "id": "fort",
@@ -1521,7 +1689,12 @@
       },
       "parking": "Discover",
       "range": "40",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Fort Townsend",
+        "Fort Townsend (Old)",
+        "Old Fort Townsend"
+      ]
     },
     {
       "id": "fort-flagler",
@@ -1550,7 +1723,14 @@
       },
       "parking": "Discover",
       "range": "50",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Fort Flagler",
+        "Fort Flagler (-2.3 ft @ 0845)",
+        "Fort Flagler (Rick lead)",
+        "Ft Flagler",
+        "Ft. Flagler (8.6 at 3pm)"
+      ]
     },
     {
       "id": "fort-wordenn",
@@ -1579,7 +1759,14 @@
       },
       "parking": "Discover",
       "range": "45",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Fort Worden",
+        "Fort Worden/N. Beach(Change)",
+        "Ft Worden fr NB (-3.46@noon)",
+        "Ft Worden from North Beach",
+        "Whidbey Island or Ft. Worden"
+      ]
     },
     {
       "id": "gibbs",
@@ -1607,7 +1794,10 @@
         "bestSeason": "any"
       },
       "range": "41",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Gibbs Lake"
+      ]
     },
     {
       "id": "gibson",
@@ -1634,7 +1824,11 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Gibson Spit(Low@11:30, 3.13 ft)",
+        "Travis Spit (or Gibson Spit)"
+      ]
     },
     {
       "id": "glass",
@@ -1662,7 +1856,10 @@
         "bestSeason": "Low Tide"
       },
       "range": "50",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Glass Beach"
+      ]
     },
     {
       "id": "glines",
@@ -1691,7 +1888,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "West Elwha to Glines Canyon",
+        "Whiskey Bend Rd to Glines Dam"
+      ]
     },
     {
       "id": "glines-canyon",
@@ -1775,7 +1976,10 @@
         "bestSeason": "Spring/Summer"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Gold Creek"
+      ]
     },
     {
       "id": "gold-creek",
@@ -1804,7 +2008,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "20",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Gold Creek Extension"
+      ]
     },
     {
       "id": "grannys",
@@ -1832,7 +2039,10 @@
         "bestSeason": "Any"
       },
       "parking": "Discover",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Granny's East"
+      ]
     },
     {
       "id": "griff",
@@ -1860,7 +2070,13 @@
         "bestSeason": "Nov Jul"
       },
       "range": "40",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Griff Creek",
+        "Griff Creek◆︎",
+        "Griff creek",
+        "◆︎Griff Creek"
+      ]
     },
     {
       "id": "griff-creek",
@@ -1916,7 +2132,11 @@
         "bestSeason": "Summer"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Camp Handy / Grindstone Meadow",
+        "Grindstone Meadow"
+      ]
     },
     {
       "id": "grand",
@@ -1972,7 +2192,10 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Newberry Hill / Guillemot Cove"
+      ]
     },
     {
       "id": "heart",
@@ -2001,7 +2224,12 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "32",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Heart of The Forest",
+        "Heart of the Forest",
+        "◆︎Heart of the Forest"
+      ]
     },
     {
       "id": "heather",
@@ -2030,7 +2258,12 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "33",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Heather Park",
+        "heather park",
+        "◆︎Heather Park"
+      ]
     },
     {
       "id": "hurricane",
@@ -2059,7 +2292,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Hurricane Hill"
+      ]
     },
     {
       "id": "hurricane-ridge",
@@ -2088,7 +2324,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "60",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Hurricane Ridge",
+        "Hurricane Snowshoe/Deer Pk."
+      ]
     },
     {
       "id": "johnson",
@@ -2116,7 +2356,10 @@
         "bestSeason": "Winter/Spring/Summer"
       },
       "parking": "Discover",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Johnson Creek/Burnt Hill"
+      ]
     },
     {
       "id": "joyce-piedmont",
@@ -2144,7 +2387,10 @@
         "bestSeason": "Summer Fall Winter"
       },
       "parking": "Discover",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Joyce Piedmont East"
+      ]
     },
     {
       "id": "karpen",
@@ -2172,7 +2418,10 @@
         "bestSeason": "Fall/Winter/Spring"
       },
       "parking": "Discover",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Karpen Road"
+      ]
     },
     {
       "id": "kloshe",
@@ -2200,7 +2449,11 @@
         "bestSeason": "Spring/Summer"
       },
       "parking": "Discover",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Klosche - Nanitch",
+        "Snider Ridge"
+      ]
     },
     {
       "id": "kloshe-nanitch",
@@ -2229,7 +2482,10 @@
       },
       "parking": "Discover",
       "range": "65",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "♎ Kloshe Nanitch"
+      ]
     },
     {
       "id": "lake",
@@ -2258,7 +2514,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "36",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Lake Angeles",
+        "Switchback to Lake Angeles"
+      ]
     },
     {
       "id": "lake-angelesheather",
@@ -2315,7 +2575,12 @@
         "bestSeason": "Any"
       },
       "parking": "Discover",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Anderson Lake - Larry Scott Trail",
+        "Larry Scott Cape Geo to PT",
+        "Larry Scott Trail @ 4 Corners"
+      ]
     },
     {
       "id": "larry-scott",
@@ -2344,7 +2609,14 @@
       },
       "parking": "Discover",
       "range": "33",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Larry Scott Trail",
+        "Larry Scott Trail - Milo Curry",
+        "Larry Scott Trail - Milo Curry TH",
+        "Larry Scott Trail @ Milo Curry TH",
+        "Larry Scott Trail--Milo Curry"
+      ]
     },
     {
       "id": "lena",
@@ -2373,7 +2645,12 @@
       },
       "parking": "NW Forest/Golden",
       "range": "82",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "*Lena Lake",
+        "Brothers Climbing Camp above Lena Lake",
+        "Lena Lake"
+      ]
     },
     {
       "id": "little",
@@ -2401,7 +2678,10 @@
         "bestSeason": "Sep"
       },
       "parking": "Nat'l Park/Golden",
-      "difficultyOrder": 5
+      "difficultyOrder": 5,
+      "altNames": [
+        "Little Divide"
+      ]
     },
     {
       "id": "lillian",
@@ -2430,7 +2710,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "85",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Lillian Ridge"
+      ]
     },
     {
       "id": "little-humpbig",
@@ -2459,7 +2742,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "70",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Big Hump - Little Hump",
+        "Duckabush:  Little Hump/Big Hump"
+      ]
     },
     {
       "id": "little-humpmurhut",
@@ -2488,7 +2775,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "70",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "*Duck - Little Hump to Big Hump"
+      ]
     },
     {
       "id": "little-river",
@@ -2517,7 +2807,13 @@
       },
       "parking": "Discover",
       "range": "40",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Little River",
+        "Little River (to mile 3.5)",
+        "Little River Trail",
+        "Little River◆︎"
+      ]
     },
     {
       "id": "louella",
@@ -2574,7 +2870,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "81",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "**Lover's Lane / Salmon Casc"
+      ]
     },
     {
       "id": "lower",
@@ -2602,7 +2901,10 @@
         "bestSeason": "Any"
       },
       "parking": "Discover",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "OAT + Lower Elwha Dam Site"
+      ]
     },
     {
       "id": "lower-dungeness",
@@ -2630,7 +2932,10 @@
         "bestSeason": "Spring/Summer"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Lower Dungeness"
+      ]
     },
     {
       "id": "lower-dungeness---upper",
@@ -2658,7 +2963,10 @@
         "bestSeason": "Spring/Summer/Fall"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Upper Part of Lower Dungeness"
+      ]
     },
     {
       "id": "oldlower",
@@ -2687,7 +2995,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "24",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Lower Gray Wolf"
+      ]
     },
     {
       "id": "lower-big",
@@ -2716,7 +3027,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "53",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Mt Townsend via Little Quil Trail",
+        "Upper Big Quilcene"
+      ]
     },
     {
       "id": "lower-big-quilcene",
@@ -2745,7 +3060,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "60",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Lower Big Quil to Bark Shanty",
+        "Lower Big Quilcene to Bark Shanty"
+      ]
     },
     {
       "id": "lyre",
@@ -2771,7 +3090,12 @@
         "Nov": 1,
         "Dec": 1
       },
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Lyre River (-1.68 @12:13 Cres Bch)",
+        "Lyre River - Campground",
+        "Lyre River Conservation Area"
+      ]
     },
     {
       "id": "madison",
@@ -2800,7 +3124,13 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Madison Falls TH to Altair",
+        "Madison Falls to Altair",
+        "Madison Falls to Altair CG",
+        "West Elwha to Altair"
+      ]
     },
     {
       "id": "madison-falls",
@@ -2829,7 +3159,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Madison Falls to Smokey Bottom",
+        "◆︎Smokey Bottom from Madison Falls"
+      ]
     },
     {
       "id": "madison-falls-to",
@@ -2887,7 +3221,12 @@
       },
       "parking": "NW Forest/Golden",
       "range": "81",
-      "difficultyOrder": 5
+      "difficultyOrder": 5,
+      "altNames": [
+        "*Marmot Pass",
+        "Marmot Pass",
+        "◆ ♎ Marmot Pass"
+      ]
     },
     {
       "id": "marymere",
@@ -2916,7 +3255,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "50",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Marymere Falls to Bridge #1"
+      ]
     },
     {
       "id": "mount",
@@ -2972,7 +3314,12 @@
       },
       "parking": "Discover",
       "range": "19",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Miller Peninsula",
+        "Miller Peninsula to Discovery Bay",
+        "Miller Peninsula-Manzanita Trail"
+      ]
     },
     {
       "id": "miller-peninsula",
@@ -3001,7 +3348,10 @@
       },
       "parking": "Discover",
       "range": "19",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Miller Peninsula from ESB Road"
+      ]
     },
     {
       "id": "miller-1",
@@ -3059,7 +3409,11 @@
       },
       "parking": "Discover",
       "range": "19",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Miller Peninsula - Thompson Spit",
+        "Miller Peninsula SP - Manzanita to Beach"
+      ]
     },
     {
       "id": "mink",
@@ -3088,7 +3442,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "84",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Mink Lake",
+        "◆︎Mink Lake"
+      ]
     },
     {
       "id": "marymere-fallsmoments",
@@ -3117,7 +3475,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "50",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Lake Crescent / Moments in Time"
+      ]
     },
     {
       "id": "mt",
@@ -3145,7 +3506,10 @@
         "bestSeason": "Spring/Summer/Winter"
       },
       "range": "40",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Old Mt Angeles Road"
+      ]
     },
     {
       "id": "mount-angeles",
@@ -3231,7 +3595,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "63",
-      "difficultyOrder": 5
+      "difficultyOrder": 5,
+      "altNames": [
+        "Mt Muller"
+      ]
     },
     {
       "id": "mt-pleasant",
@@ -3260,7 +3627,11 @@
       },
       "parking": "Discover",
       "range": "30",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Mt Pleasant",
+        "Mt. Pleasant"
+      ]
     },
     {
       "id": "mt-townsend",
@@ -3289,7 +3660,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "60",
-      "difficultyOrder": 5
+      "difficultyOrder": 5,
+      "altNames": [
+        "Mt Townsend"
+      ]
     },
     {
       "id": "mt-townsend-835",
@@ -3318,7 +3692,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "64",
-      "difficultyOrder": 5
+      "difficultyOrder": 5,
+      "altNames": [
+        "◆ Mt Townsend v Ltl Quil Trl 835"
+      ]
     },
     {
       "id": "mt-townsend-from",
@@ -3347,7 +3724,12 @@
       },
       "parking": "NW Forest/Golden",
       "range": "60",
-      "difficultyOrder": 5
+      "difficultyOrder": 5,
+      "altNames": [
+        "Mt. Townsend/Silver Lake",
+        "Silver Lake via Mt Townsend",
+        "◆  ♎ Silver Lake v Mt Townsend"
+      ]
     },
     {
       "id": "mt-walker",
@@ -3376,7 +3758,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "46",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Mt Walker"
+      ]
     },
     {
       "id": "mt-zion",
@@ -3461,7 +3846,10 @@
         "bestSeason": "Spring/Summer"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Ned Hill"
+      ]
     },
     {
       "id": "newberry",
@@ -3516,7 +3904,10 @@
         "bestSeason": "Any"
       },
       "range": "60",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "North Kitsap Heritage Park"
+      ]
     },
     {
       "id": "notch",
@@ -3544,7 +3935,11 @@
         "bestSeason": "Spring, Summer, Fall"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Notch Pass",
+        "Notch Pass / Quil Ridge"
+      ]
     },
     {
       "id": "oat",
@@ -3572,7 +3967,10 @@
         "bestSeason": "Winter/Spring"
       },
       "parking": "Discover",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Adventure Trail Mile Zero"
+      ]
     },
     {
       "id": "oat-eden",
@@ -3601,7 +3999,10 @@
       },
       "parking": "Discover",
       "range": "50",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Eden Valley East"
+      ]
     },
     {
       "id": "oat-eden-valley",
@@ -3630,7 +4031,10 @@
       },
       "parking": "Discover",
       "range": "50",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Eden Valley West"
+      ]
     },
     {
       "id": "oat-eden-valley-east",
@@ -3717,7 +4121,10 @@
       },
       "parking": "Discover",
       "range": "60",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "OAT Joyce-Piedmont E. "
+      ]
     },
     {
       "id": "oat---mile",
@@ -3746,7 +4153,15 @@
       },
       "parking": "Discover",
       "range": "40",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "M0 OAT to Living Room",
+        "OAT - Mile 0 to Living Room",
+        "OAT - Mile Zero to Living Room",
+        "OAT Mile 0 to Living Room",
+        "OAT to Living Room",
+        "◆︎OAT Mile 0-Living Room"
+      ]
     },
     {
       "id": "obstruction",
@@ -3775,7 +4190,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "70",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Obstruction point road"
+      ]
     },
     {
       "id": "obstruction-point",
@@ -3832,7 +4250,11 @@
         "bestSeason": "Any"
       },
       "range": "30",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "ODT (^Hollywood Beach @ 10 am)",
+        "ODT near Hollywood Beach"
+      ]
     },
     {
       "id": "ozette",
@@ -3861,7 +4283,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "132",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Ozette Tri (Low @9:15, -1.82) 7am Start",
+        "Ozette Triangle"
+      ]
     },
     {
       "id": "pack",
@@ -3890,7 +4316,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "◆︎Elwha Pack Trail",
+        "◆︎Pack Trail"
+      ]
     },
     {
       "id": "pats",
@@ -3918,7 +4348,10 @@
         "bestSeason": "Spring/Summer"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Pat's Prairie"
+      ]
     },
     {
       "id": "peabody",
@@ -3947,7 +4380,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "30",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Peabody Creek"
+      ]
     },
     {
       "id": "port",
@@ -3975,7 +4411,11 @@
         "bestSeason": "any"
       },
       "range": "52",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Port Gamble Heritage Forest",
+        "Pt. Gamble Forest Heritage"
+      ]
     },
     {
       "id": "port-williams",
@@ -4060,7 +4500,12 @@
       },
       "parking": "Discover",
       "range": "20",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Blue Mountain - Goa Road",
+        "Gnome Valley (aka Radio Tower)",
+        "Radio Tower"
+      ]
     },
     {
       "id": "rainbow",
@@ -4116,7 +4561,10 @@
         "bestSeason": "Any"
       },
       "range": "13",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Robin Hill"
+      ]
     },
     {
       "id": "royal",
@@ -4145,7 +4593,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "72",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Royal Creek",
+        "◆ Royal Creek"
+      ]
     },
     {
       "id": "river",
@@ -4173,7 +4625,10 @@
         "bestSeason": "Aug"
       },
       "parking": "NW Forest/Golden",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "River Shelter to Camp Handy"
+      ]
     },
     {
       "id": "royal-lakebasin",
@@ -4258,7 +4713,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "85",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Silver Lake via Way Trail"
+      ]
     },
     {
       "id": "slab",
@@ -4316,7 +4774,12 @@
       },
       "parking": "NW Forest/Golden",
       "range": "30",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Deer Ridge",
+        "Slab Camp to Deer Ridge",
+        "Slab Camp to Deer Ridge◆︎"
+      ]
     },
     {
       "id": "slab-camp-to",
@@ -4345,7 +4808,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "30",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "*Slab Camp to Duncan Flats",
+        "Slab Camp / Duncan Flats"
+      ]
     },
     {
       "id": "slab-camp-to-slide",
@@ -4374,7 +4841,10 @@
       },
       "parking": "NW Forest/Golden",
       "range": "30",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Slab Camp to Slide Camp"
+      ]
     },
     {
       "id": "sleepy",
@@ -4432,7 +4902,12 @@
       },
       "parking": "NW Forest/Golden",
       "range": "35",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Mt Zion / Sleepy Hollow",
+        "Sleepy Hollow - Mt Zion - Gold Ck",
+        "Sleepy Hollow/Mt. Zion"
+      ]
     },
     {
       "id": "smokey",
@@ -4461,7 +4936,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Smokey Bottom",
+        "Smokey Bottom / Boulder Creek◆︎"
+      ]
     },
     {
       "id": "snider",
@@ -4518,7 +4997,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "53",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Spruce Railroad via East Beach Rd.",
+        "W Spruce RR (Lk Cres Lodge)"
+      ]
     },
     {
       "id": "spruce-rr",
@@ -4547,7 +5030,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "68",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Spruce RR - heading west"
+      ]
     },
     {
       "id": "steam",
@@ -4576,7 +5062,15 @@
       },
       "parking": "Discover",
       "range": "68",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Maple Valley / Steam Donkey",
+        "Steam Donkey - Maple Valley",
+        "Steam Donkey / Maple Valley",
+        "Steam Donkey / Maple Valley Trails",
+        "Steam Donkey/M.V./Rocky Brook",
+        "Steam Donkey/Maple Valley"
+      ]
     },
     {
       "id": "storm",
@@ -4605,7 +5099,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "54",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        " ♎Mount Storm King"
+      ]
     },
     {
       "id": "striped",
@@ -4632,7 +5129,10 @@
         "Dec": 2
       },
       "range": "50.0",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Striped Peak"
+      ]
     },
     {
       "id": "striped-peak",
@@ -4717,7 +5217,12 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "52",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Sunrise Ridge / Victor Pass ",
+        "Switchback Trail to Victor Pass",
+        "Switchback to Victor Pass"
+      ]
     },
     {
       "id": "teal",
@@ -4771,7 +5276,12 @@
         "Dec": 3,
         "bestSeason": "Winter/Spring/Fall"
       },
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Pt. Ludlow: Timberton/Teal",
+        "Teal Lake / Timberton Loop",
+        "Teal Lake / Timberton Trails"
+      ]
     },
     {
       "id": "travis",
@@ -4798,7 +5308,12 @@
         "Dec": 1,
         "bestSeason": "Any "
       },
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Travis Spit",
+        "Travis Spit (+0.77@9:36)",
+        "Travis Spit (8.3@2:30pm)"
+      ]
     },
     {
       "id": "tubal",
@@ -4827,7 +5342,12 @@
       },
       "parking": "NW Forest/Golden",
       "range": "83",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "*Tubal Cain",
+        "Tubal Cain",
+        "Tull Canyon"
+      ]
     },
     {
       "id": "tunnel",
@@ -4856,7 +5376,11 @@
       },
       "parking": "NW Forest/Golden",
       "range": "75",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Tunnel Creek",
+        "Tunnel Creek - Valhalla"
+      ]
     },
     {
       "id": "tyler",
@@ -4913,7 +5437,11 @@
         "bestSeason": "any"
       },
       "range": "30",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Verne Samuelson",
+        "Verne Samuelson Tr (Matt lead)"
+      ]
     },
     {
       "id": "victoriacanada",
@@ -4941,7 +5469,11 @@
         "bestSeason": "Any except Jan."
       },
       "range": "26",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Canada Day - take Coho to Victoria",
+        "Victoria"
+      ]
     },
     {
       "id": "voice",
@@ -4970,7 +5502,10 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "16",
-      "difficultyOrder": 1
+      "difficultyOrder": 1,
+      "altNames": [
+        "Voice of America"
+      ]
     },
     {
       "id": "w",
@@ -4999,7 +5534,12 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "40",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "W Elwha - Herrick Rd to Dam Site",
+        "West Elwha - Herrick Road",
+        "West Elwha Dam Site"
+      ]
     },
     {
       "id": "waterfalls",
@@ -5028,7 +5568,11 @@
       },
       "parking": "Nat'l Park/Golden",
       "range": "100",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Five Waterfalls",
+        "Waterfalls"
+      ]
     },
     {
       "id": "wolf",
@@ -5114,7 +5658,10 @@
         "bestSeason": "Spring"
       },
       "range": "47",
-      "difficultyOrder": 2
+      "difficultyOrder": 2,
+      "altNames": [
+        "Whidbey Island for Camas"
+      ]
     },
     {
       "id": "whiskey",
@@ -5143,7 +5690,10 @@
       },
       "parking": "Discover",
       "range": "48",
-      "difficultyOrder": 4
+      "difficultyOrder": 4,
+      "altNames": [
+        "Whiskey Creek"
+      ]
     },
     {
       "id": "wolf-creek---12",
@@ -5172,7 +5722,10 @@
       },
       "parking": "Am Beau/Golden",
       "range": "60",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Wolf Creek"
+      ]
     }
   ]
 }
