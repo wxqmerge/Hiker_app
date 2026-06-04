@@ -27,7 +27,10 @@
       },
       "parking": "Discover",
       "range": "50",
-      "difficultyOrder": 3
+      "difficultyOrder": 3,
+      "altNames": [
+        "Tongue Point - Eagle's Cove"
+      ]
     },
     {
       "id": "360",
