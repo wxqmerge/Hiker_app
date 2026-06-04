@@ -280,7 +280,6 @@
       "range": "51",
       "difficultyOrder": 4,
       "altNames": [
-        "Barnes Creek",
         "Barnes Creek"
       ]
     },
@@ -468,7 +467,6 @@
       "range": "71",
       "difficultyOrder": 4,
       "altNames": [
-        "Boulder Shelter",
         "Boulder Shelter"
       ]
     },
@@ -563,7 +561,6 @@
       "range": "86",
       "difficultyOrder": 4,
       "altNames": [
-        "Buckhorn Pass",
         "Buckhorn Pass"
       ]
     },
@@ -690,7 +687,6 @@
       "range": "71",
       "difficultyOrder": 2,
       "altNames": [
-        "Camp Handy",
         "Camp Handy"
       ]
     },
@@ -723,8 +719,6 @@
       "range": "40",
       "difficultyOrder": 4,
       "altNames": [
-        "Cascade Rock",
-        "Cascade Rock",
         "Cascade Rock"
       ]
     },
@@ -1008,7 +1002,6 @@
       "range": "64",
       "difficultyOrder": 5,
       "altNames": [
-        "Deer Hair Rock",
         "Deer Hair Rock"
       ]
     },
@@ -1076,8 +1069,7 @@
       "altNames": [
         "Deer Ridge Benches",
         "Deer Ridge (Benches & Beyond)",
-        "Deer Ridge - Benches",
-        "Deer Ridge Benches"
+        "Deer Ridge - Benches"
       ]
     },
     {
@@ -1138,7 +1130,6 @@
       "range": "60",
       "difficultyOrder": 4,
       "altNames": [
-        "Deer Park to Maiden Peak",
         "Deer Park to Maiden Peak",
         "Maiden Peak",
         "Maiden Peak from Deer Park"
@@ -1569,7 +1560,6 @@
       "range": "40",
       "difficultyOrder": 4,
       "altNames": [
-        "Elwha to Whiskey Bend",
         "Elwha to Whiskey Bend"
       ]
     },
@@ -2073,9 +2063,7 @@
       "difficultyOrder": 4,
       "altNames": [
         "Griff Creek",
-        "Griff Creek",
-        "Griff creek",
-        "Griff Creek"
+        "Griff creek"
       ]
     },
     {
@@ -2227,7 +2215,6 @@
       "difficultyOrder": 2,
       "altNames": [
         "Heart of The Forest",
-        "Heart of the Forest",
         "Heart of the Forest"
       ]
     },
@@ -2261,8 +2248,7 @@
       "difficultyOrder": 4,
       "altNames": [
         "Heather Park",
-        "heather park",
-        "Heather Park"
+        "heather park"
       ]
     },
     {
@@ -2647,7 +2633,6 @@
       "range": "82",
       "difficultyOrder": 2,
       "altNames": [
-        "Lena Lake",
         "Lena Lake"
       ]
     },
@@ -2810,8 +2795,7 @@
       "altNames": [
         "Little River",
         "Little River (to mile 3.5)",
-        "Little River Trail",
-        "Little River"
+        "Little River Trail"
       ]
     },
     {
@@ -3222,8 +3206,6 @@
       "range": "81",
       "difficultyOrder": 5,
       "altNames": [
-        "Marmot Pass",
-        "Marmot Pass",
         "Marmot Pass"
       ]
     },
@@ -3443,7 +3425,6 @@
       "range": "84",
       "difficultyOrder": 3,
       "altNames": [
-        "Mink Lake",
         "Mink Lake"
       ]
     },
@@ -4594,7 +4575,6 @@
       "range": "72",
       "difficultyOrder": 3,
       "altNames": [
-        "Royal Creek",
         "Royal Creek"
       ]
     },
@@ -4776,7 +4756,6 @@
       "difficultyOrder": 4,
       "altNames": [
         "Deer Ridge",
-        "Slab Camp to Deer Ridge",
         "Slab Camp to Deer Ridge"
       ]
     },
@@ -5343,7 +5322,6 @@
       "range": "83",
       "difficultyOrder": 4,
       "altNames": [
-        "Tubal Cain",
         "Tubal Cain",
         "Tull Canyon"
       ]
