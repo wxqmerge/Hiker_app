@@ -81,6 +81,7 @@ output_lines.append('\t\t\t\t\t\t\t\t\t')
 output_lines.append('Month\tWed\tHike\tLeader / Shadow\t\tMonth\tFri\tHike\tLeader / Shadow\t')
 
 current_month = None
+last_month = None
 for idx, row in df.iterrows():
     row = row.fillna('')
     cols = [str(c).strip() for c in row.values]
@@ -130,7 +131,10 @@ for idx, row in df.iterrows():
     fri_name = format_hike(fri_hike) if fri_hike and fri_hike != 'Hike' else ''
 
     if wed_name or fri_name:
-        line = f'{current_month}\t{wed_day}\t{wed_name}\t{wed_leader}\t\t{current_month}\t{fri_day}\t{fri_name}\t{fri_leader}\t'
+        wed_month = current_month if current_month != last_month else ''
+        fri_month = current_month if current_month != last_month else ''
+        last_month = current_month
+        line = f'{wed_month}\t{wed_day}\t{wed_name}\t{wed_leader}\t\t{fri_month}\t{fri_day}\t{fri_name}\t{fri_leader}\t'
         output_lines.append(line)
 
 with open(r'D:\hiker\3Q26_hikes.tsv', 'w', encoding='utf-8') as f:
