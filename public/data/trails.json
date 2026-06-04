@@ -735,7 +735,6 @@
       "range": "15",
       "difficultyOrder": 3,
       "altNames": [
-        "Cassidy Creek",
         "Cassidy Creek (bike trail)"
       ]
     },
@@ -2394,8 +2393,7 @@
       "parking": "Discover",
       "difficultyOrder": 4,
       "altNames": [
-        "Klosche - Nanitch",
-        "Snider Ridge"
+        "Klosche - Nanitch"
       ]
     },
     {
@@ -3244,7 +3242,6 @@
       "range": "19",
       "difficultyOrder": 2,
       "altNames": [
-        "Miller Peninsula",
         "Miller Peninsula-Manzanita Trail"
       ]
     },
@@ -5037,9 +5034,7 @@
       },
       "range": "50.0",
       "difficultyOrder": 3,
-      "altNames": [
-        "Striped Peak"
-      ]
+      "altNames": []
     },
     {
       "id": "striped-peak",
