@@ -22,6 +22,7 @@ DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
 ERRORS=0
 WARNINGS=0
 DIR="$(pwd)"
+DOMAIN="$(basename "$DIR").example.com"
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
 
@@ -119,6 +120,14 @@ if [ -f "$NGINX_CONF" ]; then
     else
         warn "Proxy to Express not configured — all requests will fail"
     fi
+    if grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
+        pass "server_name matches $DOMAIN"
+    else
+        warn "server_name mismatch — expected $DOMAIN"
+        if [ "$FIX" = true ]; then
+            echo "  Fix: sudo sed -i \"s/server_name .*/server_name $DOMAIN;/\" $NGINX_CONF"
+        fi
+    fi
 else
     fail "Nginx config missing at $NGINX_CONF"
     if [ "$FIX" = true ]; then
@@ -197,6 +206,7 @@ else
     echo "Quick fixes:"
     echo "  npm install && npm run build:all"
     echo "  sudo cp deploy/hiker.conf $NGINX_CONF"
+    echo "  sudo sed -i \"s/server_name .*/server_name $DOMAIN;/\" $NGINX_CONF"
     echo "  sudo ln -s $NGINX_CONF $NGINX_ENABLED"
     echo "  sudo nginx -t && sudo systemctl reload nginx"
 fi

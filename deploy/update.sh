@@ -157,16 +157,7 @@ if [ -z "$ADMIN_KEY" ]; then
 fi
 echo "  ADMIN_API_KEY: (set)"
 
-if grep -q '^DOMAIN=' "$ENV_FILE"; then
-    DOMAIN=$(grep '^DOMAIN=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')
-else
-    DOMAIN=""
-fi
-if [ -z "$DOMAIN" ]; then
-    echo "  ERROR: DOMAIN must be set in server/.env."
-    echo "  Deploy aborted. Set the domain and try again."
-    exit 1
-fi
+DOMAIN="$(basename "$DIR").example.com"
 echo "  DOMAIN: $DOMAIN"
 
 # 4. Clean stale build artifacts
