@@ -17,7 +17,7 @@ function Test-Endpoint {
         [int]$ExpectedStatus = 200
     )
     try {
-        $Output = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 10 ($Url + $Path) | Out-String
+        $Output = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 ($Url + $Path) | Out-String
         $Code = [int]($Output.Trim())
         if ($Code -eq $ExpectedStatus) {
             Write-Host "PASS $Label - HTTP $Code" -ForegroundColor Green
@@ -38,10 +38,10 @@ function Test-ApiJson {
         [string]$ExpectedKey
     )
     try {
-        $CodeOutput = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 10 ($Url + $Path) | Out-String
+        $CodeOutput = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 ($Url + $Path) | Out-String
         $Code = [int]($CodeOutput.Trim())
         if ($Code -eq 200) {
-            $Body = (& curl.exe -s -k --max-time 10 ($Url + $Path)) | ConvertFrom-Json
+            $Body = (& curl.exe -s -k --max-time 5 ($Url + $Path)) | ConvertFrom-Json
             if ($ExpectedKey -and $Body.PSObject.Properties.Name -contains $ExpectedKey) {
                 $Count = if ($Body.$ExpectedKey -is [array]) { $Body.$ExpectedKey.Count } elseif ($Body.$ExpectedKey -is [hashtable]) { $Body.$ExpectedKey.Count } else { 1 }
                 Write-Host "PASS $Label - $Count items" -ForegroundColor Green
