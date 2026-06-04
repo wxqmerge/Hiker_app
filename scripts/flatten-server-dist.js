@@ -6,10 +6,15 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
 const serverDist = path.join(projectRoot, 'server', 'dist');
+
+// TypeScript outputs directly to server/dist/ (no nesting).
+// This script handles bughouse-style nested output (server/dist/server/src/).
+// If nested output exists, flatten it. Otherwise, output is already flat.
+
 const serverSrcDist = path.join(serverDist, 'server', 'src');
 
 if (!fs.existsSync(serverSrcDist)) {
-  console.log('  No dist/server/src/ found, skipping flatten.');
+  console.log('  TypeScript output already flat in dist/. Nothing to flatten.');
   process.exit(0);
 }
 
