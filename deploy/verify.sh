@@ -273,10 +273,20 @@ else
     echo "--- Diagnostics ---"
     echo ""
     echo "Service status:"
-    sudo systemctl is-active "$SERVICE" 2>/dev/null && echo "  Running" || echo "  NOT running"
+    if sudo systemctl is-active "$SERVICE" 2>/dev/null; then
+        echo "  Running"
+    else
+        echo "  NOT running"
+        NEED_SERVICE_START=true
+    fi
     echo ""
     echo "Nginx status:"
-    sudo systemctl is-active nginx 2>/dev/null && echo "  Running" || echo "  NOT running"
+    if sudo systemctl is-active nginx 2>/dev/null; then
+        echo "  Running"
+    else
+        echo "  NOT running"
+        NEED_NGINX_RELOAD=true
+    fi
     echo ""
     echo "Nginx config test:"
     sudo nginx -t 2>&1
@@ -319,8 +329,14 @@ else
     if [ "$NEED_NGINX_RELOAD" = true ]; then
         echo "  sudo nginx -t && sudo systemctl reload nginx"
     fi
+    CONFLICT_COUNT=$(grep -rl "server_name $DOMAIN" /etc/nginx/sites-enabled/ 2>/dev/null | wc -l)
+    if [ "$CONFLICT_COUNT" -gt 1 ]; then
+        echo "  Remove conflicting configs:"
+        grep -rl "server_name $DOMAIN" /etc/nginx/sites-enabled/ 2>/dev/null | while read -r f; do echo "    sudo rm $f"; done
+        echo "  sudo systemctl reload nginx"
+    fi
     if [ "$NEED_SERVICE_START" = true ]; then
-        echo "  sudo systemctl restart $SERVICE"
+        echo "  sudo systemctl enable --now $SERVICE"
     fi
     if [ "$DIRECT_HEALTH" != "200" ]; then
         echo "  sudo systemctl restart $SERVICE"
