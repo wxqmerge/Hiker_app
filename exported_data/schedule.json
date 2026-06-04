@@ -178,7 +178,7 @@
     {
       "day": 29,
       "hike": "Miller Peninsula SP - Manzanita to Beach",
-      "trail_id": "miller-peninsula-to"
+      "trail_id": "miller-peninsula"
     },
     {
       "day": 29,
@@ -1372,7 +1372,7 @@
     {
       "day": 11,
       "hike": "Miller Peninsula-Manzanita Trail",
-      "trail_id": "miller"
+      "trail_id": "miller-peninsula"
     },
     {
       "day": 12,
@@ -1509,7 +1509,7 @@
     {
       "day": 12,
       "hike": "Manzanita/Bluff trail miller penninsula",
-      "trail_id": "pack"
+      "trail_id": "miller-peninsula"
     },
     {
       "day": 13,
