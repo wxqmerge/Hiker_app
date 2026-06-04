@@ -186,6 +186,7 @@
         "Dec": 1,
         "bestSeason": "Summer/Fall"
       },
+      "parking": "N/A",
       "range": "53",
       "difficultyOrder": 4
     },
@@ -689,6 +690,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "N/A",
       "range": "16",
       "difficultyOrder": 4,
       "altNames": []
@@ -875,6 +877,7 @@
         "Dec": 1,
         "bestSeason": "May"
       },
+      "parking": "n/a",
       "range": "44",
       "difficultyOrder": 1,
       "altNames": []
@@ -904,6 +907,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "n/a",
       "range": "30",
       "difficultyOrder": 1,
       "altNames": [
@@ -1221,6 +1225,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "N/A",
       "range": "16",
       "difficultyOrder": 1,
       "altNames": []
@@ -1380,6 +1385,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "N/A",
       "range": "16",
       "difficultyOrder": 1,
       "altNames": [
@@ -1480,6 +1486,7 @@
         "Dec": 1,
         "bestSeason": "any"
       },
+      "parking": "n/a",
       "range": "42",
       "difficultyOrder": 1,
       "altNames": [
@@ -1517,6 +1524,7 @@
         "Dec": 1,
         "bestSeason": "Fall"
       },
+      "parking": "N/A",
       "range": "37",
       "difficultyOrder": 1,
       "altNames": [
@@ -1764,6 +1772,7 @@
         "Dec": 1,
         "bestSeason": "any"
       },
+      "parking": "n/a",
       "range": "41",
       "difficultyOrder": 1,
       "altNames": [
@@ -1797,6 +1806,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "n/a",
       "range": "10",
       "difficultyOrder": 1,
       "altNames": [
@@ -1925,6 +1935,7 @@
         "Dec": 1,
         "bestSeason": "Spring/Summer/Winter"
       },
+      "parking": "n/a",
       "difficultyOrder": 2,
       "altNames": [
         "Blue Mountain - Goa Road"
@@ -2046,6 +2057,7 @@
         "Dec": 2,
         "bestSeason": "Nov Jul"
       },
+      "parking": "N/A",
       "range": "40",
       "difficultyOrder": 4,
       "altNames": [
@@ -2171,6 +2183,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "N/A",
       "difficultyOrder": 1,
       "altNames": [
         "Newberry Hill Guillemot Cove"
@@ -3029,7 +3042,8 @@
         "Nov": 1,
         "Dec": 1
       },
-      "range": "53.0",
+      "parking": "n/a",
+      "range": "53",
       "difficultyOrder": 2,
       "altNames": [
         "Lyre River (-1.68 @12:13 Cres Bch)",
@@ -3224,7 +3238,8 @@
         "Nov": 0,
         "Dec": 0
       },
-      "range": "40.0",
+      "parking": "N/A",
+      "range": "40",
       "difficultyOrder": 5
     },
     {
@@ -3440,6 +3455,7 @@
         "Dec": 1,
         "bestSeason": "Spring/Summer/Winter"
       },
+      "parking": "n/a",
       "range": "40",
       "difficultyOrder": 2,
       "altNames": [
@@ -3503,6 +3519,7 @@
         "Dec": 0,
         "bestSeason": "All"
       },
+      "parking": "N/A",
       "range": "30",
       "difficultyOrder": 3
     },
@@ -3812,6 +3829,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "N/A",
       "range": "70",
       "difficultyOrder": 1
     },
@@ -3840,6 +3858,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "N/A",
       "range": "60",
       "difficultyOrder": 2,
       "altNames": [
@@ -4221,6 +4240,7 @@
         "Dec": 1,
         "bestSeason": "Any"
       },
+      "parking": "N/A",
       "range": "30",
       "difficultyOrder": 1,
       "altNames": [
@@ -4380,6 +4400,7 @@
         "Dec": 7,
         "bestSeason": "any"
       },
+      "parking": "N/A",
       "range": "52",
       "difficultyOrder": 1,
       "altNames": [
@@ -4473,6 +4494,7 @@
         "Dec": 7,
         "bestSeason": "Any"
       },
+      "parking": "N/A",
       "range": "13",
       "difficultyOrder": 1,
       "altNames": [
@@ -5035,7 +5057,8 @@
         "Nov": 2,
         "Dec": 2
       },
-      "range": "50.0",
+      "parking": "Discover",
+      "range": "50",
       "difficultyOrder": 3,
       "altNames": []
     },
@@ -5063,7 +5086,8 @@
         "Nov": 1,
         "Dec": 1
       },
-      "range": "50.0",
+      "parking": "Discover",
+      "range": "50",
       "difficultyOrder": 2,
       "altNames": []
     },
@@ -5156,6 +5180,7 @@
         "Dec": 1,
         "bestSeason": "Fall Winter Spring"
       },
+      "parking": "N/A",
       "difficultyOrder": 1,
       "altNames": [
         "Teal Lake Timberton Loop",
@@ -5187,6 +5212,7 @@
         "Dec": 3,
         "bestSeason": "Winter/Spring/Fall"
       },
+      "parking": "N/A",
       "difficultyOrder": 2
     },
     {
@@ -5214,6 +5240,7 @@
         "Dec": 1,
         "bestSeason": "Any "
       },
+      "parking": "N/A",
       "difficultyOrder": 1,
       "altNames": [
         "Travis Spit (or Gibson Spit)",
@@ -5343,6 +5370,7 @@
         "Dec": 5,
         "bestSeason": "any"
       },
+      "parking": "N/A",
       "range": "30",
       "difficultyOrder": 2,
       "altNames": [
@@ -5375,6 +5403,7 @@
         "Dec": 1,
         "bestSeason": "Any except Jan."
       },
+      "parking": "N/A",
       "range": "26",
       "difficultyOrder": 1,
       "altNames": [
