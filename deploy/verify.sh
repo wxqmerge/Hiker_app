@@ -26,6 +26,16 @@ DOMAIN="$(basename "$DIR").example.com"
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
 
+# Track which categories have errors for targeted quick fixes
+NEED_DEPS=false
+NEED_BUILD=false
+NEED_SERVER_BUILD=false
+NEED_ENV=false
+NEED_NGINX_CONF=false
+NEED_NGINX_ENABLE=false
+NEED_NGINX_RELOAD=false
+NEED_SERVICE_START=false
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -56,6 +66,7 @@ if [ -d "node_modules" ]; then
     pass "node_modules exists"
 else
     fail "node_modules missing — run npm install"
+    NEED_DEPS=true
 fi
 
 if [ -f "package.json" ]; then
@@ -75,9 +86,11 @@ if [ -d "dist" ]; then
         pass "dist/index.html exists"
     else
         fail "dist/index.html missing"
+        NEED_BUILD=true
     fi
 else
     fail "dist/ missing — run npm run build"
+    NEED_BUILD=true
 fi
 
 # 4. Server
@@ -89,9 +102,11 @@ if [ -d "server/dist" ]; then
         pass "server/dist/index.js exists"
     else
         fail "server/dist/index.js missing"
+        NEED_SERVER_BUILD=true
     fi
 else
     fail "server/dist/ missing — run npm run build:server"
+    NEED_SERVER_BUILD=true
 fi
 
 if [ -f "server/.env" ]; then
@@ -102,12 +117,15 @@ if [ -f "server/.env" ]; then
             pass "ADMIN_API_KEY is set"
         else
             fail "ADMIN_API_KEY is empty"
+            NEED_ENV=true
         fi
     else
         fail "ADMIN_API_KEY not found in server/.env"
+        NEED_ENV=true
     fi
 else
     fail "server/.env missing — copy server/.env.example to server/.env"
+    NEED_ENV=true
 fi
 
 # 5. Nginx config
@@ -119,20 +137,24 @@ if [ -f "$NGINX_CONF" ]; then
         pass "Proxy to Express configured"
     else
         warn "Proxy to Express not configured — all requests will fail"
+        NEED_NGINX_CONF=true
     fi
     if grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
         pass "server_name matches $DOMAIN"
     else
         warn "server_name mismatch — expected $DOMAIN"
+        NEED_NGINX_RELOAD=true
         if [ "$FIX" = true ]; then
             echo "  Fix: sudo sed -i \"s/server_name .*/server_name $DOMAIN;/\" $NGINX_CONF"
         fi
     fi
 else
     fail "Nginx config missing at $NGINX_CONF"
+    NEED_NGINX_CONF=true
+    NEED_NGINX_ENABLE=true
     if [ "$FIX" = true ]; then
         echo "  Fix: sudo cp deploy/hiker.conf $NGINX_CONF"
-        echo "  Fix: sudo sed -i 's|DEPLOY_PLACEHOLDER|$(basename $DEPLOY_PATH)|g' $NGINX_CONF"
+        echo "  Fix: sudo sed -i \"s/server_name .*/server_name $DOMAIN;/\" $NGINX_CONF"
     fi
 fi
 
@@ -140,6 +162,7 @@ if [ -f "$NGINX_ENABLED" ]; then
     pass "Nginx site enabled"
 else
     fail "Nginx site not enabled"
+    NEED_NGINX_ENABLE=true
     if [ "$FIX" = true ]; then
         echo "  Fix: sudo ln -s $NGINX_CONF $NGINX_ENABLED"
     fi
@@ -164,6 +187,7 @@ if command -v systemctl &>/dev/null; then
         pass "$SERVICE service is running"
     else
         fail "$SERVICE service is not running"
+        NEED_SERVICE_START=true
         if [ "$FIX" = true ]; then
             echo "  Fix: sudo systemctl start $SERVICE"
         fi
@@ -204,11 +228,28 @@ else
     echo -e "${RED}$ERRORS error(s), $WARNINGS warning(s).${NC}"
     echo ""
     echo "Quick fixes:"
-    echo "  npm install && npm run build:all"
-    echo "  sudo cp deploy/hiker.conf $NGINX_CONF"
-    echo "  sudo sed -i \"s/server_name .*/server_name $DOMAIN;/\" $NGINX_CONF"
-    echo "  sudo ln -s $NGINX_CONF $NGINX_ENABLED"
-    echo "  sudo nginx -t && sudo systemctl reload nginx"
+    if [ "$NEED_DEPS" = true ]; then
+        echo "  npm install && (cd server && npm install)"
+    fi
+    if [ "$NEED_BUILD" = true ] || [ "$NEED_SERVER_BUILD" = true ]; then
+        echo "  npm run build:all"
+    fi
+    if [ "$NEED_ENV" = true ]; then
+        echo "  cp server/.env.example server/.env && nano server/.env"
+    fi
+    if [ "$NEED_NGINX_CONF" = true ]; then
+        echo "  sudo cp deploy/hiker.conf $NGINX_CONF"
+        echo "  sudo sed -i \"s/server_name .*/server_name $DOMAIN;/\" $NGINX_CONF"
+    fi
+    if [ "$NEED_NGINX_ENABLE" = true ]; then
+        echo "  sudo ln -s $NGINX_CONF $NGINX_ENABLED"
+    fi
+    if [ "$NEED_NGINX_RELOAD" = true ]; then
+        echo "  sudo nginx -t && sudo systemctl reload nginx"
+    fi
+    if [ "$NEED_SERVICE_START" = true ]; then
+        echo "  sudo systemctl restart $SERVICE"
+    fi
 fi
 
 exit $ERRORS
