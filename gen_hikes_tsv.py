@@ -112,12 +112,15 @@ for idx, row in df.iterrows():
         continue
 
     def format_hike(hike_name):
+        early = ''
+        if re.search(r'\(early start\)', hike_name, re.IGNORECASE):
+            early = ' (Early Start)'
         trail, score = find_match(hike_name)
         if trail and score > 10:
             name = (trail['fullName'] or trail['name']).strip()
             if trail.get('wilderness'):
                 name += '\u25c6\ufe0e'
-            return name
+            return name + early
         else:
             if score <= 10:
                 return '*' + hike_name
