@@ -1161,7 +1161,6 @@
       "difficultyOrder": 1,
       "altNames": [
         "Discovery Bay Trail (Late Start 9:30am)",
-        "Tongue Point - Eagle's Cove",
         "Discovery Bay Trail"
       ]
     },
@@ -1420,8 +1419,7 @@
       "difficultyOrder": 4,
       "altNames": [
         "Elbo Creek Buck Mt",
-        "CANCELED Elbo Creek Buck Mountain",
-        "Elbo Creek Buck Mountain"
+        "CANCELED Elbo Creek Buck Mountain"
       ]
     },
     {
@@ -4673,9 +4671,7 @@
       "parking": "NW Forest/Golden",
       "range": "85",
       "difficultyOrder": 4,
-      "altNames": [
-        "Silver Lake via Way Trail"
-      ]
+      "altNames": []
     },
     {
       "id": "slab",
@@ -5024,7 +5020,6 @@
         "Steam Donkey Maple Valley",
         "Steam Donkey - Maple Valley",
         "Steam Donkey M.V. Rocky Brook",
-        "Steam Donkey Maple Valley Trails",
         "Maple Valley Steam Donkey"
       ]
     },
@@ -5177,7 +5172,6 @@
       "range": "52",
       "difficultyOrder": 4,
       "altNames": [
-        "Switchback Trail Victor Pass Klahhane Ridge",
         "Switchback to Victor Pass",
         "Switchback Trail to Victor Pass",
         "Sunrise Ridge Victor Pass",
@@ -5303,7 +5297,6 @@
       "range": "83",
       "difficultyOrder": 4,
       "altNames": [
-        "Tubal Cain Tull Canyon",
         "Tull Canyon to B-17 Wreckage",
         "Tubal Cain",
         "Tull Canyon",
