@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 dist
+server/dist
+server/node_modules
+server/.env
 dist-ssr
 *.local
 
@@ -28,3 +31,17 @@ deploy/.env
 *.njsproj
 *.sln
 *.sw?
+
+# Excel files (never committed)
+*.xls*
+
+# Exported data (never committed)
+exported_data/
+
+# Python cache
+__pycache__/
+
+# Export artifacts
+export_for_excel.json
+hiker_export.xlsx
+todo_add_trail.tsv

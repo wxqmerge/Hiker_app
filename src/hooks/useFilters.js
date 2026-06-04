@@ -26,9 +26,6 @@ function setState(filters) {
   _subscribers.forEach(fn => fn());
 }
 
-function getState() {
-  return _filters;
-}
 
 export function useFiltersStore() {
   const mountedRef = useRef(true);

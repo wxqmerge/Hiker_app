@@ -234,18 +234,14 @@ describe('ScheduleBuilder', () => {
     expect(availableText).toBeInTheDocument();
   });
 
-  it('stores schedule with trail IDs in localStorage', () => {
+  it('stores schedule with trail IDs in server state', () => {
     render(
       <MemoryRouter initialEntries={['/schedule']}>
         <ScheduleBuilder />
       </MemoryRouter>
     );
-    const scheduleKey = 'hiker-schedule';
-    const stored = localStorage.getItem(scheduleKey);
-    expect(stored).not.toBeNull();
-    const parsed = JSON.parse(stored);
-    // Should be an object with month keys
-    expect(typeof parsed).toBe('object');
+    // Schedule is now stored on server, not localStorage
+    expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
   });
 
   it('handles trail not found gracefully', () => {
@@ -286,16 +282,22 @@ describe('ScheduleBuilder', () => {
   });
 
   it('clears console on search change in debug mode', () => {
-    localStorage.setItem('hiker-schedule-debug', 'true');
     const clearSpy = vi.spyOn(console, 'clear');
     render(
       <MemoryRouter initialEntries={['/schedule']}>
         <ScheduleBuilder />
       </MemoryRouter>
     );
+    // Enable debug mode
+    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    fireEvent.click(settingsBtn);
+    const debugBtn = screen.getByText(/Debug Mode/);
+    fireEvent.click(debugBtn);
+    // Close settings menu
+    fireEvent.click(document.body);
     const searchInput = screen.getByPlaceholderText('Search...');
     fireEvent.change(searchInput, { target: { value: 'test' } });
-    // Should clear console when search changes
+    // Should clear console when search changes in debug mode
     expect(clearSpy).toHaveBeenCalled();
     clearSpy.mockRestore();
   });

@@ -1,31 +1,45 @@
 # AGENTS.md
 
 ## Repo layout
-- `hiker-app/` — React app (Vite 8, React 19, Tailwind 4)
-- Root: Excel source files + Python extraction scripts
-- **Never commit** `*.xls*`, `exported_data/`, `node_modules/`, `dist/`
+- Root: React app (Vite 8, React 19, Tailwind 4), Express server, Python extraction scripts
+- `server/` — Express/TS/ESM API server
+- `shared/types/` — Shared TypeScript types
+- `scripts/` — Build scripts (compile-shared, patch, flatten)
+- `exported_data/` — JSON data files (never committed)
+- **Never commit** `*.xls*`, `exported_data/`, `node_modules/`, `dist/`, `server/dist/`
+
+## Architecture: Single server
+- One Express server on port 3000 serves both `/api/*` endpoints and static `dist/` files
+- Dev mode: Express proxies non-API requests to Vite (port 5173) for HMR
+- Prod mode: Express serves built `dist/` directly
+- No IndexedDB, no localStorage — all data on server disk via API
 
 ## Data pipeline (non-obvious — read first)
-1. Excel files live in `D:\hiker\` (not in `hiker-app/`). They are **never committed**.
+1. Excel files live in `D:\hiker\`. They are **never committed**.
 2. Run `python extract_trails_xls.py` → writes `exported_data/trails.json`, `trail_details.json`, `lookup.json`
 3. Run `python match_schedule.py` → updates `exported_data/trails.json` with month scores
-4. Copy JSON to `hiker-app/public/data/`
-5. `cd hiker-app && npm run build` → single `dist/index.html` (~590KB) with all data embedded
-6. **IndexedDB smart merge**: On app load, embedded data seeds IndexedDB. New trails are added; existing edits are preserved.
+4. `npm run build:all` → builds frontend `dist/` + server `server/dist/`
+5. Server reads from `exported_data/*.json` at startup, writes updates back to disk
 
 ## Runtime data loading
-- Uses **MemoryRouter** (not BrowserRouter) — required for `file://` protocol
-- `useTrailStore()` initializes IndexedDB (`hiker-trails` DB) with smart merge from embedded data
-- `useTrails()` reads from IndexedDB via `useTrailStore`
-- `useTrailDetails()` reads from IndexedDB via `useTrailStore`
-- `lookup` and `schedule` are static reference data from `window.__EMBEDDED_DATA__`
+- Uses **BrowserRouter** (not MemoryRouter) — server handles all routes
+- `useTrailStore()` fetches data via `src/api/client.js` → Express API
+- All CRUD goes through API: `GET /api/trails`, `PUT /api/trails/:id`, etc.
+- Schedule state stored on server, persisted to `exported_data/schedule.json`
 
-## Trail data persistence (IndexedDB)
-- Trail data and edits stored in **IndexedDB** (`hiker-trails` database)
-- Two object stores: `trails` (keyPath: `id`), `details` (keyPath: `id`)
-- Smart merge on seed: New trails from embedded data are added; existing edits preserved
-- `useTrailStore` provides CRUD: `saveTrail()`, `saveTrailDetail()`, `deleteTrail()`, `exportJSON()`, `importJSON()`
-- Schedule state remains in **localStorage** (`hiker-schedule` key)
+## API endpoints
+- `GET /health` — health check with write health status
+- `GET /api/trails` — all trails
+- `GET /api/trails/details` — all trail details
+- `PUT /api/trails/:id` — update trail
+- `PUT /api/trails/:id/details` — update trail detail
+- `DELETE /api/trails/:id` — delete trail
+- `GET /api/schedule` — schedule data
+- `POST /api/schedule/upload` — TSV upload (auto-detects quarter)
+- `GET /api/schedule/report` — schedule report
+- `GET /api/schedule/download` — schedule download
+- `GET /api/lookup` — lookup reference data
+- Write endpoints require `X-API-Key` header (timing-safe comparison)
 
 ## Export formats
 - **Export JSON** (`trail-data-export.json`): Full backup for app import
@@ -44,11 +58,16 @@
 - `base = 1` if trail has quarter data in Excel, `0` otherwise
 
 ## Commands
-- Dev: `cd hiker-app && npm run dev`
-- Build: `cd hiker-app && npm run build`
-- Lint: `cd hiker-app && npm run lint`
-- Preview: `cd hiker-app && npm run preview`
-- Test: `cd hiker-app && npm run test:run` (157 tests, uses `fake-indexeddb` mock)
+- Dev (both): `npm run dev:all` — starts Vite (5173) + Express (3000), Express proxies to Vite
+- Dev (frontend only): `npm run dev`
+- Dev (server only): `npm run dev:server`
+- Build (both): `npm run build:all` — builds frontend `dist/` + server `server/dist/`
+- Build (frontend): `npm run build`
+- Build (server): `npm run build:server`
+- Lint: `npm run lint`
+- Preview: `npm run preview`
+- Test: `npm run test:run` (157 tests, fetch mocks in `src/test/setup.ts`)
+- Prod: `node server/dist/index.js` (set `NODE_ENV=production` in `server/.env`)
 
 ## Routing (App.jsx)
 - `/` → Home (browse page with filters)
@@ -56,6 +75,13 @@
 - `/trails` → TrailManager (CRUD interface)
 - `/schedule` → ScheduleBuilder
 - Browse is NOT a separate route — it's the Home page with filters
+
+## Deployment
+- `deploy/update.sh` — 10-step deploy with cooldowns (server + frontend + nginx + service)
+- `deploy/verify.sh` — verifies server, frontend, nginx, service health
+- `deploy/hiker.conf` — nginx config: serves `dist/`, proxies `/api` and `/health` to `localhost:3000`
+- Deploy target: `/var/www/html/sothh_app/dist`, service name `sothh_app`
+- `server/.env` has `ADMIN_API_KEY` (gitignored, use `server/.env.example` as template)
 
 ## Excel extraction quirks
 - Quarter column positions vary across 17 sheets (5, 6, 7, 10, 11, 15 columns)

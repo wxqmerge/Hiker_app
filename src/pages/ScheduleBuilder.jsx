@@ -11,14 +11,11 @@ import { getTrailDetailsById } from '../utils/data';
 import { downloadBlob, createImportFileInput } from '../utils/io';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
-const SCHEDULE_STORAGE_KEY = 'hiker-schedule';
 const DEBUG_STORAGE_KEY = 'hiker-schedule-debug';
 let prevSearch = null;
 
 function debugLog(...args) {
-  if (localStorage.getItem(DEBUG_STORAGE_KEY) === 'true') {
-    console.log('[ScheduleBuilder]', ...args);
-  }
+  console.log('[ScheduleBuilder]', ...args);
 }
 
 function debugLogSearchChange(search, hikeTrailMapLen, filteredLen, sortedLen, assigned) {
@@ -32,26 +29,6 @@ function debugLogSearchChange(search, hikeTrailMapLen, filteredLen, sortedLen, a
   }
 }
 
-function normalizeScheduleStore(store) {
-  if (!store || typeof store !== 'object') return {};
-  const normalized = {};
-  Object.entries(store).forEach(([month, days]) => {
-    normalized[month] = {};
-    if (typeof days === 'object' && days !== null) {
-      Object.entries(days).forEach(([day, val]) => {
-        if (typeof val === 'string') {
-          // Legacy format - trail ID as string
-          normalized[month][day] = { trail_id: val, hike: null };
-        } else if (val?.trail_id) {
-          normalized[month][day] = { trail_id: val.trail_id, hike: val.hike || null };
-        } else {
-          normalized[month][day] = { trail_id: null, hike: null };
-        }
-      });
-    }
-  });
-  return normalized;
-}
 
 export default function ScheduleBuilder() {
   const { trails, loading, lookup, schedule: scheduleData } = useTrails();
@@ -64,16 +41,7 @@ export default function ScheduleBuilder() {
     return nextMonth;
   });
   const [scheduleStore, setScheduleStore] = useState(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem(SCHEDULE_STORAGE_KEY));
-      const normalized = normalizeScheduleStore(raw);
-      if (JSON.stringify(normalized) !== JSON.stringify(raw)) {
-        localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(normalized));
-      }
-      return normalized;
-    } catch {
-      return {};
-    }
+    return {};
   });
 
   const assignedHikes = useMemo(() => {
@@ -94,13 +62,25 @@ export default function ScheduleBuilder() {
   const [dragData, setDragData] = useState(null);
   const [showScheduled, setShowScheduled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [debugMode, setDebugMode] = useState(() => {
-    try {
-      return localStorage.getItem(DEBUG_STORAGE_KEY) === 'true';
-    } catch {
-      return false;
+  const [debugMode, setDebugMode] = useState(false);
+
+  const hikeTrailMap = useMemo(() => {
+    const scheduleIds = Object.values(assignedHikes).map(v => v?.trail_id).filter(Boolean);
+    const result = [];
+    trails.forEach((t, idx) => {
+      let isScheduled = false;
+      for (const sid of scheduleIds) {
+        if (sid === t.id) { isScheduled = true; break; }
+        if (sid.toLowerCase() === t.id.toLowerCase()) { isScheduled = true; break; }
+      }
+      if (isScheduled) return;
+      result.push({ hike: t.fullName || t.name, trail: t, hikeIndex: idx + 1, trailId: t.id });
+    });
+    if (debugMode) {
+      debugLog('trails =', trails.length, '| hikeTrailMap =', result.length);
     }
-  });
+    return result;
+  }, [trails, assignedHikes, debugMode]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -112,12 +92,11 @@ export default function ScheduleBuilder() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showSettings]);
 
-  const updateMonthSchedule = useCallback((monthName, updater) => {
+  const updateMonthSchedule = useCallback(async (monthName, updater) => {
     setScheduleStore(prev => {
       const current = prev[monthName] || {};
       const next = updater(current);
       const newStore = { ...prev, [monthName]: next };
-      localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(newStore));
       return newStore;
     });
   }, []);
@@ -158,23 +137,7 @@ export default function ScheduleBuilder() {
     return map;
   }, [trails]);
 
-const hikeTrailMap = useMemo(() => {
-    const scheduleIds = Object.values(assignedHikes).map(v => v?.trail_id).filter(Boolean);
-    const result = [];
-    trails.forEach((t, idx) => {
-      let isScheduled = false;
-      for (const sid of scheduleIds) {
-        if (sid === t.id) { isScheduled = true; break; }
-        if (sid.toLowerCase() === t.id.toLowerCase()) { isScheduled = true; break; }
-      }
-      if (isScheduled) return;
-      result.push({ hike: t.fullName || t.name, trail: t, hikeIndex: idx + 1, trailId: t.id });
-    });
-    if (localStorage.getItem(DEBUG_STORAGE_KEY) === 'true') {
-      debugLog('trails =', trails.length, '| hikeTrailMap =', result.length);
-    }
-    return result;
-  }, [trails, assignedHikes]);
+
 
   const filteredHikes = useMemo(() => {
     const filtered = filterTrails(hikeTrailMap, filters);
@@ -250,7 +213,7 @@ const hikeTrailMap = useMemo(() => {
         );
       })
       .filter(Boolean);
-  }, [assignedHikes, trailMap, trailIndexToId, handleDragStart, handleDragEnd, debugMode, selectedMonth]);
+  }, [assignedHikes, trailIndexToId, handleDragStart, handleDragEnd, debugMode, selectedMonth, findTrailById, year]);
 
   const handleDropOnDate = (targetDay) => {
     if (!dragData) return;
@@ -331,7 +294,6 @@ const hikeTrailMap = useMemo(() => {
   const clearSchedule = () => {
     if (confirm('Clear all schedule data?')) {
       setScheduleStore({});
-      localStorage.removeItem(SCHEDULE_STORAGE_KEY);
       setShowSettings(false);
     }
   };
@@ -358,7 +320,6 @@ const hikeTrailMap = useMemo(() => {
               }
             });
           });
-          localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(normalized));
           return normalized;
         });
         alert(`Imported ${Object.keys(imported).length} months of schedules`);
@@ -504,11 +465,7 @@ const hikeCards = useMemo(() => {
                   Import
                 </button>
                 <button
-                  onClick={() => {
-                    const next = !debugMode;
-                    setDebugMode(next);
-                    localStorage.setItem(DEBUG_STORAGE_KEY, String(next));
-                  }}
+                   onClick={() => setDebugMode(!debugMode)}
                   className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
                     debugMode
                       ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100'

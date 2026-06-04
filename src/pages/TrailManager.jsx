@@ -6,7 +6,13 @@ import { downloadBlob, createImportFileInput } from '../utils/io';
 export default function TrailManager() {
   const { trails, loading, saveTrail, deleteTrail, exportJSON, importJSON } = useTrailStore();
   const [search, setSearch] = useState('');
+  const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const navigate = useNavigate();
+
+  const handleSaveApiKey = () => {
+    localStorage.setItem('hiker-api-key', apiKey);
+    alert('API key saved!');
+  };
 
   const filteredTrails = useMemo(() => {
     if (!search) return trails;
@@ -117,6 +123,18 @@ export default function TrailManager() {
           <button onClick={handleExportForExcel} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm">
             Export for Excel
           </button>
+          <div className="flex items-center gap-2 ml-auto">
+            <input
+              type="password"
+              placeholder="API Key"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-56 focus:ring-green-500 focus:border-green-500"
+            />
+            <button onClick={handleSaveApiKey} className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm whitespace-nowrap">
+              Save Key
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

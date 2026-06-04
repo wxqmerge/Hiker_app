@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Verify the hiker site deployment
+# Verify the Hiker site deployment
 # Usage: ./verify.sh [--fix]
 
 FIX=false
@@ -16,7 +16,7 @@ if [ -f "$DEPLOY_DIR/.env" ]; then
     source "$DEPLOY_DIR/.env"
 fi
 
-SERVICE="${SERVICE_NAME:-hiker}"
+SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
 
 ERRORS=0
@@ -79,15 +79,45 @@ else
     fail "dist/ missing — run npm run build"
 fi
 
-# 4. Nginx config
+# 4. Server
+echo ""
+echo "--- Server ---"
+if [ -d "server/dist" ]; then
+    pass "server/dist/ exists"
+    if [ -f "server/dist/index.js" ]; then
+        pass "server/dist/index.js exists"
+    else
+        fail "server/dist/index.js missing"
+    fi
+else
+    fail "server/dist/ missing — run npm run build:server"
+fi
+
+if [ -f "server/.env" ]; then
+    pass "server/.env exists"
+    if grep -q '^ADMIN_API_KEY=' server/.env; then
+        ADMIN_KEY=$(grep '^ADMIN_API_KEY=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+        if [ -n "$ADMIN_KEY" ]; then
+            pass "ADMIN_API_KEY is set"
+        else
+            fail "ADMIN_API_KEY is empty"
+        fi
+    else
+        fail "ADMIN_API_KEY not found in server/.env"
+    fi
+else
+    fail "server/.env missing — copy server/.env.example to server/.env"
+fi
+
+# 5. Nginx config
 echo ""
 echo "--- Nginx ---"
 if [ -f "$NGINX_CONF" ]; then
     pass "Nginx config exists at $NGINX_CONF"
-    if grep -q "$DEPLOY_PATH/dist" "$NGINX_CONF"; then
-        pass "Nginx root points to correct path"
+    if grep -q "proxy_pass.*localhost:3000" "$NGINX_CONF"; then
+        pass "Proxy to Express configured"
     else
-        warn "Nginx root may not point to $DEPLOY_PATH/dist"
+        warn "Proxy to Express not configured — all requests will fail"
     fi
 else
     fail "Nginx config missing at $NGINX_CONF"
@@ -117,31 +147,38 @@ else
     warn "nginx not installed"
 fi
 
-# 5. Nginx running
+# 6. Service
 echo ""
-echo "--- Nginx Service ---"
+echo "--- Service ---"
 if command -v systemctl &>/dev/null; then
-    if sudo systemctl is-active --quiet nginx 2>/dev/null; then
-        pass "Nginx is running"
+    if sudo systemctl is-active --quiet "$SERVICE" 2>/dev/null; then
+        pass "$SERVICE service is running"
     else
-        fail "Nginx is not running"
+        fail "$SERVICE service is not running"
         if [ "$FIX" = true ]; then
-            echo "  Fix: sudo systemctl start nginx"
+            echo "  Fix: sudo systemctl start $SERVICE"
         fi
     fi
 else
     warn "systemctl not available (non-Linux?)"
 fi
 
-# 6. HTTP check
+# 7. HTTP checks
 echo ""
 echo "--- HTTP Check ---"
 if command -v curl &>/dev/null; then
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/ 2>/dev/null || echo "000")
     if [ "$HTTP_CODE" = "200" ]; then
-        pass "HTTP 200 from localhost"
+        pass "HTTP 200 from localhost (frontend)"
     else
-        fail "HTTP $HTTP_CODE from localhost"
+        fail "HTTP $HTTP_CODE from localhost (frontend)"
+    fi
+
+    HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/health 2>/dev/null || echo "000")
+    if [ "$HEALTH_CODE" = "200" ]; then
+        pass "HTTP 200 from /health (server)"
+    else
+        fail "HTTP $HEALTH_CODE from /health (server)"
     fi
 else
     warn "curl not available — skipping HTTP check"
@@ -158,9 +195,8 @@ else
     echo -e "${RED}$ERRORS error(s), $WARNINGS warning(s).${NC}"
     echo ""
     echo "Quick fixes:"
-    echo "  npm install && npm run build"
+    echo "  npm install && npm run build:all"
     echo "  sudo cp deploy/hiker.conf $NGINX_CONF"
-    echo "  sudo sed -i 's|DEPLOY_PLACEHOLDER|$(basename $DEPLOY_PATH)|g' $NGINX_CONF"
     echo "  sudo ln -s $NGINX_CONF $NGINX_ENABLED"
     echo "  sudo nginx -t && sudo systemctl reload nginx"
 fi
