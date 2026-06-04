@@ -112,7 +112,7 @@ echo "To trace live logs: sudo journalctl -u $SERVICE -f"
 echo ""
 
 # 1. Stash any local changes
-echo "[1/9] Stashing local changes..."
+echo "[1/10] Stashing local changes..."
 if ! git diff --quiet 2>/dev/null; then
     if git stash; then
         echo "  Changes stashed."
@@ -126,7 +126,7 @@ else
 fi
 
 # 2. Pull latest code
-echo "[2/9] Pulling latest code..."
+echo "[2/10] Pulling latest code..."
 if git pull --rebase 2>/dev/null; then
     echo "  Pulled successfully."
 elif git fetch origin main && git reset --hard origin/main; then
@@ -139,7 +139,7 @@ else
 fi
 
 # 3. Validate API keys
-echo "[3/9] Validating API keys..."
+echo "[3/10] Validating API keys..."
 ENV_FILE="$DIR/server/.env"
 if [ ! -f "$ENV_FILE" ]; then
     echo "  ERROR: $ENV_FILE not found."
@@ -163,7 +163,7 @@ DOMAIN="$(basename "$DIR").example.com"
 echo "  DOMAIN: $DOMAIN"
 
 # 4. Clean stale build artifacts
-echo "[4/9] Cleaning stale build artifacts..."
+echo "[4/10] Cleaning stale build artifacts..."
 if [ -d "dist" ]; then
     rm -rf dist
     echo "  Removed dist/"
@@ -178,7 +178,7 @@ if [ -d "shared/types" ]; then
 fi
 
 # 5. Install frontend dependencies and build
-echo "[5/9] Installing frontend dependencies..."
+echo "[5/10] Installing frontend dependencies..."
 if [ -f "package.json" ]; then
     cooldown_type="normal"
     if [ "$FORCE_CRITICAL" = true ]; then
@@ -198,7 +198,21 @@ if [ -f "package.json" ]; then
     fi
 fi
 
-echo "[6/9] Building frontend + server..."
+echo "[6/10] Installing server dependencies..."
+if [ -f "server/package.json" ]; then
+    if check_package_cooldown "$cooldown_type"; then
+        if ! (cd server && npm install); then
+            echo "  ERROR: Server npm install failed."
+            exit 1
+        fi
+        echo "  Server dependencies installed."
+    else
+        last_update=$(time_since_last_update)
+        echo "  Skipped server npm install - package cooldown active (last updated: $last_update)"
+    fi
+fi
+
+echo "[7/10] Building frontend + server..."
 if ! npm run build:all; then
     echo "  ERROR: Build failed."
     echo "  Aborting. Check build output above."
@@ -206,8 +220,8 @@ if ! npm run build:all; then
 fi
 echo "  Build complete."
 
-# 7. Fix systemd service file
-echo "[7/9] Fixing systemd service file if needed..."
+# 8. Fix systemd service file
+echo "[8/10] Fixing systemd service file if needed..."
 SERVICE_FILE="/etc/systemd/system/$SERVICE.service"
 if [ -f "$SERVICE_FILE" ]; then
     HAS_ENV_FILE=$(grep -c '^EnvironmentFile=' "$SERVICE_FILE" || true)
@@ -256,8 +270,8 @@ fi
 echo "  Reloading systemd daemon..."
 sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 
-# 8. Apply nginx config
-echo "[8/9] Applying nginx config..."
+# 9. Apply nginx config
+echo "[9/10] Applying nginx config..."
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 if [ -f "$NGINX_CONF" ]; then
     if ! grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
@@ -292,7 +306,7 @@ else
 fi
 
 # 9. Restart service
-echo "[9/9] Restarting service: $SERVICE"
+echo "[10/10] Restarting service: $SERVICE"
 if ! sudo -n systemctl restart "$SERVICE" 2>&1; then
     echo "  ERROR: systemctl restart failed."
     echo "  If this says 'sudo: a password is required', you need passwordless sudo."
