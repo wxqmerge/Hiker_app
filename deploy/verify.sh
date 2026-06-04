@@ -136,9 +136,19 @@ fi
 # 5. Nginx config
 echo ""
 echo "--- Nginx ---"
-if [ -f "$NGINX_CONF" ]; then
-    pass "Nginx config exists at $NGINX_CONF"
-   if grep -q "proxy_pass.*localhost:$SERVER_PORT" "$NGINX_CONF"; then
+   if [ -f "$NGINX_CONF" ]; then
+        pass "Nginx config exists at $NGINX_CONF"
+
+        # Check for conflicting server names
+        CONFLICT_COUNT=$(grep -rl "server_name $DOMAIN" /etc/nginx/sites-enabled/ 2>/dev/null | wc -l)
+        if [ "$CONFLICT_COUNT" -gt 1 ]; then
+            fail "Conflicting nginx configs found ($CONFLICT_COUNT files with server_name $DOMAIN)"
+            echo "  Files:"
+            grep -rl "server_name $DOMAIN" /etc/nginx/sites-enabled/ 2>/dev/null | while read -r f; do echo "    - $f"; done
+            NEED_NGINX_RELOAD=true
+        fi
+
+        if grep -q "proxy_pass.*localhost:$SERVER_PORT" "$NGINX_CONF"; then
         pass "Proxy to Express configured (port $SERVER_PORT)"
     else
         warn "Proxy to Express not configured — all requests will fail"
