@@ -6,11 +6,6 @@ param(
 $Url = $Url.TrimEnd('/')
 $ErrorActionPreference = 'Stop'
 
-$RED = "`e[31m"
-$GREEN = "`e[32m"
-$YELLOW = "`e[33m"
-$NC = "`e[0m"
-
 $Errors = 0
 $Warnings = 0
 
@@ -21,16 +16,16 @@ function Test-Endpoint {
         [int]$ExpectedStatus = 200
     )
     try {
-        $Response = Invoke-WebRequest -Uri "$Url$Path" -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
-        if ($Response.StatusCode -eq $ExpectedStatus) {
-            Write-Host "$GREEN`e[1m✓$NC $Label - HTTP $($Response.StatusCode)"
+        $Output = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 10 ($Url + $Path) | Out-String
+        $Code = [int]($Output.Trim())
+        if ($Code -eq $ExpectedStatus) {
+            Write-Host "PASS $Label - HTTP $Code" -ForegroundColor Green
         } else {
-            Write-Host "$RED`e[1m✗$NC $Label - HTTP $($Response.StatusCode) (expected $ExpectedStatus)"
+            Write-Host "FAIL $Label - HTTP $Code (expected $ExpectedStatus)" -ForegroundColor Red
             $script:Errors++
         }
     } catch {
-        $Status = if ($_.Exception.Response) { $_.Exception.Response.StatusCode } else { "ERROR" }
-        Write-Host "$RED`e[1m✗$NC $Label - $Status"
+        Write-Host "FAIL $Label - $_" -ForegroundColor Red
         $script:Errors++
     }
 }
@@ -42,17 +37,22 @@ function Test-ApiJson {
         [string]$ExpectedKey
     )
     try {
-        $Response = Invoke-WebRequest -Uri "$Url$Path" -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
-        $Body = $Response.Content | ConvertFrom-Json
-        if ($ExpectedKey -and $Body.PSObject.Properties.Name -contains $ExpectedKey) {
-            $Count = if ($Body.$ExpectedKey -is [array]) { $Body.$ExpectedKey.Count } elseif ($Body.$ExpectedKey -is [hashtable]) { $Body.$ExpectedKey.Count } else { 1 }
-            Write-Host "$GREEN`e[1m✓$NC $Label - $Count items"
+        $CodeOutput = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 10 ($Url + $Path) | Out-String
+        $Code = [int]($CodeOutput.Trim())
+        if ($Code -eq 200) {
+            $Body = (& curl.exe -s -k --max-time 10 ($Url + $Path)) | ConvertFrom-Json
+            if ($ExpectedKey -and $Body.PSObject.Properties.Name -contains $ExpectedKey) {
+                $Count = if ($Body.$ExpectedKey -is [array]) { $Body.$ExpectedKey.Count } elseif ($Body.$ExpectedKey -is [hashtable]) { $Body.$ExpectedKey.Count } else { 1 }
+                Write-Host "PASS $Label - $Count items" -ForegroundColor Green
+            } else {
+                Write-Host "PASS $Label - HTTP 200" -ForegroundColor Green
+            }
         } else {
-            Write-Host "$GREEN`e[1m✓$NC $Label - HTTP $($Response.StatusCode)"
+            Write-Host "FAIL $Label - HTTP $Code" -ForegroundColor Red
+            $script:Errors++
         }
     } catch {
-        $Status = if ($_.Exception.Response) { $_.Exception.Response.StatusCode } else { "ERROR" }
-        Write-Host "$RED`e[1m✗$NC $Label - $Status"
+        Write-Host "FAIL $Label - $_" -ForegroundColor Red
         $script:Errors++
     }
 }
@@ -84,11 +84,11 @@ Test-Endpoint -Path "/schedule" -Label "Schedule builder page" -ExpectedStatus 2
 Write-Host ""
 Write-Host "=== Summary ==="
 if ($Errors -eq 0 -and $Warnings -eq 0) {
-    Write-Host "$GREEN All checks passed.$NC"
+    Write-Host "All checks passed." -ForegroundColor Green
 } elseif ($Errors -eq 0) {
-    Write-Host "$YELLOW No errors, $Warnings warning(s).$NC"
+    Write-Host "No errors, $Warnings warning(s)." -ForegroundColor Yellow
 } else {
-    Write-Host "$RED $Errors error(s), $Warnings warning(s).$NC"
+    Write-Host "$Errors error(s), $Warnings warning(s)." -ForegroundColor Red
 }
 
 exit $Errors

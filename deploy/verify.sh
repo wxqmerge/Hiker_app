@@ -200,25 +200,52 @@ else
     warn "systemctl not available (non-Linux?)"
 fi
 
-# 7. HTTP checks
+# 7. SSL certificate
 echo ""
-echo "--- HTTP Check ---"
-if command -v curl &>/dev/null; then
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/ 2>/dev/null || echo "000")
-    if [ "$HTTP_CODE" = "200" ]; then
-        pass "HTTP 200 from localhost (frontend)"
+echo "--- SSL ---"
+if command -v certbot &>/dev/null; then
+    CERT_LIST=$(sudo certbot certificates 2>/dev/null || true)
+    if echo "$CERT_LIST" | grep -q "$DOMAIN"; then
+        pass "SSL certificate exists for $DOMAIN"
+        EXPIRY=$(echo "$CERT_LIST" | grep -A5 "$DOMAIN" | grep "expires" | head -1)
+        if [ -n "$EXPIRY" ]; then
+            echo "  $EXPIRY"
+        fi
     else
-        fail "HTTP $HTTP_CODE from localhost (frontend)"
-    fi
-
-    HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$SERVER_PORT/health 2>/dev/null || echo "000")
-    if [ "$HEALTH_CODE" = "200" ]; then
-        pass "HTTP 200 from /health (server)"
-    else
-        fail "HTTP $HEALTH_CODE from /health (server)"
+        warn "No SSL certificate for $DOMAIN — run certbot --nginx -d $DOMAIN"
     fi
 else
-    warn "curl not available — skipping HTTP check"
+    warn "certbot not installed"
+fi
+
+# 8. HTTPS checks
+echo ""
+echo "--- HTTPS Check ---"
+if command -v curl &>/dev/null; then
+    HTTPS_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "https://$DOMAIN/" 2>/dev/null || echo "000")
+    if [ "$HTTPS_CODE" = "200" ]; then
+        pass "HTTPS 200 from $DOMAIN (frontend)"
+    else
+        fail "HTTPS $HTTPS_CODE from $DOMAIN (frontend)"
+    fi
+
+    HEALTH_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "https://$DOMAIN/health" 2>/dev/null || echo "000")
+    if [ "$HEALTH_CODE" = "200" ]; then
+        pass "HTTPS 200 from /health (server)"
+    else
+        fail "HTTPS $HEALTH_CODE from /health (server)"
+    fi
+
+    HTTP_REDIRECT=$(curl -s -o /dev/null -w "%{http_code}" "http://$DOMAIN/" 2>/dev/null || echo "000")
+    if [ "$HTTP_REDIRECT" = "301" ] || [ "$HTTP_REDIRECT" = "302" ]; then
+        pass "HTTP redirects to HTTPS"
+    elif [ "$HTTP_REDIRECT" = "200" ]; then
+        warn "HTTP serves content directly (no HTTPS redirect)"
+    else
+        warn "HTTP returned $HTTP_REDIRECT"
+    fi
+else
+    warn "curl not available — skipping HTTPS check"
 fi
 
 # Summary

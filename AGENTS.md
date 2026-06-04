@@ -77,10 +77,12 @@
 - Browse is NOT a separate route — it's the Home page with filters
 
 ## Deployment
-- `deploy/update.sh` — 10-step deploy with cooldowns (server + frontend + nginx + service)
-- `deploy/verify.sh` — verifies server, frontend, nginx, service health
-- `deploy/hiker.conf` — nginx config: serves `dist/`, proxies `/api` and `/health` to `localhost:3000`
-- Deploy target: `/var/www/html/sothh_app/dist`, service name `sothh_app`
+- `deploy/update.sh` — 11-step deploy with cooldowns (certbot SSL, server + frontend + nginx + service)
+- `deploy/verify.sh` — verifies server, frontend, nginx, service, SSL, HTTPS health
+- `deploy/hiker.conf` — nginx config: HTTP→HTTPS redirect, HTTPS proxies all to Express
+- `deploy/test-external.ps1` — PowerShell script to test external interfaces (uses `curl.exe -k`)
+- Certbot: `certbot --nginx -d sothh_app.example.com` manages SSL cert
+- Deploy target: `/var/www/html/sothh_app`, service name `sothh_app`
 - `server/.env` has `ADMIN_API_KEY` (gitignored, use `server/.env.example` as template)
 
 ## Excel extraction quirks

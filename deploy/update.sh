@@ -291,8 +291,20 @@ fi
 echo "  Reloading systemd daemon..."
 sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 
-# 9. Apply nginx config
-echo "[9/10] Applying nginx config..."
+# 9. Get/renew SSL certificate
+echo "[9/10] Getting SSL certificate for $DOMAIN..."
+if command -v certbot &>/dev/null; then
+    if ! sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --redirect --hsts --staple-ocsp --must-staple --key-type ecdsa 2>&1; then
+        echo "  WARNING: certbot failed (cert may already exist). Continuing..."
+    else
+        echo "  SSL certificate obtained/renewed."
+    fi
+else
+    echo "  WARNING: certbot not installed — skipping SSL certificate setup"
+fi
+
+# 10. Apply nginx config
+echo "[11/10] Applying nginx config..."
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 if [ -f "$NGINX_CONF" ]; then
     if ! grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
@@ -313,7 +325,7 @@ if [ -f "$NGINX_CONF" ]; then
 else
     echo "  WARNING: $NGINX_CONF not found — copying from deploy/hiker.conf"
     sudo cp deploy/hiker.conf "$NGINX_CONF"
-    sudo sed -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_CONF"
+    sudo sed -i "s/sothh_app\.chess4\.us/$DOMAIN/g" "$NGINX_CONF"
     sudo sed -i "s|proxy_pass http://localhost:3000;|proxy_pass http://localhost:$SERVER_PORT;|" "$NGINX_CONF"
     NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
     if [ ! -f "$NGINX_ENABLED" ]; then

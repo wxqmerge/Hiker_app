@@ -7,9 +7,7 @@ import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsD
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATA_DIR = process.env.DATA_DIR
-  ? path.resolve(__dirname, process.env.DATA_DIR)
-  : path.join(__dirname, '../../../exported_data');
+const DATA_DIR = path.join(__dirname, '../../../../exported_data');
 
 console.log(`[DATA] Loading from: ${DATA_DIR}`);
 
