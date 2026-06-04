@@ -181,26 +181,37 @@ fi
 echo "[5/10] Installing frontend dependencies..."
 INSTALL_DEPS=false
 if [ -f "package.json" ]; then
-    cooldown_type="normal"
-    if [ "$FORCE_CRITICAL" = true ]; then
-        cooldown_type="critical"
-        echo "  WARNING: Using critical security patch cooldown (2 days)"
-    fi
-    if check_package_cooldown "$cooldown_type"; then
+    if [ ! -d "node_modules" ]; then
+        echo "  node_modules missing — must install."
         INSTALL_DEPS=true
+    else
+        cooldown_type="normal"
+        if [ "$FORCE_CRITICAL" = true ]; then
+            cooldown_type="critical"
+            echo "  WARNING: Using critical security patch cooldown (2 days)"
+        fi
+        if check_package_cooldown "$cooldown_type"; then
+            INSTALL_DEPS=true
+        else
+            last_update=$(time_since_last_update)
+            echo "  Skipped npm install - package cooldown active (last updated: $last_update)"
+        fi
+    fi
+    if [ "$INSTALL_DEPS" = true ]; then
         if ! npm install; then
             echo "  ERROR: Frontend npm install failed."
             exit 1
         fi
         echo "  Dependencies installed."
-    else
-        last_update=$(time_since_last_update)
-        echo "  Skipped npm install - package cooldown active (last updated: $last_update)"
     fi
 fi
 
 echo "[6/10] Installing server dependencies..."
 if [ -f "server/package.json" ]; then
+    if [ ! -d "server/node_modules" ]; then
+        echo "  server/node_modules missing — must install."
+        INSTALL_DEPS=true
+    fi
     if [ "$INSTALL_DEPS" = true ]; then
         if ! (cd server && npm install); then
             echo "  ERROR: Server npm install failed."
