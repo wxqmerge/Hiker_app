@@ -1553,37 +1553,6 @@
       "difficultyOrder": 2
     },
     {
-      "id": "elwha-to",
-      "name": "ElwhatoWh",
-      "fullName": "Elwha to Whiskey Bend",
-      "distance": 9,
-      "distanceExtended": 13,
-      "elevationStart": 900,
-      "elevationMax": 1363,
-      "difficulty": "Mod to Diff",
-      "notes": "Elwha to Whiskey Bend",
-      "seasonal": {
-        "Jan": 1,
-        "Feb": 1,
-        "Mar": 3,
-        "Apr": 1,
-        "May": 1,
-        "Jun": 1,
-        "Jul": 1,
-        "Aug": 1,
-        "Sep": 1,
-        "Oct": 1,
-        "Nov": 3,
-        "Dec": 3,
-        "bestSeason": "Summer,fall"
-      },
-      "range": "40",
-      "difficultyOrder": 4,
-      "altNames": [
-        "Whiskey Bend Rd to Glines Dam"
-      ]
-    },
-    {
       "id": "elwha-rs",
       "name": "Elw-Hurr",
       "fullName": "Elwha R.S. - Elwha Overlook (Deer Hair Rock)◆︎",
@@ -4135,6 +4104,35 @@
       ]
     },
     {
+      "id": "oat---jp",
+      "name": "OATWhiskey",
+      "fullName": "OAT - JP to Whiskey Crk Loop",
+      "distance": 6.5,
+      "distanceExtended": 10,
+      "elevationStart": 1000,
+      "elevationMax": 1800,
+      "difficulty": "Mod to Diff",
+      "notes": "OAT - JP to Whiskey Crk Loop",
+      "seasonal": {
+        "Jan": 1,
+        "Feb": 1,
+        "Mar": 3,
+        "Apr": 1,
+        "May": 1,
+        "Jun": 1,
+        "Jul": 1,
+        "Aug": 1,
+        "Sep": 3,
+        "Oct": 1,
+        "Nov": 3,
+        "Dec": 5,
+        "bestSeason": "Summer/Fall"
+      },
+      "parking": "Discover",
+      "range": "48",
+      "difficultyOrder": 4
+    },
+    {
       "id": "obstruction",
       "name": "ObsPt-Snow",
       "fullName": "Obstruction Point Road Snowshoe",
@@ -5573,36 +5571,6 @@
         "Whidbey Island or Ft. Worden",
         "Whidbey Island [EARLY 8:15am]"
       ]
-    },
-    {
-      "id": "whiskey",
-      "name": "WhiskeyCk",
-      "fullName": "Whiskey Creek",
-      "distance": 6.5,
-      "distanceExtended": 10,
-      "elevationStart": 1000,
-      "elevationMax": 1800,
-      "difficulty": "Mod to Diff",
-      "notes": "Whiskey Creek",
-      "seasonal": {
-        "Jan": 1,
-        "Feb": 1,
-        "Mar": 1,
-        "Apr": 1,
-        "May": 1,
-        "Jun": 1,
-        "Jul": 1,
-        "Aug": 1,
-        "Sep": 3,
-        "Oct": 1,
-        "Nov": 1,
-        "Dec": 3,
-        "bestSeason": "Summer/Fall"
-      },
-      "parking": "Discover",
-      "range": "48",
-      "difficultyOrder": 4,
-      "altNames": []
     },
     {
       "id": "wolf-creek---12",

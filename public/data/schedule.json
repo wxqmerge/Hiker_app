@@ -572,7 +572,7 @@
     {
       "day": 30,
       "hike": "OAT - JP to Whiskey Crk Loop",
-      "trail_id": "whiskey"
+      "trail_id": "oat---jp"
     },
     {
       "day": 30,
@@ -1514,7 +1514,7 @@
     {
       "day": 13,
       "hike": "Elwha to Whiskey Bend ",
-      "trail_id": "elwha-to"
+      "trail_id": "oat---jp"
     },
     {
       "day": 13,
@@ -1843,7 +1843,7 @@
     {
       "day": 17,
       "hike": "Elwha to Whiskey Bend",
-      "trail_id": "elwha-to"
+      "trail_id": "oat---jp"
     },
     {
       "day": 18,
@@ -1985,7 +1985,7 @@
     {
       "day": 15,
       "hike": "Whiskey Creek",
-      "trail_id": "whiskey"
+      "trail_id": "oat---jp"
     },
     {
       "day": 16,
