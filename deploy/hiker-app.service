@@ -1,0 +1,18 @@
+[Unit]
+Description=Hiker Trail App Server
+After=network.target
+
+[Service]
+Type=simple
+User=hiker
+Group=hiker
+WorkingDirectory=/var/www/html/hiker-app
+EnvironmentFile=/var/www/html/hiker-app/server/.env
+ExecStart=/usr/bin/node /var/www/html/hiker-app/server/dist/index.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

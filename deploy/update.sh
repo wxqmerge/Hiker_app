@@ -42,6 +42,8 @@ fi
 
 SERVICE="${SERVICE_NAME:-${SERVICE_NAME:-$(basename "$PWD")}}"
 DIR="$(pwd)"
+DEPLOY_USER="$(whoami)"
+DEPLOY_GROUP="$(id -gn "$DEPLOY_USER" 2>/dev/null || echo "$DEPLOY_USER")"
 
 # Dependency cooldown configuration
 LAST_PACKAGE_UPDATE_FILE="$DIR/.last-package-update"
@@ -124,7 +126,7 @@ else
 fi
 
 # 2. Pull latest code
-echo "[2/8] Pulling latest code..."
+echo "[2/9] Pulling latest code..."
 if git pull --rebase 2>/dev/null; then
     echo "  Pulled successfully."
 elif git fetch origin main && git reset --hard origin/main; then
@@ -137,7 +139,7 @@ else
 fi
 
 # 3. Validate API keys
-echo "[3/8] Validating API keys..."
+echo "[3/9] Validating API keys..."
 ENV_FILE="$DIR/server/.env"
 if [ ! -f "$ENV_FILE" ]; then
     echo "  ERROR: $ENV_FILE not found."
@@ -161,7 +163,7 @@ DOMAIN="$(basename "$DIR").example.com"
 echo "  DOMAIN: $DOMAIN"
 
 # 4. Clean stale build artifacts
-echo "[4/8] Cleaning stale build artifacts..."
+echo "[4/9] Cleaning stale build artifacts..."
 if [ -d "dist" ]; then
     rm -rf dist
     echo "  Removed dist/"
@@ -176,7 +178,7 @@ if [ -d "shared/types" ]; then
 fi
 
 # 5. Install frontend dependencies and build
-echo "[5/8] Installing frontend dependencies..."
+echo "[5/9] Installing frontend dependencies..."
 if [ -f "package.json" ]; then
     cooldown_type="normal"
     if [ "$FORCE_CRITICAL" = true ]; then
@@ -196,7 +198,7 @@ if [ -f "package.json" ]; then
     fi
 fi
 
-echo "[6/8] Building frontend + server..."
+echo "[6/9] Building frontend + server..."
 if ! npm run build:all; then
     echo "  ERROR: Build failed."
     echo "  Aborting. Check build output above."
@@ -205,7 +207,7 @@ fi
 echo "  Build complete."
 
 # 7. Fix systemd service file
-echo "[7/8] Fixing systemd service file if needed..."
+echo "[7/9] Fixing systemd service file if needed..."
 SERVICE_FILE="/etc/systemd/system/$SERVICE.service"
 if [ -f "$SERVICE_FILE" ]; then
     HAS_ENV_FILE=$(grep -c '^EnvironmentFile=' "$SERVICE_FILE" || true)
@@ -241,8 +243,18 @@ if [ -f "$SERVICE_FILE" ]; then
     echo "  Reloading systemd daemon..."
     sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 else
-    echo "  WARNING: $SERVICE_FILE not found"
+    echo "  WARNING: $SERVICE_FILE not found — creating from template"
+    TEMPLATE="$DEPLOY_DIR/hiker-app.service"
+    if [ -f "$TEMPLATE" ]; then
+        sed "s|/var/www/html/hiker-app|$DIR|g; s|User=hiker|User=$DEPLOY_USER|g; s|Group=hiker|Group=$DEPLOY_GROUP|g" "$TEMPLATE" | sudo tee "$SERVICE_FILE" > /dev/null
+        echo "  Created $SERVICE_FILE"
+    else
+        echo "  ERROR: Template $TEMPLATE not found"
+        exit 1
+    fi
 fi
+echo "  Reloading systemd daemon..."
+sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 
 # 8. Apply nginx config
 echo "[8/9] Applying nginx config..."
@@ -280,7 +292,7 @@ else
 fi
 
 # 9. Restart service
-echo "[8/8] Restarting service: $SERVICE"
+echo "[9/9] Restarting service: $SERVICE"
 if ! sudo -n systemctl restart "$SERVICE" 2>&1; then
     echo "  ERROR: systemctl restart failed."
     echo "  If this says 'sudo: a password is required', you need passwordless sudo."
