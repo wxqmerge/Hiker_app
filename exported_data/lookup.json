@@ -30,8 +30,10 @@
     "Am Beau/Golden": "Parking level: Am Beau/Golden",
     "Discover": "Parking level: Discover",
     "Limited 4": "Parking level: Limited 4",
+    "N/A": "Parking level: N/A",
     "NW Forest/Golden": "Parking level: NW Forest/Golden",
-    "Nat'l Park/Golden": "Parking level: Nat'l Park/Golden"
+    "Nat'l Park/Golden": "Parking level: Nat'l Park/Golden",
+    "n/a": "Parking level: n/a"
   },
   "months": [
     "January",

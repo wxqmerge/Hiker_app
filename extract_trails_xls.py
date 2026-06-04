@@ -39,7 +39,7 @@ class TrailExtractor:
         """Extract all trail records from Index sheet"""
         print("\nExtracting Index sheet data...")
         
-        index_df = pd.read_excel(self.xls_path, sheet_name='Index', header=None)
+        index_df = pd.read_excel(self.xls_path, sheet_name='Index', header=None, keep_default_na=False)
         
         # Column mapping (0-indexed)
         COL_DISTANCE = 1      # B
@@ -141,7 +141,7 @@ class TrailExtractor:
                 continue
             
             try:
-                df = pd.read_excel(self.xls_path, sheet_name=sheet_name, header=None)
+                df = pd.read_excel(self.xls_path, sheet_name=sheet_name, header=None, keep_default_na=False)
                 
                 # Read A1 (row 0, col 0)
                 a1_content = df.iloc[0, 0] if len(df) > 0 and len(df.columns) > 0 else ''
