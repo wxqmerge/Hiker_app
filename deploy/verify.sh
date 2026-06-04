@@ -275,11 +275,25 @@ else
     echo "Service status:"
     sudo systemctl is-active "$SERVICE" 2>/dev/null && echo "  Running" || echo "  NOT running"
     echo ""
+    echo "Nginx status:"
+    sudo systemctl is-active nginx 2>/dev/null && echo "  Running" || echo "  NOT running"
+    echo ""
     echo "Nginx config test:"
     sudo nginx -t 2>&1
     echo ""
+    echo "Nginx sites-enabled:"
+    ls -la /etc/nginx/sites-enabled/ 2>/dev/null || echo "  No sites-enabled directory"
+    echo ""
     echo "Nginx proxy_pass:"
     grep -n "proxy_pass" "$NGINX_CONF" 2>/dev/null || echo "  No proxy_pass found"
+    echo ""
+    echo "Conflicting server names:"
+    grep -rl "server_name $DOMAIN" /etc/nginx/sites-enabled/ 2>/dev/null | wc -l | xargs -I{} echo "  {} file(s) found"
+    grep -rl "server_name $DOMAIN" /etc/nginx/sites-enabled/ 2>/dev/null | while read -r f; do echo "    - $f"; done
+    echo ""
+    echo "Local HTTPS test:"
+    LOCAL_HTTPS=$(curl -sk -o /dev/null -w "%{http_code}" https://localhost/ 2>/dev/null || echo "000")
+    echo "  HTTP $LOCAL_HTTPS"
     echo ""
     echo "Direct server health (port $SERVER_PORT):"
     DIRECT_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$SERVER_PORT/health" 2>/dev/null || echo "000")
