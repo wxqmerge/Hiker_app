@@ -155,3 +155,15 @@ export async function importTrailsFromXls(file) {
 
   return res.json();
 }
+
+export async function getScheduleHistory() {
+  return request('/api/schedule/history');
+}
+
+export async function restoreSchedule(timestamp) {
+  return request('/api/schedule/history/restore', {
+    method: 'POST',
+    body: { timestamp },
+    apiKey: true,
+  });
+}

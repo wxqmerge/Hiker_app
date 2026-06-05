@@ -125,7 +125,81 @@ export async function updateTrailDetail(id: string, detail: TrailDetail): Promis
   await writeWithHealth(path.join(DATA_DIR, 'trail_details.json'), trailDetails);
 }
 
+const HISTORY_DIR = path.join(DATA_DIR, 'schedule_history');
+const MAX_HISTORY = 10;
+
+async function ensureHistoryDir(): Promise<void> {
+  await fs.mkdir(HISTORY_DIR, { recursive: true });
+}
+
+async function saveScheduleHistory(scheduleData: ScheduleData): Promise<void> {
+  try {
+    await ensureHistoryDir();
+    const ts = Date.now();
+    const filePath = path.join(HISTORY_DIR, `schedule_${ts}.json`);
+    await fs.writeFile(filePath, JSON.stringify({
+      timestamp: new Date().toISOString(),
+      schedule: scheduleData
+    }, null, 2));
+    // Prune old entries, keep last MAX_HISTORY
+    const files = await fs.readdir(HISTORY_DIR);
+    const historyFiles = files
+      .filter(f => f.startsWith('schedule_') && f.endsWith('.json'))
+      .sort();
+    while (historyFiles.length > MAX_HISTORY) {
+      await fs.unlink(path.join(HISTORY_DIR, historyFiles.shift()!));
+    }
+  } catch (error) {
+    console.warn('[DATA] Could not save schedule history:', (error as Error).message);
+  }
+}
+
+export async function getScheduleHistory(): Promise<Array<{ timestamp: string; hikeCount: number; fileName: string }>> {
+  try {
+    const files = await fs.readdir(HISTORY_DIR);
+    const entries: Array<{ timestamp: string; hikeCount: number; fileName: string }> = [];
+    for (const f of files.filter(f => f.startsWith('schedule_') && f.endsWith('.json'))) {
+      try {
+        const content = await fs.readFile(path.join(HISTORY_DIR, f), 'utf-8');
+        const parsed = JSON.parse(content);
+        let count = 0;
+        if (parsed.schedule) {
+          for (const month of Object.values(parsed.schedule)) {
+            if (Array.isArray(month)) count += month.length;
+          }
+        }
+        entries.push({ timestamp: parsed.timestamp, hikeCount: count, fileName: f });
+      } catch { /* skip corrupt files */ }
+    }
+    entries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    return entries;
+  } catch {
+    return [];
+  }
+}
+
+export async function restoreScheduleByTimestamp(timestamp: string): Promise<ScheduleData> {
+  const files = await fs.readdir(HISTORY_DIR);
+  for (const f of files) {
+    if (!f.startsWith('schedule_') || !f.endsWith('.json')) continue;
+    try {
+      const content = await fs.readFile(path.join(HISTORY_DIR, f), 'utf-8');
+      const parsed = JSON.parse(content);
+      if (parsed.timestamp === timestamp && parsed.schedule) {
+        schedule = parsed.schedule;
+        await writeWithHealth(path.join(DATA_DIR, 'schedule.json'), schedule);
+        return schedule;
+      }
+    } catch { /* skip */ }
+  }
+  throw new Error(`No history entry found for timestamp: ${timestamp}`);
+}
+
 export async function updateSchedule(newSchedule: ScheduleData): Promise<void> {
+  // Archive current schedule before overwriting
+  if (Object.keys(schedule).length > 0) {
+    await saveScheduleHistory(schedule);
+  }
   schedule = newSchedule;
   await writeWithHealth(path.join(DATA_DIR, 'schedule.json'), schedule);
 }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { getSchedule, updateSchedule, updateScheduleMonth, getTrails, loadData } from '../services/dataService.js';
+import { getSchedule, updateSchedule, updateScheduleMonth, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import fs from 'fs';
 import path from 'path';
@@ -27,6 +27,31 @@ router.put('/', requireAdminKey, async (req, res) => {
   } catch (error) {
     console.error('[SCHEDULE] Error updating schedule:', error);
     res.status(500).json({ success: false, error: { message: 'Failed to update schedule' } });
+  }
+});
+
+router.get('/history', async (_req, res) => {
+  try {
+    const history = await getScheduleHistory();
+    res.json(history);
+  } catch (error) {
+    console.error('[SCHEDULE] Error getting history:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to get schedule history' } });
+  }
+});
+
+router.post('/history/restore', requireAdminKey, async (req, res) => {
+  try {
+    const { timestamp } = req.body;
+    if (!timestamp) {
+      return res.status(400).json({ success: false, error: { message: 'timestamp is required' } });
+    }
+    const restored = await restoreScheduleByTimestamp(timestamp);
+    res.json({ success: true, schedule: restored });
+  } catch (error) {
+    console.error('[SCHEDULE] Error restoring schedule:', error);
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    res.status(404).json({ success: false, error: { message: msg } });
   }
 });
 

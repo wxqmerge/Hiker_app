@@ -8,7 +8,7 @@ import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
 import { downloadBlob } from '../utils/io';
-import { importScheduleFromXls, importTrailsFromXls, updateSchedule } from '../api/client';
+import { importScheduleFromXls, importTrailsFromXls, updateSchedule, getScheduleHistory, restoreSchedule } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const MONTH_ABBR_TO_FULL = { Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April', May: 'May', Jun: 'June',
@@ -138,6 +138,9 @@ export default function ScheduleBuilder() {
   const [dragData, setDragData] = useState(null);
   const [showScheduled, setShowScheduled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
 
   const hikeTrailMap = useMemo(() => {
@@ -391,6 +394,45 @@ export default function ScheduleBuilder() {
     if (confirm('Clear all schedule data?')) {
       setScheduleStore({});
       setShowSettings(false);
+    }
+  };
+
+  const loadHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const entries = await getScheduleHistory();
+      setHistoryEntries(entries);
+    } catch (err) {
+      console.error('[ScheduleBuilder] Failed to load history:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const openHistory = () => {
+    setShowHistory(true);
+    setShowSettings(false);
+    loadHistory();
+  };
+
+  const closeHistory = () => {
+    setShowHistory(false);
+  };
+
+  const handleRestore = async (timestamp) => {
+    const entry = historyEntries.find(e => e.timestamp === timestamp);
+    const dateStr = entry ? new Date(timestamp).toLocaleString() : '';
+    if (!confirm(`Restore schedule from ${dateStr}?\nThis will replace your current schedule.`)) return;
+    try {
+      const result = await restoreSchedule(timestamp);
+      if (result.success) {
+        const converted = serverScheduleToStore(result.schedule);
+        setScheduleStore(converted);
+        closeHistory();
+        alert('Schedule restored successfully.');
+      }
+    } catch (err) {
+      alert('Restore failed: ' + err.message);
     }
   };
 
@@ -712,6 +754,12 @@ const hikeCards = useMemo(() => {
                   </svg>
                   Import Trail Database {!hasApiKey && '(need API key)'}
                 </button>
+                <button onClick={openHistory} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Schedule History
+                </button>
                 <button
                    onClick={() => setDebugMode(!debugMode)}
                   className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
@@ -780,6 +828,56 @@ const hikeCards = useMemo(() => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {scheduledCards}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Schedule History Panel */}
+        {showHistory && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-4">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800">
+                Schedule History ({historyEntries.length})
+              </h3>
+              <button onClick={closeHistory} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              {loadingHistory ? (
+                <p className="text-sm text-gray-500 text-center py-4">Loading history...</p>
+              ) : historyEntries.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No saved history yet. History is created automatically when you modify your schedule.</p>
+              ) : (
+                <div className="space-y-2">
+                  {historyEntries.map((entry) => {
+                    const date = new Date(entry.timestamp);
+                    const dateStr = date.toLocaleDateString();
+                    const timeStr = date.toLocaleTimeString();
+                    return (
+                      <div key={entry.timestamp} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{dateStr} at {timeStr}</div>
+                          <div className="text-xs text-gray-500">{entry.hikeCount} hikes saved</div>
+                        </div>
+                        <button
+                          onClick={() => handleRestore(entry.timestamp)}
+                          disabled={!hasApiKey}
+                          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                            hasApiKey
+                              ? 'bg-green-600 text-white hover:bg-green-700'
+                              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          }`}
+                        >
+                          Restore
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
