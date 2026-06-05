@@ -188,7 +188,83 @@ if command -v curl &>/dev/null; then
     fi
 fi
 
-# 6. Nginx config
+# 6. File permissions (prevents data corruption)
+echo ""
+echo "--- File Permissions ---"
+DEPLOY_USER=$(whoami)
+SERVICE_USER=$(systemctl show -p User --value "$SERVICE" 2>/dev/null || echo "unknown")
+if [ "$SERVICE_USER" = "unknown" ] || [ -z "$SERVICE_USER" ]; then
+    SERVICE_USER="$DEPLOY_USER"
+fi
+
+# Check exported_data/ directory
+EXPORTED_DIR="$DIR/exported_data"
+if [ -d "$EXPORTED_DIR" ]; then
+    pass "exported_data/ exists"
+    DIR_PERMS=$(stat -c '%a' "$EXPORTED_DIR" 2>/dev/null || echo "000")
+    DIR_OWNER=$(stat -c '%U' "$EXPORTED_DIR" 2>/dev/null || echo "unknown")
+    echo "  Owner: $DIR_OWNER Permissions: $DIR_PERMS"
+
+    # Check if service user can write to exported_data/
+    if [ "$DIR_OWNER" = "$SERVICE_USER" ] || [ "$DIR_PERMS" -ge 755 ]; then
+        pass "exported_data/ is accessible by $SERVICE_USER"
+    else
+        fail "exported_data/ not writable by $SERVICE_USER (owner: $DIR_OWNER, perms: $DIR_PERMS)"
+        echo "  Fix: sudo chown $SERVICE_USER:$SERVICE_USER $EXPORTED_DIR"
+        echo "  Fix: sudo chmod 755 $EXPORTED_DIR"
+    fi
+
+    # Check JSON files
+    for json_file in "$EXPORTED_DIR"/*.json; do
+        if [ -f "$json_file" ]; then
+            FILE_PERMS=$(stat -c '%a' "$json_file" 2>/dev/null || echo "000")
+            FILE_OWNER=$(stat -c '%U' "$json_file" 2>/dev/null || echo "unknown")
+            BASENAME=$(basename "$json_file")
+            if [ "$FILE_OWNER" = "$SERVICE_USER" ] || [ "$FILE_PERMS" -ge 644 ]; then
+                pass "$BASENAME readable ($FILE_PERMS)"
+            else
+                fail "$BASENAME not readable by $SERVICE_USER (owner: $FILE_OWNER, perms: $FILE_PERMS)"
+                echo "  Fix: sudo chown $SERVICE_USER:$SERVICE_USER $json_file"
+                echo "  Fix: sudo chmod 644 $json_file"
+            fi
+        fi
+    done
+else
+    warn "exported_data/ missing"
+fi
+
+# Check Hike Data BaseM.xls
+XLS_FILE="$DIR/Hike Data BaseM.xls"
+if [ -f "$XLS_FILE" ]; then
+    XLS_PERMS=$(stat -c '%a' "$XLS_FILE" 2>/dev/null || echo "000")
+    XLS_OWNER=$(stat -c '%U' "$XLS_FILE" 2>/dev/null || echo "unknown")
+    if [ "$XLS_OWNER" = "$SERVICE_USER" ] || [ "$XLS_PERMS" -ge 644 ]; then
+        pass "Hike Data BaseM.xls readable ($XLS_PERMS)"
+    else
+        fail "Hike Data BaseM.xls not readable by $SERVICE_USER (owner: $XLS_OWNER, perms: $XLS_PERMS)"
+        echo "  Fix: sudo chown $SERVICE_USER:$SERVICE_USER $XLS_FILE"
+        echo "  Fix: sudo chmod 644 $XLS_FILE"
+    fi
+else
+    warn "Hike Data BaseM.xls not found (needed for .xls import)"
+fi
+
+# Check server/.env
+if [ -f "$DIR/server/.env" ]; then
+    ENV_PERMS=$(stat -c '%a' "$DIR/server/.env" 2>/dev/null || echo "000")
+    ENV_OWNER=$(stat -c '%U' "$DIR/server/.env" 2>/dev/null || echo "unknown")
+    if [ "$ENV_OWNER" = "$SERVICE_USER" ] || [ "$ENV_PERMS" -ge 600 ]; then
+        pass "server/.env readable ($ENV_PERMS)"
+    else
+        fail "server/.env not readable by $SERVICE_USER (owner: $ENV_OWNER, perms: $ENV_PERMS)"
+        echo "  Fix: sudo chown $SERVICE_USER:$SERVICE_USER $DIR/server/.env"
+        echo "  Fix: sudo chmod 600 $DIR/server/.env"
+    fi
+else
+    warn "server/.env missing"
+fi
+
+# 7. Nginx config
 echo ""
 echo "--- Nginx ---"
 if [ -f "$NGINX_CONF" ]; then
@@ -266,7 +342,7 @@ else
     warn "nginx not installed"
 fi
 
-# 7. Service
+# 8. Service
 echo ""
 echo "--- Service ---"
 if command -v systemctl &>/dev/null; then
@@ -286,7 +362,7 @@ else
     warn "systemctl not available (non-Linux?)"
 fi
 
-# 8. Disk Space
+# 9. Disk Space
 echo ""
 echo "--- Disk Space ---"
 DISK_USAGE=$(df / --output=pcent | tail -1 | tr -dc '0-9')
@@ -296,7 +372,7 @@ else
     pass "Disk space is healthy ($DISK_USAGE% used)"
 fi
 
-# 9. SSL certificate
+# 10. SSL certificate
 echo ""
 echo "--- SSL ---"
 if command -v certbot &>/dev/null; then
@@ -314,7 +390,7 @@ else
     warn "certbot not installed"
 fi
 
-# 10. HTTPS checks
+# 11. HTTPS checks
 echo ""
 echo "--- HTTPS Check ---"
 if command -v curl &>/dev/null; then

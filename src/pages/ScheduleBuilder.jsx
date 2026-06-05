@@ -94,7 +94,6 @@ export default function ScheduleBuilder() {
   const saveTimeoutRef = useRef(null);
   const saveScheduleToServer = useCallback(async () => {
     const serverData = storeToServerSchedule(scheduleStore);
-    if (Object.keys(serverData).length === 0) return;
     try {
       setIsSaving(true);
       await updateSchedule(serverData);
