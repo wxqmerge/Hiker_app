@@ -105,3 +105,20 @@ export async function getScheduleDownload(quarter) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.blob();
 }
+
+export async function importScheduleFromXls(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_BASE}/api/schedule/import-xls`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: { message: 'Import failed' } }));
+    throw new Error(error.error?.message || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}

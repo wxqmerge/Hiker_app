@@ -130,7 +130,7 @@ describe('ScheduleBuilder', () => {
     );
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText('Import')).toBeInTheDocument();
+    expect(screen.getByText('Import JSON')).toBeInTheDocument();
   });
 
   it('shows Clear All Data button', () => {

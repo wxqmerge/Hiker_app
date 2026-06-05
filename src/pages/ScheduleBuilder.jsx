@@ -9,6 +9,7 @@ import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
 import { downloadBlob, createImportFileInput } from '../utils/io';
+import { importScheduleFromXls } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const DEBUG_STORAGE_KEY = 'hiker-schedule-debug';
@@ -298,6 +299,46 @@ export default function ScheduleBuilder() {
     }
   };
 
+  const importFromExcel = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xls,.xlsx';
+    input.style.display = 'none';
+    input.onchange = async () => {
+      if (!input.files?.[0]) return;
+      try {
+        const result = await importScheduleFromXls(input.files[0]);
+        if (!result.success) {
+          alert('Import failed: ' + (result.error?.message || 'Unknown error'));
+          return;
+        }
+        setScheduleStore(prev => {
+          const merged = { ...prev, ...result.schedule };
+          return merged;
+        });
+        if (result.months.length > 0) {
+          const firstMonth = MONTH_NAMES.indexOf(result.months[0]);
+          if (firstMonth >= 0) setSelectedMonth(firstMonth);
+        }
+        let msg = `Imported ${result.matched} hikes across ${result.months.length} month(s): ${result.months.join(', ')}.\n`;
+        if (result.unmatched > 0) {
+          msg += `\n${result.unmatched} hike(s) could not be matched to a trail.\n`;
+          if (result.unmatchedDetails?.length) {
+            msg += 'Unmatched: ' + result.unmatchedDetails.slice(0, 5).map(u => u.hike).join(', ');
+            if (result.unmatched > 5) msg += '...';
+          }
+        }
+        alert(msg);
+      } catch (err) {
+        alert('Import error: ' + err.message);
+      }
+      document.body.removeChild(input);
+      setShowSettings(false);
+    };
+    document.body.appendChild(input);
+    input.click();
+  };
+
   const importSchedule = () => {
     createImportFileInput(
       (imported) => {
@@ -458,11 +499,17 @@ const hikeCards = useMemo(() => {
                   </svg>
                   Import Hike Edits
                 </button>
+                <button onClick={importFromExcel} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Import Excel Schedule
+                </button>
                 <button onClick={importSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Import
+                  Import JSON
                 </button>
                 <button
                    onClick={() => setDebugMode(!debugMode)}
@@ -495,13 +542,15 @@ const hikeCards = useMemo(() => {
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
           >
              {MONTH_NAMES.map((name, idx) => {
-                const monthAbbr = name.substring(0, 3);
-                const count = scheduleData[monthAbbr] ? Object.keys(scheduleData[monthAbbr]).length : 0;
-                return (
-                <option key={idx} value={idx}>
-                  {name} ({count} hikes)
-                </option>
-              );
+                 const monthAbbr = name.substring(0, 3);
+                 const localCount = scheduleStore[name] ? Object.keys(scheduleStore[name]).length : 0;
+                 const serverCount = scheduleData[monthAbbr] ? Object.keys(scheduleData[monthAbbr]).length : 0;
+                 const count = Math.max(localCount, serverCount);
+                 return (
+                 <option key={idx} value={idx}>
+                   {name} ({count} hikes)
+                 </option>
+               );
             })}
           </select>
           <p className="text-gray-600 text-sm ml-auto">
