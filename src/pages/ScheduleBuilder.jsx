@@ -8,7 +8,7 @@ import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
 import { downloadBlob } from '../utils/io';
-import { importScheduleFromXls, importTrailsFromXls, updateSchedule, getScheduleHistory, restoreSchedule, clearScheduleHistory } from '../api/client';
+import { importScheduleFromXls, importTrailsFromXls, updateSchedule, getScheduleHistory, restoreSchedule } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const MONTH_ABBR_TO_FULL = { Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April', May: 'May', Jun: 'June',
@@ -436,16 +436,6 @@ export default function ScheduleBuilder() {
     }
   };
 
-  const handleClearHistory = async () => {
-    if (!confirm('Clear all schedule history? This cannot be undone.')) return;
-    try {
-      await clearScheduleHistory();
-      setHistoryEntries([]);
-    } catch (err) {
-      alert('Failed to clear history: ' + err.message);
-    }
-  };
-
   const handleClearCurrentSchedule = () => {
     if (!confirm('Clear the current schedule? Your history will be preserved.')) return;
     setScheduleStore({});
@@ -861,11 +851,6 @@ const hikeCards = useMemo(() => {
                 <button onClick={handleClearCurrentSchedule} disabled={!hasApiKey} className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}>
                   Clear Schedule
                 </button>
-                {historyEntries.length > 0 && (
-                  <button onClick={handleClearHistory} disabled={!hasApiKey} className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-orange-600 hover:bg-orange-50' : 'text-gray-300 cursor-not-allowed'}`}>
-                    Clear History
-                  </button>
-                )}
                 <button onClick={closeHistory} className="text-gray-400 hover:text-gray-600">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
