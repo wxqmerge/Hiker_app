@@ -206,10 +206,13 @@ fi
 echo ""
 echo "--- Service ---"
 if command -v systemctl &>/dev/null; then
-    if sudo systemctl is-active --quiet "$SERVICE" 2>/dev/null; then
+    SERVICE_STATE=$(systemctl show -p ActiveState --value "$SERVICE" 2>/dev/null || echo "unknown")
+    if [ "$SERVICE_STATE" = "active" ]; then
         pass "$SERVICE service is running"
+    elif [ "$SERVICE_STATE" = "activating" ]; then
+        warn "$SERVICE service is activating (it may take a moment to respond)"
     else
-        fail "$SERVICE service is not running"
+        fail "$SERVICE service is not running ($SERVICE_STATE)"
         NEED_SERVICE_START=true
         if [ "$FIX" = true ]; then
             echo "  Fix: sudo systemctl start $SERVICE"
@@ -367,11 +370,11 @@ else
     grep -rl "server_name $DOMAIN" /etc/nginx/sites-enabled/ 2>/dev/null | while read -r f; do echo "    - $f"; done
     echo ""
     echo "Local server health test:"
-    LOCAL_HEALTH=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "http://localhost:$SERVER_PORT/health" 2>/dev/null || echo "000")
+    LOCAL_HEALTH=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "http://localhost:$SERVER_PORT/health" 2>/dev/null | tr -d '[:space:]' || echo "000")
     echo "  HTTP $LOCAL_HEALTH"
     echo ""
     echo "Direct server health (port $SERVER_PORT):"
-    DIRECT_HEALTH=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "http://localhost:$SERVER_PORT/health" 2>/dev/null || echo "000")
+    DIRECT_HEALTH=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "http://localhost:$SERVER_PORT/health" 2>/dev/null | tr -d '[:space:]' || echo "000")
     echo "  HTTP $DIRECT_HEALTH"
     echo ""
     echo "Quick fixes:"
