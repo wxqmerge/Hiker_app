@@ -34,13 +34,10 @@ for arg in "$@"; do
     esac
 done
 
-# Load local deployment config
 DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [ -f "$DEPLOY_DIR/.env" ]; then
-    source "$DEPLOY_DIR/.env"
-fi
 
-SERVICE="${SERVICE_NAME:-${SERVICE_NAME:-$(basename "$PWD")}}"
+# Service name defaults to current directory name
+SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
 DIR="$(pwd)"
 DEPLOY_USER="$(whoami)"
 DEPLOY_GROUP="$(id -gn "$DEPLOY_USER" 2>/dev/null || echo "$DEPLOY_USER")"
