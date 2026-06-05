@@ -8,7 +8,7 @@ import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById, findTrailById as findTrailByIdUtil } from '../utils/data';
 import { downloadBlob, createFileInput } from '../utils/io';
-import { importScheduleFromXls, importTrailsFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule } from '../api/client';
+import { importScheduleFromXls, importTrailsFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 // Convert server schedule format to client format
@@ -414,7 +414,7 @@ export default function ScheduleBuilder() {
 
   const verifyServerSchedule = async () => {
     try {
-      const serverData = await getSchedule();
+      const [serverData, serverTrails] = await Promise.all([getSchedule(), getTrails()]);
       const serverConverted = serverScheduleToStore(serverData);
       const local = storeToServerSchedule(scheduleStore);
 
@@ -427,26 +427,41 @@ export default function ScheduleBuilder() {
       const missingOnServer = localEntries.filter(e => !serverSet.has(e));
       const extraOnServer = serverEntries.filter(e => !localSet.has(e));
 
-      if (serverEntries.length === 0 && localEntries.length === 0) {
-        alert('Both local and server schedules are empty.');
-      } else if (missingOnServer.length === 0 && extraOnServer.length === 0) {
-        alert('✓ Local schedule matches server.\n\nServer has ' + serverEntries.length + ' entries.');
+      // Compare trails
+      const localTrailIds = new Set(trails.map(t => t.id));
+      const serverTrailIds = new Set(serverTrails.map(t => t.id));
+      const missingTrails = [...localTrailIds].filter(id => !serverTrailIds.has(id));
+      const extraTrails = [...serverTrailIds].filter(id => !localTrailIds.has(id));
+
+      const schedulesMatch = missingOnServer.length === 0 && extraOnServer.length === 0;
+      const trailsMatch = missingTrails.length === 0 && extraTrails.length === 0;
+
+      if (schedulesMatch && trailsMatch) {
+        alert('✓ Local matches server.\n\nSchedule: ' + serverEntries.length + ' entries\nTrails: ' + serverTrails.length + ' trails');
       } else {
-        let msg = '⚠ Schedules differ!\n\n';
-        msg += 'Server: ' + serverEntries.length + ' entries\n';
-        msg += 'Local: ' + localEntries.length + ' entries\n\n';
+        let msg = '⚠ Local differs from server!\n\n';
+        msg += 'Schedule — Server: ' + serverEntries.length + ' | Local: ' + localEntries.length + ' entries\n';
+        msg += 'Trails — Server: ' + serverTrails.length + ' | Local: ' + trails.length + '\n\n';
         if (missingOnServer.length > 0) {
-          msg += missingOnServer.length + ' local entry(ies) NOT on server:\n' + missingOnServer.slice(0, 10).join('\n');
-          if (missingOnServer.length > 10) msg += '\n...and ' + (missingOnServer.length - 10) + ' more';
+          msg += missingOnServer.length + ' schedule entry(ies) NOT on server:\n' + missingOnServer.slice(0, 5).join('\n');
+          if (missingOnServer.length > 5) msg += '\n...and ' + (missingOnServer.length - 5) + ' more';
         }
         if (extraOnServer.length > 0) {
-          msg += '\n\n' + extraOnServer.length + ' server entry(ies) NOT in local:\n' + extraOnServer.slice(0, 10).join('\n');
-          if (extraOnServer.length > 10) msg += '\n...and ' + (extraOnServer.length - 10) + ' more';
+          msg += '\n\n' + extraOnServer.length + ' schedule entry(ies) NOT in local:\n' + extraOnServer.slice(0, 5).join('\n');
+          if (extraOnServer.length > 5) msg += '\n...and ' + (extraOnServer.length - 5) + ' more';
+        }
+        if (missingTrails.length > 0) {
+          msg += '\n\n' + missingTrails.length + ' trail(s) NOT on server:\n' + missingTrails.slice(0, 5).join('\n');
+          if (missingTrails.length > 5) msg += '\n...and ' + (missingTrails.length - 5) + ' more';
+        }
+        if (extraTrails.length > 0) {
+          msg += '\n\n' + extraTrails.length + ' trail(s) NOT in local:\n' + extraTrails.slice(0, 5).join('\n');
+          if (extraTrails.length > 5) msg += '\n...and ' + (extraTrails.length - 5) + ' more';
         }
         alert(msg);
       }
     } catch (err) {
-      alert('Failed to fetch server schedule: ' + err.message);
+      alert('Failed to verify: ' + err.message);
     }
   };
 
