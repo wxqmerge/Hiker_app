@@ -99,6 +99,7 @@ export default function ScheduleBuilder() {
       await updateSchedule(serverData);
     } catch (err) {
       console.error('[ScheduleBuilder] Failed to save schedule:', err);
+      alert('Failed to save schedule to server: ' + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -374,6 +375,7 @@ export default function ScheduleBuilder() {
       setHistoryEntries(entries);
     } catch (err) {
       console.error('[ScheduleBuilder] Failed to load history:', err);
+      alert('Failed to load schedule history: ' + err.message);
     } finally {
       setLoadingHistory(false);
     }

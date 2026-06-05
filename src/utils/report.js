@@ -60,6 +60,7 @@ export async function copyToClipboard(text, setCopied) {
     return true;
   } catch (err) {
     console.error('Failed to copy:', err);
+    alert('Failed to copy to clipboard');
     return false;
   }
 }

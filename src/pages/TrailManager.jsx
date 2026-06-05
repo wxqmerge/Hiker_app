@@ -29,7 +29,11 @@ export default function TrailManager() {
 
   const handleDelete = async (trail) => {
     if (confirm(`Delete trail "${trail.name}"?`)) {
-      await deleteTrail(trail.id);
+      try {
+        await deleteTrail(trail.id);
+      } catch (err) {
+        alert('Delete failed: ' + err.message);
+      }
     }
   };
 
@@ -54,8 +58,12 @@ export default function TrailManager() {
       seasonal: { availableMonths: [], bestSeason: '' },
       difficultyOrder: 99,
     };
-    await saveTrail(newTrail);
-    navigate(`/trail/${id}`);
+    try {
+      await saveTrail(newTrail);
+      navigate(`/trail/${id}`);
+    } catch (err) {
+      alert('Create failed: ' + err.message);
+    }
   };
 
   const handleImportDatabase = () => {
