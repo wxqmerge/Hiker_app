@@ -284,7 +284,7 @@ echo "  Reloading systemd daemon..."
 sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 
 # 9. Get/renew SSL certificate
-echo "[9/10] Getting SSL certificate for $DOMAIN..."
+echo "[9/12] Getting SSL certificate for $DOMAIN..."
 if command -v certbot &>/dev/null; then
     if ! sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --redirect --hsts --staple-ocsp --must-staple --key-type ecdsa 2>&1; then
         echo "  WARNING: certbot failed (cert may already exist). Continuing..."
@@ -296,7 +296,7 @@ else
 fi
 
 # 10. Apply nginx config
-echo "[11/10] Applying nginx config..."
+echo "[10/12] Applying nginx config..."
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 if [ -f "$NGINX_CONF" ]; then
     if ! grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
@@ -333,10 +333,22 @@ else
     fi
 fi
 
-# 9. Restart service
-echo "[10/10] Restarting service: $SERVICE"
-if ! sudo -n systemctl restart "$SERVICE" 2>&1; then
-    echo "  ERROR: systemctl restart failed."
+# 11. Stop service and kill stale process on port
+echo "[11/12] Stopping service and freeing port $SERVER_PORT..."
+sudo -n systemctl stop "$SERVICE" 2>&1 || true
+sleep 1
+PORT_PID=$(sudo lsof -ti :$SERVER_PORT 2>/dev/null || true)
+if [ -n "$PORT_PID" ]; then
+    echo "  Found stale process on port $SERVER_PORT (PID: $PORT_PID) — killing."
+    sudo kill -9 $PORT_PID 2>/dev/null || true
+    sleep 1
+fi
+sudo systemctl daemon-reload 2>&1 || true
+
+# 12. Start service
+echo "[12/12] Starting service: $SERVICE"
+if ! sudo -n systemctl start "$SERVICE" 2>&1; then
+    echo "  ERROR: systemctl start failed."
     echo "  If this says 'sudo: a password is required', you need passwordless sudo."
     exit 1
 fi
