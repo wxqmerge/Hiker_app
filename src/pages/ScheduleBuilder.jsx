@@ -287,7 +287,7 @@ export default function ScheduleBuilder() {
             className="cursor-grab active:cursor-grabbing"
           >
             <div className="relative">
-              <TrailCard trail={trail} hikeName={hikeName} isActive={false} />
+              <TrailCard trail={trail} hikeName={trail.fullName || trail.name} isActive={false} />
               <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
                 {day}
                 <span className="text-[8px]">{new Date(year, selectedMonth, day).getDay() === 3 ? 'W' : 'F'}</span>
@@ -460,16 +460,14 @@ export default function ScheduleBuilder() {
   };
 
   const getQuarterForMonth = (monthIndex) => {
-    if (monthIndex >= 2 && monthIndex <= 4) return { q: '2', months: ['Mar', 'Apr', 'May'], label: '2nd Quarter' };
-    if (monthIndex >= 5 && monthIndex <= 7) return { q: '3', months: ['Jun', 'Jul', 'Aug'], label: '3rd Quarter' };
-    if (monthIndex >= 8 && monthIndex <= 10) return { q: '4', months: ['Sep', 'Oct', 'Nov'], label: '4th Quarter' };
-    return { q: '1', months: ['Dec', 'Jan', 'Feb'], label: '1st Quarter' };
+    // Calendar quarters: Q1=Jan/Feb/Mar, Q2=Apr/May/Jun, Q3=Jul/Aug/Sep, Q4=Oct/Nov/Dec
+    if (monthIndex >= 0 && monthIndex <= 2) return { q: '1', months: ['Jan', 'Feb', 'Mar'], label: '1st Quarter' };
+    if (monthIndex >= 3 && monthIndex <= 5) return { q: '2', months: ['Apr', 'May', 'Jun'], label: '2nd Quarter' };
+    if (monthIndex >= 6 && monthIndex <= 8) return { q: '3', months: ['Jul', 'Aug', 'Sep'], label: '3rd Quarter' };
+    return { q: '4', months: ['Oct', 'Nov', 'Dec'], label: '4th Quarter' };
   };
 
-  const getQuarterYear = (monthIndex) => {
-    if (monthIndex >= 8) return year;
-    return year - 1;
-  };
+  const getQuarterYear = () => year;
 
   const exportExcelSchedule = () => {
     const quarter = getQuarterForMonth(selectedMonth);
@@ -492,7 +490,7 @@ export default function ScheduleBuilder() {
         if (!entry || !entry.trail_id) continue;
 
         const trail = findTrailById(entry.trail_id);
-        const hikeName = entry.hike || (trail ? trail.fullName || trail.name : entry.trail_id);
+        const hikeName = trail ? trail.fullName || trail.name : entry.trail_id;
 
         if (dayOfWeek === 3) {
           wedHikes.push({ month: monthAbbr, day, hike: hikeName });
@@ -862,7 +860,7 @@ const { trail_id: trailId, hike: hikeName } = assignedHikes[day] || { trail_id: 
                             {trailId && trail ? (
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-gray-900 truncate">
-                                  {hikeName || trail.fullName || trail.name}
+                                  {trail ? trail.fullName || trail.name : hikeName}
                                 </div>
                                 <div className="text-xs text-gray-500 truncate">
                                   (ID: {trailId})
