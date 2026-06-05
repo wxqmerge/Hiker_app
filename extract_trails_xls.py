@@ -3,6 +3,7 @@ Extract trail data from Hike Data Base.xls (older Excel format)
 Uses pandas for easier parsing
 """
 
+import sys
 import pandas as pd
 import json
 import re
@@ -347,8 +348,8 @@ class TrailExtractor:
         return {'trails': trails, 'details': details, 'lookup': lookup}
 
 if __name__ == '__main__':
-    xls_path = r'D:\hiker\Hike Data BaseM.xls'
-    output_dir = r'D:\hiker\exported_data'
+    xls_path = sys.argv[1] if len(sys.argv) > 1 else r'D:\hiker\Hike Data BaseM.xls'
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else r'D:\hiker\exported_data'
     
     extractor = TrailExtractor(xls_path)
     result = extractor.export_data(output_dir)

@@ -248,7 +248,11 @@ router.post('/import-trails-xls', requireAdminKey, upload.single('file'), async 
     }
 
     try {
-      const { stdout, stderr } = await execFileAsync(pythonCmd, [path.join(PROJECT_ROOT, 'extract_trails_xls.py')]);
+      const { stdout, stderr } = await execFileAsync(pythonCmd, [
+        path.join(PROJECT_ROOT, 'extract_trails_xls.py'),
+        path.join(PROJECT_ROOT, 'Hike Data BaseM.xls'),
+        path.join(PROJECT_ROOT, 'exported_data')
+      ]);
       if (stderr) {
         console.warn('[TRAILS] Python script warnings:', stderr);
       }
