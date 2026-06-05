@@ -312,11 +312,46 @@ export default function ScheduleBuilder() {
       return;
     }
 
-    // Preserve early_start from source day
-    const sourceEntry = sourceDay !== null && sourceDay !== undefined ? (scheduleStore[MONTH_NAMES[selectedMonth]] || {})[sourceDay] : null;
+    const monthName = MONTH_NAMES[selectedMonth];
+    const targetEntry = (scheduleStore[monthName] || {})[targetDay];
+
+    // Check if target day already has a hike – offer swap
+    if (targetEntry && targetEntry.trail_id) {
+      const sourceTrail = findTrailById(trailId);
+      const targetTrail = findTrailById(targetEntry.trail_id);
+      const sourceTrailName = sourceTrail ? (sourceTrail.fullName || sourceTrail.name) : hikeName || trailId;
+      const targetTrailName = targetTrail ? (targetTrail.fullName || targetTrail.name) : targetEntry.hike || targetEntry.trail_id;
+      const sourceDayOfWeek = new Date(year, selectedMonth, sourceDay).getDay();
+      const targetDayOfWeek = new Date(year, selectedMonth, targetDay).getDay();
+      const sourceDayLabel = `${DAY_NAMES[sourceDayOfWeek]} ${sourceDay}`;
+      const targetDayLabel = `${DAY_NAMES[targetDayOfWeek]} ${targetDay}`;
+
+      if (!confirm(`Swap "${sourceTrailName}" (${sourceDayLabel}) with "${targetTrailName}" (${targetDayLabel})?`)) {
+        setDragData(null);
+        return;
+      }
+
+      // Swap: source hike goes to target day, target hike goes to source day
+      const sourceEntry = sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay] : null;
+      const sourceEarlyStart = sourceEntry?.early_start || false;
+
+      updateMonthSchedule(monthName, prev => {
+        const next = { ...prev };
+        next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: sourceEarlyStart };
+        if (sourceDay !== null && sourceDay !== undefined) {
+          next[sourceDay] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start };
+        }
+        return next;
+      });
+      setDragData(null);
+      return;
+    }
+
+    // Normal drop on empty date
+    const sourceEntry = sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay] : null;
     const earlyStart = sourceEntry?.early_start || false;
 
-    updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
+    updateMonthSchedule(monthName, prev => {
       const next = { ...prev };
       if (sourceDay !== null && sourceDay !== undefined) {
         delete next[sourceDay];
