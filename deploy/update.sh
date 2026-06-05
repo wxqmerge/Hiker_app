@@ -286,7 +286,7 @@ sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload
 # 9. Get/renew SSL certificate
 echo "[9/12] Getting SSL certificate for $DOMAIN..."
 if command -v certbot &>/dev/null; then
-    if ! sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --redirect --hsts --staple-ocsp --must-staple --key-type ecdsa 2>&1; then
+    if ! sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --redirect --hsts --staple-ocsp --key-type ecdsa 2>&1; then
         echo "  WARNING: certbot failed (cert may already exist). Continuing..."
     else
         echo "  SSL certificate obtained/renewed."
