@@ -126,40 +126,56 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
       }
     }
 
-    const { stdout, stderr } = await execFileAsync(pythonCmd, [
-      path.join(PROJECT_ROOT, 'import_schedule_xls.py'),
-      tmpPath,
-      trailsPath
-    ]);
-
-    fs.unlinkSync(tmpPath);
-
-    if (stderr) {
-      console.warn('[SCHEDULE] Python warnings:', stderr);
-    }
-
-    let result;
     try {
-      result = JSON.parse(stdout);
-    } catch {
+      const { stdout, stderr } = await execFileAsync(pythonCmd, [
+        path.join(PROJECT_ROOT, 'import_schedule_xls.py'),
+        tmpPath,
+        trailsPath
+      ]);
+
+      fs.unlinkSync(tmpPath);
+
+      if (stderr) {
+        console.warn('[SCHEDULE] Python warnings:', stderr);
+      }
+
+      let result;
+      try {
+        result = JSON.parse(stdout);
+      } catch {
+        return res.status(500).json({
+          success: false,
+          error: { message: 'Failed to parse Python output. Check logs for details.' }
+        });
+      }
+
+      if (result.error) {
+        return res.status(400).json({ success: false, error: { message: result.error } });
+      }
+
+      if (!result.success || result.matched === 0) {
+        return res.status(400).json({ success: false, error: { message: 'No valid hike data found in Excel file' } });
+      }
+
+      res.json(result);
+    } catch (pyError: any) {
+      fs.unlinkSync(tmpPath);
+      const stderr = pyError.stderr || '';
+      const stdout = pyError.stdout || '';
+      console.error('[SCHEDULE] Python script failed:', stderr || pyError.message);
+      if (stderr.includes('No module named')) {
+        return res.status(500).json({
+          success: false,
+          error: { message: `Python dependency missing: ${stderr.split('\n').pop()}. Run: sudo apt install python3-pandas` }
+        });
+      }
       return res.status(500).json({
         success: false,
-        error: { message: 'Failed to parse Python output. Check logs for details.' }
+        error: { message: `Python script error: ${stderr || stdout || pyError.message}` }
       });
     }
-
-    if (result.error) {
-      return res.status(400).json({ success: false, error: { message: result.error } });
-    }
-
-    if (!result.success || result.matched === 0) {
-      return res.status(400).json({ success: false, error: { message: 'No valid hike data found in Excel file' } });
-    }
-
-    res.json(result);
   } catch (error) {
     console.error('[SCHEDULE] Error importing XLS:', error);
-    // Clean up temp file on error
     try {
       fs.unlinkSync(path.join(PROJECT_ROOT, 'tmp_upload.xls'));
     } catch { /* ignore */ }
