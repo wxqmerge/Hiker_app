@@ -232,10 +232,20 @@ fi
 echo ""
 echo "--- HTTPS Check ---"
 if command -v curl &>/dev/null; then
-    # Use FRONTEND_URL if set, otherwise default to the domain root
-    # If we are in the subpath architecture, default to the subpath
+    # Use FRONTEND_URL if set, otherwise default to the domain root or subpath
     if [ -z "$FRONTEND_URL" ]; then
-        FRONTEND_URL="https://$DOMAIN/sothh-app/"
+        if [[ "$DOMAIN" == *"*.example.com" ]]; then
+            SUBDOMAIN=$(echo "$DOMAIN" | cut -d'.' -f1)
+            FRONTEND_URL="https://example.com/$SUBDOMAIN/"
+        else
+            FRONTEND_URL="https://$DOMAIN/"
+        fi
+    fi
+    HTTPS_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "$FRONTEND_URL" 2>/dev/null || echo "000")
+    if [ "$HTTPS_CODE" = "200" ]; then
+        pass "HTTPS 200 from $FRONTEND_URL (frontend)"
+    else
+        fail "HTTPS $HTTPS_CODE from $FRONTEND_URL (frontend)"
     fi
     HTTPS_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "$FRONTEND_URL" 2>/dev/null || echo "000")
     if [ "$HTTPS_CODE" = "200" ]; then
