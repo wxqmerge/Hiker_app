@@ -11,6 +11,9 @@ EnvironmentFile=/var/www/html/hiker-app/server/.env
 ExecStart=/usr/bin/node /var/www/html/hiker-app/server/dist/index.js
 Restart=on-failure
 RestartSec=5
+TimeoutStopSec=10
+KillMode=mixed
+KillSignal=SIGINT
 StandardOutput=journal
 StandardError=journal
 

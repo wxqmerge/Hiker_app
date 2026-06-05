@@ -110,9 +110,10 @@ if (isDev) {
   });
 }
 
+const server = http.createServer(app);
 const isMainModule = process.argv[1] && (path.basename(process.argv[1]).endsWith('index.ts') || path.basename(process.argv[1]).endsWith('index.js'));
 if (isMainModule) {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`\n========================================`);
     console.log(`  HIKER TRAIL APP SERVER`);
     console.log(`========================================\n`);
@@ -122,6 +123,21 @@ if (isMainModule) {
     console.log(`✓ Admin API Key: ${process.env.ADMIN_API_KEY ? 'Enabled' : '⚠️  NOT SET'}`);
     console.log(`========================================\n`);
   });
+
+  const gracefulShutdown = (signal: string) => {
+    console.log(`\n[SHUTDOWN] Received ${signal}, shutting down gracefully...`);
+    server.close(() => {
+      console.log('[SHUTDOWN] HTTP server closed.');
+      process.exit(0);
+    });
+    setTimeout(() => {
+      console.error('[SHUTDOWN] Forced exit after timeout.');
+      process.exit(1);
+    }, 5000);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 export default app;
