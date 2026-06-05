@@ -8,7 +8,7 @@ import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById, findTrailById as findTrailByIdUtil } from '../utils/data';
 import { downloadBlob, createFileInput } from '../utils/io';
-import { importScheduleFromXls, importTrailsFromXls, updateSchedule, getScheduleHistory, restoreSchedule } from '../api/client';
+import { importScheduleFromXls, importTrailsFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 // Convert server schedule format to client format
@@ -413,6 +413,44 @@ export default function ScheduleBuilder() {
     closeHistory();
   };
 
+  const verifyServerSchedule = async () => {
+    try {
+      const serverData = await getSchedule();
+      const serverConverted = serverScheduleToStore(serverData);
+      const local = storeToServerSchedule(scheduleStore);
+
+      const serverEntries = Object.entries(serverConverted).flatMap(([m, d]) => Object.entries(d).map(([day, entry]) => `${m}:${day}:${entry.trail_id}`));
+      const localEntries = Object.entries(local).flatMap(([m, entries]) => entries.map(e => `${m}:${e.day}:${e.trail_id}`));
+
+      const serverSet = new Set(serverEntries);
+      const localSet = new Set(localEntries);
+
+      const missingOnServer = localEntries.filter(e => !serverSet.has(e));
+      const extraOnServer = serverEntries.filter(e => !localSet.has(e));
+
+      if (serverEntries.length === 0 && localEntries.length === 0) {
+        alert('Both local and server schedules are empty.');
+      } else if (missingOnServer.length === 0 && extraOnServer.length === 0) {
+        alert('✓ Local schedule matches server.\n\nServer has ' + serverEntries.length + ' entries.');
+      } else {
+        let msg = '⚠ Schedules differ!\n\n';
+        msg += 'Server: ' + serverEntries.length + ' entries\n';
+        msg += 'Local: ' + localEntries.length + ' entries\n\n';
+        if (missingOnServer.length > 0) {
+          msg += missingOnServer.length + ' local entry(ies) NOT on server:\n' + missingOnServer.slice(0, 10).join('\n');
+          if (missingOnServer.length > 10) msg += '\n...and ' + (missingOnServer.length - 10) + ' more';
+        }
+        if (extraOnServer.length > 0) {
+          msg += '\n\n' + extraOnServer.length + ' server entry(ies) NOT in local:\n' + extraOnServer.slice(0, 10).join('\n');
+          if (extraOnServer.length > 10) msg += '\n...and ' + (extraOnServer.length - 10) + ' more';
+        }
+        alert(msg);
+      }
+    } catch (err) {
+      alert('Failed to fetch server schedule: ' + err.message);
+    }
+  };
+
   const toggleEarlyStart = (day) => {
     const entry = (scheduleStore[MONTH_NAMES[selectedMonth]] || {})[day];
     if (!entry) return;
@@ -725,6 +763,12 @@ const hikeCards = useMemo(() => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Schedule History
+                </button>
+                <button onClick={verifyServerSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Verify Pushed to Server
                 </button>
                 <button
                    onClick={() => setDebugMode(!debugMode)}
