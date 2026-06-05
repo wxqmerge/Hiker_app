@@ -105,11 +105,11 @@ if [ -n "$PYTHON_CMD" ]; then
         pass "pandas is installed"
     else
         fail "pandas not installed — .xls import will fail"
-        echo "  Fix: pip3 install pandas openpyxl"
+        echo "  Fix: sudo apt install python3-pandas python3-openpyxl"
     fi
 else
     fail "Python not found — .xls import will fail"
-    echo "  Fix: install Python 3.8+ and pip3 install pandas openpyxl"
+    echo "  Fix: sudo apt install python3 python3-pandas python3-openpyxl"
 fi
 
 # 4. Build output
