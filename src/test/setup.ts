@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 import { beforeEach } from 'vitest';
 import { resetFiltersStore } from '../hooks/useFilters';
+import { resetTrailStore } from '../hooks/useTrailStore';
 
 // Mock data
 const mockData = {
@@ -162,6 +163,11 @@ beforeEach(() => {
 // Reset shared filter store between tests
 beforeEach(() => {
   resetFiltersStore();
+});
+
+// Reset shared trail store between tests
+beforeEach(() => {
+  resetTrailStore();
 });
 
 // Mock window.location

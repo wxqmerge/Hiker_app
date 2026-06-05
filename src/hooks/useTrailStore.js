@@ -38,6 +38,16 @@ async function initSharedState() {
 
 initSharedState();
 
+export function resetTrailStore() {
+  _trails = [];
+  _trailDetails = {};
+  _loading = true;
+  _lookup = null;
+  _schedule = null;
+  _subscribers = [];
+  initSharedState();
+}
+
 export function useTrailStore() {
   const mountedRef = useRef(true);
 
@@ -74,12 +84,13 @@ export function useTrailStore() {
     try {
       await api.updateTrail(trail);
       const idx = _trails.findIndex(t => t.id === trail.id);
+      let newTrails;
       if (idx >= 0) {
-        _trails[idx] = trail;
+        newTrails = _trails.map(t => t.id === trail.id ? trail : t);
       } else {
-        _trails.push(trail);
+        newTrails = [..._trails, trail];
       }
-      setState([..._trails], _trailDetails, false, _lookup, _schedule);
+      setState(newTrails, _trailDetails, false, _lookup, _schedule);
     } catch (error) {
       console.error('[useTrailStore] saveTrail error:', error);
       throw error;
@@ -112,7 +123,7 @@ export function useTrailStore() {
   }, []);
 
   const exportJSON = useCallback(async () => {
-    return { trails: { trails: _trails }, trailDetails: _trailDetails };
+    return { trails: { trails: [..._trails] }, trailDetails: { ..._trailDetails } };
   }, []);
 
   const importJSON = useCallback(async (data) => {
@@ -127,10 +138,7 @@ export function useTrailStore() {
       await api.updateTrailDetail(id, { ...existing, ...detail });
     }
 
-    _trails.length = 0;
-    for (const trail of importedTrails) _trails.push(trail);
-    _trailDetails = importedDetails;
-    setState([..._trails], { ..._trailDetails }, false, _lookup, _schedule);
+    setState([...importedTrails], JSON.parse(JSON.stringify(importedDetails)), false, _lookup, _schedule);
   }, []);
 
   return {

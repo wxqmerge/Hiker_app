@@ -8,6 +8,8 @@ let _subscribers = [];
 export function resetFiltersStore() {
   _filters = { ...DEFAULT_FILTERS };
   _subscribers = [];
+  // Note: setState not called because subscribers are cleared.
+  // Components will re-subscribe on mount and read fresh _filters.
 }
 
 function setState(filters) {

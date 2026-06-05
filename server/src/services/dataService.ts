@@ -80,7 +80,7 @@ export async function loadData(): Promise<void> {
 }
 
 export function getTrails(): Trail[] {
-  return trails;
+  return [...trails];
 }
 
 export function getTrailById(id: string): Trail | undefined {
@@ -88,7 +88,7 @@ export function getTrailById(id: string): Trail | undefined {
 }
 
 export function getTrailDetails(): TrailDetailsData {
-  return trailDetails;
+  return { ...trailDetails };
 }
 
 export function getTrailDetailById(id: string): TrailDetail | undefined {
@@ -100,7 +100,7 @@ export function getLookup(): LookupData {
 }
 
 export function getSchedule(): ScheduleData {
-  return schedule;
+  return { ...schedule };
 }
 
 export async function updateTrail(trail: Trail): Promise<void> {
