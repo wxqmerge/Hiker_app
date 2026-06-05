@@ -234,7 +234,7 @@ echo "--- HTTPS Check ---"
 if command -v curl &>/dev/null; then
     # Use FRONTEND_URL if set, otherwise default to the domain root or subpath
     if [ -z "$FRONTEND_URL" ]; then
-        if [[ "$DOMAIN" == *"*.example.com" ]]; then
+        if [[ "$DOMAIN" == *".example.com" ]]; then
             SUBDOMAIN=$(echo "$DOMAIN" | cut -d'.' -f1)
             FRONTEND_URL="https://example.com/$SUBDOMAIN/"
         else
