@@ -916,7 +916,7 @@ const hikeCards = useMemo(() => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-800">
-                  {year} — Wed/Fri Dates
+                  {MONTH_NAMES[selectedMonth]} {year} — Wed/Fri Dates
                 </h3>
               </div>
               <div className="p-4">
