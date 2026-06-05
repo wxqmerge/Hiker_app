@@ -167,3 +167,10 @@ export async function restoreSchedule(timestamp) {
     apiKey: true,
   });
 }
+
+export async function clearScheduleHistory() {
+  return request('/api/schedule/history', {
+    method: 'DELETE',
+    apiKey: true,
+  });
+}

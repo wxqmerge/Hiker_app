@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { getSchedule, updateSchedule, updateScheduleMonth, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp } from '../services/dataService.js';
+import { getSchedule, updateSchedule, updateScheduleMonth, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp, clearScheduleHistory } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import fs from 'fs';
 import path from 'path';
@@ -52,6 +52,16 @@ router.post('/history/restore', requireAdminKey, async (req, res) => {
     console.error('[SCHEDULE] Error restoring schedule:', error);
     const msg = error instanceof Error ? error.message : 'Unknown error';
     res.status(404).json({ success: false, error: { message: msg } });
+  }
+});
+
+router.delete('/history', requireAdminKey, async (_req, res) => {
+  try {
+    await clearScheduleHistory();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[SCHEDULE] Error clearing history:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to clear schedule history' } });
   }
 });
 
