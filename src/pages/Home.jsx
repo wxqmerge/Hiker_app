@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
+import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailList from '../components/TrailList';
 
@@ -31,15 +31,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="container mx-auto px-4 py-3">
-        <div className="mb-6 flex items-baseline gap-3">
-          <h2 className="text-2xl font-bold text-gray-900">Browse Trails</h2>
-          <span className="text-gray-300">|</span>
-          <Link to="/trails" className="text-green-700 hover:text-green-900 font-medium text-sm">
-            Manage Trails
-          </Link>
-          <Link to="/schedule" className="text-green-700 hover:text-green-900 font-medium text-sm">
-            Schedule Builder
-          </Link>
+        <div className="flex items-baseline justify-between mb-6">
+          <PageNav />
           <p className="text-gray-600 text-sm ml-auto">
             Showing {sortedTrails.length} of {trails.length} trails
           </p>

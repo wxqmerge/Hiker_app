@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
+import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
@@ -694,11 +694,7 @@ const hikeCards = useMemo(() => {
     <div className="min-h-screen bg-gray-50">
       <main className="container mx-auto px-4 py-3">
         <div className="mb-6 flex items-baseline gap-3">
-          <h2 className="text-2xl font-bold text-gray-900">Schedule Builder</h2>
-          <span className="text-gray-300">|</span>
-          <Link to="/" className="text-green-700 hover:text-green-900 font-medium text-sm">
-            Browse Trails
-          </Link>
+          <PageNav />
           <button
             onClick={() => setShowScheduled(!showScheduled)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${

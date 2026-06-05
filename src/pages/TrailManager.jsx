@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageNav from '../components/PageNav';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { createFileInput } from '../utils/io';
 import { importTrailsFromXls } from '../api/client';
@@ -91,12 +92,8 @@ export default function TrailManager() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="container mx-auto px-4 py-3 max-w-4xl">
-        <div className="mb-6 flex items-baseline gap-3">
-          <h2 className="text-2xl font-bold text-gray-900">Trail Manager</h2>
-          <span className="text-gray-300">|</span>
-          <Link to="/" className="text-green-700 hover:text-green-900 font-medium text-sm">
-            Browse Trails
-          </Link>
+        <div className="flex items-baseline justify-between mb-6">
+          <PageNav />
           <p className="text-gray-600 text-sm ml-auto">
             {filteredTrails.length} of {trails.length} trails
           </p>
