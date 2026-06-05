@@ -97,8 +97,8 @@ Test-ApiJson -Path "/api/trails" -Label "GET /api/trails" -ExpectedKey "trails"
 Test-ApiJson -Path "/api/trails/details" -Label "GET /api/trails/details" -ExpectedKey ""
 Test-ApiJson -Path "/api/lookup" -Label "GET /api/lookup" -ExpectedKey ""
 Test-ApiJson -Path "/api/schedule" -Label "GET /api/schedule" -ExpectedKey ""
-Test-ApiJson -Path "/api/schedule/report" -Label "GET /api/schedule/report" -ExpectedKey ""
-Test-ApiJson -Path "/api/schedule/download" -Label "GET /api/schedule/download" -ExpectedKey ""
+Test-Endpoint -Base $ApiUrl -Path "/api/schedule/report?quarter=Q1" -Label "GET /api/schedule/report" -ExpectedStatus 200
+Test-Endpoint -Base $ApiUrl -Path "/api/schedule/download?quarter=Q1" -Label "GET /api/schedule/download" -ExpectedStatus 200
 
 Write-Host ""
 Write-Host "--- SPA Routing ---"
