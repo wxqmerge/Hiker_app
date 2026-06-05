@@ -31,6 +31,14 @@ fi
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
 
+if [ -f "$NGINX_CONF" ]; then
+    NGINX_PORT=$(grep "proxy_pass" "$NGINX_CONF" | grep -oE '[0-9]+' | tail -1)
+    if [ -n "$NGINX_PORT" ] && [ "$NGINX_PORT" != "$SERVER_PORT" ]; then
+        warn "Port mismatch: .env uses $SERVER_PORT, but Nginx proxies to $NGINX_PORT"
+        SERVER_PORT=$NGINX_PORT
+    fi
+fi
+
 # Track which categories have errors for targeted quick fixes
 NEED_DEPS=false
 NEED_BUILD=false
