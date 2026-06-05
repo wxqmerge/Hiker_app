@@ -215,7 +215,7 @@ export default function TrailDetail() {
     }
   };
 
-  const rideCost = trail?.range ? getRideCost(parseInt(trail.range)) : null;
+  const rideCost = trail?.range ? getRideCost(parseInt(trail.range, 10)) : null;
 
   if (loading) {
     return (
@@ -368,7 +368,7 @@ export default function TrailDetail() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                   </svg>
                   <p className="text-xl font-bold text-gray-800">
-                    {getEditedValue('range') ? getRideCost(parseInt(getEditedValue('range'))) || `Range: ${getEditedValue('range')}` : rideCost || 'N/A'}
+                    {getEditedValue('range') ? getRideCost(parseInt(getEditedValue('range'), 10)) || `Range: ${getEditedValue('range')}` : rideCost || 'N/A'}
                   </p>
                   <p className="text-sm text-gray-500">ride</p>
                 </div>
@@ -602,7 +602,7 @@ export default function TrailDetail() {
                     <input
                       type="number"
                       value={getEditedValue('elevationStart') != null ? getEditedValue('elevationStart') : ''}
-                      onChange={(e) => updateField('elevationStart', e.target.value ? parseInt(e.target.value) : '')}
+                      onChange={(e) => updateField('elevationStart', e.target.value ? parseInt(e.target.value, 10) : '')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
@@ -611,7 +611,7 @@ export default function TrailDetail() {
                     <input
                       type="number"
                       value={getEditedValue('elevationMax') != null ? getEditedValue('elevationMax') : ''}
-                      onChange={(e) => updateField('elevationMax', e.target.value ? parseInt(e.target.value) : '')}
+                      onChange={(e) => updateField('elevationMax', e.target.value ? parseInt(e.target.value, 10) : '')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                     />
                   </div>

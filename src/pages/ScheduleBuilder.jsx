@@ -784,7 +784,7 @@ const hikeCards = useMemo(() => {
           </div>
           <select
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
           >
              {MONTH_NAMES.map((name, idx) => {

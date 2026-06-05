@@ -12,7 +12,7 @@ export function formatTrailLine(trail) {
   const elevMax = trail.elevationMax != null ? trail.elevationMax.toLocaleString() : elevStart;
   const elevationText = `${elevStart}'-${elevMax}'`;
   const parking = trail.parking || '';
-  const rideCost = trail.range ? getRideCost(parseInt(trail.range)) : '';
+  const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : '';
 
   let line = `${name}◆︎  ${difficulty}\t${distanceText} / ${elevationText}\t${parking}`;
   if (rideCost) line += `\t${rideCost}`;

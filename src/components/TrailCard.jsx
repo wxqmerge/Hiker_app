@@ -25,7 +25,7 @@ export default function TrailCard({ trail, isActive = false, hikeName }) {
     await copyToClipboard(genReport(trail, detailsForTrail), setCopied);
   };
 
-  const rideCost = trail.range ? getRideCost(parseInt(trail.range)) : null;
+  const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
   const seasonal = trail.seasonal || {};
   const bestSeason = seasonal.bestSeason || '';
   const scoreMonths = getScoredMonths(seasonal);
