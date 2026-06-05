@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTrailStore } from '../hooks/useTrailStore';
-import { downloadBlob, createImportFileInput } from '../utils/io';
 
 export default function TrailManager() {
-  const { trails, loading, saveTrail, deleteTrail, exportJSON, importJSON } = useTrailStore();
+  const { trails, loading, saveTrail, deleteTrail } = useTrailStore();
   const [search, setSearch] = useState('');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const navigate = useNavigate();
@@ -55,29 +54,6 @@ export default function TrailManager() {
     navigate(`/trail/${id}`);
   };
 
-  const handleExport = async () => {
-    const data = await exportJSON();
-    downloadBlob(JSON.stringify(data, null, 2), 'trail-data-export.json');
-  };
-
-  const handleImport = () => {
-    createImportFileInput(
-      async (imported) => {
-        await importJSON(imported);
-        alert('Data imported successfully!');
-      },
-      (msg) => alert(msg)
-    );
-  };
-
-  const handleExportForExcel = async () => {
-    const data = await exportJSON();
-    downloadBlob(
-      JSON.stringify({ trails: data.trails.trails, trail_details: data.trailDetails }, null, 2),
-      'export_for_excel.json'
-    );
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -113,15 +89,6 @@ export default function TrailManager() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             New Trail
-          </button>
-          <button onClick={handleExport} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm">
-            Export JSON
-          </button>
-          <button onClick={handleImport} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm">
-            Import JSON
-          </button>
-          <button onClick={handleExportForExcel} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm">
-            Export for Excel
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <input
