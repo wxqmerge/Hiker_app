@@ -21,12 +21,16 @@ function Test-Endpoint {
         [int]$ExpectedStatus = 200
     )
     try {
-        $Output = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 ($Base + $Path) | Out-String
-        $Code = [int]($Output.Trim())
+        $Url = $Base + $Path
+        $Result = & curl.exe -s -o NUL -w "%{http_code},%{time_total}" -k --max-time 5 $Url | Out-String
+        $Parts = $Result.Trim().Split(',')
+        $Code = [int]$Parts[0]
+        $Latency = [float]$Parts[1]
+        
         if ($Code -eq $ExpectedStatus) {
-            Write-Host "PASS $Label - HTTP $Code" -ForegroundColor Green
+            Write-Host "PASS $Label - HTTP $Code ($($Latency.ToString('F3'))s)" -ForegroundColor Green
         } else {
-            Write-Host "FAIL $Label - HTTP $Code (expected $ExpectedStatus)" -ForegroundColor Red
+            Write-Host "FAIL $Label - HTTP $Code (expected $ExpectedStatus, latency: $($Latency.ToString('F3'))s)" -ForegroundColor Red
             $script:Errors++
         }
     } catch {
@@ -43,11 +47,14 @@ function Test-ApiJson {
     )
     try {
         $Url = $ApiUrl + $Path
-        $CodeOutput = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 $Url | Out-String
-        $Code = [int]($CodeOutput.Trim())
+        $Result = & curl.exe -s -o NUL -w "%{http_code},%{time_total}" -k --max-time 5 $Url | Out-String
+        $Parts = $Result.Trim().Split(',')
+        $Code = [int]$Parts[0]
+        $Latency = [float]$Parts[1]
+
         if ($Code -eq 200) {
             if ($ExpectedKey) {
-                $RawBody = & curl.exe -s -k --max-time 5 $Url
+                $RawBody = (& curl.exe -s -k --max-time 5 $Url)
                 if ([string]::IsNullOrWhiteSpace($RawBody)) {
                     Write-Host "FAIL $Label - HTTP 200 but empty body" -ForegroundColor Red
                     $script:Errors++
@@ -57,9 +64,9 @@ function Test-ApiJson {
                         if ($Body.PSObject.Properties.Name -contains $ExpectedKey) {
                             $val = $Body.$ExpectedKey
                             $Count = if ($val -is [array]) { $val.Count } elseif ($val -is [hashtable]) { $val.Count } else { 1 }
-                            Write-Host "PASS $Label - $Count items" -ForegroundColor Green
+                            Write-Host "PASS $Label - $Count items ($($Latency.ToString('F3'))s)" -ForegroundColor Green
                         } else {
-                            Write-Host "PASS $Label - HTTP 200" -ForegroundColor Green
+                            Write-Host "PASS $Label - HTTP 200 ($($Latency.ToString('F3'))s)" -ForegroundColor Green
                         }
                     } catch {
                         Write-Host "FAIL $Label - Invalid JSON response: $_" -ForegroundColor Red
@@ -67,10 +74,42 @@ function Test-ApiJson {
                     }
                 }
             } else {
-                Write-Host "PASS $Label - HTTP 200" -ForegroundColor Green
+                Write-Host "PASS $Label - HTTP 200 ($($Latency.ToString('F3'))s)" -ForegroundColor Green
             }
         } else {
-            Write-Host "FAIL $Label - HTTP $Code" -ForegroundColor Red
+            Write-Host "FAIL $Label - HTTP $Code (expected 200, latency: $($Latency.ToString('F3'))s)" -ForegroundColor Red
+            $script:Errors++
+        }
+    } catch {
+        Write-Host "FAIL $Label - $_" -ForegroundColor Red
+        $script:Errors++
+    }
+}
+
+function Test-FrontendContent {
+    param(
+        [string]$Base,
+        [string]$Path,
+        [string]$Label,
+        [string]$ExpectedSelector
+    )
+    try {
+        $Url = $Base + $Path
+        $Result = & curl.exe -s -o NUL -w "%{http_code},%{time_total}" -k --max-time 5 $Url | Out-String
+        $Parts = $Result.Trim().Split(',')
+        $Code = [int]$Parts[0]
+        $Latency = [float]$Parts[1]
+
+        if ($Code -eq 200) {
+            $Body = (& curl.exe -s -k --max-time 5 $Url) | Out-String
+            if ($Body -match $ExpectedSelector) {
+                Write-Host "PASS $Label - HTTP 200 (found '$ExpectedSelector', $($Latency.ToString('F3'))s)" -ForegroundColor Green
+            } else {
+                Write-Host "FAIL $Label - HTTP 200 (missing '$ExpectedSelector', $($Latency.ToString('F3'))s)" -ForegroundColor Red
+                $script:Errors++
+            }
+        } else {
+            Write-Host "FAIL $Label - HTTP $Code (expected 200, latency: $($Latency.ToString('F3'))s)" -ForegroundColor Red
             $script:Errors++
         }
     } catch {
@@ -85,6 +124,7 @@ Write-Host ""
 
 Write-Host "--- Frontend ---"
 Test-Endpoint -Base $FrontendUrl -Path "/" -Label "Frontend (index.html)" -ExpectedStatus 200
+Test-FrontendContent -Base $FrontendUrl -Path "/" -Label "Frontend (index.html) content" -ExpectedSelector '<div id="root">'
 Test-Endpoint -Base $FrontendUrl -Path "/favicon.svg" -Label "Static assets" -ExpectedStatus 200
 
 Write-Host ""

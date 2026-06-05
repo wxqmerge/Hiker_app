@@ -133,6 +133,15 @@ else
     NEED_ENV=true
 fi
 
+# Check if server is actually responding locally
+if command -v curl &>/dev/null; then
+    if curl -sk --max-time 2 "http://localhost:$SERVER_PORT/health" >/dev/null 2>&1; then
+        pass "Server responding on localhost:$SERVER_PORT"
+    else
+        warn "Server process might be running but not responding on localhost:$SERVER_PORT"
+    fi
+fi
+
 # 5. Nginx config
 echo ""
 echo "--- Nginx ---"
@@ -210,7 +219,17 @@ else
     warn "systemctl not available (non-Linux?)"
 fi
 
-# 7. SSL certificate
+# 7. Disk Space
+echo ""
+echo "--- Disk Space ---"
+DISK_USAGE=$(df / --output=pcent | tail -1 | tr -dc '0-9')
+if [ "$DISK_USAGE" -gt 90 ]; then
+    fail "Disk space is critically low ($DISK_USAGE% used)"
+else
+    pass "Disk space is healthy ($DISK_USAGE% used)"
+fi
+
+# 8. SSL certificate
 echo ""
 echo "--- SSL ---"
 if command -v certbot &>/dev/null; then
@@ -228,7 +247,7 @@ else
     warn "certbot not installed"
 fi
 
-# 8. HTTPS checks
+# 9. HTTPS checks
 echo ""
 echo "--- HTTPS Check ---"
 if command -v curl &>/dev/null; then
