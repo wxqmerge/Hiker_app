@@ -446,6 +446,12 @@ export default function ScheduleBuilder() {
     }
   };
 
+  const handleClearCurrentSchedule = () => {
+    if (!confirm('Clear the current schedule? Your history will be preserved.')) return;
+    setScheduleStore({});
+    closeHistory();
+  };
+
   const toggleEarlyStart = (day) => {
     const entry = (scheduleStore[MONTH_NAMES[selectedMonth]] || {})[day];
     if (!entry) return;
@@ -852,9 +858,12 @@ const hikeCards = useMemo(() => {
                 Schedule History ({historyEntries.length})
               </h3>
               <div className="flex items-center gap-2">
+                <button onClick={handleClearCurrentSchedule} disabled={!hasApiKey} className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}>
+                  Clear Schedule
+                </button>
                 {historyEntries.length > 0 && (
-                  <button onClick={handleClearHistory} disabled={!hasApiKey} className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}>
-                    Clear All
+                  <button onClick={handleClearHistory} disabled={!hasApiKey} className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-orange-600 hover:bg-orange-50' : 'text-gray-300 cursor-not-allowed'}`}>
+                    Clear History
                   </button>
                 )}
                 <button onClick={closeHistory} className="text-gray-400 hover:text-gray-600">
