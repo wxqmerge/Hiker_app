@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
@@ -82,17 +82,6 @@ export default function ScheduleBuilder() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(() => !!localStorage.getItem('hiker-api-key'));
-  const [searchParams] = useSearchParams();
-
-  // Load API key from URL if present
-  useEffect(() => {
-    const urlKey = searchParams.get('apikey');
-    if (urlKey) {
-      localStorage.setItem('hiker-api-key', urlKey);
-      setHasApiKey(true);
-    }
-  }, [searchParams]);
-
   // Load server schedule into local store on mount
   useEffect(() => {
     if (scheduleData && Object.keys(scheduleData).length > 0) {
