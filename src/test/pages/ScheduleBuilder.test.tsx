@@ -54,13 +54,15 @@ describe('ScheduleBuilder', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('renders Export to Text File button', () => {
+  it('renders Export Monthly Description in settings menu', () => {
     render(
       <MemoryRouter initialEntries={['/schedule']}>
         <ScheduleBuilder />
       </MemoryRouter>
     );
-    expect(screen.getByText('Export to Text File')).toBeInTheDocument();
+    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    fireEvent.click(settingsBtn);
+    expect(screen.getByText('Export Monthly Description')).toBeInTheDocument();
   });
 
   it('renders FilterPanel', () => {
@@ -108,10 +110,10 @@ describe('ScheduleBuilder', () => {
     );
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText('Export Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Export Monthly Description')).toBeInTheDocument();
   });
 
-  it('shows Export Schedule button', () => {
+  it('shows Export Quarterly Schedule button', () => {
     render(
       <MemoryRouter initialEntries={['/schedule']}>
         <ScheduleBuilder />
@@ -119,10 +121,10 @@ describe('ScheduleBuilder', () => {
     );
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText('Export Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Export Quarterly Schedule')).toBeInTheDocument();
   });
 
-  it('shows Import button', () => {
+  it('shows Import Excel Schedule button', () => {
     render(
       <MemoryRouter initialEntries={['/schedule']}>
         <ScheduleBuilder />
@@ -130,7 +132,7 @@ describe('ScheduleBuilder', () => {
     );
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText('Import JSON')).toBeInTheDocument();
+    expect(screen.getByText(/Import Excel Schedule/)).toBeInTheDocument();
   });
 
   it('shows Clear All Data button', () => {
@@ -144,7 +146,7 @@ describe('ScheduleBuilder', () => {
     expect(screen.getByText('Clear All Data')).toBeInTheDocument();
   });
 
-  it('shows Export Hike Edits button', () => {
+  it('shows Debug Mode toggle', () => {
     render(
       <MemoryRouter initialEntries={['/schedule']}>
         <ScheduleBuilder />
@@ -152,18 +154,7 @@ describe('ScheduleBuilder', () => {
     );
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText('Export Hike Edits')).toBeInTheDocument();
-  });
-
-  it('shows Import Hike Edits button', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
-    fireEvent.click(settingsBtn);
-    expect(screen.getByText('Import Hike Edits')).toBeInTheDocument();
+    expect(screen.getByText(/Debug Mode/)).toBeInTheDocument();
   });
 
   it('handles month selection', () => {

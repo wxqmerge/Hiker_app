@@ -1,8 +1,18 @@
 import { Router } from 'express';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
-import { getSchedule, updateSchedule, updateScheduleMonth, getTrails } from '../services/dataService.js';
+import { getSchedule, updateSchedule, updateScheduleMonth, getTrails, loadData } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const execFileAsync = promisify(execFile);
+const PROJECT_ROOT = path.join(__dirname, '../../..');
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 } });
@@ -111,36 +121,74 @@ function matchHike(hikeName: string, trails: any[]): { id: string; score: number
   return bestScore >= 4 && bestMatch ? { id: bestMatch, score: bestScore } : null;
 }
 
-function parseXlsSheet(buffer: Buffer): Array<{ month: string; day: number; hike: string }> {
-  const wb = XLSX.read(buffer, { type: 'buffer' });
+function parseXlsSheet(buffer: Buffer): { hikes: Array<{ month: string; day: number; hike: string }>; error?: string } {
+  let wb: XLSX.WorkBook;
+  try {
+    wb = XLSX.read(buffer, { type: 'buffer' });
+  } catch (e) {
+    return { hikes: [], error: `Unable to read file: ${e instanceof Error ? e.message : 'Not a valid Excel file'}` };
+  }
+
+  if (!wb.SheetNames || wb.SheetNames.length === 0) {
+    return { hikes: [], error: 'File contains no worksheets' };
+  }
+
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][];
-  const numCols = rows[0]?.length || 0;
 
-  // Find header row
+  if (rows.length === 0) {
+    return { hikes: [], error: 'Worksheet is empty' };
+  }
+
+  const numCols = rows[0]?.length || 0;
+  if (numCols === 0) {
+    return { hikes: [], error: 'Worksheet contains no data columns' };
+  }
+
+  // Find header row with Month, Date, and Hike columns
   let headerRow = -1;
   for (let i = 0; i < Math.min(5, rows.length); i++) {
-    if (rows[i].some(c => safeStr(c) === 'Month')) {
+    const rowStrs = rows[i].map(c => safeStr(c).toLowerCase());
+    if (rowStrs.includes('month') && rowStrs.includes('date') && rowStrs.includes('hike')) {
       headerRow = i;
       break;
     }
   }
-  if (headerRow < 0) return [];
 
-  // Determine column layout
-  let cols: Array<[number, number, number]>;
-  if (numCols === 6) cols = [[0, 1, 2], [3, 4, 5]];
-  else if (numCols === 9) cols = [[0, 1, 2], [4, 5, 6]];
-  else if (numCols === 10) cols = [[0, 1, 2], [5, 6, 7]];
-  else if (numCols === 11) cols = [[0, 1, 2], [6, 7, 8]];
-  else if (numCols === 13) cols = [[0, 1, 2], [6, 7, 8]];
-  else return [];
+  if (headerRow < 0) {
+    const sample = rows[0].map(c => safeStr(c)).slice(0, 6).join(' | ');
+    return { hikes: [], error: `Cannot find expected columns (Month, Date, Hike). First row: "${sample}"` };
+  }
+
+  // Find all Month/Date/Hike column triplets for multi-week layouts
+  const allCols: Array<{ month: number; day: number; hike: number }> = [];
+  const headerRowStrs = rows[headerRow].map(c => safeStr(c).toLowerCase());
+  for (let c = 0; c < numCols - 1; c++) {
+    if (headerRowStrs[c] === 'month') {
+      for (let d = c + 1; d < numCols; d++) {
+        if (headerRowStrs[d] === 'date') {
+          for (let h = d + 1; h < numCols; h++) {
+            if (headerRowStrs[h] === 'hike') {
+              allCols.push({ month: c, day: d, hike: h });
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  if (allCols.length === 0) {
+    const headerSample = rows[headerRow].map(c => safeStr(c)).join(' | ');
+    return { hikes: [], error: `Found header row but cannot locate Month/Date/Hike columns. Headers: "${headerSample}"` };
+  }
 
   const hikes: Array<{ month: string; day: number; hike: string }> = [];
   let currentMonth = '';
 
   for (let i = headerRow + 1; i < rows.length; i++) {
-    for (const [mCol, dCol, hCol] of cols) {
+    for (const { month: mCol, day: dCol, hike: hCol } of allCols) {
       const monthVal = safeStr(rows[i]?.[mCol]);
       const dayVal = safeStr(rows[i]?.[dCol]);
       const hikeVal = safeStr(rows[i]?.[hCol]);
@@ -158,7 +206,7 @@ function parseXlsSheet(buffer: Buffer): Array<{ month: string; day: number; hike
     }
   }
 
-  return hikes;
+  return { hikes };
 }
 
 router.get('/', (_req, res) => {
@@ -248,30 +296,35 @@ router.post('/import-xls', upload.single('file'), async (req, res) => {
       return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
     }
 
-    const hikes = parseXlsSheet(req.file.buffer);
-    if (hikes.length === 0) {
+    const result = parseXlsSheet(req.file.buffer);
+    if (result.error) {
+      return res.status(400).json({ success: false, error: { message: result.error } });
+    }
+    if (result.hikes.length === 0) {
       return res.status(400).json({ success: false, error: { message: 'No valid hike data found in Excel file' } });
     }
 
     const trails = getTrails();
-    const matched: Array<{ month: string; day: number; hike: string; trail_id: string }> = [];
+    const matched: Array<{ month: string; day: number; hike: string; trail_id: string; early_start: boolean }> = [];
     const unmatched: Array<{ month: string; day: number; hike: string }> = [];
 
-    for (const h of hikes) {
-      const m = matchHike(h.hike, trails);
+    for (const h of result.hikes) {
+      const earlyStart = h.hike.toLowerCase().includes('early start');
+      const cleanHike = h.hike.replace(/\s*\(?\s*Early Start\s*\)?\s*/gi, '').trim();
+      const m = matchHike(cleanHike, trails);
       if (m) {
-        matched.push({ ...h, trail_id: m.id });
+        matched.push({ ...h, hike: cleanHike, trail_id: m.id, early_start: earlyStart });
       } else {
         unmatched.push(h);
       }
     }
 
     // Build schedule object grouped by month (full names to match client MONTH_NAMES)
-    const scheduleByMonth: Record<string, Record<string, { trail_id: string; hike: string | null }>> = {};
+    const scheduleByMonth: Record<string, Record<string, { trail_id: string; hike: string | null; early_start: boolean }>> = {};
     for (const entry of matched) {
       const fullMonth = MONTH_FULL[entry.month as keyof typeof MONTH_FULL] || entry.month;
       if (!scheduleByMonth[fullMonth]) scheduleByMonth[fullMonth] = {};
-      scheduleByMonth[fullMonth][String(entry.day)] = { trail_id: entry.trail_id, hike: entry.hike || null };
+      scheduleByMonth[fullMonth][String(entry.day)] = { trail_id: entry.trail_id, hike: entry.hike || null, early_start: entry.early_start };
     }
 
     res.json({
@@ -285,6 +338,78 @@ router.post('/import-xls', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('[SCHEDULE] Error importing XLS:', error);
     res.status(500).json({ success: false, error: { message: 'Failed to import Excel file' } });
+  }
+});
+
+// Import trail data from Hike Data BaseM.xls
+router.post('/import-trails-xls', requireAdminKey, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
+    }
+
+    // Restrict to exact filename
+    if (req.file.originalname !== 'Hike Data BaseM.xls') {
+      return res.status(400).json({
+        success: false,
+        error: { message: `Invalid filename: "${req.file.originalname}". Only "Hike Data BaseM.xls" is accepted.` }
+      });
+    }
+
+    // Save file to expected location
+    fs.writeFileSync(path.join(PROJECT_ROOT, 'Hike Data BaseM.xls'), req.file.buffer);
+
+    try {
+      // Check if Python is available
+      let pythonCmd = 'python';
+      try {
+        await execFileAsync(pythonCmd, ['--version']);
+      } catch {
+        pythonCmd = 'python3';
+        try {
+          await execFileAsync(pythonCmd, ['--version']);
+        } catch {
+          return res.status(500).json({
+            success: false,
+            error: { message: 'Python not found. Install Python 3 with pandas and openpyxl to import trail data.' }
+          });
+        }
+      }
+
+      const { stdout, stderr } = await execFileAsync(pythonCmd, [path.join(PROJECT_ROOT, 'extract_trails_xls.py')]);
+      if (stderr) {
+        console.warn('[TRAILS] Python script warnings:', stderr);
+      }
+
+      // Read the output JSON files
+      const trailsData = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'exported_data/trails.json'), 'utf-8'));
+      const detailsData = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'exported_data/trail_details.json'), 'utf-8'));
+      const lookupData = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'exported_data/lookup.json'), 'utf-8'));
+
+      // Update in-memory data by reloading dataService
+      // (module-level state, so we need to trigger a reload)
+      await loadData();
+      res.json({
+        success: true,
+        message: `Imported ${trailsData.trails.length} trails with ${Object.keys(detailsData).length} details`,
+        trailsCount: trailsData.trails.length,
+        detailsCount: Object.keys(detailsData).length,
+        difficulties: lookupData.difficulties?.length || 0,
+        stdout: stdout,
+      });
+    } catch (pyError) {
+      console.error('[TRAILS] Python script error:', pyError);
+      res.status(500).json({
+        success: false,
+        error: { message: `Failed to run extraction script: ${pyError instanceof Error ? pyError.message : 'Unknown error'}` }
+      });
+    } finally {
+      // Clean up the uploaded file (keep it for future use)
+      // Don't delete - it's the source of truth
+    }
+  } catch (error) {
+    console.error('[TRAILS] Error importing trails:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to import trail data' } });
   }
 });
 

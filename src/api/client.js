@@ -130,3 +130,24 @@ export async function importScheduleFromXls(file) {
 
   return res.json();
 }
+
+export async function importTrailsFromXls(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const apiKey = localStorage.getItem('hiker-api-key');
+  const res = await fetch(`${API_BASE}/api/schedule/import-trails-xls`, {
+    method: 'POST',
+    headers: {
+      'X-API-Key': apiKey || '',
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: { message: 'Import failed' } }));
+    throw new Error(error.error?.message || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}

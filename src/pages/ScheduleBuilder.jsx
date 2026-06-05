@@ -1,15 +1,14 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
-import { useTrailStore } from '../hooks/useTrailStore';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
-import { downloadBlob, createImportFileInput } from '../utils/io';
-import { importScheduleFromXls, updateSchedule } from '../api/client';
+import { downloadBlob } from '../utils/io';
+import { importScheduleFromXls, importTrailsFromXls, updateSchedule } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const MONTH_ABBR_TO_FULL = { Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April', May: 'May', Jun: 'June',
@@ -27,7 +26,7 @@ function serverScheduleToStore(serverData) {
     store[fullName] = {};
     for (const entry of entries) {
       const day = String(entry.day);
-      store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null };
+      store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start };
     }
   }
   return store;
@@ -42,7 +41,7 @@ function storeToServerSchedule(store) {
     serverData[abbr] = [];
     for (const [day, entry] of Object.entries(days)) {
       if (entry?.trail_id) {
-        serverData[abbr].push({ day: parseInt(day, 10), hike: entry.hike || '', trail_id: entry.trail_id });
+        serverData[abbr].push({ day: parseInt(day, 10), hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start });
       }
     }
     serverData[abbr].sort((a, b) => a.day - b.day);
@@ -73,7 +72,6 @@ export default function ScheduleBuilder() {
   const { trails, loading, lookup, schedule: scheduleData } = useTrails();
   const { filters, setFilters } = useFilters(trails);
   const trailDetails = useTrailDetails();
-  const { exportJSON, importJSON: importTrailData } = useTrailStore();
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     const nextMonth = (now.getMonth() + 1) % 12;
@@ -138,11 +136,11 @@ export default function ScheduleBuilder() {
     const result = {};
     Object.entries(raw).forEach(([day, val]) => {
       if (typeof val === 'string') {
-        result[day] = { trail_id: val, hike: null };
+        result[day] = { trail_id: val, hike: null, early_start: false };
       } else if (val && typeof val === 'object') {
-        result[day] = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null };
+        result[day] = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null, early_start: !!val.early_start };
       } else {
-        result[day] = { trail_id: null, hike: null };
+        result[day] = { trail_id: null, hike: null, early_start: false };
       }
     });
     return result;
@@ -274,7 +272,7 @@ export default function ScheduleBuilder() {
     return allDays
       .filter(day => assignedHikes[day]?.trail_id)
       .map(day => {
-        const { trail_id: trailId, hike: hikeName } = assignedHikes[day];
+        const { trail_id: trailId, hike: hikeName, early_start: earlyStart } = assignedHikes[day];
         const trail = findTrailById(trailId);
         if (!trail) return null;
         const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
@@ -292,6 +290,11 @@ export default function ScheduleBuilder() {
                 {day}
                 <span className="text-[8px]">{new Date(year, selectedMonth, day).getDay() === 3 ? 'W' : 'F'}</span>
               </div>
+              {earlyStart && (
+                <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start">
+                  ⏰
+                </div>
+              )}
               {debugMode && hikeIdx && (
                 <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                   {hikeIdx[0]}
@@ -320,12 +323,16 @@ export default function ScheduleBuilder() {
       return;
     }
 
+    // Preserve early_start from source day
+    const sourceEntry = sourceDay !== null && sourceDay !== undefined ? (scheduleStore[MONTH_NAMES[selectedMonth]] || {})[sourceDay] : null;
+    const earlyStart = sourceEntry?.early_start || false;
+
     updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
       const next = { ...prev };
       if (sourceDay !== null && sourceDay !== undefined) {
         delete next[sourceDay];
       }
-      next[targetDay] = { trail_id: trailId, hike: hikeName || null };
+      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart };
       return next;
     });
     setDragData(null);
@@ -356,35 +363,21 @@ export default function ScheduleBuilder() {
     });
   };
 
-  const exportSchedule = () => {
-    downloadBlob(JSON.stringify(scheduleStore, null, 2), `hiker-schedule-${new Date().toISOString().split('T')[0]}.json`);
-  };
-
-  const exportHikeEdits = async () => {
-    const data = await exportJSON();
-    downloadBlob(JSON.stringify(data, null, 2), `trail-data-${new Date().toISOString().split('T')[0]}.json`);
-  };
-
-  const importHikeEdits = () => {
-    createImportFileInput(
-      async (imported) => {
-        if (typeof imported !== 'object' || Array.isArray(imported)) {
-          alert('Invalid data file format');
-          return;
-        }
-        await importTrailData(imported);
-        alert('Trail data imported successfully!');
-      },
-      (msg) => alert(msg)
-    );
-    setShowSettings(false);
-  };
-
   const clearSchedule = () => {
     if (confirm('Clear all schedule data?')) {
       setScheduleStore({});
       setShowSettings(false);
     }
+  };
+
+  const toggleEarlyStart = (day) => {
+    const entry = (scheduleStore[MONTH_NAMES[selectedMonth]] || {})[day];
+    if (!entry) return;
+    updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
+      const next = { ...prev };
+      next[day] = { ...entry, early_start: !entry.early_start };
+      return next;
+    });
   };
 
   const importFromExcel = () => {
@@ -427,36 +420,34 @@ export default function ScheduleBuilder() {
     input.click();
   };
 
-  const importSchedule = () => {
-    createImportFileInput(
-      (imported) => {
-        if (typeof imported !== 'object' || Array.isArray(imported)) {
-          alert('Invalid schedule file format');
+  const importTrailsFromExcel = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xls';
+    input.style.display = 'none';
+    input.onchange = async () => {
+      if (!input.files?.[0]) return;
+      if (input.files[0].name !== 'Hike Data BaseM.xls') {
+        alert('Invalid file: "' + input.files[0].name + '". Only "Hike Data BaseM.xls" is accepted.');
+        document.body.removeChild(input);
+        return;
+      }
+      try {
+        const result = await importTrailsFromXls(input.files[0]);
+        if (!result.success) {
+          alert('Import failed: ' + (result.error?.message || 'Unknown error'));
           return;
         }
-        setScheduleStore(prev => {
-          const merged = { ...prev, ...imported };
-          const normalized = {};
-          Object.entries(merged).forEach(([month, days]) => {
-            normalized[month] = {};
-            Object.entries(days).forEach(([day, val]) => {
-              if (typeof val === 'string') {
-                normalized[month][day] = { trail_id: val, hike: null };
-              } else if (val?.trail_id) {
-                normalized[month][day] = { trail_id: val.trail_id, hike: val.hike || null };
-              } else {
-                normalized[month][day] = { trail_id: null, hike: null };
-              }
-            });
-          });
-          return normalized;
-        });
-        alert(`Imported ${Object.keys(imported).length} months of schedules`);
-        setShowSettings(false);
-      },
-      (msg) => alert(msg)
-    );
-    setShowSettings(false);
+        alert(result.message || 'Trail database imported successfully!');
+        window.location.reload();
+      } catch (err) {
+        alert('Import error: ' + err.message);
+      }
+      document.body.removeChild(input);
+      setShowSettings(false);
+    };
+    document.body.appendChild(input);
+    input.click();
   };
 
   const getQuarterForMonth = (monthIndex) => {
@@ -490,7 +481,8 @@ export default function ScheduleBuilder() {
         if (!entry || !entry.trail_id) continue;
 
         const trail = findTrailById(entry.trail_id);
-        const hikeName = trail ? trail.fullName || trail.name : entry.trail_id;
+        let hikeName = trail ? trail.fullName || trail.name : entry.trail_id;
+        if (entry.early_start) hikeName += ' (Early Start)';
 
         if (dayOfWeek === 3) {
           wedHikes.push({ month: monthAbbr, day, hike: hikeName });
@@ -569,7 +561,7 @@ export default function ScheduleBuilder() {
     let output = `Over-the-Hill Hike Descriptions -- ${month}, ${year}\n`;
 
     for (const day of wedFriDates) {
-      const { trail_id: trailId } = assignedHikes[day];
+      const { trail_id: trailId, early_start: earlyStart } = assignedHikes[day] || { trail_id: null, early_start: false };
       const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
 
       if (!trailId) {
@@ -580,7 +572,8 @@ export default function ScheduleBuilder() {
       const trail = findTrailById(trailId);
       if (trail) {
         const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-        const report = generateReportText(trail, detailsForTrail);
+        let report = generateReportText(trail, detailsForTrail);
+        if (earlyStart) report += ' (Early Start)';
         output += `${dayOfWeek}, ${month} ${day}\t${report}\n\n`;
       } else {
         output += `${dayOfWeek}, ${month} ${day}\tTBD\n\n`;
@@ -667,36 +660,21 @@ const hikeCards = useMemo(() => {
               </svg>
             </button>
             {showSettings && (
-              <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[160px] z-50">
+               <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[160px] z-50">
                 <button
-                  onClick={exportSchedule}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                >
+                    onClick={handleExport}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" />
+                    </svg>
+                    Export Monthly Description
+                  </button>
+               <button onClick={exportExcelSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Export Schedule
-                </button>
-                <button
-                  onClick={exportHikeEdits}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export Hike Edits
-                </button>
-                <button onClick={importHikeEdits} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Import Hike Edits
-                </button>
-                <button onClick={exportExcelSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export Excel Schedule
+                  Export Quarterly Schedule
                 </button>
                 <button onClick={importFromExcel} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -704,11 +682,11 @@ const hikeCards = useMemo(() => {
                   </svg>
                   Import Excel Schedule {!hasApiKey && '(need API key)'}
                 </button>
-                <button onClick={importSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button onClick={importTrailsFromExcel} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Import JSON
+                  Import Trail Database {!hasApiKey && '(need API key)'}
                 </button>
                 <button
                    onClick={() => setDebugMode(!debugMode)}
@@ -827,7 +805,7 @@ const hikeCards = useMemo(() => {
                 <div className="space-y-3">
                   {wedFriDates.map((day) => {
                     const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
-const { trail_id: trailId, hike: hikeName } = assignedHikes[day] || { trail_id: null, hike: null };
+                    const { trail_id: trailId, hike: hikeName, early_start: earlyStart } = assignedHikes[day] || { trail_id: null, hike: null, early_start: false };
                     const trail = findTrailById(trailId);
 
                     return (
@@ -861,6 +839,7 @@ const { trail_id: trailId, hike: hikeName } = assignedHikes[day] || { trail_id: 
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-gray-900 truncate">
                                   {trail ? trail.fullName || trail.name : hikeName}
+                                  {earlyStart && <span className="ml-1 text-orange-500" title="Early Start">⏰</span>}
                                 </div>
                                 <div className="text-xs text-gray-500 truncate">
                                   (ID: {trailId})
@@ -877,15 +856,26 @@ const { trail_id: trailId, hike: hikeName } = assignedHikes[day] || { trail_id: 
                             )}
                           </div>
                           {trailId && (
-                            <button
-                              onClick={() => removeHike(day)}
-                              className="ml-3 text-red-400 hover:text-red-600 transition-colors"
-                              title="Remove hike"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                            <div className="flex items-center gap-1 ml-3">
+                              <label className="flex items-center gap-1 cursor-pointer" title="Early Start">
+                                <input
+                                  type="checkbox"
+                                  checked={!!earlyStart}
+                                  onChange={() => toggleEarlyStart(day)}
+                                  className="w-4 h-4 text-orange-500 rounded"
+                                />
+                                <span className="text-xs text-gray-500">ES</span>
+                              </label>
+                              <button
+                                onClick={() => removeHike(day)}
+                                className="text-red-400 hover:text-red-600 transition-colors"
+                                title="Remove hike"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -897,22 +887,7 @@ const { trail_id: trailId, hike: hikeName } = assignedHikes[day] || { trail_id: 
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={handleExport}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm ${
-              assignedCount === 0
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
-            disabled={assignedCount === 0}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" />
-            </svg>
-            Export to Text File
-          </button>
-        </div>
+ 
       </main>
     </div>
   );
