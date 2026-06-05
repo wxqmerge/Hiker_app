@@ -106,6 +106,14 @@ export async function getScheduleDownload(quarter) {
   return res.blob();
 }
 
+export async function updateSchedule(schedule) {
+  return request('/api/schedule', {
+    method: 'PUT',
+    body: schedule,
+    apiKey: true,
+  });
+}
+
 export async function importScheduleFromXls(file) {
   const formData = new FormData();
   formData.append('file', file);

@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import FilterPanel from '../components/FilterPanel';
@@ -9,8 +9,46 @@ import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById } from '../utils/data';
 import { downloadBlob, createImportFileInput } from '../utils/io';
-import { importScheduleFromXls } from '../api/client';
+import { importScheduleFromXls, updateSchedule } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
+
+const MONTH_ABBR_TO_FULL = { Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April', May: 'May', Jun: 'June',
+  Jul: 'July', Aug: 'August', Sep: 'September', Oct: 'October', Nov: 'November', Dec: 'December' };
+const MONTH_FULL_TO_ABBR = { January: 'Jan', February: 'Feb', March: 'Mar', April: 'Apr', May: 'May', June: 'Jun',
+  July: 'Jul', August: 'Aug', September: 'Sep', October: 'Oct', November: 'Nov', December: 'Dec' };
+
+// Convert server schedule format to client format
+function serverScheduleToStore(serverData) {
+  const store = {};
+  if (!serverData) return store;
+  for (const [abbr, entries] of Object.entries(serverData)) {
+    const fullName = MONTH_ABBR_TO_FULL[abbr];
+    if (!fullName || !Array.isArray(entries)) continue;
+    store[fullName] = {};
+    for (const entry of entries) {
+      const day = String(entry.day);
+      store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null };
+    }
+  }
+  return store;
+}
+
+// Convert client store format back to server format
+function storeToServerSchedule(store) {
+  const serverData = {};
+  for (const [fullName, days] of Object.entries(store)) {
+    const abbr = MONTH_FULL_TO_ABBR[fullName];
+    if (!abbr || !days || typeof days !== 'object') continue;
+    serverData[abbr] = [];
+    for (const [day, entry] of Object.entries(days)) {
+      if (entry?.trail_id) {
+        serverData[abbr].push({ day: parseInt(day, 10), hike: entry.hike || '', trail_id: entry.trail_id });
+      }
+    }
+    serverData[abbr].sort((a, b) => a.day - b.day);
+  }
+  return serverData;
+}
 
 const DEBUG_STORAGE_KEY = 'hiker-schedule-debug';
 let prevSearch = null;
@@ -44,6 +82,56 @@ export default function ScheduleBuilder() {
   const [scheduleStore, setScheduleStore] = useState(() => {
     return {};
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(() => !!localStorage.getItem('hiker-api-key'));
+  const [searchParams] = useSearchParams();
+
+  // Load API key from URL if present
+  useEffect(() => {
+    const urlKey = searchParams.get('apikey');
+    if (urlKey) {
+      localStorage.setItem('hiker-api-key', urlKey);
+      setHasApiKey(true);
+    }
+  }, [searchParams]);
+
+  // Load server schedule into local store on mount
+  useEffect(() => {
+    if (scheduleData && Object.keys(scheduleData).length > 0) {
+      const converted = serverScheduleToStore(scheduleData);
+      setScheduleStore(prev => {
+        if (Object.keys(prev).length === 0) {
+          return converted;
+        }
+        return prev;
+      });
+    }
+  }, [scheduleData]);
+
+  // Save schedule to server (debounced 1s)
+  const saveTimeoutRef = useRef(null);
+  const saveScheduleToServer = useCallback(async () => {
+    const serverData = storeToServerSchedule(scheduleStore);
+    if (Object.keys(serverData).length === 0) return;
+    try {
+      setIsSaving(true);
+      await updateSchedule(serverData);
+    } catch (err) {
+      console.error('[ScheduleBuilder] Failed to save schedule:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [scheduleStore]);
+
+  useEffect(() => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveScheduleToServer();
+    }, 1000);
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [scheduleStore, saveScheduleToServer]);
 
   const assignedHikes = useMemo(() => {
     const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
@@ -371,6 +459,113 @@ export default function ScheduleBuilder() {
     setShowSettings(false);
   };
 
+  const getQuarterForMonth = (monthIndex) => {
+    if (monthIndex >= 2 && monthIndex <= 4) return { q: '2', months: ['Mar', 'Apr', 'May'], label: '2nd Quarter' };
+    if (monthIndex >= 5 && monthIndex <= 7) return { q: '3', months: ['Jun', 'Jul', 'Aug'], label: '3rd Quarter' };
+    if (monthIndex >= 8 && monthIndex <= 10) return { q: '4', months: ['Sep', 'Oct', 'Nov'], label: '4th Quarter' };
+    return { q: '1', months: ['Dec', 'Jan', 'Feb'], label: '1st Quarter' };
+  };
+
+  const getQuarterYear = (monthIndex) => {
+    if (monthIndex >= 8) return year;
+    return year - 1;
+  };
+
+  const exportExcelSchedule = () => {
+    const quarter = getQuarterForMonth(selectedMonth);
+    const qYear = getQuarterYear(selectedMonth);
+
+    // Collect all Wed and Fri hikes for the quarter
+    const wedHikes = [];
+    const friHikes = [];
+
+    for (const monthAbbr of quarter.months) {
+      const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthAbbr);
+      const daysInMonth = new Date(qYear, monthIndex + 1, 0).getDate();
+      const monthKey = MONTH_NAMES[monthIndex];
+      const monthData = scheduleStore[monthKey] || {};
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(qYear, monthIndex, day);
+        const dayOfWeek = date.getDay();
+        const entry = monthData[String(day)];
+        if (!entry || !entry.trail_id) continue;
+
+        const trail = findTrailById(entry.trail_id);
+        const hikeName = entry.hike || (trail ? trail.fullName || trail.name : entry.trail_id);
+
+        if (dayOfWeek === 3) {
+          wedHikes.push({ month: monthAbbr, day, hike: hikeName });
+        } else if (dayOfWeek === 5) {
+          friHikes.push({ month: monthAbbr, day, hike: hikeName });
+        }
+      }
+    }
+
+    // Build TSV matching Excel layout
+    const cols = 10;
+    const pad = (arr, len) => {
+      while (arr.length < len) arr.push('');
+      return arr;
+    };
+
+    let rows = [];
+
+    // Row 0: title
+    rows.push(pad(['', '', quarter.label + ' Hikes ' + qYear], cols));
+    rows.push(pad([], cols));
+    rows.push(pad([], cols));
+
+    // Row 3: headers
+    rows.push(pad(['Month', 'Wed', 'Hike', 'Leader / Shadow', '', 'Month', 'Fri', 'Hike', 'Leader / Shadow'], cols));
+
+    // Interleave Wed/Fri rows by month
+    const wedByMonth = {};
+    const friByMonth = {};
+    for (const m of quarter.months) {
+      wedByMonth[m] = wedHikes.filter(h => h.month === m);
+      friByMonth[m] = friHikes.filter(h => h.month === m);
+    }
+
+    for (const month of quarter.months) {
+      const weds = wedByMonth[month];
+      const fris = friByMonth[month];
+      const maxRows = Math.max(weds.length, fris.length);
+
+      for (let i = 0; i < maxRows; i++) {
+        const w = weds[i];
+        const f = fris[i];
+        const row = [];
+
+        // Left side (Wed)
+        if (i === 0) row.push(month);
+        else row.push('');
+        row.push(w ? String(w.day) : '');
+        row.push(w ? w.hike : '');
+        row.push('');
+
+        // Spacer
+        row.push('');
+
+        // Right side (Fri)
+        if (i === 0) row.push(month);
+        else row.push('');
+        row.push(f ? String(f.day) : '');
+        row.push(f ? f.hike : '');
+        row.push('');
+
+        rows.push(pad(row, cols));
+      }
+    }
+
+    // Alternate hikes section
+    rows.push(pad([], cols));
+    rows.push(pad(['', '', 'Alternate Wednesday Hike', '', '', '', 'Alternate Friday Hike', '', ''], cols));
+
+    const tsv = rows.map(r => r.join('\t')).join('\n');
+    downloadBlob(tsv, `${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
+  };
+
   const handleExport = () => {
     const month = MONTH_NAMES[selectedMonth];
     let output = `Over-the-Hill Hike Descriptions -- ${month}, ${year}\n`;
@@ -499,11 +694,17 @@ const hikeCards = useMemo(() => {
                   </svg>
                   Import Hike Edits
                 </button>
-                <button onClick={importFromExcel} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button onClick={exportExcelSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export Excel Schedule
+                </button>
+                <button onClick={importFromExcel} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Import Excel Schedule
+                  Import Excel Schedule {!hasApiKey && '(need API key)'}
                 </button>
                 <button onClick={importSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

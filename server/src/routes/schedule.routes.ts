@@ -165,6 +165,16 @@ router.get('/', (_req, res) => {
   res.json(getSchedule());
 });
 
+router.put('/', requireAdminKey, async (req, res) => {
+  try {
+    await updateSchedule(req.body);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[SCHEDULE] Error updating schedule:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to update schedule' } });
+  }
+});
+
 router.get('/report', (req, res) => {
   const quarter = req.query.quarter as string;
   if (!quarter) {
