@@ -1,9 +1,12 @@
 param(
     [Parameter(Mandatory=$true)]
-    [string]$Url
+    [string]$FrontendUrl,
+    [Parameter(Mandatory=$false)]
+    [string]$ApiUrl
 )
 
-$Url = $Url.TrimEnd('/')
+$FrontendUrl = $FrontendUrl.TrimEnd('/')
+$ApiUrl = if ($ApiUrl) { $ApiUrl.TrimEnd('/') } else { $FrontendUrl }
 $ErrorActionPreference = 'Stop'
 
 Clear-Host
@@ -12,12 +15,13 @@ $Warnings = 0
 
 function Test-Endpoint {
     param(
+        [string]$Base,
         [string]$Path,
         [string]$Label,
         [int]$ExpectedStatus = 200
     )
     try {
-        $Output = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 ($Url + $Path) | Out-String
+        $Output = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 ($Base + $Path) | Out-String
         $Code = [int]($Output.Trim())
         if ($Code -eq $ExpectedStatus) {
             Write-Host "PASS $Label - HTTP $Code" -ForegroundColor Green
@@ -38,13 +42,17 @@ function Test-ApiJson {
         [string]$ExpectedKey
     )
     try {
-        $CodeOutput = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 ($Url + $Path) | Out-String
+        $CodeOutput = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 ($ApiUrl + $Path) | Out-String
         $Code = [int]($CodeOutput.Trim())
         if ($Code -eq 200) {
-            $Body = (& curl.exe -s -k --max-time 5 ($Url + $Path)) | ConvertFrom-Json
-            if ($ExpectedKey -and $Body.PSObject.Properties.Name -contains $ExpectedKey) {
-                $Count = if ($Body.$ExpectedKey -is [array]) { $Body.$ExpectedKey.Count } elseif ($Body.$ExpectedKey -is [hashtable]) { $Body.$ExpectedKey.Count } else { 1 }
-                Write-Host "PASS $Label - $Count items" -ForegroundColor Green
+            if ($ExpectedKey) {
+                $Body = (& curl.exe -s -k --max-time 5 ($ApiUrl + $Path)) | ConvertFrom-Json
+                if ($Body.PSObject.Properties.Name -contains $ExpectedKey) {
+                    $Count = if ($Body.$ExpectedKey -is [array]) { $Body.$ExpectedKey.Count } elseif ($Body.$ExpectedKey -is [hashtable]) { $Body.$ExpectedKey.Count } else { 1 }
+                    Write-Host "PASS $Label - $Count items" -ForegroundColor Green
+                } else {
+                    Write-Host "PASS $Label - HTTP 200" -ForegroundColor Green
+                }
             } else {
                 Write-Host "PASS $Label - HTTP 200" -ForegroundColor Green
             }
@@ -58,16 +66,17 @@ function Test-ApiJson {
     }
 }
 
-Write-Host "`n=== Testing $Url ==="
+Write-Host "`n=== Testing Frontend: $FrontendUrl ==="
+Write-Host "=== Testing API:      $ApiUrl ==="
 Write-Host ""
 
 Write-Host "--- Frontend ---"
-Test-Endpoint -Path "/" -Label "Frontend (index.html)" -ExpectedStatus 200
-Test-Endpoint -Path "/assets/" -Label "Static assets" -ExpectedStatus 200
+Test-Endpoint -Base $FrontendUrl -Path "/" -Label "Frontend (index.html)" -ExpectedStatus 200
+Test-Endpoint -Base $FrontendUrl -Path "/assets/" -Label "Static assets" -ExpectedStatus 200
 
 Write-Host ""
 Write-Host "--- Server ---"
-Test-Endpoint -Path "/health" -Label "Health check" -ExpectedStatus 200
+Test-Endpoint -Base $ApiUrl -Path "/health" -Label "Health check" -ExpectedStatus 200
 
 Write-Host ""
 Write-Host "--- API ---"
@@ -78,9 +87,9 @@ Test-ApiJson -Path "/api/schedule" -Label "GET /api/schedule" -ExpectedKey ""
 
 Write-Host ""
 Write-Host "--- SPA Routing ---"
-Test-Endpoint -Path "/trail/360_Rd" -Label "Trail detail page" -ExpectedStatus 200
-Test-Endpoint -Path "/trails" -Label "Trail manager page" -ExpectedStatus 200
-Test-Endpoint -Path "/schedule" -Label "Schedule builder page" -ExpectedStatus 200
+Test-Endpoint -Base $FrontendUrl -Path "/trail/360_Rd" -Label "Trail detail page" -ExpectedStatus 200
+Test-Endpoint -Base $FrontendUrl -Path "/trails" -Label "Trail manager page" -ExpectedStatus 200
+Test-Endpoint -Base $FrontendUrl -Path "/schedule" -Label "Schedule builder page" -ExpectedStatus 200
 
 Write-Host ""
 Write-Host "=== Summary ==="
