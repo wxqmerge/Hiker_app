@@ -88,7 +88,31 @@ else
     fail "package.json missing"
 fi
 
-# 3. Build output
+# 3. Python dependencies (needed for .xls import)
+echo ""
+echo "--- Python ---"
+PYTHON_CMD=""
+if command -v python3 &>/dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &>/dev/null; then
+    PYTHON_CMD="python"
+fi
+
+if [ -n "$PYTHON_CMD" ]; then
+    pass "Python found ($PYTHON_CMD)"
+    $PYTHON_CMD -c "import pandas" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        pass "pandas is installed"
+    else
+        fail "pandas not installed — .xls import will fail"
+        echo "  Fix: pip3 install pandas openpyxl"
+    fi
+else
+    fail "Python not found — .xls import will fail"
+    echo "  Fix: install Python 3.8+ and pip3 install pandas openpyxl"
+fi
+
+# 4. Build output
 echo ""
 echo "--- Build ---"
 if [ -d "dist" ]; then
@@ -106,7 +130,7 @@ else
     NEED_BUILD=true
 fi
 
-# 4. Server
+# 5. Server
 echo ""
 echo "--- Server ---"
 if [ -d "server/dist" ]; then
@@ -150,7 +174,7 @@ if command -v curl &>/dev/null; then
     fi
 fi
 
-# 5. Nginx config
+# 6. Nginx config
 echo ""
 echo "--- Nginx ---"
 if [ -f "$NGINX_CONF" ]; then
@@ -228,7 +252,7 @@ else
     warn "nginx not installed"
 fi
 
-# 6. Service
+# 7. Service
 echo ""
 echo "--- Service ---"
 if command -v systemctl &>/dev/null; then
@@ -248,7 +272,7 @@ else
     warn "systemctl not available (non-Linux?)"
 fi
 
-# 7. Disk Space
+# 8. Disk Space
 echo ""
 echo "--- Disk Space ---"
 DISK_USAGE=$(df / --output=pcent | tail -1 | tr -dc '0-9')
@@ -258,7 +282,7 @@ else
     pass "Disk space is healthy ($DISK_USAGE% used)"
 fi
 
-# 8. SSL certificate
+# 9. SSL certificate
 echo ""
 echo "--- SSL ---"
 if command -v certbot &>/dev/null; then
@@ -276,7 +300,7 @@ else
     warn "certbot not installed"
 fi
 
-# 9. HTTPS checks
+# 10. HTTPS checks
 echo ""
 echo "--- HTTPS Check ---"
 if command -v curl &>/dev/null; then
