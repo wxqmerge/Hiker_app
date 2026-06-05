@@ -107,9 +107,23 @@ if [ -n "$PYTHON_CMD" ]; then
         fail "pandas not installed — .xls import will fail"
         echo "  Fix: sudo apt install python3-pandas python3-openpyxl"
     fi
+    $PYTHON_CMD -c "import xlrd" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        pass "xlrd is installed"
+    else
+        fail "xlrd not installed — binary .xls import will fail"
+        echo "  Fix: sudo apt install python3-xlrd"
+    fi
+    $PYTHON_CMD -c "import openpyxl" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        pass "openpyxl is installed"
+    else
+        warn "openpyxl not installed — .xlsx import will fail"
+        echo "  Fix: sudo apt install python3-openpyxl"
+    fi
 else
     fail "Python not found — .xls import will fail"
-    echo "  Fix: sudo apt install python3 python3-pandas python3-openpyxl"
+    echo "  Fix: sudo apt install python3 python3-pandas python3-xlrd python3-openpyxl"
 fi
 
 # 4. Build output
