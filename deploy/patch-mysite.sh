@@ -22,7 +22,7 @@ sudo sed -i '/^    listen 443 ssl;/i\
     # Hiker app - serve frontend from /sothh-app/\
     location /sothh-app/ {\
         alias '"$HIKER_ROOT"'/dist/;\
-        try_files $uri $uri/ /sothh-app/index.html;\
+        try_files $uri $uri/ /index.html;\
     }\
 ' "$MYCONF"
 
