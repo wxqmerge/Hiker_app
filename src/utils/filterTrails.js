@@ -35,7 +35,12 @@ export function filterTrails(items, filters) {
       const seasonal = t.seasonal || {};
       const matchesMonth = filters.months.some(monthIdx => {
         const monthName = MONTH_ABBR[monthIdx];
-        return monthName && seasonal[monthName] > 0;
+        if (monthName && seasonal[monthName] > 0) return true;
+        // Handle { availableMonths: [1, 2, 3] } format (1=Jan, 2=Feb, ...)
+        if (Array.isArray(seasonal.availableMonths)) {
+          return seasonal.availableMonths.includes(monthIdx + 1);
+        }
+        return false;
       });
       if (!matchesMonth) return false;
     }
@@ -63,12 +68,21 @@ export function sortTrails(items, filters, nameKey = 'name') {
     const selectedMonthNames = filters.months.length > 0
       ? filters.months.map(i => MONTH_ABBR[i])
       : MONTH_ABBR;
+    const getSeasonalScore = (seasonal) => {
+      if (!seasonal) return 0;
+      // Standard { Jan: 3, Feb: 2, ... } format
+      const keyed = selectedMonthNames.reduce((sum, m) => sum + (seasonal[m] || 0), 0);
+      if (keyed > 0) return keyed;
+      // { availableMonths: [1, 2, 3] } format
+      if (Array.isArray(seasonal.availableMonths)) {
+        return selectedMonthNames.reduce((sum, _, i) => sum + (seasonal.availableMonths.includes(i + 1) ? 1 : 0), 0);
+      }
+      return 0;
+    };
     sorted.sort((a, b) => {
       const sa = (a.trail || a).seasonal || {};
       const sb = (b.trail || b).seasonal || {};
-      const scoreA = selectedMonthNames.reduce((sum, m) => sum + (sa[m] || 0), 0);
-      const scoreB = selectedMonthNames.reduce((sum, m) => sum + (sb[m] || 0), 0);
-      return scoreB - scoreA;
+      return getSeasonalScore(sb) - getSeasonalScore(sa);
     });
   } else if (filters.sortBy === 'elevation-up') {
     sorted.sort((a, b) => ((a.trail || a).elevationStart || 0) - ((b.trail || b).elevationStart || 0));

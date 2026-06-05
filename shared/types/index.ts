@@ -46,6 +46,7 @@ interface ScheduleEntry {
   day: number;
   hike: string;
   trail_id: string;
+  early_start?: boolean;
 }
 
 export interface ScheduleData {

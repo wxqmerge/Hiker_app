@@ -11,6 +11,85 @@ const DATA_DIR = path.join(__dirname, '../../../exported_data');
 
 console.log(`[DATA] Loading from: ${DATA_DIR}`);
 
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const FULL_TO_ABBR: Record<string, string> = Object.fromEntries(MONTH_FULL.map((f, i) => [f, MONTH_ABBR[i]]));
+const ABBR_SET = new Set(MONTH_ABBR);
+
+function isMonthAbbr(key: string): boolean {
+  return ABBR_SET.has(key);
+}
+
+function fullToAbbr(key: string): string | null {
+  return FULL_TO_ABBR[key] || null;
+}
+
+// Normalize seasonal data: handle { availableMonths: [3,4,5] } → { Mar: 1, Apr: 1, May: 1 }
+function normalizeSeasonal(seasonal: any): any {
+  if (!seasonal || typeof seasonal !== 'object') return {};
+  // Already has month-keyed numbers — pass through
+  if (Object.keys(seasonal).some(k => ABBR_SET.has(k))) return seasonal;
+  // Has availableMonths array — convert to month-keyed format
+  if (Array.isArray(seasonal.availableMonths)) {
+    const result: any = {};
+    for (const m of seasonal.availableMonths) {
+      const idx = typeof m === 'number' ? m : parseInt(m, 10);
+      if (idx >= 1 && idx <= 12) {
+        result[MONTH_ABBR[idx - 1]] = 1;
+      }
+    }
+    if (seasonal.bestSeason) result.bestSeason = seasonal.bestSeason;
+    return result;
+  }
+  return seasonal;
+}
+
+// Normalize schedule entry: ensure day is number, hike/trail_id are strings
+function normalizeEntry(entry: any): any {
+  const day = typeof entry.day === 'string' ? parseInt(entry.day, 10) : entry.day;
+  if (isNaN(day)) return null;
+  return {
+    day,
+    hike: String(entry.hike || ''),
+    trail_id: String(entry.trail_id || ''),
+    early_start: !!entry.early_start,
+  };
+}
+
+// Normalize schedule: handle full month names, dict-based entries, string days
+function normalizeSchedule(schedule: any): ScheduleData {
+  if (!schedule || typeof schedule !== 'object') return {};
+  const result: ScheduleData = {};
+
+  for (const [key, value] of Object.entries(schedule)) {
+    // Normalize month key: full name → abbreviation
+    let monthKey = key;
+    if (!isMonthAbbr(key)) {
+      const abbr = fullToAbbr(key);
+      if (!abbr) continue; // Unknown month, skip
+      monthKey = abbr;
+    }
+
+    // Case 1: Array of entries (canonical format)
+    if (Array.isArray(value)) {
+      const entries = value.map(normalizeEntry).filter((e): e is NonNullable<typeof e> => e !== null);
+      if (entries.length > 0) result[monthKey] = entries;
+    }
+    // Case 2: Dict of day→entry (import_schedule_xls.py format)
+    else if (value && typeof value === 'object' && !('day' in value)) {
+      const entries: any[] = [];
+      for (const [dayStr, dayEntry] of Object.entries(value)) {
+        const entry = normalizeEntry({ day: dayStr, ...dayEntry });
+        if (entry) entries.push(entry);
+      }
+      entries.sort((a, b) => a.day - b.day);
+      if (entries.length > 0) result[monthKey] = entries;
+    }
+  }
+
+  return result;
+}
+
 let trails: Trail[] = [];
 let trailDetails: TrailDetailsData = {};
 let lookup: LookupData = { difficulties: [], parkingLevels: {} };
@@ -69,11 +148,12 @@ export async function loadData(): Promise<void> {
   console.log('[DATA] Loading trail data...');
 
   const trailsData: TrailsData = await loadFile('trails.json', { trails: [] });
-  trails = trailsData.trails || [];
+  const rawTrails = Array.isArray(trailsData.trails) ? trailsData.trails : [];
+  trails = rawTrails.map(t => ({ ...t, seasonal: normalizeSeasonal(t.seasonal) }));
 
   trailDetails = await loadFile('trail_details.json', {});
   lookup = await loadFile('lookup.json', { difficulties: [], parkingLevels: {} });
-  schedule = await loadFile('schedule.json', {});
+  schedule = normalizeSchedule(await loadFile('schedule.json', {}));
 
   console.log(`[DATA] Loaded ${trails.length} trails, ${Object.keys(trailDetails).length} details`);
   console.log(`[DATA] Schedule months: ${Object.keys(schedule).join(', ') || '(none)'}`);
@@ -173,7 +253,9 @@ export async function getScheduleHistory(): Promise<Array<{ timestamp: string; e
           }
         }
         entries.push({ timestamp: parsed.timestamp, entryCount: count, months: monthNames, fileName: f });
-      } catch { /* skip corrupt files */ }
+      } catch (err) {
+        console.warn(`[DATA] Skipping corrupt history file ${f}:`, (err as Error).message);
+      }
     }
     entries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
     return entries;
@@ -205,7 +287,9 @@ export async function restoreScheduleByTimestamp(timestamp: string): Promise<Sch
         await writeWithHealth(path.join(DATA_DIR, 'schedule.json'), schedule);
         return schedule;
       }
-    } catch { /* skip */ }
+    } catch (err) {
+        console.warn(`[DATA] Skipping corrupt history file ${f} during restore:`, (err as Error).message);
+      }
   }
   throw new Error(`No history entry found for timestamp: ${timestamp}`);
 }

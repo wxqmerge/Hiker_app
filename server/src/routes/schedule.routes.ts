@@ -87,8 +87,8 @@ router.delete('/history', requireAdminKey, async (_req, res) => {
 });
 
 router.get('/report', (req, res) => {
-  const quarter = req.query.quarter as string;
-  if (!quarter) {
+  const quarter = (Array.isArray(req.query.quarter) ? req.query.quarter[0] : req.query.quarter) as string;
+  if (!quarter || typeof quarter !== 'string') {
     return res.status(400).json({ success: false, error: { message: 'quarter query parameter required' } });
   }
 
@@ -115,8 +115,8 @@ router.get('/report', (req, res) => {
 });
 
 router.get('/download', (req, res) => {
-  const quarter = req.query.quarter as string;
-  if (!quarter) {
+  const quarter = (Array.isArray(req.query.quarter) ? req.query.quarter[0] : req.query.quarter) as string;
+  if (!quarter || typeof quarter !== 'string') {
     return res.status(400).json({ success: false, error: { message: 'quarter query parameter required' } });
   }
 
