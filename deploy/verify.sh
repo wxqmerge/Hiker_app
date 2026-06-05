@@ -215,12 +215,12 @@ echo ""
 echo "--- Service ---"
 if command -v systemctl &>/dev/null; then
     SERVICE_STATE=$(systemctl show -p ActiveState --value "$SERVICE" 2>/dev/null || echo "unknown")
-    if [ "$SERVICE_STATE" = "active" ]; then
+    if systemctl is-active --quiet "$SERVICE"; then
         pass "$SERVICE service is running"
-    elif [ "$SERVICE_STATE" = "activating" ]; then
+    elif systemctl show -p ActiveState --value "$SERVICE" | grep -q "activating"; then
         warn "$SERVICE service is activating (it may take a moment to respond)"
     else
-        fail "$SERVICE service is not running ($SERVICE_STATE)"
+        fail "$SERVICE service is not running ($(systemctl show -p ActiveState --value "$SERVICE" || echo "unknown"))"
         NEED_SERVICE_START=true
         if [ "$FIX" = true ]; then
             echo "  Fix: sudo systemctl start $SERVICE"
