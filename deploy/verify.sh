@@ -148,7 +148,7 @@ echo "--- Nginx ---"
             NEED_NGINX_RELOAD=true
         fi
 
-        if grep -q "proxy_pass.*localhost:$SERVER_PORT" "$NGINX_CONF"; then
+        if grep -qE "proxy_pass.*(localhost|127\.0\.0\.1):$SERVER_PORT" "$NGINX_CONF"; then
         pass "Proxy to Express configured (port $SERVER_PORT)"
     else
         warn "Proxy to Express not configured — all requests will fail"
@@ -232,11 +232,13 @@ fi
 echo ""
 echo "--- HTTPS Check ---"
 if command -v curl &>/dev/null; then
-    HTTPS_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "https://$DOMAIN/" 2>/dev/null || echo "000")
+    # Use FRONTEND_URL if set, otherwise default to the domain root
+    FRONTEND_URL="${FRONTEND_URL:-https://$DOMAIN/}"
+    HTTPS_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "$FRONTEND_URL" 2>/dev/null || echo "000")
     if [ "$HTTPS_CODE" = "200" ]; then
-        pass "HTTPS 200 from $DOMAIN (frontend)"
+        pass "HTTPS 200 from $FRONTEND_URL (frontend)"
     else
-        fail "HTTPS $HTTPS_CODE from $DOMAIN (frontend)"
+        fail "HTTPS $HTTPS_CODE from $FRONTEND_URL (frontend)"
     fi
 
     HEALTH_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "https://$DOMAIN/health" 2>/dev/null || echo "000")
