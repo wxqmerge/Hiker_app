@@ -6,7 +6,7 @@
 - `scripts/`: Build helpers (`compile-shared.js`, `patch-shared-imports.js`, `flatten-server-dist.js`)
 - `deploy/`: Deployment scripts (never commit)
 - `exported_data/`: Server-side JSON data (never commit)
-- **Never commit**: `*.xls*`, `exported_data/`, `node_modules/`, `dist/`, `server/dist/`
+- **Never commit**: `*.xls*`, `exported_data/`, `node_modules/`, `dist/`, `server/dist/`, `deploy/.env`, `deploy/hiker.conf`, `server/.env`
 
 ## Commands
 ```
