@@ -290,7 +290,7 @@ router.get('/download', (req, res) => {
   res.type('text/tab-separated-values').send(tsv);
 });
 
-router.post('/import-xls', upload.single('file'), async (req, res) => {
+router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });

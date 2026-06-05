@@ -118,8 +118,12 @@ export async function importScheduleFromXls(file) {
   const formData = new FormData();
   formData.append('file', file);
 
+  const apiKey = localStorage.getItem('hiker-api-key');
   const res = await fetch(`${API_BASE}/api/schedule/import-xls`, {
     method: 'POST',
+    headers: {
+      'X-API-Key': apiKey || '',
+    },
     body: formData,
   });
 

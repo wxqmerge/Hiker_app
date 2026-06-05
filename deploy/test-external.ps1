@@ -185,19 +185,7 @@ Test-ApiJson -Path "/api/lookup" -Label "GET /api/lookup" -ExpectedKey ""
 Test-ApiJson -Path "/api/schedule" -Label "GET /api/schedule" -ExpectedKey ""
 Test-WriteEndpoint -Base $ApiUrl -Path "/api/schedule" -Label "PUT /api/schedule" -Method "PUT" -ExpectedStatusNoAuth 401 -ExpectedStatusWithAuth 200
 Test-WriteEndpoint -Base $ApiUrl -Path "/api/schedule/import-trails-xls" -Label "POST /api/schedule/import-trails-xls" -Method "POST" -ExpectedStatusNoAuth 401 -ExpectedStatusWithAuth 400
-try {
-    $Result = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 -X POST -H "Content-Type: application/json" -d '{}' "$ApiUrl/api/schedule/import-xls" | Out-String
-    $Code = [int]$Result.Trim()
-    if ($Code -eq 400) {
-        Write-Host "PASS POST /api/schedule/import-xls (no file) - HTTP $Code" -ForegroundColor Green
-    } else {
-        Write-Host "FAIL POST /api/schedule/import-xls (no file) - HTTP $Code (expected 400)" -ForegroundColor Red
-        $script:Errors++
-    }
-} catch {
-    Write-Host "FAIL POST /api/schedule/import-xls (no file) - $_" -ForegroundColor Red
-    $script:Errors++
-}
+Test-WriteEndpoint -Base $ApiUrl -Path "/api/schedule/import-xls" -Label "POST /api/schedule/import-xls" -Method "POST" -ExpectedStatusNoAuth 401 -ExpectedStatusWithAuth 400
 Test-Endpoint -Base $ApiUrl -Path "/api/schedule/report?quarter=Q1" -Label "GET /api/schedule/report" -ExpectedStatus 200
 Test-Endpoint -Base $ApiUrl -Path "/api/schedule/download?quarter=Q1" -Label "GET /api/schedule/download" -ExpectedStatus 200
 
