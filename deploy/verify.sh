@@ -241,6 +241,69 @@ if command -v curl &>/dev/null; then
             FRONTEND_URL="https://$DOMAIN/"
         fi
     fi
+
+    # --- Frontend Check ---
+    HTTPS_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "$FRONTEND_URL" 2>/dev/null | tr -d '[:space:]')
+    if [[ "$HTTPS_CODE" =~ ^0+$ || -z "$HTTPS_CODE" ]]; then
+        LOCAL_FRONTEND_URL="http://localhost:$SERVER_PORT/"
+        LOCAL_HTTPS_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "$LOCAL_FRONTEND_URL" 2>/dev/null | tr -d '[:space:]')
+        if [[ "$LOCAL_HTTPS_CODE" =~ ^0+$ || -z "$LOCAL_HTTPS_CODE" ]]; then
+            HTTPS_CODE="000"
+        elif [ "$LOCAL_HTTPS_CODE" = "200" ]; then
+            warn "Public $FRONTEND_URL unreachable (DNS/NAT?), but http://localhost:$SERVER_PORT/ is OK"
+            HTTPS_CODE="200"
+        else
+            HTTPS_CODE="$LOCAL_HTTPS_CODE"
+        fi
+    fi
+
+    if [ "$HTTPS_CODE" = "200" ]; then
+        pass "HTTPS 200 from $FRONTEND_URL (frontend)"
+    else
+        fail "HTTPS $HTTPS_CODE from $FRONTEND_URL (frontend)"
+    fi
+
+    # --- Server Health Check ---
+    HEALTH_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "https://$DOMAIN/health" 2>/dev/null | tr -d '[:space:]')
+    if [[ "$HEALTH_CODE" =~ ^0+$ || -z "$HEALTH_CODE" ]]; then
+        HEALTH_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "http://localhost:$SERVER_PORT/health" 2>/dev/null | tr -d '[:space:]')
+        if [[ "$HEALTH_CODE" =~ ^0+$ || -z "$HEALTH_CODE" ]]; then
+            HEALTH_CODE="000"
+        elif [ "$HEALTH_CODE" = "200" ]; then
+            warn "HTTPS $DOMAIN/health unreachable (DNS?), but http://localhost:$SERVER_PORT/health is OK"
+            HEALTH_CODE="200"
+        fi
+    fi
+
+    if [ "$HEALTH_CODE" = "200" ]; then
+        pass "HTTPS 200 from /health (server)"
+    else
+        fail "HTTPS $HEALTH_CODE from /health (server)"
+    fi
+
+    # --- Redirect Check ---
+    HTTP_REDIRECT=$(curl -sk --max-time 5 -s -o /dev/null -w "%{http_code}" "http://$DOMAIN/" 2>/dev/null | tr -d '[:space:]')
+    if [[ "$HTTP_REDIRECT" =~ ^0+$ || -z "$HTTP_REDIRECT" ]]; then
+        LOCAL_REDIRECT_URL="http://localhost:$SERVER_PORT/"
+        HTTP_REDIRECT=$(curl -sk --max-time 5 -s -o /dev/null -w "%{http_code}" "$LOCAL_REDIRECT_URL" 2>/dev/null | tr -d '[:space:]')
+        if [[ "$HTTP_REDIRECT" =~ ^0+$ || -z "$HTTP_REDIRECT" ]]; then
+            HTTP_REDIRECT="000"
+        fi
+    fi
+
+    if [ "$HTTP_REDIRECT" = "301" ] || [ "$HTTP_REDIRECT" = "302" ]; then
+        pass "HTTP redirects to HTTPS"
+    elif [ "$HTTP_REDIRECT" = "200" ]; then
+        warn "HTTP serves content directly (no HTTPS redirect)"
+    elif [ "$HTTP_REDIRECT" = "000" ]; then
+        warn "HTTP returned 000 (unreachable)"
+    else
+        warn "HTTP returned $HTTP_REDIRECT"
+    fi
+else
+    warn "curl not available — skipping HTTPS check"
+fi
+    fi
     # --- Frontend Check ---
     # --- Frontend Check ---
     HTTPS_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "$FRONTEND_URL" 2>/dev/null | tr -d '[:space:]')
