@@ -1,12 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTrailStore } from '../hooks/useTrailStore';
+import { createFileInput } from '../utils/io';
+import { importTrailsFromXls } from '../api/client';
 
 export default function TrailManager() {
   const { trails, loading, saveTrail, deleteTrail } = useTrailStore();
   const [search, setSearch] = useState('');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const navigate = useNavigate();
+  const hasApiKey = apiKey.trim().length > 0;
 
   const handleSaveApiKey = () => {
     localStorage.setItem('hiker-api-key', apiKey);
@@ -54,6 +57,29 @@ export default function TrailManager() {
     navigate(`/trail/${id}`);
   };
 
+  const handleImportDatabase = () => {
+    createFileInput({
+      accept: '.xls',
+      onFile: async (file) => {
+        if (file.name !== 'Hike Data BaseM.xls') {
+          alert('Invalid file: "' + file.name + '". Only "Hike Data BaseM.xls" is accepted.');
+          return;
+        }
+        try {
+          const result = await importTrailsFromXls(file);
+          if (!result.success) {
+            alert('Import failed: ' + (result.error?.message || 'Unknown error'));
+            return;
+          }
+          alert(result.message || 'Trail database imported successfully!');
+          window.location.reload();
+        } catch (err) {
+          alert('Import error: ' + err.message);
+        }
+      },
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -89,6 +115,12 @@ export default function TrailManager() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             New Trail
+          </button>
+          <button onClick={handleImportDatabase} disabled={!hasApiKey} className={`px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${hasApiKey ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Import Database {!hasApiKey && '(need API key)'}
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <input
