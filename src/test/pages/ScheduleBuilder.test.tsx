@@ -9,216 +9,133 @@ describe('ScheduleBuilder', () => {
     localStorage.clear();
   });
 
+  const renderSchedule = () => render(
+    <MemoryRouter initialEntries={['/schedule']}>
+      <ScheduleBuilder />
+    </MemoryRouter>
+  );
+
   it('renders heading', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
   });
 
   it('renders Browse Trails link', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText('Browse Trails')).toBeInTheDocument();
   });
 
   it('renders Scheduled toggle button', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText(/Scheduled/)).toBeInTheDocument();
   });
 
   it('renders Settings button', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
   });
 
   it('renders month selector', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('renders Export Monthly Description in settings menu', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     expect(screen.getByText('Export Monthly Description')).toBeInTheDocument();
   });
 
   it('renders FilterPanel', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
   });
 
   it('shows date grid', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText(/Wed\/Fri Dates/)).toBeInTheDocument();
   });
 
   it('shows available hikes section', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText(/Available Hikes/)).toBeInTheDocument();
   });
 
   it('toggles scheduled section', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const toggle = screen.getByText(/Scheduled/);
     fireEvent.click(toggle);
   });
 
   it('opens settings menu', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     expect(screen.getByText('Export Monthly Description')).toBeInTheDocument();
   });
 
   it('shows Export Quarterly Schedule button', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     expect(screen.getByText('Export Quarterly Schedule')).toBeInTheDocument();
   });
 
   it('shows Import Excel Schedule button', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     expect(screen.getByText(/Import Excel Schedule/)).toBeInTheDocument();
   });
 
   it('shows Clear All Data button', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     expect(screen.getByText('Clear All Data')).toBeInTheDocument();
   });
 
   it('shows Debug Mode toggle', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     expect(screen.getByText(/Debug Mode/)).toBeInTheDocument();
   });
 
   it('handles month selection', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: '5' } });
   });
 
   it('displays date count', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText(/.*\/.* dates filled/)).toBeInTheDocument();
   });
 
   it('renders drag-and-drop zones', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
-    // Available hikes zone
+    renderSchedule();
     expect(screen.getByText(/Available Hikes/)).toBeInTheDocument();
-    // Date grid zone
     expect(screen.getByText(/Wed\/Fri Dates/)).toBeInTheDocument();
   });
 
   it('renders all 178 trails in available hikes', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
-    // Should show hike count matching trails
+    renderSchedule();
     const availableText = screen.getByText(/Available Hikes/);
     expect(availableText).toBeInTheDocument();
   });
 
   it('filters hikes by search text', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const searchInput = screen.getByPlaceholderText('Search...');
     fireEvent.change(searchInput, { target: { value: 'town' } });
-    // Should show filtered count
     const availableText = screen.getByText(/Available Hikes/);
     expect(availableText).toBeInTheDocument();
   });
 
   it('filters hikes by difficulty', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
-    // Check for difficulty filter checkboxes
+    renderSchedule();
     const searchInput = screen.getByPlaceholderText('Search...');
     fireEvent.change(searchInput, { target: { value: 'Easy' } });
     const availableText = screen.getByText(/Available Hikes/);
@@ -226,12 +143,7 @@ describe('ScheduleBuilder', () => {
   });
 
   it('stores schedule with trail IDs in server state', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
-    // Schedule is now stored on server, not localStorage
+    renderSchedule();
     expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
   });
 
@@ -239,32 +151,19 @@ describe('ScheduleBuilder', () => {
     localStorage.setItem('hiker-schedule', JSON.stringify({
       'June': { 3: 'invalid-trail-id' }
     }));
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
-    // Should not crash
+    renderSchedule();
     expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
   });
 
   it('shows debug mode toggle in settings', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     expect(screen.getByText(/Debug Mode/)).toBeInTheDocument();
   });
 
   it('toggles debug mode', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     const debugBtn = screen.getByText(/Debug Mode/);
@@ -274,21 +173,14 @@ describe('ScheduleBuilder', () => {
 
   it('clears console on search change in debug mode', () => {
     const clearSpy = vi.spyOn(console, 'clear');
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
-    // Enable debug mode
+    renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
     const debugBtn = screen.getByText(/Debug Mode/);
     fireEvent.click(debugBtn);
-    // Close settings menu
     fireEvent.click(document.body);
     const searchInput = screen.getByPlaceholderText('Search...');
     fireEvent.change(searchInput, { target: { value: 'test' } });
-    // Should clear console when search changes in debug mode
     expect(clearSpy).toHaveBeenCalled();
     clearSpy.mockRestore();
   });
@@ -297,11 +189,7 @@ describe('ScheduleBuilder', () => {
     localStorage.setItem('hiker-schedule', JSON.stringify({
       'June': { 3: 'some-trail-id' }
     }));
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
   });
 
@@ -309,64 +197,38 @@ describe('ScheduleBuilder', () => {
     localStorage.setItem('hiker-schedule', JSON.stringify({
       'June': { 3: { trail_id: 'some-trail-id' } }
     }));
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
   });
 
   it('renders date grid with correct day numbers', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
-    // Select June (index 5) — component defaults to next month from today
+    renderSchedule();
     fireEvent.change(screen.getByRole('combobox'), { target: { value: '5' } });
-    // June 2026 has Wed/Fri on: 3, 5, 10, 12, 17, 19, 24, 26
     const dateGrid = screen.getByText(/2026 — Wed\/Fri Dates/).closest('.bg-white');
     expect(dateGrid).not.toBeNull();
     expect(dateGrid!.querySelectorAll('.text-xl').length).toBeGreaterThan(0);
   });
 
   it('shows day of week labels', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getAllByText(/Wed/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Fri/).length).toBeGreaterThan(0);
   });
 
   it('handles empty schedule data', () => {
     localStorage.setItem('hiker-schedule', JSON.stringify({}));
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
   });
 
   it('shows available hikes count', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const availableHikes = screen.getByText(/Available Hikes \(\d+\)/);
     expect(availableHikes).toBeInTheDocument();
   });
 
   it('shows assigned count in scheduled button', () => {
-    render(
-      <MemoryRouter initialEntries={['/schedule']}>
-        <ScheduleBuilder />
-      </MemoryRouter>
-    );
+    renderSchedule();
     const scheduledBtn = screen.getByText(/Scheduled \(\d+\)/);
     expect(scheduledBtn).toBeInTheDocument();
   });

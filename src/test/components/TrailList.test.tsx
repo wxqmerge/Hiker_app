@@ -4,28 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import TrailList from '../../components/TrailList';
 
 describe('TrailList', () => {
-  const mockTrails = [
-    {
-      id: 'trail-1',
-      name: 'Rainier',
-      fullName: 'Mount Rainier',
-      distance: 5.5,
-      elevationStart: 2000,
-      difficulty: 'Moderate',
-      parking: 'Lot',
-      seasonal: {},
-    },
-    {
-      id: 'trail-2',
-      name: 'Stevens',
-      fullName: 'Stevens Ridge',
-      distance: 12.3,
-      elevationStart: 3500,
-      difficulty: 'Difficult',
-      parking: 'Discover',
-      seasonal: {},
-    },
-  ];
+  const mockTrails = globalThis.__TEST_MOCK_DATA__.trails.slice(0, 2).map(t => ({ ...t, seasonal: {} }));
 
   beforeEach(() => {
     vi.resetAllMocks();

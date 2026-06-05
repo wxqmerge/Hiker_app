@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { getSchedule, updateSchedule, updateScheduleMonth, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp, clearScheduleHistory } from '../services/dataService.js';
+import { getSchedule, updateSchedule, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp, clearScheduleHistory } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import fs from 'fs';
 import path from 'path';
@@ -15,6 +15,27 @@ const PROJECT_ROOT = path.join(__dirname, '../../..');
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 } });
+
+const QUARTER_MONTHS: Record<string, string[]> = {
+  '1': ['Dec', 'Jan', 'Feb'],
+  '2': ['Mar', 'Apr', 'May'],
+  '3': ['Jun', 'Jul', 'Aug'],
+  '4': ['Sep', 'Oct', 'Nov'],
+};
+
+function quarterToMonths(quarter: string): string[] {
+  return quarter.replace('Q', '').split(',').map(q => QUARTER_MONTHS[q.charAt(0)] || []).flat();
+}
+
+async function findPythonCmd(): Promise<string> {
+  for (const cmd of ['python', 'python3']) {
+    try {
+      await execFileAsync(cmd, ['--version']);
+      return cmd;
+    } catch { /* try next */ }
+  }
+  throw new Error('Python not found');
+}
 
 router.get('/', (_req, res) => {
   res.json(getSchedule());
@@ -72,14 +93,7 @@ router.get('/report', (req, res) => {
   }
 
   const schedule = getSchedule();
-  const months = quarter.replace('Q', '').split(',').map((q: string) => {
-    const num = q.charAt(0);
-    if (num === '1') return ['Dec', 'Jan', 'Feb'];
-    if (num === '2') return ['Mar', 'Apr', 'May'];
-    if (num === '3') return ['Jun', 'Jul', 'Aug'];
-    if (num === '4') return ['Sep', 'Oct', 'Nov'];
-    return [];
-  }).flat();
+  const months = quarterToMonths(quarter);
 
   let report = `Schedule Report: ${quarter}\n`;
   report += '='.repeat(40) + '\n\n';
@@ -107,14 +121,7 @@ router.get('/download', (req, res) => {
   }
 
   const schedule = getSchedule();
-  const months = quarter.replace('Q', '').split(',').map((q: string) => {
-    const num = q.charAt(0);
-    if (num === '1') return ['Dec', 'Jan', 'Feb'];
-    if (num === '2') return ['Mar', 'Apr', 'May'];
-    if (num === '3') return ['Jun', 'Jul', 'Aug'];
-    if (num === '4') return ['Sep', 'Oct', 'Nov'];
-    return [];
-  }).flat();
+  const months = quarterToMonths(quarter);
 
   let tsv = '';
   for (const month of months) {
@@ -144,21 +151,15 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
 
     const trailsPath = path.join(PROJECT_ROOT, 'exported_data/trails.json');
 
-    // Check if Python is available
-    let pythonCmd = 'python';
+    let pythonCmd: string;
     try {
-      await execFileAsync(pythonCmd, ['--version']);
+      pythonCmd = await findPythonCmd();
     } catch {
-      pythonCmd = 'python3';
-      try {
-        await execFileAsync(pythonCmd, ['--version']);
-      } catch {
-        fs.unlinkSync(tmpPath);
-        return res.status(500).json({
-          success: false,
-          error: { message: 'Python not found. Install Python 3 with pandas to import schedule data.' }
-        });
-      }
+      fs.unlinkSync(tmpPath);
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Python not found. Install Python 3 with pandas to import schedule data.' }
+      });
     }
 
     try {
@@ -236,23 +237,17 @@ router.post('/import-trails-xls', requireAdminKey, upload.single('file'), async 
     // Save file to expected location
     fs.writeFileSync(path.join(PROJECT_ROOT, 'Hike Data BaseM.xls'), req.file.buffer);
 
+    let pythonCmd: string;
     try {
-      // Check if Python is available
-      let pythonCmd = 'python';
-      try {
-        await execFileAsync(pythonCmd, ['--version']);
-      } catch {
-        pythonCmd = 'python3';
-        try {
-          await execFileAsync(pythonCmd, ['--version']);
-        } catch {
-          return res.status(500).json({
-            success: false,
-            error: { message: 'Python not found. Install Python 3 with pandas and openpyxl to import trail data.' }
-          });
-        }
-      }
+      pythonCmd = await findPythonCmd();
+    } catch {
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Python not found. Install Python 3 with pandas and openpyxl to import trail data.' }
+      });
+    }
 
+    try {
       const { stdout, stderr } = await execFileAsync(pythonCmd, [path.join(PROJECT_ROOT, 'extract_trails_xls.py')]);
       if (stderr) {
         console.warn('[TRAILS] Python script warnings:', stderr);

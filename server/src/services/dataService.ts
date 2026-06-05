@@ -219,11 +219,6 @@ export async function updateSchedule(newSchedule: ScheduleData): Promise<void> {
   await writeWithHealth(path.join(DATA_DIR, 'schedule.json'), schedule);
 }
 
-export async function updateScheduleMonth(month: string, entries: ScheduleData[string]): Promise<void> {
-  schedule[month] = entries;
-  await writeWithHealth(path.join(DATA_DIR, 'schedule.json'), schedule);
-}
-
 export function serverVersion(): string {
   try {
     const pkg = JSON.parse(fsSync.readFileSync(path.join(__dirname, '../../package.json'), 'utf-8'));

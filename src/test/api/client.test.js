@@ -1,21 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-function mockFetch(responses) {
-  return vi.fn().mockImplementation(async (url, options) => {
-    const handler = responses.find(([pattern, method]) => {
-      const matchesUrl = typeof pattern === 'string'
-        ? url === pattern || url.startsWith(pattern)
-        : pattern.test(url);
-      const matchesMethod = !method || options?.method === method;
-      return matchesUrl && matchesMethod;
-    });
-    if (handler) {
-      return Promise.resolve(handler[1]);
-    }
-    return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({ error: { message: 'Not found' } }) });
-  });
-}
-
 describe('api/client', () => {
   let fetchSpy;
 
@@ -46,15 +30,6 @@ describe('api/client', () => {
       const { getTrails } = await import('../../api/client.js');
       const result = await getTrails();
       expect(result).toEqual([]);
-    });
-  });
-
-  describe('getTrailById', () => {
-    it('fetches single trail by ID', async () => {
-      fetchSpy.mockResolvedValue({ ok: true, json: () => Promise.resolve({ id: 'trail-1', name: 'Rainier' }) });
-      const { getTrailById } = await import('../../api/client.js');
-      const result = await getTrailById('trail-1');
-      expect(result).toEqual({ id: 'trail-1', name: 'Rainier' });
     });
   });
 
@@ -110,15 +85,6 @@ describe('api/client', () => {
     });
   });
 
-  describe('getTrailDetailById', () => {
-    it('fetches single trail detail by ID', async () => {
-      fetchSpy.mockResolvedValue({ ok: true, json: () => Promise.resolve({ fullDescription: 'Rainier trail' }) });
-      const { getTrailDetailById } = await import('../../api/client.js');
-      const result = await getTrailDetailById('trail-1');
-      expect(result).toEqual({ fullDescription: 'Rainier trail' });
-    });
-  });
-
   describe('updateTrailDetail', () => {
     it('sends PUT with API key', async () => {
       localStorage.setItem('hiker-api-key', 'admin-key');
@@ -156,67 +122,11 @@ describe('api/client', () => {
     });
   });
 
-  describe('uploadSchedule', () => {
-    it('uploads schedule file with FormData', async () => {
-      localStorage.setItem('hiker-api-key', 'upload-key');
-      fetchSpy.mockResolvedValue({ ok: true, json: () => Promise.resolve({ success: true, message: 'OK' }) });
-      const { uploadSchedule } = await import('../../api/client.js');
-      const mockFile = new File(['1\tHike\ttrail-1'], 'schedule.tsv', { type: 'text/tab-separated-values' });
-      const result = await uploadSchedule(mockFile);
-      expect(result).toEqual({ success: true, message: 'OK' });
-    });
-
-    it('throws on upload failure', async () => {
-      fetchSpy.mockResolvedValue({ ok: false, status: 400, json: () => Promise.resolve({ error: { message: 'Invalid format' } }) });
-      const { uploadSchedule } = await import('../../api/client.js');
-      const mockFile = new File(['test'], 'test.tsv');
-      await expect(uploadSchedule(mockFile)).rejects.toThrow('Invalid format');
-    });
-
-    it('uses empty API key when not set', async () => {
-      fetchSpy.mockResolvedValue({ ok: true, json: () => Promise.resolve({ success: true }) });
-      const { uploadSchedule } = await import('../../api/client.js');
-      const mockFile = new File(['test'], 'test.tsv');
-      await uploadSchedule(mockFile);
-      expect(fetchSpy).toHaveBeenCalledWith(
-        '/api/schedule/upload',
-        expect.objectContaining({
-          headers: expect.objectContaining({ 'X-API-Key': '' }),
-        })
-      );
-    });
-  });
-
-  describe('getScheduleReport', () => {
-    it('fetches schedule report text', async () => {
-      fetchSpy.mockResolvedValue({ ok: true, text: () => Promise.resolve('Report text') });
-      const { getScheduleReport } = await import('../../api/client.js');
-      const result = await getScheduleReport('Q1');
-      expect(result).toBe('Report text');
-    });
-
-    it('throws on report failure', async () => {
-      fetchSpy.mockRejectedValue(new Error('Bad request'));
-      const { getScheduleReport } = await import('../../api/client.js');
-      await expect(getScheduleReport('Q1')).rejects.toThrow();
-    });
-  });
-
-  describe('getScheduleDownload', () => {
-    it('fetches schedule download as blob', async () => {
-      const mockBlob = new Blob(['test'], { type: 'text/tab-separated-values' });
-      fetchSpy.mockResolvedValue({ ok: true, blob: () => Promise.resolve(mockBlob) });
-      const { getScheduleDownload } = await import('../../api/client.js');
-      const result = await getScheduleDownload('Q1');
-      expect(result).toBe(mockBlob);
-    });
-  });
-
   describe('request error handling', () => {
     it('throws on 404 response', async () => {
-      fetchSpy.mockResolvedValue({ ok: false, status: 404, json: () => Promise.resolve({ error: { message: 'Trail not found' } }) });
-      const { getTrailById } = await import('../../api/client.js');
-      await expect(getTrailById('nonexistent')).rejects.toThrow('Trail not found');
+      fetchSpy.mockResolvedValue({ ok: false, status: 404, json: () => Promise.resolve({ error: { message: 'Not found' } }) });
+      const { getTrails } = await import('../../api/client.js');
+      await expect(getTrails()).rejects.toThrow('Not found');
     });
 
     it('throws generic error when JSON parse fails', async () => {

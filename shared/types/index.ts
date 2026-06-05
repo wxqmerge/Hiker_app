@@ -1,4 +1,4 @@
-export interface SeasonalData {
+interface SeasonalData {
   Jan?: number;
   Feb?: number;
   Mar?: number;
@@ -42,7 +42,7 @@ export interface TrailDetail {
   others: string | null;
 }
 
-export interface ScheduleEntry {
+interface ScheduleEntry {
   day: number;
   hike: string;
   trail_id: string;
@@ -65,9 +65,4 @@ export interface TrailDetailsData {
   [id: string]: TrailDetail;
 }
 
-export interface ServerData {
-  trails: TrailsData;
-  trailDetails: TrailDetailsData;
-  lookup: LookupData;
-  schedule: ScheduleData;
-}
+

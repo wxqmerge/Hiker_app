@@ -1,17 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
-
-const DEFAULT_FILTERS = {
-  search: '',
-  distanceMin: 0,
-  distanceMax: 20,
-  elevationMin: 0,
-  elevationMax: 5000,
-  difficulties: [],
-  months: [],
-  sortBy: 'name',
-  wilderness: false
-};
+import { DEFAULT_FILTERS } from '../utils/constants';
 
 let _filters = { ...DEFAULT_FILTERS };
 let _subscribers = [];
@@ -27,7 +16,7 @@ function setState(filters) {
 }
 
 
-export function useFiltersStore() {
+function useFiltersStore() {
   const mountedRef = useRef(true);
 
   const [state, setStateLocal] = useState(() => ({

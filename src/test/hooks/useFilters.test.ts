@@ -3,28 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useFilters } from '../../hooks/useTrails';
 
 describe('useFilters', () => {
-  const mockTrails = [
-    {
-      id: 'trail-1',
-      name: 'Rainier',
-      fullName: 'Mount Rainier',
-      distance: 5.5,
-      elevationStart: 2000,
-      difficulty: 'Moderate',
-      parking: 'Lot',
-      seasonal: { Jan: 3, Feb: 2, Mar: 1, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0 },
-    },
-    {
-      id: 'trail-2',
-      name: 'Stevens',
-      fullName: 'Stevens Ridge',
-      distance: 12.3,
-      elevationStart: 3500,
-      difficulty: 'Difficult',
-      parking: 'Discover',
-      seasonal: { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 1, Oct: 2, Nov: 3, Dec: 0 },
-    },
-  ];
+  const mockTrails = globalThis.__TEST_MOCK_DATA__.trails.slice(0, 2);
 
   beforeEach(() => {
     vi.resetAllMocks();

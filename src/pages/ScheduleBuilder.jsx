@@ -3,18 +3,13 @@ import { Link } from 'react-router-dom';
 import { useTrails, useFilters } from '../hooks/useTrails';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
-import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS } from '../utils/constants';
+import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
-import { getTrailDetailsById } from '../utils/data';
-import { downloadBlob } from '../utils/io';
+import { getTrailDetailsById, findTrailById as findTrailByIdUtil } from '../utils/data';
+import { downloadBlob, createFileInput } from '../utils/io';
 import { importScheduleFromXls, importTrailsFromXls, updateSchedule, getScheduleHistory, restoreSchedule } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
-
-const MONTH_ABBR_TO_FULL = { Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April', May: 'May', Jun: 'June',
-  Jul: 'July', Aug: 'August', Sep: 'September', Oct: 'October', Nov: 'November', Dec: 'December' };
-const MONTH_FULL_TO_ABBR = { January: 'Jan', February: 'Feb', March: 'Mar', April: 'Apr', May: 'May', June: 'Jun',
-  July: 'Jul', August: 'Aug', September: 'Sep', October: 'Oct', November: 'Nov', December: 'Dec' };
 
 // Convert server schedule format to client format
 function serverScheduleToStore(serverData) {
@@ -80,8 +75,8 @@ export default function ScheduleBuilder() {
   const [scheduleStore, setScheduleStore] = useState(() => {
     return {};
   });
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState(() => !!localStorage.getItem('hiker-api-key'));
+  const [isSaving, setIsSaving] = useState(false); // eslint-disable-line no-unused-vars
+  const [hasApiKey, setHasApiKey] = useState(() => !!localStorage.getItem('hiker-api-key')); // eslint-disable-line no-unused-vars
   // Load server schedule into local store on mount
   useEffect(() => {
     if (scheduleData && Object.keys(scheduleData).length > 0) {
@@ -182,31 +177,7 @@ export default function ScheduleBuilder() {
 
   const year = 2026;
 
-  const trailMap = useMemo(() => {
-    const map = {};
-    trails.forEach(t => {
-      map[t.id] = t;
-    });
-    return map;
-  }, [trails]);
-
-  const findTrailById = useCallback((trailId) => {
-    if (!trailId) return null;
-    const exact = trailMap[trailId];
-    if (exact) return exact;
-    const lower = trailId.toLowerCase();
-    for (const t of trails) {
-      if (t.id.toLowerCase() === lower) return t;
-    }
-    const slugWords = lower.split('-').filter(Boolean);
-    if (slugWords.length > 1) {
-      for (const t of trails) {
-        const name = ((t.fullName || t.name) || '').toLowerCase();
-        if (slugWords.every(w => name.includes(w))) return t;
-      }
-    }
-    return null;
-  }, [trailMap, trails]);
+  const findTrailById = useCallback((trailId) => findTrailByIdUtil(trails, trailId), [trails]);
 
   const trailIndexToId = useMemo(() => {
     const map = {};
@@ -453,73 +424,62 @@ export default function ScheduleBuilder() {
   };
 
   const importFromExcel = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.xls,.xlsx';
-    input.style.display = 'none';
-    input.onchange = async () => {
-      if (!input.files?.[0]) return;
-      try {
-        const result = await importScheduleFromXls(input.files[0]);
-        if (!result.success) {
-          alert('Import failed: ' + (result.error?.message || 'Unknown error'));
-          return;
-        }
-        setScheduleStore(prev => {
-          const merged = { ...prev, ...result.schedule };
-          return merged;
-        });
-        if (result.months.length > 0) {
-          const firstMonth = MONTH_NAMES.indexOf(result.months[0]);
-          if (firstMonth >= 0) setSelectedMonth(firstMonth);
-        }
-        let msg = `Imported ${result.matched} hikes across ${result.months.length} month(s): ${result.months.join(', ')}.\n`;
-        if (result.unmatched > 0) {
-          msg += `\n${result.unmatched} hike(s) could not be matched to a trail.\n`;
-          if (result.unmatchedDetails?.length) {
-            msg += 'Unmatched: ' + result.unmatchedDetails.slice(0, 5).map(u => u.hike).join(', ');
-            if (result.unmatched > 5) msg += '...';
+    createFileInput({
+      accept: '.xls,.xlsx',
+      onFile: async (file) => {
+        try {
+          const result = await importScheduleFromXls(file);
+          if (!result.success) {
+            alert('Import failed: ' + (result.error?.message || 'Unknown error'));
+            return;
           }
+          setScheduleStore(prev => {
+            const merged = { ...prev, ...result.schedule };
+            return merged;
+          });
+          if (result.months.length > 0) {
+            const firstMonth = MONTH_NAMES.indexOf(result.months[0]);
+            if (firstMonth >= 0) setSelectedMonth(firstMonth);
+          }
+          let msg = `Imported ${result.matched} hikes across ${result.months.length} month(s): ${result.months.join(', ')}.\n`;
+          if (result.unmatched > 0) {
+            msg += `\n${result.unmatched} hike(s) could not be matched to a trail.\n`;
+            if (result.unmatchedDetails?.length) {
+              msg += 'Unmatched: ' + result.unmatchedDetails.slice(0, 5).map(u => u.hike).join(', ');
+              if (result.unmatched > 5) msg += '...';
+            }
+          }
+          alert(msg);
+        } catch (err) {
+          alert('Import error: ' + err.message);
         }
-        alert(msg);
-      } catch (err) {
-        alert('Import error: ' + err.message);
-      }
-      document.body.removeChild(input);
-      setShowSettings(false);
-    };
-    document.body.appendChild(input);
-    input.click();
+      },
+      onCleanup: () => setShowSettings(false),
+    });
   };
 
   const importTrailsFromExcel = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.xls';
-    input.style.display = 'none';
-    input.onchange = async () => {
-      if (!input.files?.[0]) return;
-      if (input.files[0].name !== 'Hike Data BaseM.xls') {
-        alert('Invalid file: "' + input.files[0].name + '". Only "Hike Data BaseM.xls" is accepted.');
-        document.body.removeChild(input);
-        return;
-      }
-      try {
-        const result = await importTrailsFromXls(input.files[0]);
-        if (!result.success) {
-          alert('Import failed: ' + (result.error?.message || 'Unknown error'));
+    createFileInput({
+      accept: '.xls',
+      onFile: async (file) => {
+        if (file.name !== 'Hike Data BaseM.xls') {
+          alert('Invalid file: "' + file.name + '". Only "Hike Data BaseM.xls" is accepted.');
           return;
         }
-        alert(result.message || 'Trail database imported successfully!');
-        window.location.reload();
-      } catch (err) {
-        alert('Import error: ' + err.message);
-      }
-      document.body.removeChild(input);
-      setShowSettings(false);
-    };
-    document.body.appendChild(input);
-    input.click();
+        try {
+          const result = await importTrailsFromXls(file);
+          if (!result.success) {
+            alert('Import failed: ' + (result.error?.message || 'Unknown error'));
+            return;
+          }
+          alert(result.message || 'Trail database imported successfully!');
+          window.location.reload();
+        } catch (err) {
+          alert('Import error: ' + err.message);
+        }
+      },
+      onCleanup: () => setShowSettings(false),
+    });
   };
 
   const getQuarterForMonth = (monthIndex) => {

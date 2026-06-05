@@ -43,18 +43,35 @@ describe('io.js', () => {
   });
 
   describe('createImportFileInput', () => {
-    it('creates a hidden file input element and removes it', () => {
+    it('creates a hidden file input element and appends to body', () => {
+      const onImport = vi.fn();
+      const onError = vi.fn();
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild');
+      createImportFileInput(onImport, onError);
+      expect(appendChildSpy).toHaveBeenCalled();
+      const input = appendChildSpy.mock.calls[0][0];
+      expect(input.type).toBe('file');
+      expect(input.accept).toBe('.json');
+    });
+
+    it('removes input and calls onImport after file is selected', async () => {
       const onImport = vi.fn();
       const onError = vi.fn();
       const removeChildSpy = vi.spyOn(document.body, 'removeChild');
-      createImportFileInput(onImport, onError);
-      expect(removeChildSpy).toHaveBeenCalled();
-    });
+      vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(function() {
+        this.onload({ target: { result: JSON.stringify({ test: true }) } });
+      });
 
-    it('sets accept to .json', () => {
-      const onImport = vi.fn();
-      createImportFileInput(onImport);
-      // The input is created and removed synchronously
+      createImportFileInput(onImport, onError);
+      const input = document.body.lastElementChild;
+      // Simulate file selection by directly invoking the onchange handler
+      // with a mock file; in jsdom input.files can't be set to a FileList
+      const mockFile = new File(['{"test":true}'], 'test.json');
+      Object.defineProperty(input, 'files', { value: [mockFile], writable: false });
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(removeChildSpy).toHaveBeenCalled();
+      expect(onImport).toHaveBeenCalledWith({ test: true });
     });
 
     it('does not call onImport when no file selected', () => {

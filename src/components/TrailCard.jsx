@@ -5,6 +5,14 @@ import { getTrailDetailsById } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
+// Extract month abbreviations from seasonal scores, sorted by month order
+function getScoredMonths(seasonal) {
+  return Object.entries(seasonal)
+    .filter(([k, v]) => typeof v === 'number' && v > 0 && !['bestSeason', 'availableMonths'].includes(k))
+    .sort(([a], [b]) => MONTH_ABBR.indexOf(a) - MONTH_ABBR.indexOf(b))
+    .map(([m]) => m);
+}
+
 export default function TrailCard({ trail, isActive = false, hikeName }) {
   const [copied, setCopied] = useState(false);
   const trailDetails = useTrailDetails();
@@ -20,15 +28,7 @@ export default function TrailCard({ trail, isActive = false, hikeName }) {
   const rideCost = trail.range ? getRideCost(parseInt(trail.range)) : null;
   const seasonal = trail.seasonal || {};
   const bestSeason = seasonal.bestSeason || '';
-  const monthNames = MONTH_ABBR;
-  const scoreMonths = Object.entries(seasonal)
-    .filter(([k, v]) => typeof v === 'number' && v > 0 && !['bestSeason', 'availableMonths'].includes(k))
-    .sort(([a], [b]) => {
-      const ai = monthNames.indexOf(a);
-      const bi = monthNames.indexOf(b);
-      return ai - bi;
-    })
-    .map(([m]) => m);
+  const scoreMonths = getScoredMonths(seasonal);
   const availableMonthsStr = scoreMonths.length > 0 ? scoreMonths.join(', ') : 'Year-round';
 
   return (

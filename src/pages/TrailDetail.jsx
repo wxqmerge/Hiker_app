@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
-import { getTrailDetailsById } from '../utils/data';
+import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
 import { downloadBlob, createImportFileInput } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 
@@ -11,7 +11,6 @@ const SEASON_MAP = {
   'All': 'All',
   'Any': 'Any',
   'Any except Jan.': 'Any except Jan.',
-  'any': 'Any',
   'Low Tide': 'Low Tide',
   'May': 'Spring',
   'Jun': 'Spring',
@@ -43,12 +42,15 @@ const SEASON_MAP = {
   'Winter/Spring/Summer': 'Spring / Summer / Winter',
   'Fall Winter Spring': 'Fall / Spring / Winter',
   'Fall': 'Fall',
-  'fall': 'Fall',
   'Fall is best!': 'Fall',
   'Fall,Spring': 'Fall / Spring',
   'Fall/Spring/Summer': 'Fall / Spring / Summer',
   'Fall/Winter/Spring': 'Fall / Spring / Winter',
 };
+
+const SEASON_MAP_LOWER = Object.fromEntries(
+  Object.entries(SEASON_MAP).map(([k, v]) => [k.toLowerCase(), v])
+);
 
 export default function TrailDetail() {
   const { id } = useParams();
@@ -60,21 +62,8 @@ export default function TrailDetail() {
   const [editedFields, setEditedFields] = useState({});
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
-  const trail = useMemo(() => {
-    if (!id) return null;
-    const exact = trails.find(t => t.id === id);
-    if (exact) return exact;
-    const lower = id.toLowerCase();
-    return trails.find(t => t.id.toLowerCase() === lower) || null;
-  }, [trails, id]);
-  const currentIndex = useMemo(() => {
-    if (!id) return -1;
-    const exact = trails.findIndex(t => t.id === id);
-    if (exact >= 0) return exact;
-    const lower = id.toLowerCase();
-    const idx = trails.findIndex(t => t.id.toLowerCase() === lower);
-    return idx;
-  }, [trails, id]);
+  const trail = useMemo(() => findTrailById(trails, id), [trails, id]);
+  const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -88,22 +77,13 @@ export default function TrailDetail() {
 
   const trailDetailsResult = useMemo(() => getTrailDetailsById(trailDetails, id), [trailDetails, id]);
 
-  const availableMonthsFromSeasonal = useMemo(() => {
-    const seasonal = trail?.seasonal;
-    if (!seasonal) return [];
-    return Object.entries(seasonal)
-      .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
-      .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
-  }, [trail]);
+  const availableMonthsFromSeasonal = useMemo(() => getAvailableMonthsFromSeasonal(trail?.seasonal), [trail]);
 
   const normalizeSeason = (season) => {
     if (!season) return '';
-    if (SEASON_MAP[season]) return SEASON_MAP[season];
     const s = season.toLowerCase();
-    for (const [key, val] of Object.entries(SEASON_MAP)) {
-      if (key.toLowerCase() === s) return val;
-    }
-    return season;
+    const match = SEASON_MAP_LOWER[s];
+    return match || season;
   };
 
   const getEditedValue = (field) => {
@@ -220,10 +200,7 @@ export default function TrailDetail() {
   };
 
   const copyReport = async () => {
-    await copyToClipboard(genReport(trail, trailDetailsResult?.[id]), (status) => {
-      setCopied(status);
-      if (status) setTimeout(() => setCopied(false), 2000);
-    });
+    await copyToClipboard(genReport(trail, trailDetailsResult?.[id]), setCopied);
   };
 
   const goToPrevious = () => {

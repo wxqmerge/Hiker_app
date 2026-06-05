@@ -1,40 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { filterTrails, sortTrails } from '../../utils/filterTrails';
+import { DEFAULT_FILTERS } from '../../utils/constants';
 
+const baseTrails = globalThis.__TEST_MOCK_DATA__.trails;
 const mockTrails = [
-  {
-    id: 'trail-1',
-    name: 'Rainier',
-    fullName: 'Mount Rainier',
-    distance: 5.5,
-    elevationStart: 2000,
-    difficulty: 'Moderate',
-    parking: 'Lot',
-    seasonal: { Jan: 3, Feb: 2, Mar: 1, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0 },
-    notes: 'Beautiful trail',
-  },
-  {
-    id: 'trail-2',
-    name: 'Stevens',
-    fullName: 'Stevens Ridge',
-    distance: 12.3,
-    elevationStart: 3500,
-    difficulty: 'Difficult',
-    parking: 'Discover',
-    seasonal: { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 1, Oct: 2, Nov: 3, Dec: 0 },
-    notes: 'Ridge trail',
-  },
-  {
-    id: 'trail-3',
-    name: 'Easy Path',
-    fullName: 'Easy Path Trail',
-    distance: 2.1,
-    elevationStart: 800,
-    difficulty: 'Easy',
-    parking: 'Free',
-    seasonal: { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0 },
-    notes: '',
-  },
+  ...baseTrails,
   {
     id: 'trail-4',
     name: 'Wilderness Peak',
@@ -48,17 +18,7 @@ const mockTrails = [
   },
 ];
 
-const mockFilters = {
-  search: '',
-  distanceMin: 0,
-  distanceMax: 20,
-  elevationMin: 0,
-  elevationMax: 5000,
-  difficulties: [],
-  months: [],
-  sortBy: 'name',
-  wilderness: false,
-};
+const mockFilters = { ...DEFAULT_FILTERS };
 
 describe('filterTrails', () => {
   it('returns all trails with no filters', () => {

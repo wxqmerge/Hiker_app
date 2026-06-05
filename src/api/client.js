@@ -30,10 +30,6 @@ export async function getTrails() {
   return data.trails || [];
 }
 
-export async function getTrailById(id) {
-  return request(`/api/trails/${id}`);
-}
-
 export async function updateTrail(trail) {
   return request(`/api/trails/${trail.id}`, {
     method: 'PUT',
@@ -53,10 +49,6 @@ export async function getTrailDetails() {
   return request('/api/trails/details');
 }
 
-export async function getTrailDetailById(id) {
-  return request(`/api/trails/details/${id}`);
-}
-
 export async function updateTrailDetail(id, detail) {
   return request(`/api/trails/details/${id}`, {
     method: 'PUT',
@@ -71,39 +63,6 @@ export async function getLookup() {
 
 export async function getSchedule() {
   return request('/api/schedule');
-}
-
-export async function uploadSchedule(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const apiKey = localStorage.getItem('hiker-api-key');
-  const res = await fetch(`${API_BASE}/api/schedule/upload`, {
-    method: 'POST',
-    headers: {
-      'X-API-Key': apiKey || '',
-    },
-    body: formData,
-  });
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: { message: 'Upload failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
-  }
-
-  return res.json();
-}
-
-export async function getScheduleReport(quarter) {
-  const res = await fetch(`${API_BASE}/api/schedule/report?quarter=${quarter}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.text();
-}
-
-export async function getScheduleDownload(quarter) {
-  const res = await fetch(`${API_BASE}/api/schedule/download?quarter=${quarter}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.blob();
 }
 
 export async function updateSchedule(schedule) {
@@ -168,9 +127,4 @@ export async function restoreSchedule(timestamp) {
   });
 }
 
-export async function clearScheduleHistory() {
-  return request('/api/schedule/history', {
-    method: 'DELETE',
-    apiKey: true,
-  });
-}
+

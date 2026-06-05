@@ -4,19 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import TrailCard from '../../components/TrailCard';
 
 describe('TrailCard', () => {
-  const baseTrail = {
-    id: 'trail-1',
-    name: 'Rainier',
-    fullName: 'Mount Rainier',
-    distance: 5.5,
-    distanceExtended: 6.0,
-    elevationStart: 2000,
-    elevationMax: 4000,
-    difficulty: 'Moderate',
-    parking: 'Lot',
-    range: 45,
-    seasonal: { Jan: 3, Feb: 2, Mar: 1, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0 },
-  };
+  const baseTrail = { ...globalThis.__TEST_MOCK_DATA__.trails[0], distanceExtended: 6.0, elevationMax: 4000, range: 45 };
 
   beforeEach(() => {
     vi.resetAllMocks();

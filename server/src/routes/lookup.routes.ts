@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getLookup, getWriteHealth, serverVersion } from '../services/dataService.js';
+import { getLookup } from '../services/dataService.js';
 
 const router = Router();
 
