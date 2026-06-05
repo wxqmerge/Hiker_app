@@ -858,11 +858,12 @@ const hikeCards = useMemo(() => {
                     const date = new Date(entry.timestamp);
                     const dateStr = date.toLocaleDateString();
                     const timeStr = date.toLocaleTimeString();
+                    const monthSummary = entry.months?.length ? `${entry.months.join(', ')} (${entry.entryCount})` : 'empty';
                     return (
                       <div key={entry.timestamp} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{dateStr} at {timeStr}</div>
-                          <div className="text-xs text-gray-500">{entry.hikeCount} hikes saved</div>
+                          <div className="text-xs text-gray-500">{monthSummary} scheduled entries</div>
                         </div>
                         <button
                           onClick={() => handleRestore(entry.timestamp)}

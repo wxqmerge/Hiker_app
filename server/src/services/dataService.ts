@@ -154,21 +154,25 @@ async function saveScheduleHistory(scheduleData: ScheduleData): Promise<void> {
   }
 }
 
-export async function getScheduleHistory(): Promise<Array<{ timestamp: string; hikeCount: number; fileName: string }>> {
+export async function getScheduleHistory(): Promise<Array<{ timestamp: string; entryCount: number; months: string[]; fileName: string }>> {
   try {
     const files = await fs.readdir(HISTORY_DIR);
-    const entries: Array<{ timestamp: string; hikeCount: number; fileName: string }> = [];
+    const entries: Array<{ timestamp: string; entryCount: number; months: string[]; fileName: string }> = [];
     for (const f of files.filter(f => f.startsWith('schedule_') && f.endsWith('.json'))) {
       try {
         const content = await fs.readFile(path.join(HISTORY_DIR, f), 'utf-8');
         const parsed = JSON.parse(content);
         let count = 0;
+        const monthNames: string[] = [];
         if (parsed.schedule) {
-          for (const month of Object.values(parsed.schedule)) {
-            if (Array.isArray(month)) count += month.length;
+          for (const [month, data] of Object.entries(parsed.schedule)) {
+            if (Array.isArray(data) && data.length > 0) {
+              count += data.length;
+              monthNames.push(month);
+            }
           }
         }
-        entries.push({ timestamp: parsed.timestamp, hikeCount: count, fileName: f });
+        entries.push({ timestamp: parsed.timestamp, entryCount: count, months: monthNames, fileName: f });
       } catch { /* skip corrupt files */ }
     }
     entries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
