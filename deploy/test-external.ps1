@@ -42,16 +42,29 @@ function Test-ApiJson {
         [string]$ExpectedKey
     )
     try {
-        $CodeOutput = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 ($ApiUrl + $Path) | Out-String
+        $Url = $ApiUrl + $Path
+        $CodeOutput = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 $Url | Out-String
         $Code = [int]($CodeOutput.Trim())
         if ($Code -eq 200) {
             if ($ExpectedKey) {
-                $Body = (& curl.exe -s -k --max-time 5 ($ApiUrl + $Path)) | ConvertFrom-Json
-                if ($Body.PSObject.Properties.Name -contains $ExpectedKey) {
-                    $Count = if ($Body.$ExpectedKey -is [array]) { $Body.$ExpectedKey.Count } elseif ($Body.$ExpectedKey -is [hashtable]) { $Body.$ExpectedKey.Count } else { 1 }
-                    Write-Host "PASS $Label - $Count items" -ForegroundColor Green
+                $RawBody = & curl.exe -s -k --max-time 5 $Url
+                if ([string]::IsNullOrWhiteSpace($RawBody)) {
+                    Write-Host "FAIL $Label - HTTP 200 but empty body" -ForegroundColor Red
+                    $script:Errors++
                 } else {
-                    Write-Host "PASS $Label - HTTP 200" -ForegroundColor Green
+                    try {
+                        $Body = $RawBody | ConvertFrom-Json
+                        if ($Body.PSObject.Properties.Name -contains $ExpectedKey) {
+                            $val = $Body.$ExpectedKey
+                            $Count = if ($val -is [array]) { $val.Count } elseif ($val -is [hashtable]) { $val.Count } else { 1 }
+                            Write-Host "PASS $Label - $Count items" -ForegroundColor Green
+                        } else {
+                            Write-Host "PASS $Label - HTTP 200" -ForegroundColor Green
+                        }
+                    } catch {
+                        Write-Host "FAIL $Label - Invalid JSON response: $_" -ForegroundColor Red
+                        $script:Errors++
+                    }
                 }
             } else {
                 Write-Host "PASS $Label - HTTP 200" -ForegroundColor Green
