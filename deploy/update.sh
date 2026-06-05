@@ -283,20 +283,8 @@ fi
 echo "  Reloading systemd daemon..."
 sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 
-# 9. Get/renew SSL certificate
-echo "[9/12] Getting SSL certificate for $DOMAIN..."
-if command -v certbot &>/dev/null; then
-    if ! sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --redirect --hsts --staple-ocsp --key-type ecdsa 2>&1; then
-        echo "  WARNING: certbot failed (cert may already exist). Continuing..."
-    else
-        echo "  SSL certificate obtained/renewed."
-    fi
-else
-    echo "  WARNING: certbot not installed — skipping SSL certificate setup"
-fi
-
-# 10. Apply nginx config
-echo "[10/12] Applying nginx config..."
+# 9. Apply nginx config
+echo "[9/12] Applying nginx config..."
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 if [ -f "$NGINX_CONF" ]; then
     if ! grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
@@ -331,6 +319,18 @@ else
         echo "  ERROR: Nginx config test failed."
         exit 1
     fi
+fi
+
+# 10. Get/renew SSL certificate
+echo "[10/12] Getting SSL certificate for $DOMAIN..."
+if command -v certbot &>/dev/null; then
+    if ! sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --redirect --hsts --staple-ocsp --key-type ecdsa 2>&1; then
+        echo "  WARNING: certbot failed (cert may already exist). Continuing..."
+    else
+        echo "  SSL certificate obtained/renewed."
+    fi
+else
+    echo "  WARNING: certbot not installed — skipping SSL certificate setup"
 fi
 
 # 11. Stop service and kill stale process on port
