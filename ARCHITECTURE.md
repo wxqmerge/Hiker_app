@@ -1,457 +1,533 @@
-# Hiker Trail Browser - Architecture
+# Hiker Trail App — Architecture
 
-## Overview
-
-A static React web application for browsing and managing SOTHH trail data. The app runs entirely in the browser with no backend server, using embedded JSON data and localStorage for persistence.
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 19 |
-| Build Tool | Vite 8 |
-| Routing | React Router (MemoryRouter) |
-| Styling | Tailwind CSS 4 |
-| Data Format | JSON |
-| Source Data | Microsoft Excel (.xls) |
-| Processing | Python 3 |
-| Testing | Vitest + jsdom + testing-library |
-
-## System Architecture
+## System Overview
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    User (Browser)                       │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│              hiker-app/dist/index.html                  │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │              Embedded React App                   │  │
-│  │                                                   │  │
-│  │  ┌──────────┐  ┌──────────────────────┐         │  │
-│  │  │  Home    │  │  ScheduleBuilder     │         │  │
-│  │  └──────────┘  └──────────────────────┘         │  │
-│  │                                                   │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │  │
-│  │  │  Search  │  │ Settings │  │  TrailDetail │   │  │
-│  │  └──────────┘  └──────────┘  └──────────────┘   │  │
-│  │                                                   │  │
-│  │  ┌───────────────────────────────────────────┐   │  │
-│  │  │           Custom Hooks                    │   │  │
-│  │  │  useTrailStore, useTrails, useFilters     │   │  │
-│  │  └───────────────────────────────────────────┘   │  │
-│  └───────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│              Browser IndexedDB                          │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │  hiker-trails (DB)                                │  │
-│  │  ┌─────────────┐  ┌─────────────┐                │  │
-│  │  │  trails     │  │  details    │                │  │
-│  │  │  (key: id)  │  │  (key: id)  │                │  │
-│  │  └─────────────┘  └─────────────┘                │  │
-│  └───────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
+┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Vite Dev   │     │  Express Server  │     │  exported_data/ │
+│   Client     │◄───►│  (port 3000)     │     │  (*.json)       │
+│   (5173)     │     │                  │     │                 │
+└─────────────┘     └──────────────────┘     └─────────────────┘
+                         │
+                         ▼
+                  JSON File System
+```
+
+- **Frontend**: React SPA with client-side routing (`BrowserRouter`)
+- **Backend**: Express API serving trail data, schedule, and lookup reference data from `exported_data/`
+- **Data Flow**: Excel → Python scripts → `exported_data/*.json` → API → Frontend
+- **Write-back**: Trail edits, schedule assignments, and deletions persist to `exported_data/` via the API
+
+In production, the Express server serves the static `dist/` frontend and falls back to `index.html` for client-side routing.
+
+## State Management
+
+### Shared Module State (Client)
+
+The app uses a shared module-level state pattern via `useTrailStore.js`. This avoids prop-drilling and keeps state synchronized across all components:
+
+```javascript
+// useTrailStore.js — module-level singleton state
+let _trails = [];           // Shared mutable array
+let _trailDetails = {};     // Shared mutable object
+let _loading = true;
+let _lookup = null;
+let _schedule = null;
+let _subscribers = [];      // Effect-based subscribers
+
+function notifySubscribers() {
+  _subscribers.forEach(fn => fn());
+}
+```
+
+Components subscribe via `useEffect` in `useTrailStore()`. When data changes (API write), `setState()` notifies all subscribers, triggering React re-renders.
+
+**Lifecycle**: `initSharedState()` runs at module evaluation time, loading all data in parallel via `Promise.all`.
+
+### Filter State
+
+Filters use a similar shared state pattern in `useFilters.js`:
+
+```javascript
+let _filters = { ...DEFAULT_FILTERS };
+let _subscribers = [];
+
+export function useFilters(trails) {
+  const { filters, setFilters, resetFilters } = useFiltersStore();
+  const filteredTrails = useMemo(() => filterTrails(trails, filters), [trails, filters]);
+  const sortedTrails = useMemo(() => sortTrails(filteredTrails, filters), [filteredTrails, filters]);
+  return { filters, setFilters, sortedTrails, resetFilters };
+}
+```
+
+The `useFilters` hook computes `filteredTrails` and `sortedTrails` via `useMemo`, deriving from the shared filter state and input trails.
+
+### Schedule Store (ScheduleBuilder)
+
+The ScheduleBuilder uses local component state (`useState`) for the schedule store, not the shared module state. This keeps schedule edits isolated from trail data:
+
+```javascript
+const [scheduleStore, setScheduleStore] = useState(() => ({}));
+```
+
+Changes are persisted via `updateMonthSchedule()` which uses functional state updates and broadcasts to subscribers.
+
+## Component Hierarchy
+
+```
+App (BrowserRouter)
+├── Home (/)
+│   ├── FilterPanel
+│   │   ├── Search input
+│   │   ├── Distance/Elevation range sliders
+│   │   ├── Difficulty toggle buttons
+│   │   ├── Month toggle buttons
+│   │   ├── Sort buttons (A-Z, Pop, Elev, Dist)
+│   │   └── Wilderness toggle
+│   └── TrailList
+│       └── TrailCard (×N)
+│           └── Copy Report button
+├── TrailDetail (/trail/:id)
+│   ├── Navigation bar (← Browse, Trail X of N, Prev/Next, Copy Report)
+│   ├── Header (name, difficulty badge)
+│   ├── Stats Grid (distance, elevation, parking, ride)
+│   ├── Sections (description, notes, months, season, pros, others, leaders, altNames)
+│   ├── Settings menu (gear icon — Export/Import)
+│   └── Edit modal (pencil button)
+│       ├── Basic info form
+│       ├── Distance & elevation form
+│       ├── Seasonal info form
+│       └── Content form
+├── TrailManager (/trails)
+│   ├── Search input
+│   ├── Action buttons (New, Export, Import, Export for Excel)
+│   └── Table (index, name, distance, difficulty, actions)
+└── ScheduleBuilder (/schedule)
+    ├── Month selector dropdown
+    ├── FilterPanel (reused)
+    ├── Scheduled section (toggleable grid)
+    ├── Available hikes panel (draggable)
+    └── Date cards panel (drop targets)
+```
+
+## Hook Architecture
+
+```
+useTrailStore (shared state + API CRUD)
+├── initSharedState() — loads all data on module eval
+├── saveTrail() — PUT /api/trails/:id
+├── saveTrailDetail() — PUT /api/trails/details/:id
+├── deleteTrail() — DELETE /api/trails/:id
+├── exportJSON() — returns { trails, trailDetails }
+└── importJSON() — bulk PUT via API
+
+useTrails (wrapper)
+└── useTrailStore() → returns { trails, lookup, schedule, trailDetails, loading }
+
+useTrailDetails (thin accessor)
+└── useTrailStore() → returns trailDetails
+
+useFilters (filter state + derived data)
+├── useFiltersStore() — shared filter state + subscribers
+├── filterTrails() — applies all filter criteria
+└── sortTrails() — applies sort order
 ```
 
 ## Data Flow
 
-### Data Pipeline
+### Initial Load
 
 ```
-Excel Files (.xls)
-       │
-       ▼
-┌──────────────────────┐
-│ extract_trails_xls.py│  Python script
-│ (Index + Sheets)     │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ exported_data/       │  JSON output
-│ trails.json          │
-│ trail_details.json   │
-│ lookup.json          │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ match_schedule.py    │  Python script
-│ (Schedule matching)  │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ exported_data/       │  Updated JSON
-│ trails.json          │  (with scores)
-│ schedule.json        │  (generated, with trail_ids)
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ hiker-app/public/    │  Copy to app
-│ data/*.json          │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ npm run build        │  Vite production build
-│ (singlefile plugin)  │  Embeds JSON into HTML
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ dist/index.html      │  Single standalone file
-│ (~582KB)             │
-└──────────────────────┘
-```
-
-### Runtime Data Flow
-
-```
-App Start
+Module eval: initSharedState()
     │
-    ├── useTrailStore initializes IndexedDB (hiker-trails)
+    ├── Promise.all([
+    │     api.getTrails()        → GET /api/trails
+    │     api.getTrailDetails()  → GET /api/trails/details
+    │     api.getLookup()        → GET /api/lookup
+    │     api.getSchedule()      → GET /api/schedule
+    │   ])
+    │
+    ├── setState(trails, details, false, lookup, schedule)
     │   │
-    │   ├── DB empty? → Seed from embedded data
-    │   └── DB has data? → Smart merge:
-    │       ├── Add new trails from embedded data
-    │       └── Preserve existing trail edits
+    │   ├── _trails = trails
+    │   ├── _trailDetails = details
+    │   ├── _loading = false
+    │   ├── _lookup = lookup
+    │   ├── _schedule = schedule
+    │   │
+    │   └── notifySubscribers()  → all components re-render
     │
-    ├── useTrails reads from IndexedDB via useTrailStore
-    ├── useTrailDetails reads from IndexedDB via useTrailStore
-    ├── schedule.json → useTrails hook (embedded, static reference)
-    └── lookup.json → reference data (embedded, static reference)
+    └── useFilters(trails) computes filteredTrails + sortedTrails
 ```
 
-## Component Architecture
+### Trail Edit
 
-### Pages
-
-| Component | Path | Purpose |
-|-----------|------|---------|
-| Home | `src/pages/Home.jsx` | Landing page with trail grid, filters, links to Trail Manager |
-| TrailDetail | `src/pages/TrailDetail.jsx` | Full trail info with edit capability, persists to IndexedDB |
-| TrailManager | `src/pages/TrailManager.jsx` | CRUD interface for trails with search, index numbers, import/export |
-| ScheduleBuilder | `src/pages/ScheduleBuilder.jsx` | Two-panel drag-and-drop schedule builder |
-
-### Components
-
-| Component | Path | Purpose |
-|-----------|------|---------|
-| FilterPanel | `src/components/FilterPanel.jsx` | Filter by distance, elevation, difficulty, months |
-| TrailCard | `src/components/TrailCard.jsx` | Trail summary card for grid |
-| TrailList | `src/components/TrailList.jsx` | Responsive grid layout |
-
-### Hooks
-
-| Hook | Path | Purpose |
-|------|------|---------|
-| useTrailStore | `src/hooks/useTrailStore.js` | IndexedDB CRUD operations with smart merge on seed |
-| useTrails | `src/hooks/useTrails.js` | Read trail data from IndexedDB via useTrailStore |
-| useTrailDetails | `src/hooks/useTrailDetails.js` | Read trail details from IndexedDB via useTrailStore |
-| useFilters | `src/hooks/useTrails.js` | Shared filter state and sorting (co-located with `useTrails`) |
-
-### Utilities
-
-| Module | Path | Purpose |
-|--------|------|---------|
-| filterTrails | `src/utils/filterTrails.js` | Shared filter and sort logic (browse + schedule) |
-| formatTrail | `src/utils/formatTrail.js` | Shared trail formatting |
-| constants | `src/utils/constants.js` | Shared constants (months, difficulties, etc.) |
-| report | `src/utils/report.js` | Report generation utilities |
-| data | `src/utils/data.js` | Trail details access |
-
-## Storage Strategy
-
-### Embedded Data (Production)
-
-JSON data is embedded directly into the HTML file at build time via a custom Vite plugin (`vite.config.js`). This enables:
-- Zero server requirements
-- Works from `file://` protocol
-- Single file deployment
-
-### IndexedDB (Trail Data)
-
-Trail data and edits are stored in IndexedDB (`hiker-trails` database) with two object stores:
-- `trails` (keyPath: `id`) — Main trail records
-- `details` (keyPath: `id`) — Extended trail details
-
-**Smart Merge on Seed:** On app load, embedded data is merged with IndexedDB:
-- New trails from embedded data are added to the database
-- Existing trail edits in IndexedDB are preserved
-- This allows rebuilding the app without losing user edits
-
-### localStorage Keys
-
-| Key | Content |
-|-----|---------|
-| `hiker-schedule` | Per-month schedule: `{ "June": { 3: { trail_id: "elwha", hike: "Elwha Delta" }, 5: { trail_id: "mt-townsend", hike: "Mt. Townsend" } } }` |
-| `hiker-schedule-debug` | Debug mode toggle (`true`/`false`) |
-
-### Export Formats
-
-| Format | File | Purpose |
-|--------|------|---------|
-| `trail-data-export.json` | Full backup for app import | `{ trails: { trails: [...] }, trailDetails: {...} }` |
-| `export_for_excel.json` | Python script input | `{ trails: [...], trail_details: {...} }` |
-
-### Schedule Data Structure
-
-```json
-{
-  "June": {
-    "3": { "trail_id": "elwha", "hike": "Elwha Delta (Place Road )" },
-    "5": { "trail_id": "mt-townsend", "hike": "Mt. Townsend" },
-    "10": { "trail_id": "lovers-lane", "hike": "Lovers Lane" }
-  },
-  "July": {
-    "1": { "trail_id": "deer-park", "hike": "Deer Park" }
-  }
-}
+```
+User clicks pencil → Edit modal opens
+User modifies fields → updateField() sets editedFields state
+User clicks Save → saveEdits()
+    │
+    ├── build updatedTrail object
+    │   └── api.updateTrail(trail) → PUT /api/trails/:id
+    │
+    ├── build updatedDetail object
+    │   └── api.updateTrailDetail(id, detail) → PUT /api/trails/details/:id
+    │
+    └── setIsEditMode(false)
 ```
 
-## Routing Strategy
+### Schedule Assignment
 
-### MemoryRouter (file:// protocol)
+```
+User drags hike card → handleDragStart(hikeIndex, null, hikeName)
+    │
+    └── setDragData({ hikeIndex, sourceDay, hikeName })
 
-The app uses `MemoryRouter` instead of `BrowserRouter` to work with `file://` protocol. This avoids:
-- CORS issues with file://
-- 404 errors on page refresh
-- Server-side routing requirements
+User drops on date → handleDropOnDate(targetDay)
+    │
+    ├── trailId = trailIndexToId[hikeIndex]
+    │
+    └── updateMonthSchedule(monthName, prev => {
+            delete next[sourceDay]   // remove from old position
+            next[targetDay] = { trail_id, hike }
+        })
+    │
+    └── setScheduleStore(newStore) → re-renders
+```
 
-### URL Structure
+### Data Write-back (Server)
 
-| Route | Page |
-|-------|------|
-| `/` | Home |
-| `/trail/:id` | Trail detail |
-| `/trails` | Trail Manager (CRUD) |
-| `/schedule` | Schedule Builder |
+```
+API PUT /api/trails/:id
+    │
+    ├── requireAdminKey middleware — validates X-API-Key via timingSafeEqual
+    │
+    ├── dataService.updateTrail(trail)
+    │   ├── Find trail in memory array
+    │   ├── Update in-place or push new
+    │   └── writeWithHealth('trails.json', { trails })
+    │       └── fs.writeFile(path, JSON.stringify(data, null, 2))
+    │
+    └── setState() notifies subscribers
+```
 
-## Build Pipeline
+## Shared Types System
 
-### Vite Configuration
+```
+shared/types/index.ts  (TypeScript interfaces)
+         │
+         ▼  scripts/compile-shared.js
+    npx tsc (NodeNext module)
+         │
+         ▼  scripts/patch-shared-imports.js
+    Patch relative imports: `.ts` → `.js`
+         │
+         ▼
+shared/types/index.js   (compiled JS for Node)
+shared/types/index.d.ts (type declarations)
+```
+
+The compile script creates a temp directory, copies `.ts` files, compiles with `npx tsc`, then copies `.js` output back. The patch script adds `.js` extensions to relative imports (required by Node ESM).
+
+**Types exported**: `Trail`, `TrailDetail`, `ScheduleEntry`, `ScheduleData`, `LookupData`, `TrailsData`, `TrailDetailsData`, `ServerData`, `SeasonalData`.
+
+## Server Architecture
+
+### Express App Structure
+
+```
+server/src/index.ts
+├── Middleware
+│   ├── Request timing logger
+│   ├── Rate limiter (2000 req / 15 min)
+│   ├── CORS (configurable origins)
+│   ├── Helmet (CSP, security headers)
+│   └── JSON/URL body parsers (1mb limit)
+│
+├── Routes
+│   ├── /api/trails — trails.routes.ts
+│   ├── /api/schedule — schedule.routes.ts
+│   └── /api/lookup — lookup.routes.ts
+│
+├── /health — GET health + write health status
+│
+└── Static serving (production only)
+    ├── express.static('dist/')
+    └── fallback to index.html (client-side routing)
+```
+
+### Middleware Pipeline
+
+```
+Request
+    │
+    ▼
+Timing logger (adds duration to console.log)
+    │
+    ▼
+Rate limiter (/api only) — 2000 req / 15 min
+    │
+    ▼
+CORS — configurable origins, credentials, methods
+    │
+    ▼
+Helmet — CSP (defaultSrc: self, scriptSrc: self, styleSrc: self + unsafe-inline)
+    │
+    ▼
+Body parsers — JSON + URL-encoded (1mb each)
+    │
+    ▼
+Route handler
+```
+
+### Auth Middleware
+
+```typescript
+requireAdminKey(req, res, next)
+    │
+    ├── Check ADMIN_API_KEY is configured
+    ├── Read X-API-Key from headers
+    ├── crypto.timingSafeEqual() — constant-time comparison
+    │   └── Pads buffers to max length if sizes differ
+    │
+    └── Set req.role = 'admin'
+```
+
+### Data Service (`dataService.ts`)
+
+```
+loadData() — reads all JSON files from exported_data/
+    ├── trails.json → Trail[]
+    ├── trail_details.json → TrailDetailsData
+    ├── lookup.json → LookupData
+    └── schedule.json → ScheduleData
+
+writeWithHealth(filePath, data) — atomic write with health tracking
+    ├── fs.writeFile(path, JSON.stringify(data, null, 2))
+    ├── Updates writeHealth: lastWriteTime, lastWriteSuccess, consecutiveFailures
+    └── On error: records lastError, lastErrorTime, increments consecutiveFailures
+```
+
+### Route Handlers
+
+**trails.routes.ts**:
+```
+GET  /api/trails          → { trails: getTrails() }
+GET  /api/trails/:id      → getTrailById(id)
+GET  /api/trails/details  → getTrailDetails()
+GET  /api/trails/details/:id → getTrailDetailById(id)
+PUT  /api/trails/:id      → requireAdminKey + updateTrail()
+PUT  /api/trails/details/:id → requireAdminKey + updateTrailDetail()
+DELETE /api/trails/:id    → requireAdminKey + deleteTrail()
+```
+
+**schedule.routes.ts**:
+```
+GET  /api/schedule              → getSchedule()
+GET  /api/schedule/report       → Text report for quarter(s) (Q1=Dec/Jan/Feb, etc.)
+GET  /api/schedule/download     → TSV download for quarter(s)
+POST /api/schedule/upload       → requireAdminKey + multer file upload + TSV parse
+```
+
+**lookup.routes.ts**:
+```
+GET /api/lookup → getLookup()
+```
+
+## Vite Configuration
 
 ```javascript
 // vite.config.js
-export default defineConfig({
-  plugins: [
-    react(),
-    viteSingleFile(),  // Inline assets
-    {
-      name: 'embed-json-data',  // Custom: reads public/data/*.json, injects window.__EMBEDDED_DATA__
-      transformIndexHtml() { ... }
-    }
-  ]
-})
-```
-
-### Custom JSON Embed Plugin
-
-1. Reads `public/data/*.json` files at build time
-2. Serializes them into a JavaScript object
-3. Injects `window.__EMBEDDED_DATA__` before app initialization
-4. Singlefile plugin inlines all JS/CSS into the HTML
-
-### Build Output
-
-| File | Size | Description |
-|------|------|-------------|
-| `dist/index.html` | ~582KB | Single standalone HTML file with embedded JS, CSS, and data |
-
-### Test Suite
-
-| Metric | Count |
-|--------|-------|
-| Test Files | 13 |
-| Tests | 157 |
-| Framework | Vitest + jsdom + testing-library |
-
-## Data Models
-
-### Trail
-
-```json
 {
-  "id": "anderson",
-  "name": "And_Lk_TR",
-  "fullName": "Anderson Lake State Park",
-  "distance": 5,
-  "distanceExtended": 7.1,
-  "elevationStart": 250,
-  "elevationMax": 600,
-  "difficulty": "Easy to Mod",
-  "parking": "Discover",
-  "range": "30",
-  "notes": "Anderson Lake State Park",
-  "seasonal": {
-    "Jan": 0, "Feb": 0, "Mar": 0, "Apr": 2,
-    "May": 0, "Jun": 2, "Jul": 2, "Aug": 0,
-    "Sep": 0, "Oct": 0, "Nov": 0, "Dec": 6
+  base: mode === 'production' ? '/sothh-app/' : '/',
+  plugins: [react()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+      '/health': { target: 'http://localhost:3000', changeOrigin: true },
+    },
   },
-  "difficultyOrder": 2
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: { provider: 'v8', reporter: ['text', 'lcov'] },
+  },
 }
 ```
 
-### Month Score System
+The dev server proxies `/api` and `/health` requests to the Express server (port 3000). In production, the Express server serves the static `dist/` build directly.
 
-```
-score = base + (hike_count * 2)
-capped at 9
+## API Client (`api/client.js`)
 
-base = 1 if trail has quarters in Excel
-base = 0 if no quarters
+The API client is a plain JavaScript module (no TypeScript) that wraps `fetch`:
 
-hike_count = number of hikes in schedule for that month
-```
+```javascript
+request(path, options)
+    │
+    ├── Builds URL: `${API_BASE}${path}`
+    │   └── API_BASE = import.meta.env.VITE_API_BASE || ''
+    │
+    ├── Sets headers: Content-Type + options.headers + X-API-Key (if apiKey option)
+    │   └── X-API-Key from localStorage('hiker-api-key')
+    │
+    ├── Sends request with JSON body
+    │
+    └── On error: throws Error from JSON error response
 
-### Schedule Entry
-
-```json
-{
-  "day": 3,
-  "hike": "Elwha Delta (Place Road )",
-  "trail_id": "elwha"
-}
-```
-
-### Lookup Reference Data
-
-| Collection | Fields |
-|------------|--------|
-| difficulties | name, description, color |
-| parkingLevels | name, description, color |
-| months | name, abbreviation, season |
-
-## Excel Data Structure
-
-### Hike Data BaseM.xls
-
-| Sheet | Content |
-|-------|---------|
-| Index | Trail overview (distance, elevation, difficulty, quarters) |
-| [trail-name] | Individual trail details (parking, range, descriptions) |
-
-### SOTHH schedule.xls
-
-| Sheet | Content |
-|-------|---------|
-| 2Q22 Hikes | Hike schedule Q2 2022 |
-| 3Q22 Hikes | Hike schedule Q3 2022 |
-| ... | ... (17 quarters total, 2022-2026) |
-| 2Q26 Hikes | Hike schedule Q2 2026 |
-
-### Quarter Column Structures
-
-The Index sheet has fixed quarter columns:
-- Q1 (col H): Dec, Jan, Feb
-- Q2 (col I): Mar, Apr, May
-- Q3 (col L): Jun, Jul, Aug
-- Q4 (col P): Sep, Oct, Nov
-
-### Quarter Mapping
-
-| Quarter | Months |
-|---------|--------|
-| Q1 | Dec, Jan, Feb |
-| Q2 | Mar, Apr, May |
-| Q3 | Jun, Jul, Aug |
-| Q4 | Sep, Oct, Nov |
-
-## File Structure
-
-```
-D:\hiker\
-├── Hike Data BaseM.xls        # Source trail database (NEVER committed)
-├── SOTHH schedule.xls          # Source hike schedule (NEVER committed)
-├── README.md                   # User documentation
-├── ARCHITECTURE.md             # This file
-├── USAGE.md                    # Usage guide
-├── extract_trails_xls.py       # Excel extraction script
-├── match_schedule.py           # Schedule matching script
-├── export_to_xls.py            # JSON → Excel export script
-├── exported_data/              # Extracted JSON data (NEVER committed)
-│   ├── trails.json             # Main trail database
-│   ├── trail_details.json      # Extended trail info
-│   ├── lookup.json             # Reference data
-│   └── schedule.json           # Schedule hikes with trail IDs
-└── hiker-app/                  # React application
-    ├── public/
-    │   └── data/               # JSON data files (pre-build)
-    │       ├── trails.json
-    │       ├── trail_details.json
-    │       ├── lookup.json
-    │       └── schedule.json
-    ├── src/
-    │   ├── App.jsx             # Root component (MemoryRouter)
-    │   ├── main.jsx            # Entry point
-    │   ├── index.css           # Global styles
-    │   ├── components/         # Reusable components
-    │   │   ├── FilterPanel.jsx
-    │   │   ├── TrailCard.jsx
-    │   │   └── TrailList.jsx
-    │   ├── pages/              # Page components
-    │   │   ├── Home.jsx
-    │   │   ├── TrailDetail.jsx
-    │   │   ├── TrailManager.jsx
-    │   │   └── ScheduleBuilder.jsx
-    │   ├── hooks/              # Custom hooks
-    │   │   ├── useTrailStore.js   # IndexedDB CRUD with smart merge
-    │   │   ├── useTrails.js       # (also contains useFilters)
-    │   │   └── useTrailDetails.js
-    │   ├── utils/              # Utility functions
-    │   │   ├── filterTrails.js
-    │   │   ├── formatTrail.js
-    │   │   ├── constants.js
-    │   │   ├── report.js
-    │   │   ├── data.js
-    │   │   └── io.js             # File import/export utilities
-    │   └── test/               # Test suite
-    │       ├── setup.ts        # IndexedDB mock (fake-indexeddb)
-    │       ├── utils/          # Utility tests
-    │       ├── hooks/          # Hook tests
-    │       ├── components/     # Component tests
-    │       └── pages/          # Page tests
-    ├── dist/                   # Production build
-    │   └── index.html          # Single standalone file
-    ├── vite.config.js          # Build configuration
-    ├── package.json
-    └── index.html              # HTML template
+getTrails(), getTrailById(id), updateTrail(trail), deleteTrail(id),
+getTrailDetails(), getTrailDetailById(id), updateTrailDetail(id, detail),
+getLookup(), getSchedule(), uploadSchedule(file),
+getScheduleReport(quarter), getScheduleDownload(quarter)
 ```
 
-## Protocol Compatibility
+## Utility Modules
 
-| Protocol | Router | Data Source | CORS |
-|----------|--------|-------------|------|
-| `file://` | MemoryRouter | Embedded data | N/A |
-| `http://` | MemoryRouter | Fetch from /data/ | Blocked |
+### filterTrails.js — Core Filter/Sort Logic
 
-`useTrailDetails` checks `window.location.protocol !== 'file:'` to decide between:
-1. Embedded data (no fetch needed, file://)
-2. Fetch from server (fails on file:// due to CORS)
+Shared between browse and schedule views. Works on both trail objects and `{ trail, hike, hikeIndex }` wrapper objects.
 
-`useTrails` checks `window.__EMBEDDED_DATA__` for embedded data, falling back to `fetch('/data/*.json')`.
+```javascript
+filterTrails(items, filters)
+    │
+    ├── Search: fuzzy match across hike name, trail name, fullName, notes,
+    │          difficulty, and seasonal months
+    ├── Distance: min/max range
+    ├── Elevation: min/max range
+    ├── Difficulty: inclusion check
+    ├── Months: seasonal score > 0 check
+    └── Wilderness: ◆ character in fullName
 
-## Performance Considerations
+sortTrails(items, filters)
+    │
+    ├── name: localeCompare on fullName
+    ├── popularity: sum of seasonal scores for selected months
+    ├── elevation-up/down: elevationStart comparison
+    ├── distance-up/down: distance comparison
+    └── not-wilderness: ◆ presence, then name sort
+```
 
-- **Single file deployment**: ~590KB total, gzips to ~145KB
-- **No network requests at runtime**: All data embedded
-- **IndexedDB storage**: ~50MB+ capacity, native browser persistence, works with `file://` protocol
-- **Smart merge on seed**: Adds new trails from embedded data without losing user edits
-- **MemoryRouter**: No hash or history API overhead
-- **React 19**: Latest optimizations
-- **Comprehensive test suite**: 157 tests across 13 files with IndexedDB mocks
+### report.js — Report Generation
 
-## Security Considerations
+```javascript
+generateReportText(trail, trailDetails)
+    │
+    ├── formatTrailLine(trail) — "Name◆︎  [Difficulty]\tdist/elev\tparking\tride-$X"
+    │
+    └── Append fullDescription (stripped of Pros/Others metadata)
 
-- **No backend**: No server-side vulnerabilities
-- **localStorage only**: No external data transmission
-- **XSS prevention**: React auto-escapes content
-- **No user authentication**: Local-only application
-- **Data integrity**: Edits stored client-side only
+getRideCost(range) — VBA-compatible formula:
+    │
+    ├── < 30 → ride-$3
+    ├── < 60 → ride-$5
+    ├── < 90 → ride-$7
+    └── >= 90 → ride-$10
+```
+
+### data.js — Trail Detail Lookup
+
+Handles ID mismatch fallback:
+```javascript
+getTrailDetailsById(details, trailId)
+    │
+    ├── Exact match: details[trailId]
+    │
+    └── Fallback: split trailId by '-', check base segment
+        └── "360-rd" → "360"
+```
+
+### formatTrail.js — Trail Line Formatting
+
+```javascript
+formatTrailLine(trail)
+    │
+    ├── Strip ◆ characters from name
+    ├── Format: "Name◆︎  [Difficulty]\tdist-dist'\-max'\tparking\tride-$X"
+    └── Tab-separated for TSV export
+```
+
+### io.js — File I/O
+
+```javascript
+downloadBlob(data, filename, type)
+    │
+    └── Blob → URL.createObjectURL → <a download> → revoke
+
+createImportFileInput(onImport, onError)
+    │
+    └── Create hidden <input type="file"> → FileReader → JSON.parse → callback
+```
+
+### constants.js
+
+```javascript
+MONTH_NAMES — 12 full month names
+MONTH_ABBR — 12 abbreviations
+DAY_NAMES — 7 day names
+DEFAULT_FILTERS — { search, distanceMin/Max, elevationMin/Max, difficulties, months, sortBy, wilderness }
+DIFFICULTY_COLORS — Map of difficulty → Tailwind bg/text classes
+```
+
+## Test Architecture
+
+```
+src/test/
+├── setup.ts            — fake-indexeddb mock
+├── utils/              — Tests for filterTrails, formatTrail, report, data, constants, io
+├── hooks/              — Tests for useFilters
+├── components/         — Tests for FilterPanel, TrailCard, TrailList
+└── pages/              — Tests for Home, TrailDetail, ScheduleBuilder
+```
+
+- Framework: Vitest 4 + jsdom + testing-library
+- Coverage: V8 provider (text + lcov reporters)
+- IndexedDB: Mocked via `fake-indexeddb` in `setup.ts`
+
+## Build Pipeline
+
+```
+npm run build:all
+    │
+    ├── npm run build (Vite)
+    │   ├── React compilation (@vitejs/plugin-react)
+    │   ├── Tailwind CSS processing
+    │   ├── Output to dist/
+    │   └── Base URL: /sothh-app/ (production)
+    │
+    └── npm run build:server (TypeScript)
+        ├── tsc (server/tsconfig.json)
+        ├── Output to server/dist/
+        └── scripts/flatten-server-dist.js (handles nested output)
+```
+
+## Deployment Modes
+
+### Dev Mode
+```
+Vite (5173) — static files + HMR
+    └── proxy /api → localhost:3000
+    └── proxy /health → localhost:3000
+
+Express (3000) — API server
+    └── serves /api/*, /health
+    └── reads/writes exported_data/
+    └── proxy mode: forwards to Vite for non-API routes
+```
+
+### Production Mode
+```
+Express (PORT) — single process
+    ├── serves /api/*, /health
+    ├── serves static dist/ files
+    └── fallback: send index.html for client-side routing
+
+    reads/writes exported_data/
+```
+
+### Nginx Reverse Proxy
+```
+/<SUBDOMAIN>/ → alias to frontend (SOTHH app)
+/api/* → proxy_pass to Express
+/health → proxy_pass to Express
+```
