@@ -215,19 +215,11 @@ fi
 
 echo "[6/10] Installing server dependencies..."
 if [ -f "server/package.json" ]; then
-    if [ ! -d "server/node_modules" ]; then
-        echo "  server/node_modules missing — must install."
-        INSTALL_DEPS=true
+    if ! (cd server && npm install); then
+        echo "  ERROR: Server npm install failed."
+        exit 1
     fi
-    if [ "$INSTALL_DEPS" = true ]; then
-        if ! (cd server && npm install); then
-            echo "  ERROR: Server npm install failed."
-            exit 1
-        fi
-        echo "  Server dependencies installed."
-    else
-        echo "  Skipped - package cooldown active."
-    fi
+    echo "  Server dependencies installed."
 fi
 if [ "$INSTALL_DEPS" = true ]; then
     record_package_update
