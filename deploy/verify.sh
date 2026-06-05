@@ -275,12 +275,13 @@ if command -v curl &>/dev/null; then
     # --- Frontend Check ---
     HTTPS_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "$FRONTEND_URL" 2>/dev/null | tr -d '[:space:]')
     if [[ "$HTTPS_CODE" =~ ^0+$ || -z "$HTTPS_CODE" ]]; then
-        LOCAL_FRONTEND_URL="http://localhost:$SERVER_PORT/"
+        SUBPATH=$(echo "$FRONTEND_URL" | sed -E 's|^https?://[^/]+||')
+        LOCAL_FRONTEND_URL="http://localhost:$SERVER_PORT$SUBPATH"
         LOCAL_HTTPS_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "$LOCAL_FRONTEND_URL" 2>/dev/null | tr -d '[:space:]')
         if [[ "$LOCAL_HTTPS_CODE" =~ ^0+$ || -z "$LOCAL_HTTPS_CODE" ]]; then
             HTTPS_CODE="000"
         elif [ "$LOCAL_HTTPS_CODE" = "200" ]; then
-            warn "Public $FRONTEND_URL unreachable (DNS/NAT?), but http://localhost:$SERVER_PORT/ is OK"
+            warn "Public $FRONTEND_URL unreachable (DNS/NAT?), but $LOCAL_FRONTEND_URL is OK"
             HTTPS_CODE="200"
         else
             HTTPS_CODE="$LOCAL_HTTPS_CODE"
