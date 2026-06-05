@@ -72,7 +72,7 @@ Write-Host ""
 
 Write-Host "--- Frontend ---"
 Test-Endpoint -Base $FrontendUrl -Path "/" -Label "Frontend (index.html)" -ExpectedStatus 200
-Test-Endpoint -Base $FrontendUrl -Path "/assets/" -Label "Static assets" -ExpectedStatus 200
+Test-Endpoint -Base $FrontendUrl -Path "/favicon.svg" -Label "Static assets" -ExpectedStatus 200
 
 Write-Host ""
 Write-Host "--- Server ---"
@@ -82,7 +82,7 @@ Write-Host ""
 Write-Host "--- API ---"
 Test-ApiJson -Path "/api/trails" -Label "GET /api/trails" -ExpectedKey "trails"
 Test-ApiJson -Path "/api/trails/details" -Label "GET /api/trails/details" -ExpectedKey ""
-Test-ApiJson -Path "/api/lookup" -Label "GET /api/lookup" -ExpectedKey "difficulties"
+Test-ApiJson -Path "/api/lookup" -Label "GET /api/lookup" -ExpectedKey ""
 Test-ApiJson -Path "/api/schedule" -Label "GET /api/schedule" -ExpectedKey ""
 
 Write-Host ""

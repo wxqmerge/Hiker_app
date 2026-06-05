@@ -152,6 +152,8 @@ class TrailExtractor:
                     valid_parking = {'Discover', "Nat'l Park/Golden", 'NW Forest/Golden', 'N/A', 'n/a',
                                    'Am Beau/Golden', 'Limited 2', 'Limited 3', 'Limited 4'}
                     parking = str(parking_raw) if pd.notna(parking_raw) and str(parking_raw) in valid_parking else ''
+                    if parking.lower() == 'n/a':
+                        parking = 'N/A'
                 except:
                     parking = ''
                 
