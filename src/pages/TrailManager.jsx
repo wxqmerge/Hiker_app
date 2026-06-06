@@ -12,9 +12,19 @@ export default function TrailManager() {
   const [search, setSearch] = useState('');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const getScheduleCount = (trailId) => {
+    const trail = trails.find(t => t.id === trailId);
+    if (!trail) return 0;
     const monthly = trailDetails?.[trailId]?.popularity?.monthly;
     if (!monthly || !Array.isArray(monthly)) return 0;
-    return monthly.reduce((sum, v) => sum + (v || 0), 0);
+    const hasQuarterData = (trail.seasonal?.availableMonths || []).length > 0;
+    const availableMonths = trail.seasonal?.availableMonths || [];
+    return monthly.reduce((sum, v, idx) => {
+      const quarterBase = hasQuarterData ? 1 : 0;
+      const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+      const hikeCount = v || 0;
+      const scheduleBase = Math.min(9, hikeCount * 2);
+      return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
+    }, 0);
   };
   const navigate = useNavigate();
   const hasApiKey = apiKey.trim().length > 0;

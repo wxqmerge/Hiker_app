@@ -115,7 +115,16 @@ const getEditedValue = (field) => {
   };
 
   const monthly = getEditedValue('monthlyPopularity') || [];
-  const scheduleCount = monthly.reduce((sum, v) => sum + (v || 0), 0);
+  const trailSeasonal = trail?.seasonal || {};
+  const hasQuarterData = (trailSeasonal.availableMonths || []).length > 0;
+  const availableMonths = trailSeasonal.availableMonths || [];
+  const scheduleCount = monthly.reduce((sum, v, idx) => {
+    const quarterBase = hasQuarterData ? 1 : 0;
+    const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+    const hikeCount = v || 0;
+    const scheduleBase = Math.min(9, hikeCount * 2);
+    return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
+  }, 0);
 
   const startEditMode = () => {
     setEditedFields({});
@@ -475,7 +484,17 @@ const getEditedValue = (field) => {
 
             {(() => {
               const monthly = trailDetailsResult?.[id]?.popularity?.monthly || [];
-              const computedCount = monthly.reduce((sum, v) => sum + (v || 0), 0);
+              const trailForPop = trails.find(t => t.id === id);
+              const popSeasonal = trailForPop?.seasonal || {};
+              const hasQuarterData = (popSeasonal.availableMonths || []).length > 0;
+              const availableMonths = popSeasonal.availableMonths || [];
+              const computedCount = monthly.reduce((sum, v, idx) => {
+                const quarterBase = hasQuarterData ? 1 : 0;
+                const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+                const hikeCount = v || 0;
+                const scheduleBase = Math.min(9, hikeCount * 2);
+                return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
+              }, 0);
               if (computedCount === 0 && monthly.length === 0) return null;
               return (
                 <div className="mb-6">
@@ -493,15 +512,19 @@ const getEditedValue = (field) => {
                         <p className="text-sm text-gray-500 mb-2">Monthly Popularity</p>
                         <div className="flex gap-1.5 flex-wrap">
                           {MONTH_ABBR.map((month, idx) => {
-                            const val = monthly[idx] || 0;
-                            const intensity = Math.min(val / 10, 1);
-                            const bg = val > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
-                            const text = val > 0 ? 'text-green-800' : 'text-gray-400';
+                            const hikeCount = monthly[idx] || 0;
+                            const quarterBase = hasQuarterData ? 1 : 0;
+                            const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+                            const scheduleBase = Math.min(9, hikeCount * 2);
+                            const score = Math.min(9, quarterBase + monthBase + scheduleBase);
+                            const intensity = Math.min(score / 9, 1);
+                            const bg = score > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
+                            const text = score > 0 ? 'text-green-800' : 'text-gray-400';
                             return (
                               <div
                                 key={idx}
                                 className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium ${bg} ${text}`}
-                                title={`${month}: ${val}`}
+                                title={`${month}: ${hikeCount} hikes -> score ${score}`}
                               >
                                 <span className="text-[9px] leading-none">{month.substring(0, 3)}</span>
                                 {val > 0 && <span className="text-sm leading-none mt-0.5 font-bold">{val}</span>}
@@ -699,7 +722,7 @@ const getEditedValue = (field) => {
                               updateField('monthlyPopularity', monthly);
                             }}
                             className="w-12 text-center px-1 py-1 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
-                            title={`${month} popularity score`}
+                            title={`${month} hike count`}
                           />
                         </div>
                       ))}
@@ -711,8 +734,9 @@ const getEditedValue = (field) => {
                         return MONTH_ABBR.map((month, idx) => {
                           const quarterBase = hasQuarterData ? 1 : 0;
                           const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-                          const score = getEditedValue('monthlyPopularity')[idx] || 0;
-                          const scheduleBase = Math.max(0, Math.min(9, score - quarterBase - monthBase));
+                          const hikeCount = getEditedValue('monthlyPopularity')[idx] || 0;
+                          const scheduleBase = Math.min(9, hikeCount * 2);
+                          const score = Math.min(9, quarterBase + monthBase + scheduleBase);
                           return (
                             <div key={idx} className="flex flex-col items-center min-w-[40px]">
                               <span className="text-[9px] text-gray-400 leading-tight">
