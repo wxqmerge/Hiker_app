@@ -1,3 +1,4 @@
+import { useRef, useCallback, useEffect } from 'react';
 import { useTooltips } from '../hooks/useTooltips';
 
 export default function DualRangeSlider({
@@ -11,24 +12,71 @@ export default function DualRangeSlider({
   label,
 }) {
   const { title: tt } = useTooltips();
-  const barRef = null;
+  const containerRef = useRef(null);
+  const activeHandleRef = useRef(null);
 
   const pct = (v) => ((v - min) / (max - min)) * 100;
 
-  const handleMinChange = (e) => {
-    const v = parseFloat(e.target.value);
-    onChange({ ...value, min: Math.min(v, value.max - step) });
-  };
+  const getValueFromPosition = useCallback((clientX) => {
+    const container = containerRef.current;
+    if (!container) return null;
+    const rect = container.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const rawValue = min + ratio * (max - min);
+    return Math.round(rawValue / step) * step;
+  }, [min, max, step]);
 
-  const handleMaxChange = (e) => {
-    const v = parseFloat(e.target.value);
-    onChange({ ...value, max: Math.max(v, value.min + step) });
-  };
+  const handleMouseDown = useCallback((e) => {
+    const valueFromPos = getValueFromPosition(e.clientX);
+    if (valueFromPos === null) return;
+
+    const distToMin = Math.abs(valueFromPos - value.min);
+    const distToMax = Math.abs(valueFromPos - value.max);
+
+    if (distToMin <= distToMax) {
+      activeHandleRef.current = 'min';
+      const newValue = Math.max(min, Math.min(value.max - step, valueFromPos));
+      onChange({ ...value, min: newValue });
+    } else {
+      activeHandleRef.current = 'max';
+      const newValue = Math.min(max, Math.max(value.min + step, valueFromPos));
+      onChange({ ...value, max: newValue });
+    }
+
+    e.preventDefault();
+  }, [value, min, max, step, onChange, getValueFromPosition]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!activeHandleRef.current) return;
+    const valueFromPos = getValueFromPosition(e.clientX);
+    if (valueFromPos === null) return;
+
+    if (activeHandleRef.current === 'min') {
+      const newValue = Math.max(min, Math.min(value.max - step, valueFromPos));
+      onChange({ ...value, min: newValue });
+    } else {
+      const newValue = Math.min(max, Math.max(value.min + step, valueFromPos));
+      onChange({ ...value, max: newValue });
+    }
+  }, [value, min, max, step, onChange, getValueFromPosition]);
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      activeHandleRef.current = null;
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
 
   return (
     <label className="flex flex-col gap-1 text-sm text-gray-600" title={tooltip ? tt(tooltip) : undefined}>
       <span className="font-medium">{label}</span>
-      <div className="relative flex items-center h-6">
+      <div
+        ref={containerRef}
+        className="relative flex items-center h-6 cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+      >
         {/* Bar background */}
         <div className="absolute w-full h-2 rounded bg-gray-200" />
         {/* Gradient fill between handles */}
@@ -39,30 +87,6 @@ export default function DualRangeSlider({
             width: `${pct(value.max) - pct(value.min)}%`,
             background: 'linear-gradient(to right, #22c55e, #3b82f6)',
           }}
-        />
-        {/* Min handle */}
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value.min}
-          onChange={handleMinChange}
-          className="absolute w-full h-2 opacity-0 cursor-pointer"
-          style={{ zIndex: 2 }}
-          aria-label="Minimum"
-        />
-        {/* Max handle */}
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value.max}
-          onChange={handleMaxChange}
-          className="absolute w-full h-2 opacity-0 cursor-pointer"
-          style={{ zIndex: 1 }}
-          aria-label="Maximum"
         />
         {/* Green min circle */}
         <div

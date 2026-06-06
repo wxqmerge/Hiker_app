@@ -39,14 +39,15 @@ describe('FilterPanel', () => {
 
   it('renders distance and elevation sliders', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
-    const sliders = screen.getAllByRole('slider');
-    expect(sliders.length).toBe(4);
+    expect(screen.getByText('Dist')).toBeInTheDocument();
+    expect(screen.getByText('Elev')).toBeInTheDocument();
+    expect(screen.getByText('0mi – 20mi')).toBeInTheDocument();
+    expect(screen.getByText('0ft – 5000ft')).toBeInTheDocument();
   });
 
   it('renders elevation slider', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
-    const sliders = screen.getAllByRole('slider');
-    expect(sliders.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Elev')).toBeInTheDocument();
   });
 
   it('renders difficulty buttons', () => {
