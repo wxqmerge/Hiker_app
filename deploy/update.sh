@@ -109,7 +109,7 @@ echo "To trace live logs: sudo journalctl -u $SERVICE -f"
 echo ""
 
 # 1. Stash any local changes
-echo "[1/10] Stashing local changes..."
+echo "[1/13] Stashing local changes..."
 if ! git diff --quiet 2>/dev/null; then
     if git stash; then
         echo "  Changes stashed."
@@ -123,7 +123,7 @@ else
 fi
 
 # 2. Pull latest code
-echo "[2/10] Pulling latest code..."
+echo "[2/13] Pulling latest code..."
 if git pull --rebase 2>/dev/null; then
     echo "  Pulled successfully."
 elif git fetch origin main && git reset --hard origin/main; then
@@ -136,7 +136,7 @@ else
 fi
 
 # 3. Validate API keys
-echo "[3/10] Validating API keys..."
+echo "[3/13] Validating API keys..."
 ENV_FILE="$DIR/server/.env"
 if [ ! -f "$ENV_FILE" ]; then
     echo "  ERROR: $ENV_FILE not found."
@@ -167,7 +167,7 @@ fi
 echo "  PORT: $SERVER_PORT"
 
 # 4. Clean stale build artifacts
-echo "[4/10] Cleaning stale build artifacts..."
+echo "[4/13] Cleaning stale build artifacts..."
 if [ -d "dist" ]; then
     rm -rf dist
     echo "  Removed dist/"
@@ -182,7 +182,7 @@ if [ -d "shared/types" ]; then
 fi
 
 # 5. Install frontend dependencies and build
-echo "[5/10] Installing frontend dependencies..."
+echo "[5/13] Installing frontend dependencies..."
 INSTALL_DEPS=false
 if [ -f "package.json" ]; then
     if [ ! -d "node_modules" ]; then
@@ -210,7 +210,7 @@ if [ -f "package.json" ]; then
     fi
 fi
 
-echo "[6/10] Installing server dependencies..."
+echo "[6/13] Installing server dependencies..."
 if [ -f "server/package.json" ]; then
     if ! (cd server && npm install); then
         echo "  ERROR: Server npm install failed."
@@ -222,7 +222,7 @@ if [ "$INSTALL_DEPS" = true ]; then
     record_package_update
 fi
 
-echo "[7/10] Building frontend + server..."
+echo "[7/13] Building frontend + server..."
 if ! npm run build:all; then
     echo "  ERROR: Build failed."
     echo "  Aborting. Check build output above."
@@ -231,7 +231,7 @@ fi
 echo "  Build complete."
 
 # 8. Fix systemd service file
-echo "[8/10] Fixing systemd service file if needed..."
+echo "[8/13] Fixing systemd service file if needed..."
 SERVICE_FILE="/etc/systemd/system/$SERVICE.service"
 if [ -f "$SERVICE_FILE" ]; then
     HAS_ENV_FILE=$(grep -c '^EnvironmentFile=' "$SERVICE_FILE" || true)
@@ -281,8 +281,9 @@ echo "  Reloading systemd daemon..."
 sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 
 # 9. Apply nginx config
-echo "[9/12] Applying nginx config..."
+echo "[9/13] Applying nginx config..."
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
+NGINX_NEEDS_RELOAD=false
 if [ -f "$NGINX_CONF" ]; then
     if ! grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
         sudo sed -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_CONF"
@@ -292,13 +293,7 @@ if [ -f "$NGINX_CONF" ]; then
         sudo sed -i "s|proxy_pass http://localhost:[0-9]*;|proxy_pass http://localhost:$SERVER_PORT;|" "$NGINX_CONF"
         echo "  Updated proxy_pass to localhost:$SERVER_PORT"
     fi
-    if sudo nginx -t 2>&1 | grep -q "syntax is ok"; then
-        sudo systemctl reload nginx
-        echo "  Nginx reloaded."
-    else
-        echo "  ERROR: Nginx config test failed."
-        exit 1
-    fi
+    NGINX_NEEDS_RELOAD=true
 else
     SUBDOMAIN="$SERVICE"
     TEMPLATE="$DEPLOY_DIR/hiker.conf.example"
@@ -315,17 +310,10 @@ else
     sudo rm -f "$NGINX_ENABLED"
     sudo ln -s "$NGINX_CONF" "$NGINX_ENABLED"
     echo "  Enabled site."
-    if sudo nginx -t 2>&1 | grep -q "syntax is ok"; then
-        sudo systemctl reload nginx
-        echo "  Nginx reloaded."
-    else
-        echo "  ERROR: Nginx config test failed."
-        exit 1
-    fi
 fi
 
 # 10. Get/renew SSL certificate
-echo "[10/12] Getting SSL certificate for $DOMAIN..."
+echo "[10/13] Getting SSL certificate for $DOMAIN..."
 if command -v certbot &>/dev/null; then
     if ! sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --redirect --hsts --staple-ocsp --key-type ecdsa 2>&1; then
         echo "  WARNING: certbot failed (cert may already exist). Continuing..."
@@ -336,8 +324,23 @@ else
     echo "  WARNING: certbot not installed — skipping SSL certificate setup"
 fi
 
-# 11. Stop service and kill stale process on port
-echo "[11/12] Stopping service and freeing port $SERVER_PORT..."
+# 11. Test and reload nginx
+echo "[11/13] Testing and reloading nginx..."
+if [ "$NGINX_NEEDS_RELOAD" = true ]; then
+    if sudo nginx -t 2>&1 | grep -q "syntax is ok"; then
+        sudo systemctl reload nginx
+        echo "  Nginx reloaded."
+    else
+        echo "  ERROR: Nginx config test failed."
+        exit 1
+    fi
+else
+    echo "  Nginx config written but not reloaded (cert may not exist yet)."
+    echo "  Run 'sudo nginx -t && sudo systemctl reload nginx' after certbot succeeds."
+fi
+
+# 12. Stop service and kill stale process on port
+echo "[12/13] Stopping service and freeing port $SERVER_PORT..."
 sudo -n systemctl stop "$SERVICE" 2>&1 || true
 sleep 1
 PORT_PID=$(sudo lsof -ti :$SERVER_PORT 2>/dev/null || true)
@@ -348,8 +351,8 @@ if [ -n "$PORT_PID" ]; then
 fi
 sudo systemctl daemon-reload 2>&1 || true
 
-# 12. Start service
-echo "[12/12] Starting service: $SERVICE"
+# 13. Start service
+echo "[13/13] Starting service: $SERVICE"
 if ! sudo -n systemctl start "$SERVICE" 2>&1; then
     echo "  ERROR: systemctl start failed."
     echo "  If this says 'sudo: a password is required', you need passwordless sudo."
