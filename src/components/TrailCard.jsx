@@ -4,6 +4,7 @@ import { generateReportText as genReport, copyToClipboard, getRideCost } from '.
 import { getTrailDetailsById } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
+import { useTooltips } from '../hooks/useTooltips';
 
 // Extract month abbreviations from seasonal scores, sorted by month order
 function getScoredMonths(seasonal) {
@@ -16,6 +17,7 @@ function getScoredMonths(seasonal) {
 export default function TrailCard({ trail, isActive = false, hikeName }) {
   const [copied, setCopied] = useState(false);
   const trailDetails = useTrailDetails();
+  const { title: tt } = useTooltips();
 
   const handleCopy = async (e) => {
     e.preventDefault();
@@ -40,6 +42,7 @@ export default function TrailCard({ trail, isActive = false, hikeName }) {
       <Link 
         to={`/trail/${trail.id}`}
         className="block p-4"
+        title={tt('View full trail details')}
       >
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-bold text-gray-900">{hikeName || trail.fullName || trail.name}</h3>
@@ -119,6 +122,7 @@ export default function TrailCard({ trail, isActive = false, hikeName }) {
         <button
           onClick={handleCopy}
           className="flex items-center gap-2 text-sm text-green-600 hover:text-green-800 font-medium"
+          title={tt('Copy trail report to clipboard')}
         >
           {copied ? (
             <>

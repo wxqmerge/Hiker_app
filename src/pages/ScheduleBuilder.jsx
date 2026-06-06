@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTrails, useFilters } from '../hooks/useTrails';
 import { useSchedulePolling } from '../hooks/useSchedulePolling';
+import { useTooltips } from '../hooks/useTooltips';
 import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
@@ -74,6 +75,7 @@ export default function ScheduleBuilder() {
   const { trails, loading, lookup, schedule: scheduleData } = useTrails();
   const { filters, setFilters } = useFilters(trails);
   const trailDetails = useTrailDetails();
+  const { title: tt } = useTooltips();
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     const nextMonth = (now.getMonth() + 1) % 12;
@@ -306,6 +308,7 @@ export default function ScheduleBuilder() {
             onDragStart={() => hikeIdx && handleDragStart(Number(hikeIdx[0]), day, hikeName)}
             onDragEnd={handleDragEnd}
             className="cursor-grab active:cursor-grabbing"
+            title={tt('Drag to swap with another date')}
           >
             <div className="relative">
               <TrailCard trail={trail} hikeName={trail.fullName || trail.name} isActive={false} />
@@ -737,6 +740,7 @@ const hikeCards = useMemo(() => {
           onDragStart={() => handleDragStart(item.hikeIndex, null, item.hike)}
           onDragEnd={handleDragEnd}
           className="cursor-grab active:cursor-grabbing"
+          title={tt('Drag to schedule on a date')}
         >
           <div className="relative">
             <TrailCard trail={trail} isActive={false} />
@@ -785,6 +789,7 @@ const hikeCards = useMemo(() => {
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Toggle scheduled hikes list')}
           >
             Scheduled ({assignedCount})
           </button>
@@ -792,7 +797,7 @@ const hikeCards = useMemo(() => {
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-              title="Import/Export schedule"
+              title={tt('Import/Export schedule')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -803,53 +808,56 @@ const hikeCards = useMemo(() => {
                 <button
                     onClick={handleExport}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
+                    title={tt('Export monthly hike descriptions as text')}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" />
                     </svg>
                     Export Monthly Description
                   </button>
-               <button onClick={exportExcelSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+               <button onClick={exportExcelSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('Export quarterly schedule as TSV file')}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Export Quarterly Schedule
                 </button>
-                <button onClick={importFromExcel} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}>
+                <button onClick={importFromExcel} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`} title={tt('Import schedule from Excel file')}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Import Excel Schedule {!hasApiKey && '(need API key)'}
                 </button>
-                <button onClick={openHistory} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button onClick={openHistory} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('View schedule history and restore previous versions')}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Schedule History
                 </button>
-                <button onClick={verifyServerSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button onClick={verifyServerSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('Compare local schedule with server and report differences')}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Verify Pushed to Server
                 </button>
-                <button
-                   onClick={() => setDebugMode(!debugMode)}
-                  className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-                    debugMode
-                      ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
+         <button
+               onClick={() => setDebugMode(!debugMode)}
+              className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
+                debugMode
+                  ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              title={tt('Show hike index numbers on cards for debugging')}
+            >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                   Debug Mode {debugMode ? 'ON' : 'OFF'}
                 </button>
-                <button
-                  onClick={clearSchedule}
-                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-2"
-                >
+        <button
+              onClick={clearSchedule}
+              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-2"
+              title={tt('Remove all schedule data (cannot be undone)')}
+            >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
@@ -862,6 +870,7 @@ const hikeCards = useMemo(() => {
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
+            title={tt('Select month to view/edit')}
           >
              {MONTH_NAMES.map((name, idx) => {
                  const monthAbbr = name.substring(0, 3);
@@ -915,10 +924,10 @@ const hikeCards = useMemo(() => {
                 Schedule History ({historyEntries.length})
               </h3>
               <div className="flex items-center gap-2">
-                <button onClick={handleClearCurrentSchedule} disabled={!hasApiKey} className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}>
+                <button onClick={handleClearCurrentSchedule} disabled={!hasApiKey} className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`} title={tt('Clear all schedule data and preserve history')}>
                   Clear Schedule
                 </button>
-                <button onClick={closeHistory} className="text-gray-400 hover:text-gray-600">
+                <button onClick={closeHistory} className="text-gray-400 hover:text-gray-600" title={tt('Close history panel')}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -951,6 +960,7 @@ const hikeCards = useMemo(() => {
                               ? 'bg-green-600 text-white hover:bg-green-700'
                               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                           }`}
+                          title={tt('Restore schedule from this backup')}
                         >
                           Restore
                         </button>
@@ -976,6 +986,7 @@ const hikeCards = useMemo(() => {
                 className="p-4"
                 onDragOver={(e) => { e.preventDefault(); }}
                 onDrop={handleDropOnAvailable}
+                title={tt('Drag hikes here to schedule')}
               >
                 {filteredHikes.length === 0 ? (
                   <div className="text-center py-12">
@@ -1024,6 +1035,7 @@ const hikeCards = useMemo(() => {
                             ? 'border-green-300 bg-green-50'
                             : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
                         }`}
+                        title={trailId ? tt('Drop another hike here to swap') : tt('Drop a hike here to schedule')}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -1058,7 +1070,7 @@ const hikeCards = useMemo(() => {
                           </div>
                           {trailId && (
                             <div className="flex items-center gap-1 ml-3">
-                              <label className="flex items-center gap-1 cursor-pointer" title="Early Start">
+                              <label className="flex items-center gap-1 cursor-pointer" title={tt('Toggle early start (affects hike description)')}>
                                 <input
                                   type="checkbox"
                                   checked={!!earlyStart}
@@ -1070,7 +1082,7 @@ const hikeCards = useMemo(() => {
                               <button
                                 onClick={() => removeHike(day)}
                                 className="text-red-400 hover:text-red-600 transition-colors"
-                                title="Remove hike"
+                                title={tt('Remove hike from this date')}
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

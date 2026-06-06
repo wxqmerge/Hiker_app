@@ -1,6 +1,8 @@
 import { MONTH_NAMES } from '../utils/constants';
+import { useTooltips } from '../hooks/useTooltips';
 
 export default function FilterPanel({ filters, setFilters, lookup, resetFilters }) {
+  const { title: tt } = useTooltips();
   const difficulties = lookup?.difficulties || [];
   const months = lookup?.months || MONTH_NAMES;
 
@@ -48,71 +50,76 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
           value={filters.search}
           onChange={(e) => setFilters({ ...filters, search: e.target.value })}
           className="w-52 px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
+          title={tt('Filter trails by name')}
         />
 
         {/* Distance */}
         <label className="flex items-center gap-2 text-sm text-gray-600">
-          <span className="font-medium">Dist</span>
-          <input
-            type="range"
-            min="0"
-            max="20"
-            step="0.5"
-            value={filters.distanceMax}
-            onChange={(e) => setFilters({ ...filters, distanceMax: parseFloat(e.target.value) })}
-            className="w-24 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
-          />
-          <span className="w-10">{filters.distanceMax}mi</span>
-        </label>
+           <span className="font-medium">Dist</span>
+           <input
+             type="range"
+             min="0"
+             max="20"
+             step="0.5"
+             value={filters.distanceMax}
+             onChange={(e) => setFilters({ ...filters, distanceMax: parseFloat(e.target.value) })}
+             className="w-24 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
+             title={tt('Maximum trail distance in miles')}
+           />
+           <span className="w-10">{filters.distanceMax}mi</span>
+         </label>
 
         {/* Elevation */}
-        <label className="flex items-center gap-2 text-sm text-gray-600">
-          <span className="font-medium">Elev</span>
-          <input
-            type="range"
-            min="0"
-            max="5000"
-            step="100"
-            value={filters.elevationMax}
-            onChange={(e) => setFilters({ ...filters, elevationMax: parseInt(e.target.value, 10) })}
-            className="w-24 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
-          />
-          <span className="w-14">{filters.elevationMax}</span>
-        </label>
+       <label className="flex items-center gap-2 text-sm text-gray-600">
+           <span className="font-medium">Elev</span>
+           <input
+             type="range"
+             min="0"
+             max="5000"
+             step="100"
+             value={filters.elevationMax}
+             onChange={(e) => setFilters({ ...filters, elevationMax: parseInt(e.target.value, 10) })}
+             className="w-24 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
+             title={tt('Maximum trail elevation in feet')}
+           />
+           <span className="w-14">{filters.elevationMax}</span>
+         </label>
 
         {/* Difficulty */}
-        <div className="flex gap-1.5">
-          {difficulties.map(diff => (
-            <button
-              key={diff.code}
-              onClick={() => toggleDifficulty(diff.code)}
-              className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-                filters.difficulties.includes(diff.code)
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {diff.label}
-            </button>
-          ))}
-        </div>
+       <div className="flex gap-1.5">
+           {difficulties.map(diff => (
+             <button
+               key={diff.code}
+               onClick={() => toggleDifficulty(diff.code)}
+               className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
+                 filters.difficulties.includes(diff.code)
+                   ? 'bg-green-600 text-white'
+                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+               }`}
+               title={tt(`Toggle ${diff.label} filter`)}
+             >
+               {diff.label}
+             </button>
+           ))}
+         </div>
 
         {/* Months */}
-        <div className="flex gap-1">
-          {months.map((month, idx) => (
-            <button
-              key={idx}
-              onClick={() => toggleMonth(idx)}
-              className={`w-8 py-1 rounded text-sm font-medium transition-colors ${
-                filters.months.includes(idx)
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {month.substring(0, 3)}
-            </button>
-          ))}
-        </div>
+      <div className="flex gap-1">
+           {months.map((month, idx) => (
+             <button
+               key={idx}
+               onClick={() => toggleMonth(idx)}
+               className={`w-8 py-1 rounded text-sm font-medium transition-colors ${
+                 filters.months.includes(idx)
+                   ? 'bg-green-600 text-white'
+                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+               }`}
+               title={tt(`Toggle ${month} filter`)}
+             >
+               {month.substring(0, 3)}
+             </button>
+           ))}
+         </div>
 
         {/* Sort */}
         <div className="flex gap-1.5 ml-auto">
@@ -123,6 +130,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Sort alphabetically')}
           >
             A-Z
           </button>
@@ -133,6 +141,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Sort by popularity')}
           >
             Pop
           </button>
@@ -143,6 +152,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Sort by elevation (low to high)')}
           >
             Elev ↑
           </button>
@@ -153,6 +163,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Sort by elevation (high to low)')}
           >
             Elev ↓
           </button>
@@ -163,6 +174,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Sort by distance (shortest first)')}
           >
             Dist ↑
           </button>
@@ -173,6 +185,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Sort by distance (longest first)')}
           >
             Dist ↓
           </button>
@@ -183,6 +196,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Filter wilderness trails')}
           >
             ◆
           </button>
@@ -193,6 +207,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            title={tt('Sort non-wilderness trails first')}
           >
             ◆ off
           </button>
@@ -203,6 +218,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
           <button
             onClick={resetFilters}
             className="text-sm text-green-600 hover:text-green-800 font-medium px-2.5 py-1"
+            title={tt('Reset all filters')}
           >
             ✕
           </button>
