@@ -90,6 +90,7 @@ export default function TrailDetail() {
 
   const getEditedValue = (field) => {
     const details = trailDetailsResult?.[id];
+    const pop = details?.popularity || {};
 
     if (field === 'description') return editedFields.description ?? details?.fullDescription;
     if (field === 'pros') return editedFields.pros ?? details?.pros;
@@ -108,6 +109,8 @@ export default function TrailDetail() {
     if (field === 'bestSeason') return normalizeSeason(editedFields.bestSeason ?? trail.seasonal?.bestSeason);
     if (field === 'availableMonths') return editedFields.availableMonths ?? availableMonthsFromSeasonal;
     if (field === 'altNames') return editedFields.altNames ?? trail.altNames;
+    if (field === 'scheduleCount') return editedFields.scheduleCount ?? pop.scheduleCount ?? 0;
+    if (field === 'monthlyPopularity') return editedFields.monthlyPopularity ?? pop.monthly ?? [];
 
     return null;
   };
@@ -143,6 +146,16 @@ export default function TrailDetail() {
     if (editedFields.pros !== undefined) updatedDetail.pros = editedFields.pros;
     if (editedFields.others !== undefined) updatedDetail.others = editedFields.others;
     if (editedFields.leaders !== undefined) updatedDetail.leaders = editedFields.leaders;
+
+    const existingPop = trailDetailsResult?.[id]?.popularity || {};
+    const newScheduleCount = editedFields.scheduleCount !== undefined ? parseInt(editedFields.scheduleCount, 10) : existingPop.scheduleCount;
+    const newMonthly = editedFields.monthlyPopularity !== undefined ? editedFields.monthlyPopularity : (existingPop.monthly || []);
+    if (newScheduleCount !== undefined || newMonthly.length > 0) {
+      updatedDetail.popularity = {
+        ...(existingPop.scheduleCount !== undefined ? { scheduleCount: newScheduleCount } : {}),
+        ...(newMonthly.length > 0 ? { monthly: newMonthly } : {}),
+      };
+    }
 
     if (Object.keys(updatedDetail).length > 0) {
       await saveTrailDetail(trail.id, updatedDetail);
@@ -462,6 +475,51 @@ export default function TrailDetail() {
                 </div>
               </div>
             )}
+
+            {(() => {
+              const pop = trailDetailsResult?.[id]?.popularity;
+              const scheduleCount = pop?.scheduleCount;
+              const monthly = pop?.monthly || [];
+              if (scheduleCount == null && monthly.length === 0) return null;
+              return (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Popularity</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {scheduleCount != null && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-sm text-gray-500 mb-1">Total Schedule Count</p>
+                        <p className="text-2xl font-bold text-gray-800">{scheduleCount}</p>
+                        <p className="text-xs text-gray-400 mt-1">Times this hike has been scheduled across all months</p>
+                      </div>
+                    )}
+                    {monthly.length > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-sm text-gray-500 mb-2">Monthly Popularity</p>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {MONTH_ABBR.map((month, idx) => {
+                            const val = monthly[idx] || 0;
+                            const intensity = Math.min(val / 10, 1);
+                            const bg = val > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
+                            const text = val > 0 ? 'text-green-800' : 'text-gray-400';
+                            return (
+                              <div
+                                key={idx}
+                                className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium ${bg} ${text}`}
+                                title={`${month}: ${val}`}
+                              >
+                                <span className="text-[9px] leading-none">{month.substring(0, 3)}</span>
+                                {val > 0 && <span className="text-sm leading-none mt-0.5 font-bold">{val}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2">How often the hike appears in each month's schedule</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -621,6 +679,48 @@ export default function TrailDetail() {
                       onChange={(e) => updateField('elevationMax', e.target.value ? parseInt(e.target.value, 10) : '')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                     />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Popularity</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Schedule Count</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={getEditedValue('scheduleCount') || ''}
+                      onChange={(e) => updateField('scheduleCount', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                      title={tt('Total number of times this trail has been scheduled across all months')}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Also editable via Schedule Count Manager in Trail Manager</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Popularity</label>
+                  <p className="text-xs text-gray-400 mb-2">How often this trail appears in each month's schedule (0-10+)</p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {MONTH_ABBR.map((month, idx) => (
+                      <div key={idx} className="flex flex-col items-center">
+                        <span className="text-xs text-gray-500 mb-1">{month.substring(0, 3)}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={getEditedValue('monthlyPopularity')[idx] || ''}
+                          onChange={(e) => {
+                            const monthly = [...getEditedValue('monthlyPopularity')];
+                            monthly[idx] = e.target.value ? parseInt(e.target.value, 10) : 0;
+                            updateField('monthlyPopularity', monthly);
+                          }}
+                          className="w-14 text-center px-1 py-1.5 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
+                          title={`${month} popularity score`}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

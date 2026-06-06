@@ -5,10 +5,11 @@ import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput } from '../utils/io';
 import { importTrailsFromXls } from '../api/client';
+import PopularityManager from '../components/PopularityManager';
 
 export default function TrailManager() {
   const { title: tt } = useTooltips();
-  const { trails, loading, saveTrail, deleteTrail } = useTrailStore();
+  const { trails, loading, trailDetails, saveTrail, deleteTrail } = useTrailStore();
   const [search, setSearch] = useState('');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const navigate = useNavigate();
@@ -202,6 +203,10 @@ export default function TrailManager() {
               {search ? 'No trails match your search.' : 'No trails found. Import or create trails to get started.'}
             </div>
           )}
+        </div>
+
+        <div className="mt-6">
+          <PopularityManager trails={trails} trailDetails={trailDetails || {}} />
         </div>
       </main>
     </div>
