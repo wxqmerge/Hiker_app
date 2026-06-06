@@ -1,17 +1,29 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageNav from '../components/PageNav';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
-import { createFileInput } from '../utils/io';
+import { createFileInput, downloadBlob } from '../utils/io';
 import { importTrailsFromXls } from '../api/client';
-import PopularityManager from '../components/PopularityManager';
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function TrailManager() {
   const { title: tt } = useTooltips();
-  const { trails, loading, trailDetails, saveTrail, deleteTrail } = useTrailStore();
+  const { trails, loading, trailDetails, saveTrail, deleteTrail, saveTrailDetail } = useTrailStore();
   const [search, setSearch] = useState('');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
+  const [importMode, setImportMode] = useState('replace');
+  const [localCounts, setLocalCounts] = useState(() => {
+    const counts = {};
+    for (const trail of trails) {
+      const pop = trailDetails?.[trail.id]?.popularity;
+      if (pop?.scheduleCount) {
+        counts[trail.id] = pop.scheduleCount;
+      }
+    }
+    return counts;
+  });
   const navigate = useNavigate();
   const hasApiKey = apiKey.trim().length > 0;
 
@@ -92,6 +104,114 @@ export default function TrailManager() {
     });
   };
 
+  const exportScheduleTsv = useCallback(() => {
+    const rows = [['Trail ID', 'Trail Name', 'Schedule Count']];
+    for (const trail of trails) {
+      const count = localCounts[trail.id] ?? trailDetails?.[trail.id]?.popularity?.scheduleCount ?? 0;
+      rows.push([trail.id, trail.fullName || trail.name, String(count)]);
+    }
+    const tsv = rows.map(r => r.join('\t')).join('\n');
+    downloadBlob(tsv, 'trail_schedule_count.tsv', 'text/tab-separated-values');
+  }, [trails, localCounts, trailDetails]);
+
+  const importScheduleTsv = useCallback(() => {
+    createFileInput({
+      accept: '.tsv,.txt,.csv',
+      onFile: async (file) => {
+        const text = await file.text();
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) {
+          alert('TSV file is empty or has only a header.');
+          return;
+        }
+        const headerCols = lines[0].split('\t');
+        const isScheduleCountMonthly = headerCols.length >= 14 && headerCols[2]?.trim() === 'Schedule Count' && headerCols[3]?.trim() === 'Jan';
+        let updated = 0;
+        let withMonthly = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split('\t');
+          if (cols.length < 3) continue;
+          const trailId = cols[0].trim();
+          const count = parseInt(cols[2].trim(), 10);
+          if (isNaN(count)) continue;
+          const trail = trails.find(t => t.id === trailId);
+          if (!trail) continue;
+          const existing = trailDetails?.[trailId]?.popularity || {};
+          const existingCount = existing.scheduleCount || 0;
+          const newCount = importMode === 'add' ? existingCount + count : count;
+          const update = {
+            ...existing,
+            popularity: { ...existing, scheduleCount: newCount },
+          };
+          if (isScheduleCountMonthly) {
+            const monthly = [];
+            for (let m = 3; m < 15; m++) {
+              const val = parseInt(cols[m]?.trim(), 10);
+              monthly.push(isNaN(val) ? 0 : val);
+            }
+            update.popularity = { ...update.popularity, monthly };
+            withMonthly++;
+          }
+          await saveTrailDetail(trailId, update);
+          setLocalCounts(prev => ({ ...prev, [trailId]: newCount }));
+          updated++;
+        }
+        const monthlyMsg = isScheduleCountMonthly ? ` (${withMonthly} with monthly data)` : '';
+        alert(`Updated schedule count for ${updated} trail(s)${monthlyMsg} (${importMode === 'add' ? 'added to existing' : 'replaced'}).`);
+      },
+    });
+  }, [trails, trailDetails, saveTrailDetail, importMode]);
+
+  const importMonthlyTsv = useCallback(() => {
+    createFileInput({
+      accept: '.tsv,.txt,.csv',
+      onFile: async (file) => {
+        const text = await file.text();
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) {
+          alert('TSV file is empty or has only a header.');
+          return;
+        }
+        const headerCols = lines[0].split('\t');
+        const isMonthly = headerCols.length >= 14 && headerCols[2]?.trim() === 'Jan';
+        if (!isMonthly) {
+          alert('This appears to be a schedule count TSV, not a monthly popularity TSV.\n\nMonthly TSV should have 14 columns: Trail ID, Trail Name, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec');
+          return;
+        }
+        let updated = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split('\t');
+          if (cols.length < 14) continue;
+          const trailId = cols[0].trim();
+          const trail = trails.find(t => t.id === trailId);
+          if (!trail) continue;
+          const monthly = [];
+          for (let m = 2; m < 14; m++) {
+            const val = parseInt(cols[m].trim(), 10);
+            monthly.push(isNaN(val) ? 0 : val);
+          }
+          const existing = trailDetails?.[trailId]?.popularity || {};
+          await saveTrailDetail(trailId, {
+            ...existing,
+            popularity: { ...existing, monthly },
+          });
+          updated++;
+        }
+        alert(`Updated monthly popularity for ${updated} trail(s).`);
+      },
+    });
+  }, [trails, trailDetails, saveTrailDetail]);
+
+  const updateCount = useCallback(async (trailId, value) => {
+    const count = parseInt(value, 10) || 0;
+    setLocalCounts(prev => ({ ...prev, [trailId]: count }));
+    const existing = trailDetails?.[trailId]?.popularity || {};
+    await saveTrailDetail(trailId, {
+      ...existing,
+      popularity: { ...existing, scheduleCount: count },
+    });
+  }, [trailDetails, saveTrailDetail]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -102,8 +222,8 @@ export default function TrailManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-3 max-w-4xl">
-        <div className="flex items-baseline justify-between mb-6">
+      <main className="container mx-auto px-4 py-3 max-w-5xl">
+        <div className="flex items-baseline justify-between mb-4">
           <PageNav />
           <p className="text-gray-600 text-sm ml-auto">
             {filteredTrails.length} of {trails.length} trails
@@ -146,15 +266,50 @@ export default function TrailManager() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-800">Trail Manager</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={exportScheduleTsv}
+                className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                title={tt('Export schedule counts as TSV file')}
+              >
+                Export Schedule Count
+              </button>
+              <select
+                value={importMode}
+                onChange={(e) => setImportMode(e.target.value)}
+                className="text-xs px-2 py-1.5 border border-gray-300 rounded bg-white"
+                title={tt('Replace: overwrite existing counts. Add: add imported counts to existing.')}
+              >
+                <option value="replace">Replace</option>
+                <option value="add">Add</option>
+              </select>
+              <button
+                onClick={importScheduleTsv}
+                className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                title={tt('Import schedule counts from TSV file')}
+              >
+                Import Schedule Count
+              </button>
+              <button
+                onClick={importMonthlyTsv}
+                className="text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                title={tt('Import monthly popularity from trail_monthly_popularity.tsv (generated by match_schedule.py)')}
+              >
+                Import Monthly
+              </button>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-right px-2 py-3 text-sm font-semibold text-gray-700 w-12">#</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Name</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Distance</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Difficulty</th>
-                  <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700">Actions</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 w-24">Distance</th>
+                  <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 w-32">Schedule Count</th>
+                  <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 w-20">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -170,7 +325,18 @@ export default function TrailManager() {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {trail.distance != null ? `${trail.distance} mi` : 'N/A'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{trail.difficulty}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <input
+                          type="number"
+                          min="0"
+                          value={localCounts[trail.id] ?? trailDetails?.[trail.id]?.popularity?.scheduleCount ?? 0}
+                          onChange={(e) => updateCount(trail.id, e.target.value)}
+                          className="w-14 text-right px-2 py-1 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
+                          title={tt(`Schedule count for ${trail.fullName || trail.name}`)}
+                        />
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link
@@ -178,7 +344,7 @@ export default function TrailManager() {
                           className="text-green-600 hover:text-green-800"
                           title={tt('View and edit trail details')}
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                           </svg>
                         </Link>
@@ -187,7 +353,7 @@ export default function TrailManager() {
                           className="text-red-400 hover:text-red-600"
                           title={tt('Delete this trail')}
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
@@ -203,10 +369,6 @@ export default function TrailManager() {
               {search ? 'No trails match your search.' : 'No trails found. Import or create trails to get started.'}
             </div>
           )}
-        </div>
-
-        <div className="mt-6">
-          <PopularityManager trails={trails} trailDetails={trailDetails || {}} />
         </div>
       </main>
     </div>
