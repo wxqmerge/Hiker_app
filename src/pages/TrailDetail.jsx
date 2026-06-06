@@ -490,7 +490,7 @@ const getEditedValue = (field) => {
               const availableMonths = popSeasonal.availableMonths || [];
               const computedCount = monthly.reduce((sum, v, idx) => {
                 const quarterBase = hasQuarterData ? 1 : 0;
-                const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+                const monthBase = availableMonths.includes(MONTH_ABBR[idx]) ? 1 : 0;
                 const hikeCount = v || 0;
                 const scheduleBase = Math.min(9, hikeCount * 2);
                 return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
@@ -514,7 +514,7 @@ const getEditedValue = (field) => {
                           {MONTH_ABBR.map((month, idx) => {
                             const hikeCount = monthly[idx] || 0;
                             const quarterBase = hasQuarterData ? 1 : 0;
-                            const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+                            const monthBase = availableMonths.includes(MONTH_ABBR[idx]) ? 1 : 0;
                             const scheduleBase = Math.min(9, hikeCount * 2);
                             const score = Math.min(9, quarterBase + monthBase + scheduleBase);
                             const intensity = Math.min(score / 9, 1);
@@ -531,6 +531,29 @@ const getEditedValue = (field) => {
                               </div>
                             );
                           })}
+                        </div>
+                        <div className="mt-3 border-t border-gray-200 pt-3">
+                          <p className="text-sm text-gray-500 mb-2">Score Breakdown (per month)</p>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {MONTH_ABBR.map((month, idx) => {
+                              const hikeCount = monthly[idx] || 0;
+                              const quarterBase = hasQuarterData ? 1 : 0;
+                              const monthBase = availableMonths.includes(MONTH_ABBR[idx]) ? 1 : 0;
+                              const scheduleBase = Math.min(9, hikeCount * 2);
+                              const score = Math.min(9, quarterBase + monthBase + scheduleBase);
+                              return (
+                                <div
+                                  key={idx}
+                                  className="w-10 h-10 rounded-lg flex flex-col items-center justify-center text-[9px] font-mono bg-white border border-gray-200 text-gray-600"
+                                  title={`${month}: ${quarterBase}+${monthBase}+${scheduleBase}=${score}`}
+                                >
+                                  <span className="leading-none">{quarterBase}+{monthBase}+{scheduleBase}</span>
+                                  <span className="leading-none font-bold text-gray-800">={score}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-2">QuarterBase(1 if quarter data exists) + MonthBase(1 if month in schedule) + ScheduleBase(hike_count × 2, max 9) = Score (max 9)</p>
                         </div>
                         <p className="text-xs text-gray-400 mt-2">How often the hike appears in each month's schedule</p>
                       </div>
