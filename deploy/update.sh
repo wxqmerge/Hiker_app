@@ -280,39 +280,28 @@ fi
 echo "  Reloading systemd daemon..."
 sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 
-# 9. Apply nginx config
-echo "[9/13] Applying nginx config..."
+# 9. Generate nginx config (do NOT enable yet — cert may not exist)
+echo "[9/13] Generating nginx config..."
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
-NGINX_NEEDS_RELOAD=false
-if [ -f "$NGINX_CONF" ]; then
-    if ! grep -q "server_name $DOMAIN" "$NGINX_CONF"; then
-        sudo sed -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_CONF"
-        echo "  Updated server_name to $DOMAIN"
-    fi
-    if ! grep -q "proxy_pass.*localhost:$SERVER_PORT" "$NGINX_CONF"; then
-        sudo sed -i "s|proxy_pass http://localhost:[0-9]*;|proxy_pass http://localhost:$SERVER_PORT;|" "$NGINX_CONF"
-        echo "  Updated proxy_pass to localhost:$SERVER_PORT"
-    fi
-    NGINX_NEEDS_RELOAD=true
-else
-    SUBDOMAIN="$SERVICE"
-    TEMPLATE="$DEPLOY_DIR/hiker.conf.example"
-    if [ ! -f "$TEMPLATE" ]; then
-        echo "  ERROR: Template $TEMPLATE not found."
-        exit 1
-    fi
-    echo "  WARNING: $NGINX_CONF not found — generating from hiker.conf.example"
-    sed -e "s|<DOMAIN>|$DOMAIN|g" \
-        -e "s|<PORT>|$SERVER_PORT|g" \
-        -e "s|<SUBDOMAIN>|$SUBDOMAIN|g" \
-        "$TEMPLATE" | sudo tee "$NGINX_CONF" > /dev/null
-    NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
-    sudo rm -f "$NGINX_ENABLED"
-    sudo ln -s "$NGINX_CONF" "$NGINX_ENABLED"
-    echo "  Enabled site."
+NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
+SUBDOMAIN="$SERVICE"
+TEMPLATE="$DEPLOY_DIR/hiker.conf.example"
+
+# Remove existing symlink so nginx can pass tests without the cert
+sudo rm -f "$NGINX_ENABLED"
+
+if [ ! -f "$TEMPLATE" ]; then
+    echo "  ERROR: Template $TEMPLATE not found."
+    exit 1
 fi
 
-# 10. Get/renew SSL certificate
+sed -e "s|<DOMAIN>|$DOMAIN|g" \
+    -e "s|<PORT>|$SERVER_PORT|g" \
+    -e "s|<SUBDOMAIN>|$SUBDOMAIN|g" \
+    "$TEMPLATE" | sudo tee "$NGINX_CONF" > /dev/null
+echo "  Config written to $NGINX_CONF (not enabled yet)."
+
+# 10. Get/renew SSL certificate (--standalone, no nginx needed)
 echo "[10/13] Getting SSL certificate for $DOMAIN..."
 if command -v certbot &>/dev/null; then
     sudo systemctl stop nginx 2>/dev/null || true
@@ -325,19 +314,15 @@ else
     echo "  WARNING: certbot not installed — skipping SSL certificate setup"
 fi
 
-# 11. Test and reload nginx
-echo "[11/13] Testing and reloading nginx..."
-if [ "$NGINX_NEEDS_RELOAD" = true ]; then
-    if sudo nginx -t 2>&1 | grep -q "syntax is ok"; then
-        sudo systemctl restart nginx
-        echo "  Nginx restarted."
-    else
-        echo "  ERROR: Nginx config test failed."
-        exit 1
-    fi
+# 11. Enable site, test and restart nginx
+echo "[11/13] Enabling site, testing and restarting nginx..."
+sudo ln -s "$NGINX_CONF" "$NGINX_ENABLED"
+if sudo nginx -t 2>&1 | grep -q "syntax is ok"; then
+    sudo systemctl restart nginx
+    echo "  Nginx restarted."
 else
-    echo "  Nginx config written but not reloaded (cert may not exist yet)."
-    echo "  Run 'sudo nginx -t && sudo systemctl restart nginx' after certbot succeeds."
+    echo "  ERROR: Nginx config test failed."
+    exit 1
 fi
 
 # 12. Stop service and kill stale process on port
