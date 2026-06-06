@@ -527,7 +527,7 @@ const getEditedValue = (field) => {
                                 title={`${month}: ${hikeCount} hikes -> score ${score}`}
                               >
                                 <span className="text-[9px] leading-none">{month.substring(0, 3)}</span>
-                                {val > 0 && <span className="text-sm leading-none mt-0.5 font-bold">{val}</span>}
+                                {score > 0 && <span className="text-sm leading-none mt-0.5 font-bold">{score}</span>}
                               </div>
                             );
                           })}
