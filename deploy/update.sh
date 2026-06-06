@@ -315,7 +315,8 @@ fi
 # 10. Get/renew SSL certificate
 echo "[10/13] Getting SSL certificate for $DOMAIN..."
 if command -v certbot &>/dev/null; then
-    if ! sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --redirect --hsts --staple-ocsp --key-type ecdsa 2>&1; then
+    sudo systemctl stop nginx 2>/dev/null || true
+    if ! sudo certbot certonly --standalone -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --key-type ecdsa 2>&1; then
         echo "  WARNING: certbot failed (cert may already exist). Continuing..."
     else
         echo "  SSL certificate obtained/renewed."
@@ -328,15 +329,15 @@ fi
 echo "[11/13] Testing and reloading nginx..."
 if [ "$NGINX_NEEDS_RELOAD" = true ]; then
     if sudo nginx -t 2>&1 | grep -q "syntax is ok"; then
-        sudo systemctl reload nginx
-        echo "  Nginx reloaded."
+        sudo systemctl restart nginx
+        echo "  Nginx restarted."
     else
         echo "  ERROR: Nginx config test failed."
         exit 1
     fi
 else
     echo "  Nginx config written but not reloaded (cert may not exist yet)."
-    echo "  Run 'sudo nginx -t && sudo systemctl reload nginx' after certbot succeeds."
+    echo "  Run 'sudo nginx -t && sudo systemctl restart nginx' after certbot succeeds."
 fi
 
 # 12. Stop service and kill stale process on port
