@@ -397,8 +397,35 @@ def main():
     print(f'Trails with quarter data: {len(trails_with_quarters)}')
     print(f'Trails with schedule data: {len(trail_hike_counts)}')
     
-    # Step 5: Update trails.json
-    print('\nUpdating trails.json...')
+    # Build monthly popularity data for TSV output
+    monthly_popularity = {}  # trail_id -> [jan_score, feb_score, ..., dec_score]
+    for trail in trails:
+        trail_id = trail['id']
+        base = 1 if trail_id in trails_with_quarters else 0
+        scores = []
+        for month in month_names:
+            hike_count = trail_hike_counts.get(trail_id, {}).get(month, 0)
+            score = base + (hike_count * 2)
+            score = min(score, 9)
+            scores.append(score)
+        monthly_popularity[trail_id] = scores
+    
+    # Step 5: Write monthly popularity TSV
+    tsv_path = r'D:\hiker\exported_data\trail_monthly_popularity.tsv'
+    print(f'\nWriting monthly popularity TSV to {tsv_path}...')
+    header = ['Trail ID', 'Trail Name'] + month_names
+    with open(tsv_path, 'w', encoding='utf-8') as f:
+        f.write('\t'.join(header) + '\n')
+        for trail in trails:
+            trail_id = trail['id']
+            name = safe_str(trail.get('fullName', trail['name']))
+            scores = monthly_popularity.get(trail_id, [0] * 12)
+            row = [trail_id, name] + [str(s) for s in scores]
+            f.write('\t'.join(row) + '\n')
+    print(f'[OK] Monthly popularity TSV saved ({len(trails)} trails)')
+    
+    # Step 6: Update trails.json (legacy - preserves bestSeason)
+    print('\nUpdating trails.json (legacy seasonal scores)...')
     updated_count = 0
     
     for trail in trails:
