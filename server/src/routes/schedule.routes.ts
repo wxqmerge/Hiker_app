@@ -38,22 +38,29 @@ async function findPythonCmd(): Promise<string> {
 }
 
 router.get('/', (req, res) => {
+  const schedule = getSchedule();
   const version = getScheduleVersion();
-  const ifModifiedSince = req.headers['if-modified-since'];
-  if (version && ifModifiedSince && ifModifiedSince === version) {
+  const ifNoneMatch = req.headers['if-none-match'];
+  if (version && ifNoneMatch && ifNoneMatch === version) {
     return res.status(304).end();
   }
   if (version) {
-    res.set('Last-Modified', version);
-    res.set('ETag', JSON.stringify(getSchedule()).substring(0, 8));
+    res.set('ETag', version);
   }
-  res.json(getSchedule());
+  res.json(schedule);
 });
 
 router.put('/', requireAdminKey, async (req, res) => {
   try {
+    const entryCount = Object.values(req.body).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
+    console.log('[SCHEDULE] PUT schedule -', entryCount, 'entries');
+    const oldSchedule = getSchedule();
+    const oldCount = Object.values(oldSchedule).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
+    console.log('[SCHEDULE] Previous:', oldCount, 'entries');
     await updateSchedule(req.body);
-    res.json({ success: true });
+    const newVersion = getScheduleVersion();
+    console.log('[SCHEDULE] Save complete, new version:', newVersion.substring(0, 8));
+    res.json({ success: true, etag: newVersion });
   } catch (error) {
     console.error('[SCHEDULE] Error updating schedule:', error);
     res.status(500).json({ success: false, error: { message: 'Failed to update schedule' } });

@@ -22,7 +22,12 @@ async function request(path, options = {}) {
     throw new Error(error.error?.message || `HTTP ${res.status}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  return {
+    ...data,
+    _etag: res.headers?.get('etag') || null,
+    _status: res.status,
+  };
 }
 
 export async function getTrails() {
@@ -46,7 +51,9 @@ export async function deleteTrail(id) {
 }
 
 export async function getTrailDetails() {
-  return request('/api/trails/details');
+  const data = await request('/api/trails/details');
+  const { _etag: _, _status: __, ...rest } = data;
+  return rest;
 }
 
 export async function updateTrailDetail(id, detail) {
@@ -58,11 +65,15 @@ export async function updateTrailDetail(id, detail) {
 }
 
 export async function getLookup() {
-  return request('/api/lookup');
+  const data = await request('/api/lookup');
+  const { _etag: _, _status: __, ...rest } = data;
+  return rest;
 }
 
 export async function getSchedule() {
-  return request('/api/schedule');
+  const data = await request('/api/schedule');
+  const { _etag: _, _status: __, ...rest } = data;
+  return rest;
 }
 
 export async function updateSchedule(schedule) {
@@ -126,5 +137,3 @@ export async function restoreSchedule(timestamp) {
     apiKey: true,
   });
 }
-
-

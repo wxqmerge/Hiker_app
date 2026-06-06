@@ -1,5 +1,4 @@
 import { useRef, useEffect, useCallback } from 'react';
-import * as api from '../api/client.js';
 
 function deepEqual(a, b) {
   if (a === b) return true;
@@ -18,21 +17,25 @@ function deepEqual(a, b) {
 }
 
 export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
-  const prevScheduleRef = useRef(null);
-  const isSavingRef = useRef(false);
+  const prevDataRef = useRef(null);
+  const etagRef = useRef(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
-    isSavingRef.current = false;
     return () => { mountedRef.current = false; };
   }, []);
 
   const pollSchedule = useCallback(async () => {
-    if (isSavingRef.current || !mountedRef.current) return;
+    if (!mountedRef.current) return;
 
     try {
-      const response = await fetch(api.API_BASE ? `${api.API_BASE}/api/schedule` : '/api/schedule');
+      const headers = {};
+      if (etagRef.current) {
+        headers['If-None-Match'] = etagRef.current;
+      }
+
+      const response = await fetch('/api/schedule', { headers });
 
       if (response.status === 304) {
         return;
@@ -42,11 +45,16 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
         return;
       }
 
+      const newEtag = response.headers.get('etag');
+      if (newEtag) {
+        etagRef.current = newEtag;
+      }
+
       const data = await response.json();
       if (!mountedRef.current) return;
 
-      if (!deepEqual(data, prevScheduleRef.current)) {
-        prevScheduleRef.current = data;
+      if (!deepEqual(data, prevDataRef.current)) {
+        prevDataRef.current = data;
         scheduleStore.setSchedule(data);
       }
     } catch {

@@ -103,9 +103,13 @@ export default function ScheduleBuilder() {
   const saveTimeoutRef = useRef(null);
   const saveScheduleToServer = useCallback(async () => {
     const serverData = storeToServerSchedule(scheduleStore);
+    const entryCount = Object.values(serverData).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
     try {
       setIsSaving(true);
-      await updateSchedule(serverData);
+      console.log('[ScheduleBuilder] Saving schedule:', entryCount, 'entries');
+      const result = await updateSchedule(serverData);
+      console.log('[ScheduleBuilder] Save successful, ETag:', result?.etag);
+      return result;
     } catch (err) {
       console.error('[ScheduleBuilder] Failed to save schedule:', err);
       alert('Failed to save schedule to server: ' + err.message);

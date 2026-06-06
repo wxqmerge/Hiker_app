@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsData } from '@shared/types/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -305,8 +306,8 @@ export async function updateSchedule(newSchedule: ScheduleData): Promise<void> {
 
 export function getScheduleVersion(): string {
   try {
-    const stat = fsSync.statSync(path.join(DATA_DIR, 'schedule.json'));
-    return stat.mtime.toISOString();
+    const content = fsSync.readFileSync(path.join(DATA_DIR, 'schedule.json'), 'utf-8');
+    return createHash('md5').update(content).digest('hex');
   } catch {
     return '';
   }
