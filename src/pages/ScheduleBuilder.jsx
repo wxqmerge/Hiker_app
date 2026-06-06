@@ -443,7 +443,10 @@ export default function ScheduleBuilder() {
       const schedulesMatch = missingOnServer.length === 0 && extraOnServer.length === 0;
       const trailsMatch = missingTrails.length === 0 && extraTrails.length === 0;
 
-      if (schedulesMatch && trailsMatch) {
+      const result = { schedulesMatch, trailsMatch, serverEntries: serverEntries.length, localEntries: localEntries.length, serverTrails: serverTrails.length, localTrails: trails.length, missingOnServer, extraOnServer, missingTrails, extraTrails };
+        console.log('[Verify Pushed to Server]', result);
+
+        if (schedulesMatch && trailsMatch) {
         alert('✓ Local matches server.\n\nSchedule: ' + serverEntries.length + ' entries\nTrails: ' + serverTrails.length + ' trails');
       } else {
         let msg = '⚠ Local differs from server!\n\n';
