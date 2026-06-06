@@ -17,11 +17,11 @@ export default function TrailManager() {
     if (!trail) return 0;
     const monthly = trailDetails?.[trailId]?.popularity?.monthly;
     if (!monthly || !Array.isArray(monthly)) return 0;
-    const hasQuarterData = (trail.seasonal?.availableMonths || []).length > 0;
-    const availableMonths = trail.seasonal?.availableMonths || [];
+    const seasonalKeys = Object.keys(trail.seasonal || {}).filter(k => MONTH_ABBR.includes(k));
+    const hasQuarterData = seasonalKeys.length > 0;
     return monthly.reduce((sum, v, idx) => {
       const quarterBase = hasQuarterData ? 1 : 0;
-      const monthBase = availableMonths.includes(MONTH_ABBR[idx]) ? 1 : 0;
+      const monthBase = seasonalKeys.includes(MONTH_ABBR[idx]) ? 1 : 0;
       const hikeCount = v || 0;
       const scheduleBase = Math.min(9, hikeCount * 2);
       return sum + Math.min(9, quarterBase + monthBase + scheduleBase);

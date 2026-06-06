@@ -35,11 +35,11 @@ export default function TrailCard({ trail, isActive = false, hikeName }) {
   const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
   const monthly = detailsForTrail?.[trail.id]?.popularity?.monthly || [];
   const trailSeasonal = trail?.seasonal || {};
-  const hasQuarterData = (trailSeasonal.availableMonths || []).length > 0;
-  const availableMonths = trailSeasonal.availableMonths || [];
+  const seasonalKeys = Object.keys(trailSeasonal).filter(k => MONTH_ABBR.includes(k));
+  const hasQuarterData = seasonalKeys.length > 0;
   const scheduleCount = monthly.reduce((sum, v, idx) => {
     const quarterBase = hasQuarterData ? 1 : 0;
-    const monthBase = availableMonths.includes(MONTH_ABBR[idx]) ? 1 : 0;
+    const monthBase = seasonalKeys.includes(MONTH_ABBR[idx]) ? 1 : 0;
     const hikeCount = v || 0;
     const scheduleBase = Math.min(9, hikeCount * 2);
     return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
