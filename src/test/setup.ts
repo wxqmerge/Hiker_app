@@ -172,7 +172,13 @@ beforeEach(() => {
 
 // Mock window.location
 Object.defineProperty(window, 'location', {
-  value: { protocol: 'http:', origin: 'http://localhost', href: 'http://localhost/' },
+  value: {
+    protocol: 'http:',
+    origin: 'http://localhost',
+    hostname: 'localhost',
+    pathname: '/',
+    href: 'http://localhost/',
+  },
   writable: true,
 });
 

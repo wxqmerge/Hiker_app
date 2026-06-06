@@ -11,11 +11,6 @@ SITES_ENABLED="/etc/nginx/sites-enabled"
 HTML_BASE="/var/www/html"
 MYCONF="$SITES_DIR/mysite.conf"
 
-# Deployment -> Express port mapping
-declare -A PORT_MAP
-PORT_MAP["sothh-app"]=29969
-PORT_MAP["sothh-dev"]=29967
-
 # Collect deployment directories
 DEPLOYMENTS=()
 for dir in "$HTML_BASE"/*/; do
@@ -57,41 +52,7 @@ for dep in "${DEPLOYMENTS[@]}"; do
 EOF
 done
 
-cat >> "$MYCONF" << 'PROXY'
-    # Proxy API routes to Express (based on Referer header)
-    location /api/ {
-        if ($http_referer ~* /sothh-dev/) {
-            proxy_pass http://127.0.0.1:29967;
-        }
-        if ($http_referer ~* /sothh-app/) {
-            proxy_pass http://127.0.0.1:29969;
-        }
-        proxy_pass http://127.0.0.1:29969;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 86400;
-        proxy_send_timeout 86400;
-    }
-
-    # Proxy health check (based on Referer header)
-    location /health {
-        if ($http_referer ~* /sothh-dev/) {
-            proxy_pass http://127.0.0.1:29967;
-        }
-        if ($http_referer ~* /sothh-app/) {
-            proxy_pass http://127.0.0.1:29969;
-        }
-        proxy_pass http://127.0.0.1:29969;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
+cat >> "$MYCONF" << 'SSL'
     listen 443 ssl;
     ssl_certificate /etc/letsencrypt/live/bughouse-ladder.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/bughouse-ladder.example.com/privkey.pem;

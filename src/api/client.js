@@ -1,7 +1,25 @@
 export const API_BASE = import.meta.env.VITE_API_BASE || '';
 
+function getApiBase() {
+  if (API_BASE) return API_BASE;
+  if (typeof window === 'undefined') return '';
+  const hostname = window.location.hostname;
+  const path = window.location.pathname;
+  // Direct subdomain: sothh-app.example.com → https://sothh-app.example.com
+  if (hostname.endsWith('.example.com') && !hostname.endsWith('.example.com')) {
+    return `https://${hostname}`;
+  }
+  // Path-based: example.com/sothh-dev → https://sothh-dev.example.com
+  const match = path.match(/^\/(sothh-[a-z]+)/);
+  if (match) {
+    return `https://${match[1]}.example.com`;
+  }
+  return '';
+}
+
 async function request(path, options = {}) {
-  const url = `${API_BASE}${path}`;
+  const apiBase = getApiBase();
+  const url = `${apiBase}${path}`;
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -89,7 +107,8 @@ export async function importScheduleFromXls(file) {
   formData.append('file', file);
 
   const apiKey = localStorage.getItem('hiker-api-key');
-  const res = await fetch(`${API_BASE}/api/schedule/import-xls`, {
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}/api/schedule/import-xls`, {
     method: 'POST',
     headers: {
       'X-API-Key': apiKey || '',
@@ -110,7 +129,8 @@ export async function importTrailsFromXls(file) {
   formData.append('file', file);
 
   const apiKey = localStorage.getItem('hiker-api-key');
-  const res = await fetch(`${API_BASE}/api/schedule/import-trails-xls`, {
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}/api/schedule/import-trails-xls`, {
     method: 'POST',
     headers: {
       'X-API-Key': apiKey || '',
@@ -127,7 +147,8 @@ export async function importTrailsFromXls(file) {
 }
 
 export async function getScheduleHistory() {
-  const res = await fetch(`${API_BASE}/api/schedule/history`, {
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}/api/schedule/history`, {
     headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok) {

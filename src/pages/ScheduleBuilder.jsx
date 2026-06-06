@@ -101,7 +101,20 @@ export default function ScheduleBuilder() {
   useSchedulePolling({ setSchedule }, 5000);
 
   useEffect(() => {
-    fetch('/health')
+    const hostname = window.location.hostname;
+    const path = window.location.pathname;
+    let healthUrl;
+    if (hostname.endsWith('.example.com')) {
+      healthUrl = `https://${hostname}/health`;
+    } else {
+      const match = path.match(/^\/(sothh-[a-z]+)/);
+      if (match) {
+        healthUrl = `https://${match[1]}.example.com/health`;
+      } else {
+        healthUrl = '/health';
+      }
+    }
+    fetch(healthUrl)
       .then(r => r.json())
       .then(data => {
         console.log('[ScheduleBuilder] Server health:', data.status, 'Build:', data.build?.full);

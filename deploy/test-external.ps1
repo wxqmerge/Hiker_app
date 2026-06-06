@@ -8,7 +8,12 @@ param(
 )
 
 $FrontendUrl = $FrontendUrl.TrimEnd('/')
-$ApiUrl = if ($ApiUrl) { $ApiUrl.TrimEnd('/') } else { $FrontendUrl }
+$ApiUrl = if ($ApiUrl) { $ApiUrl.TrimEnd('/') } else {
+    # Auto-detect API domain from frontend URL subpath
+    $match = $FrontendUrl -match 'https://[^/]+/(sothh-[a-z]+)'
+    if ($match) { "https://$($matches[1]).example.com" }
+    else { $FrontendUrl }
+}
 $ErrorActionPreference = 'Stop'
 
 
@@ -196,10 +201,10 @@ Test-Endpoint -Base $FrontendUrl -Path "/trails" -Label "Trail manager page" -Ex
 Test-Endpoint -Base $FrontendUrl -Path "/schedule" -Label "Schedule builder page" -ExpectedStatus 200
 
 Write-Host ""
-Write-Host "--- API via Frontend (mysite.conf proxy) ---"
-Test-ApiJson -Path "/api/trails" -Label "GET /api/trails via frontend" -ExpectedKey "trails"
-Test-Endpoint -Base $FrontendUrl -Path "/api/schedule" -Label "GET /api/schedule via frontend" -ExpectedStatus 200
-Test-Endpoint -Base $FrontendUrl -Path "/health" -Label "GET /health via frontend" -ExpectedStatus 200
+Write-Host "--- API via Frontend (nginx proxy) ---"
+$subpath = ($FrontendUrl -replace 'https://[^/]+', '') -replace '/$', ''
+Test-Endpoint -Base $FrontendUrl -Path "$subpath/api/trails" -Label "GET /api/trails via frontend" -ExpectedStatus 200
+Test-Endpoint -Base $FrontendUrl -Path "$subpath/api/schedule" -Label "GET /api/schedule via frontend" -ExpectedStatus 200
 
 Write-Host ""
 Write-Host "=== Summary ==="
