@@ -101,8 +101,7 @@ export default function ScheduleBuilder() {
   useSchedulePolling({ setSchedule }, 5000);
 
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? 'http://localhost:3000' : '');
-    fetch(`${apiBase}/health`)
+    fetch('/health')
       .then(r => r.json())
       .then(data => {
         console.log('[ScheduleBuilder] Server health:', data.status, 'Build:', data.build?.full);

@@ -48,7 +48,6 @@ HEADER
 for dep in "${DEPLOYMENTS[@]}"; do
     name="${dep%%:*}"
     path="${dep##*:}"
-    port="${PORT_MAP[$name]:-29969}"
     cat >> "$MYCONF" << EOF
     location /$name/ {
         alias $path;
@@ -58,37 +57,39 @@ for dep in "${DEPLOYMENTS[@]}"; do
 EOF
 done
 
-cat >> "$MYCONF" << EOF
-    # Proxy API requests to the correct backend based on path
+cat >> "$MYCONF" << 'PROXY'
+    # Proxy API routes to Express (based on Referer header)
     location /api/ {
-        if (\$http_referer ~* /sothh-dev/) {
+        if ($http_referer ~* /sothh-dev/) {
             proxy_pass http://127.0.0.1:29967;
         }
-        if (\$http_referer ~* /sothh-app/) {
+        if ($http_referer ~* /sothh-app/) {
             proxy_pass http://127.0.0.1:29969;
         }
         proxy_pass http://127.0.0.1:29969;
         proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
     }
 
-    # Proxy health check
+    # Proxy health check (based on Referer header)
     location /health {
-        if (\$http_referer ~* /sothh-dev/) {
+        if ($http_referer ~* /sothh-dev/) {
             proxy_pass http://127.0.0.1:29967;
         }
-        if (\$http_referer ~* /sothh-app/) {
+        if ($http_referer ~* /sothh-app/) {
             proxy_pass http://127.0.0.1:29969;
         }
         proxy_pass http://127.0.0.1:29969;
         proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     listen 443 ssl;
@@ -99,8 +100,8 @@ cat >> "$MYCONF" << EOF
 }
 
 server {
-    if (\$host = example.com) {
-        return 301 https://\$host\$request_uri;
+    if ($host = example.com) {
+        return 301 https://$host$request_uri;
     }
 
     listen 80;

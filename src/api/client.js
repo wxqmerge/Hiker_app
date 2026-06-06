@@ -127,7 +127,7 @@ export async function importTrailsFromXls(file) {
 }
 
 export async function getScheduleHistory() {
-  const res = await fetch(API_BASE ? `${API_BASE}/api/schedule/history` : '/api/schedule/history', {
+  const res = await fetch(`${API_BASE}/api/schedule/history`, {
     headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok) {
