@@ -230,6 +230,11 @@ if ! VITE_BASE="/$SERVICE/" npm run build:all; then
 fi
 echo "  Build complete."
 
+# 7b. Copy built files to parent dir for nginx root
+echo "[7b/13] Deploying built files..."
+cp -r dist/* .
+echo "  Built files deployed."
+
 # 8. Fix systemd service file
 echo "[8/13] Fixing systemd service file if needed..."
 SERVICE_FILE="/etc/systemd/system/$SERVICE.service"

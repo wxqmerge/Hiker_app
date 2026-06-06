@@ -299,7 +299,8 @@ if [ -f "$NGINX_CONF" ]; then
     if [ -n "$SPA_PATH" ]; then
         SPA_BLOCK=$(sed -n "#location ${SPA_PATH}#,/#}#p" "$NGINX_CONF")
         if echo "$SPA_BLOCK" | grep -q '^\s*alias'; then
-            pass "SPA location $SPA_PATH uses 'alias' (serves dist/)"
+            fail "SPA location $SPA_PATH uses 'alias' — breaks SPA refresh (use 'root' instead)"
+            NEED_NGINX_RELOAD=true
         else
             pass "SPA location $SPA_PATH uses 'root' (correct for SPA)"
         fi

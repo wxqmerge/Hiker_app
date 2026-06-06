@@ -48,8 +48,8 @@ server {
 
     # Hiker app - serve frontend from /<SUBDOMAIN>/
     location /<SUBDOMAIN>/ {
-        alias /var/www/html/<SUBDOMAIN>/dist/;
-        try_files $uri $uri/ /index.html;
+        root /var/www/html;
+        try_files $uri $uri/ /<SUBDOMAIN>/index.html;
     }
 
     # Return 404 for everything else
