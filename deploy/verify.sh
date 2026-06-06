@@ -297,7 +297,7 @@ if [ -f "$NGINX_CONF" ]; then
     # Check SPA location block uses root, not alias (alias breaks try_files fallback)
     SPA_PATH=$(grep -oE 'location [^ ]+/' "$NGINX_CONF" | grep -v '/api/' | grep -v '/health' | grep -v '/\.' | head -1 | awk '{print $2}')
     if [ -n "$SPA_PATH" ]; then
-        SPA_BLOCK=$(sed -n "/location ${SPA_PATH}/,/}/p" "$NGINX_CONF")
+        SPA_BLOCK=$(sed -n "#location ${SPA_PATH}#,#}#p" "$NGINX_CONF")
         if echo "$SPA_BLOCK" | grep -q '^\s*alias'; then
             fail "SPA location $SPA_PATH uses 'alias' — breaks SPA refresh (use 'root' instead)"
             NEED_NGINX_RELOAD=true
