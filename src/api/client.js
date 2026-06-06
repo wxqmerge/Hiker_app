@@ -10,7 +10,7 @@ function getApiBase() {
     return `https://${hostname}`;
   }
   // Path-based: example.com/sothh-dev → https://sothh-dev.example.com
-  const match = path.match(/^\/(sothh-[a-z]+)/);
+  const match = path.match(/^\/(sothh-[\w-]+)/);
   if (match) {
     return `https://${match[1]}.example.com`;
   }

@@ -107,7 +107,7 @@ export default function ScheduleBuilder() {
     if (hostname.endsWith('.example.com')) {
       healthUrl = `https://${hostname}/health`;
     } else {
-      const match = path.match(/^\/(sothh-[a-z]+)/);
+      const match = path.match(/^\/(sothh-[\w-]+)/);
       if (match) {
         healthUrl = `https://${match[1]}.example.com/health`;
       } else {

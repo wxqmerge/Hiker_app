@@ -10,7 +10,7 @@ param(
 $FrontendUrl = $FrontendUrl.TrimEnd('/')
 $ApiUrl = if ($ApiUrl) { $ApiUrl.TrimEnd('/') } else {
     # Auto-detect API domain from frontend URL subpath
-    $match = $FrontendUrl -match 'https://[^/]+/(sothh-[a-z]+)'
+    $match = $FrontendUrl -match 'https://[^/]+/(sothh-[\w-]+)'
     if ($match) { "https://$($matches[1]).example.com" }
     else { $FrontendUrl }
 }
