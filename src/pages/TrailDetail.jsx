@@ -120,7 +120,7 @@ const getEditedValue = (field) => {
   const availableMonths = trailSeasonal.availableMonths || [];
   const scheduleCount = monthly.reduce((sum, v, idx) => {
     const quarterBase = hasQuarterData ? 1 : 0;
-    const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+    const monthBase = availableMonths.includes(MONTH_ABBR[idx]) ? 1 : 0;
     const hikeCount = v || 0;
     const scheduleBase = Math.min(9, hikeCount * 2);
     return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
@@ -755,8 +755,8 @@ const getEditedValue = (field) => {
                         const hasQuarterData = (trail.seasonal?.availableMonths || []).length > 0;
                         const availableMonths = trail.seasonal?.availableMonths || [];
                         return MONTH_ABBR.map((month, idx) => {
-                          const quarterBase = hasQuarterData ? 1 : 0;
-                          const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+                           const quarterBase = hasQuarterData ? 1 : 0;
+                           const monthBase = availableMonths.includes(MONTH_ABBR[idx]) ? 1 : 0;
                           const hikeCount = getEditedValue('monthlyPopularity')[idx] || 0;
                           const scheduleBase = Math.min(9, hikeCount * 2);
                           const score = Math.min(9, quarterBase + monthBase + scheduleBase);
