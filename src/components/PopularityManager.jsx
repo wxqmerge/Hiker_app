@@ -8,6 +8,7 @@ const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 export default function PopularityManager({ trails, trailDetails }) {
   const { title: tt } = useTooltips();
   const { saveTrailDetail } = useTrailStore();
+  const [importMode, setImportMode] = useState('replace');
   const [localCounts, setLocalCounts] = useState(() => {
     const counts = {};
     for (const trail of trails) {
@@ -49,17 +50,19 @@ export default function PopularityManager({ trails, trailDetails }) {
           const trail = trails.find(t => t.id === trailId);
           if (!trail) continue;
           const existing = trailDetails?.[trailId]?.popularity || {};
+          const existingCount = existing.scheduleCount || 0;
+          const newCount = importMode === 'add' ? existingCount + count : count;
           await saveTrailDetail(trailId, {
             ...existing,
-            popularity: { ...existing, scheduleCount: count },
+            popularity: { ...existing, scheduleCount: newCount },
           });
-          setLocalCounts(prev => ({ ...prev, [trailId]: count }));
+          setLocalCounts(prev => ({ ...prev, [trailId]: newCount }));
           updated++;
         }
-        alert(`Updated schedule count for ${updated} trail(s).`);
+        alert(`Updated schedule count for ${updated} trail(s) (${importMode === 'add' ? 'added to existing' : 'replaced'}).`);
       },
     });
-  }, [trails, trailDetails, saveTrailDetail]);
+  }, [trails, trailDetails, saveTrailDetail, importMode]);
 
   const importMonthlyTsv = useCallback(() => {
     createFileInput({
@@ -126,6 +129,15 @@ export default function PopularityManager({ trails, trailDetails }) {
           >
             Export Schedule Count
           </button>
+          <select
+            value={importMode}
+            onChange={(e) => setImportMode(e.target.value)}
+            className="text-xs px-2 py-1.5 border border-gray-300 rounded bg-white"
+            title={tt('Replace: overwrite existing counts. Add: add imported counts to existing.')}
+          >
+            <option value="replace">Replace</option>
+            <option value="add">Add</option>
+          </select>
           <button
             onClick={importScheduleTsv}
             className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
