@@ -170,6 +170,8 @@ def main():
     schedule_path = r'D:\hiker\SOTHH schedule.xls'
     trails_path = r'D:\hiker\exported_data\trails.json'
     output_path = r'D:\hiker\exported_data\trail_schedule_count.tsv'
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     print('Loading trails data...')
     with open(trails_path, 'r', encoding='utf-8') as f:
@@ -193,13 +195,16 @@ def main():
     print('\nMatching hikes to trails...')
     matched_count = 0
     unmatched_count = 0
-    trail_hike_counts = {}
+    trail_monthly_counts = {}  # trail_id -> {month -> count}
 
     for hike in all_hikes:
         trail_id, score = match_hike(hike['hike'], trails)
         if trail_id:
             matched_count += 1
-            trail_hike_counts[trail_id] = trail_hike_counts.get(trail_id, 0) + 1
+            if trail_id not in trail_monthly_counts:
+                trail_monthly_counts[trail_id] = {}
+            month = hike['month']
+            trail_monthly_counts[trail_id][month] = trail_monthly_counts[trail_id].get(month, 0) + 1
         else:
             unmatched_count += 1
             if unmatched_count <= 10:
@@ -212,23 +217,31 @@ def main():
 
     print(f'\nWriting schedule count TSV to {output_path}...')
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write('Trail ID\tTrail Name\tSchedule Count\n')
+        header = ['Trail ID', 'Trail Name', 'Schedule Count'] + month_names
+        f.write('\t'.join(header) + '\n')
         for trail in trails:
             trail_id = trail['id']
             name = safe_str(trail.get('fullName', trail['name']))
-            count = trail_hike_counts.get(trail_id, 0)
-            f.write(f'{trail_id}\t{name}\t{count}\n')
+            monthly = trail_monthly_counts.get(trail_id, {})
+            total = sum(monthly.values())
+            counts = [str(monthly.get(m, 0)) for m in month_names]
+            row = [trail_id, name, str(total)] + counts
+            f.write('\t'.join(row) + '\n')
 
     print(f'[OK] Saved schedule counts for {len(trails)} trails')
 
     # Show top trails
     print('\n=== TOP 10 BY SCHEDULE COUNT ===')
-    sorted_trails = sorted(trail_hike_counts.items(), key=lambda x: x[1], reverse=True)
-    for trail_id, count in sorted_trails[:10]:
+    trail_totals = {tid: sum(months.values()) for tid, months in trail_monthly_counts.items()}
+    sorted_trails = sorted(trail_totals.items(), key=lambda x: x[1], reverse=True)
+    for trail_id, total in sorted_trails[:10]:
         trail = next((t for t in trails if t['id'] == trail_id), None)
         if trail:
             name = safe_str(trail.get('fullName', trail['name']))[:50]
-            print(f'  {trail_id} ({name}): {count}')
+            months = trail_monthly_counts.get(trail_id, {})
+            top_months = sorted(months.items(), key=lambda x: x[1], reverse=True)[:3]
+            top_str = ', '.join(f'{m}:{c}' for m, c in top_months)
+            print(f'  {trail_id} ({name}): {total} ({top_str})')
 
     print(f'\nTotal unmatched: {unmatched_count}')
     if unmatched_count > 0:

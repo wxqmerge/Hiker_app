@@ -40,7 +40,13 @@ export default function PopularityManager({ trails, trailDetails }) {
           alert('TSV file is empty or has only a header.');
           return;
         }
+        const headerCols = lines[0].split('\t');
+        // Schedule count TSV from generate_schedule_count.py: Trail ID, Trail Name, Schedule Count, Jan, Feb, ..., Dec
+        const isScheduleCountMonthly = headerCols.length >= 14 && headerCols[2]?.trim() === 'Schedule Count' && headerCols[3]?.trim() === 'Jan';
+        // Monthly TSV from match_schedule.py: Trail ID, Trail Name, Jan, Feb, ..., Dec
+        const isMonthlyOnly = headerCols.length >= 14 && headerCols[2]?.trim() === 'Jan';
         let updated = 0;
+        let withMonthly = 0;
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split('\t');
           if (cols.length < 3) continue;
@@ -52,14 +58,25 @@ export default function PopularityManager({ trails, trailDetails }) {
           const existing = trailDetails?.[trailId]?.popularity || {};
           const existingCount = existing.scheduleCount || 0;
           const newCount = importMode === 'add' ? existingCount + count : count;
-          await saveTrailDetail(trailId, {
+          const update = {
             ...existing,
             popularity: { ...existing, scheduleCount: newCount },
-          });
+          };
+          if (isScheduleCountMonthly) {
+            const monthly = [];
+            for (let m = 3; m < 15; m++) {
+              const val = parseInt(cols[m]?.trim(), 10);
+              monthly.push(isNaN(val) ? 0 : val);
+            }
+            update.popularity = { ...update.popularity, monthly };
+            withMonthly++;
+          }
+          await saveTrailDetail(trailId, update);
           setLocalCounts(prev => ({ ...prev, [trailId]: newCount }));
           updated++;
         }
-        alert(`Updated schedule count for ${updated} trail(s) (${importMode === 'add' ? 'added to existing' : 'replaced'}).`);
+        const monthlyMsg = isScheduleCountMonthly ? ` (${withMonthly} with monthly data)` : '';
+        alert(`Updated schedule count for ${updated} trail(s)${monthlyMsg} (${importMode === 'add' ? 'added to existing' : 'replaced'}).`);
       },
     });
   }, [trails, trailDetails, saveTrailDetail, importMode]);
