@@ -23,6 +23,7 @@ deploy/hiker.conf
 
 # Deployment secrets
 deploy/.env
+.env.production
 # Shared build artifacts
 shared/types/*.js.map
 shared/types/*.d.ts

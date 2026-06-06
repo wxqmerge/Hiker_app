@@ -339,7 +339,7 @@ GET /api/lookup → getLookup()
 ```javascript
 // vite.config.js
 {
-  base: mode === 'production' ? '/sothh-app/' : '/',
+  base: mode === 'production' ? (process.env.VITE_BASE || '/') : '/',
   plugins: [react()],
   server: {
     port: 5173,
@@ -493,7 +493,7 @@ npm run build:all
     │   ├── React compilation (@vitejs/plugin-react)
     │   ├── Tailwind CSS processing
     │   ├── Output to dist/
-    │   └── Base URL: /sothh-app/ (production)
+    │   └── Base URL: / (production, path-agnostic)
     │
     └── npm run build:server (TypeScript)
         ├── tsc (server/tsconfig.json)
