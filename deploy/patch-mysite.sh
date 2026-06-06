@@ -11,6 +11,11 @@ SITES_ENABLED="/etc/nginx/sites-enabled"
 HTML_BASE="/var/www/html"
 MYCONF="$SITES_DIR/mysite.conf"
 
+# Deployment -> Express port mapping
+declare -A PORT_MAP
+PORT_MAP["sothh-app"]=29969
+PORT_MAP["sothh-dev"]=29967
+
 # Collect deployment directories
 DEPLOYMENTS=()
 for dir in "$HTML_BASE"/*/; do
@@ -43,6 +48,7 @@ HEADER
 for dep in "${DEPLOYMENTS[@]}"; do
     name="${dep%%:*}"
     path="${dep##*:}"
+    port="${PORT_MAP[$name]:-29969}"
     cat >> "$MYCONF" << EOF
     location /$name/ {
         alias $path;
@@ -52,24 +58,56 @@ for dep in "${DEPLOYMENTS[@]}"; do
 EOF
 done
 
-cat >> "$MYCONF" << 'SSL'
+cat >> "$MYCONF" << EOF
+    # Proxy API requests to the correct backend based on path
+    location /api/ {
+        if (\$http_referer ~* /sothh-dev/) {
+            proxy_pass http://127.0.0.1:29967;
+        }
+        if (\$http_referer ~* /sothh-app/) {
+            proxy_pass http://127.0.0.1:29969;
+        }
+        proxy_pass http://127.0.0.1:29969;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    # Proxy health check
+    location /health {
+        if (\$http_referer ~* /sothh-dev/) {
+            proxy_pass http://127.0.0.1:29967;
+        }
+        if (\$http_referer ~* /sothh-app/) {
+            proxy_pass http://127.0.0.1:29969;
+        }
+        proxy_pass http://127.0.0.1:29969;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
     listen 443 ssl;
-    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/bughouse-ladder.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/bughouse-ladder.example.com/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
 
 server {
-    if ($host = example.com) {
-        return 301 https://$host$request_uri;
+    if (\$host = example.com) {
+        return 301 https://\$host\$request_uri;
     }
 
     listen 80;
     server_name example.com;
     return 404;
 }
-SSL
+EOF
 
 sudo ln -sf "$MYCONF" "$SITES_ENABLED/mysite.conf"
 sudo nginx -t 2>&1 && sudo systemctl reload nginx

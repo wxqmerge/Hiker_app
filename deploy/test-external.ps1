@@ -196,6 +196,12 @@ Test-Endpoint -Base $FrontendUrl -Path "/trails" -Label "Trail manager page" -Ex
 Test-Endpoint -Base $FrontendUrl -Path "/schedule" -Label "Schedule builder page" -ExpectedStatus 200
 
 Write-Host ""
+Write-Host "--- API via Frontend (mysite.conf proxy) ---"
+Test-ApiJson -Path "/api/trails" -Label "GET /api/trails via frontend" -ExpectedKey "trails"
+Test-Endpoint -Base $FrontendUrl -Path "/api/schedule" -Label "GET /api/schedule via frontend" -ExpectedStatus 200
+Test-Endpoint -Base $FrontendUrl -Path "/health" -Label "GET /health via frontend" -ExpectedStatus 200
+
+Write-Host ""
 Write-Host "=== Summary ==="
 if ($Errors -eq 0 -and $Warnings -eq 0) {
     Write-Host "All checks passed." -ForegroundColor Green
