@@ -704,25 +704,6 @@ const getEditedValue = (field) => {
                         </div>
                       ))}
                     </div>
-                    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200">
-                      {(() => {
-                        const hasQuarterData = (trail.seasonal?.availableMonths || []).length > 0;
-                        const availableMonths = trail.seasonal?.availableMonths || [];
-                        return MONTH_ABBR.map((month, idx) => {
-                          const quarterBase = hasQuarterData ? 1 : 0;
-                          const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-                          const score = getEditedValue('monthlyPopularity')[idx] || 0;
-                          const scheduleBase = Math.max(0, score - quarterBase - monthBase);
-                          return (
-                            <div key={idx} className="flex flex-col items-center min-w-[40px]">
-                              <span className="text-[8px] text-gray-400 leading-tight">
-                                {quarterBase}+{monthBase}+{scheduleBase}={score}
-                              </span>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
                     <p className="text-[10px] text-gray-400 mt-1">score = QuarterBase + MonthBase + ScheduleBase</p>
                   </div>
                 </div>
