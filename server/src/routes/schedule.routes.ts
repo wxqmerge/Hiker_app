@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { getSchedule, updateSchedule, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp, clearScheduleHistory } from '../services/dataService.js';
+import { getSchedule, updateSchedule, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp, clearScheduleHistory, getScheduleVersion } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import fs from 'fs';
 import path from 'path';
@@ -37,7 +37,16 @@ async function findPythonCmd(): Promise<string> {
   throw new Error('Python not found');
 }
 
-router.get('/', (_req, res) => {
+router.get('/', (req, res) => {
+  const version = getScheduleVersion();
+  const ifModifiedSince = req.headers['if-modified-since'];
+  if (version && ifModifiedSince && ifModifiedSince === version) {
+    return res.status(304).end();
+  }
+  if (version) {
+    res.set('Last-Modified', version);
+    res.set('ETag', JSON.stringify(getSchedule()).substring(0, 8));
+  }
   res.json(getSchedule());
 });
 

@@ -303,6 +303,15 @@ export async function updateSchedule(newSchedule: ScheduleData): Promise<void> {
   await writeWithHealth(path.join(DATA_DIR, 'schedule.json'), schedule);
 }
 
+export function getScheduleVersion(): string {
+  try {
+    const stat = fsSync.statSync(path.join(DATA_DIR, 'schedule.json'));
+    return stat.mtime.toISOString();
+  } catch {
+    return '';
+  }
+}
+
 export function serverVersion(): string {
   try {
     const pkg = JSON.parse(fsSync.readFileSync(path.join(__dirname, '../../package.json'), 'utf-8'));

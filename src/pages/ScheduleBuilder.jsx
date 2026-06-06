@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTrails, useFilters } from '../hooks/useTrails';
+import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
@@ -10,6 +11,7 @@ import { getTrailDetailsById, findTrailById as findTrailByIdUtil } from '../util
 import { downloadBlob, createFileInput } from '../utils/io';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
+import { setSchedule } from '../hooks/useTrailStore';
 
 // Convert server schedule format to client format
 function serverScheduleToStore(serverData) {
@@ -94,6 +96,8 @@ export default function ScheduleBuilder() {
       });
     }
   }, [scheduleData]);
+
+  useSchedulePolling({ setSchedule }, 5000);
 
   // Save schedule to server (debounced 1s)
   const saveTimeoutRef = useRef(null);

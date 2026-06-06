@@ -6,6 +6,7 @@ let _trailDetails = {};
 let _loading = true;
 let _lookup = null;
 let _schedule = null;
+let _scheduleVersion = null;
 let _subscribers = [];
 
 function notifySubscribers() {
@@ -17,6 +18,11 @@ function setState(trails, details, loading, lookup, schedule) {
   _trailDetails = details;
   _loading = loading;
   _lookup = lookup;
+  _schedule = schedule;
+  notifySubscribers();
+}
+
+export function setSchedule(schedule) {
   _schedule = schedule;
   notifySubscribers();
 }
@@ -44,6 +50,7 @@ export function resetTrailStore() {
   _loading = true;
   _lookup = null;
   _schedule = null;
+  _scheduleVersion = null;
   _subscribers = [];
   initSharedState();
 }
@@ -152,5 +159,6 @@ export function useTrailStore() {
     deleteTrail,
     exportJSON,
     importJSON,
+    setSchedule,
   };
 }
