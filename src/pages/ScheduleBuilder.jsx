@@ -74,8 +74,8 @@ function debugLogSearchChange(search, hikeTrailMapLen, filteredLen, sortedLen, a
 
 export default function ScheduleBuilder() {
   const { trails, loading, lookup, schedule: scheduleData } = useTrails();
-  const { filters, setFilters } = useFilters(trails);
   const trailDetails = useTrailDetails();
+  const { filters, setFilters } = useFilters(trails, trailDetails);
   const { title: tt } = useTooltips();
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -253,8 +253,8 @@ export default function ScheduleBuilder() {
 
 
   const filteredHikes = useMemo(() => {
-    const filtered = filterTrails(hikeTrailMap, filters);
-    const sorted = sortTrails(filtered, filters);
+    const filtered = filterTrails(hikeTrailMap, filters, trailDetails);
+    const sorted = sortTrails(filtered, filters, 'name', trailDetails);
     if (debugMode) {
       const search = filters.search;
       const assigned = Object.values(assignedHikes).filter(Boolean);
@@ -312,7 +312,7 @@ export default function ScheduleBuilder() {
             title={tt('Drag to swap with another date')}
           >
             <div className="relative">
-              <TrailCard trail={trail} hikeName={trail.fullName || trail.name} isActive={false} />
+              <TrailCard trail={trail} hikeName={trail.fullName || trail.name} isActive={false} selectedMonths={filters.months} />
               <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
                 {day}
                 <span className="text-[8px]">{new Date(year, selectedMonth, day).getDay() === 3 ? 'W' : 'F'}</span>
@@ -744,7 +744,7 @@ const hikeCards = useMemo(() => {
           title={tt('Drag to schedule on a date')}
         >
           <div className="relative">
-            <TrailCard trail={trail} isActive={false} />
+            <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} />
             {debugMode && (
               <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                 {item.hikeIndex}

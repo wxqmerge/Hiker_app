@@ -56,11 +56,11 @@ function useFiltersStore() {
   };
 }
 
-export function useFilters(trails) {
+export function useFilters(trails, trailDetails) {
   const { filters, setFilters, resetFilters } = useFiltersStore();
 
-  const filteredTrails = useMemo(() => filterTrails(trails, filters), [trails, filters]);
-  const sortedTrails = useMemo(() => sortTrails(filteredTrails, filters), [filteredTrails, filters]);
+  const filteredTrails = useMemo(() => filterTrails(trails, filters, trailDetails), [trails, filters, trailDetails]);
+  const sortedTrails = useMemo(() => sortTrails(filteredTrails, filters, 'name', trailDetails), [filteredTrails, filters, trailDetails]);
 
   return { filters, setFilters, sortedTrails, resetFilters };
 }

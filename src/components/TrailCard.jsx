@@ -14,7 +14,7 @@ function getScoredMonths(seasonal) {
     .map(([m]) => m);
 }
 
-export default function TrailCard({ trail, isActive = false, hikeName }) {
+export default function TrailCard({ trail, isActive = false, hikeName, selectedMonths }) {
   const [copied, setCopied] = useState(false);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
@@ -37,16 +37,27 @@ export default function TrailCard({ trail, isActive = false, hikeName }) {
   const trailSeasonal = trail?.seasonal || {};
   const seasonalKeys = Object.keys(trailSeasonal).filter(k => MONTH_ABBR.includes(k));
   const hasQuarterData = seasonalKeys.length > 0;
-  const scheduleCount = monthly.reduce((sum, v, idx) => {
-    const quarterBase = hasQuarterData ? 1 : 0;
-    const monthBase = seasonalKeys.includes(MONTH_ABBR[idx]) ? 1 : 0;
-    const hikeCount = v || 0;
-    const scheduleBase = Math.min(9, hikeCount * 2);
-    return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
-  }, 0) || null;
+  const availableMonths = Object.entries(seasonal)
+    .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
+    .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
+  const popScore = monthly.length > 0
+    ? (() => {
+        const allScores = monthly.map((hikeCount, idx) => {
+          const quarterBase = hasQuarterData ? 1 : 0;
+          const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+          const scheduleBase = Math.min(9, (hikeCount || 0) * 2);
+          return Math.min(9, quarterBase + monthBase + scheduleBase);
+        });
+        if (selectedMonths && selectedMonths.length > 0) {
+          return selectedMonths.reduce((sum, mIdx) => sum + (allScores[mIdx] || 0), 0);
+        }
+        return allScores.reduce((sum, s) => sum + s, 0);
+      })()
+    : null;
+  const hasPopScore = popScore != null && popScore > 0;
 
-  return (
-    <div className={`rounded-lg shadow-sm hover:shadow-md transition-all border-2 overflow-hidden ${
+   return (
+    <div className={`relative rounded-lg shadow-sm hover:shadow-md transition-all border-2 overflow-hidden ${
       isActive 
         ? 'border-green-500 ring-2 ring-green-200 bg-white' 
         : 'border-gray-100 bg-white'
@@ -127,19 +138,19 @@ export default function TrailCard({ trail, isActive = false, hikeName }) {
             </div>
           )}
           
-          {/* Schedule Count */}
-          {scheduleCount != null && scheduleCount > 0 && (
-            <div className="flex items-center gap-1 text-gray-700">
-              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span className="truncate" title={`Scheduled ${scheduleCount} times`}>
-                {scheduleCount}× scheduled
-              </span>
-            </div>
-          )}
+ 
         </div>
       </Link>
+
+      {/* Pop score indicator */}
+      {hasPopScore && (
+        <div
+          className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-blue-400 flex items-center justify-center text-white text-xs font-semibold"
+          title={`Popularity score: ${popScore}`}
+        >
+          {popScore}
+        </div>
+      )}
 
       {/* Copy button bar */}
       <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex items-center justify-between">

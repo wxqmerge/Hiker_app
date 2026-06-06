@@ -1,4 +1,5 @@
 import { useTrails } from '../hooks/useTrails';
+import { useTrailStore } from '../hooks/useTrailStore';
 import { useFilters } from '../hooks/useFilters';
 import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
@@ -6,7 +7,8 @@ import TrailList from '../components/TrailList';
 
 export default function Home() {
   const { trails, lookup, loading } = useTrails();
-  const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails);
+  const { trailDetails } = useTrailStore();
+  const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails, trailDetails);
 
   if (loading) {
     return (
@@ -36,7 +38,7 @@ export default function Home() {
           resetFilters={resetFilters}
         />
 
-        <TrailList trails={sortedTrails} />
+        <TrailList trails={sortedTrails} selectedMonths={filters.months} />
       </main>
     </div>
   );

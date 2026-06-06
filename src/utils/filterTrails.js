@@ -1,7 +1,36 @@
 import { MONTH_ABBR } from './constants';
 
+function getAvailableMonths(seasonal) {
+  if (!seasonal) return [];
+  if (Array.isArray(seasonal.availableMonths)) return seasonal.availableMonths;
+  return Object.entries(seasonal)
+    .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
+    .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
+}
+
+function getTrailMonthlyScore(trail, trailDetails, idx) {
+  const rawId = trail?.id || trail?.trail?.id;
+  if (!rawId || !trailDetails) return null;
+  // Try exact match first, then fallback: "360-rd" -> "360"
+  let details = trailDetails[rawId];
+  if (!details) {
+    const segments = rawId.split('-');
+    if (segments.length > 1) {
+      const baseId = segments.slice(0, -1).join('-');
+      details = trailDetails[baseId];
+    }
+  }
+  if (details?.popularity?.monthlyScore) {
+    return details.popularity.monthlyScore[idx];
+  }
+  if (trail.monthlyScore) {
+    return trail.monthlyScore[idx];
+  }
+  return null;
+}
+
 // Core filter logic shared by browse and schedule modes
-export function filterTrails(items, filters) {
+export function filterTrails(items, filters, trailDetails) {
   return items.filter(item => {
     const t = item.trail || item;
 
@@ -40,6 +69,9 @@ export function filterTrails(items, filters) {
         if (Array.isArray(seasonal.availableMonths)) {
           return seasonal.availableMonths.includes(monthIdx + 1);
         }
+        // Handle monthlyScore format (12-element array)
+        const score = getTrailMonthlyScore(item, trailDetails, monthIdx);
+        if (score != null && score > 0) return true;
         return false;
       });
       if (!matchesMonth) return false;
@@ -55,7 +87,7 @@ export function filterTrails(items, filters) {
 }
 
 // Sort logic shared by browse and schedule modes
-export function sortTrails(items, filters, nameKey = 'name') {
+export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
   const sorted = [...items];
   
   if (filters.sortBy === 'name') {
@@ -68,22 +100,81 @@ export function sortTrails(items, filters, nameKey = 'name') {
     const selectedMonthNames = filters.months.length > 0
       ? filters.months.map(i => MONTH_ABBR[i])
       : MONTH_ABBR;
-    const getSeasonalScore = (seasonal) => {
-      if (!seasonal) return 0;
+    const getPopularityScore = (item) => {
+      const t = item.trail || item;
+      const seasonal = t.seasonal || {};
+      let details = null;
+      // Try to get details from trailDetails
+      if (trailDetails) {
+        const rawId = t.id || t.trail?.id;
+        if (rawId) {
+          // Try exact match first, then fallback: "360-rd" -> "360"
+          details = trailDetails[rawId];
+          if (!details) {
+            const segments = rawId.split('-');
+            if (segments.length > 1) {
+              const baseId = segments.slice(0, -1).join('-');
+              details = trailDetails[baseId];
+            }
+          }
+        }
+      }
+      if (details?.popularity?.monthlyScore) {
+        const scores = filters.months.length === 0
+          ? details.popularity.monthlyScore
+          : details.popularity.monthlyScore.filter((_, i) => filters.months.includes(i));
+        return scores.reduce((sum, s) => sum + (s || 0), 0);
+      }
+      if (t.monthlyScore) {
+        const scores = filters.months.length === 0
+          ? t.monthlyScore
+          : t.monthlyScore.filter((_, i) => filters.months.includes(i));
+        return scores.reduce((sum, s) => sum + (s || 0), 0);
+      }
+      // Fallback: calculate from monthly array (same formula as TrailDetail.jsx)
+      if (details?.popularity?.monthly) {
+        const monthly = details.popularity.monthly;
+        const seasonalKeys = Object.keys(seasonal).filter(k => MONTH_ABBR.includes(k));
+        const hasQuarterData = seasonalKeys.length > 0;
+        const availableMonths = getAvailableMonths(seasonal);
+        const scores = filters.months.length === 0
+          ? monthly
+          : monthly.filter((_, i) => filters.months.includes(i));
+        return scores.reduce((sum, hikeCount, idx) => {
+          const quarterBase = hasQuarterData ? 1 : 0;
+          const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+          const scheduleBase = Math.min(9, (hikeCount || 0) * 2);
+          return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
+        }, 0);
+      }
+      if (t.monthly) {
+        const seasonalKeys = Object.keys(seasonal).filter(k => MONTH_ABBR.includes(k));
+        const hasQuarterData = seasonalKeys.length > 0;
+        const availableMonths = getAvailableMonths(seasonal);
+        const scores = filters.months.length === 0
+          ? t.monthly
+          : t.monthly.filter((_, i) => filters.months.includes(i));
+        return scores.reduce((sum, hikeCount, idx) => {
+          const quarterBase = hasQuarterData ? 1 : 0;
+          const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+          const scheduleBase = Math.min(9, (hikeCount || 0) * 2);
+          return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
+        }, 0);
+      }
       // Standard { Jan: 3, Feb: 2, ... } format
-      const keyed = selectedMonthNames.reduce((sum, m) => sum + (seasonal[m] || 0), 0);
+      const keyed = filters.months.length === 0
+        ? MONTH_ABBR.reduce((sum, m) => sum + (seasonal[m] || 0), 0)
+        : selectedMonthNames.reduce((sum, m) => sum + (seasonal[m] || 0), 0);
       if (keyed > 0) return keyed;
       // { availableMonths: [1, 2, 3] } format
       if (Array.isArray(seasonal.availableMonths)) {
-        return selectedMonthNames.reduce((sum, _, i) => sum + (seasonal.availableMonths.includes(i + 1) ? 1 : 0), 0);
+        return filters.months.length === 0
+          ? MONTH_ABBR.reduce((sum, _, i) => sum + (seasonal.availableMonths.includes(i + 1) ? 1 : 0), 0)
+          : selectedMonthNames.reduce((sum, _, i) => sum + (seasonal.availableMonths.includes(i + 1) ? 1 : 0), 0);
       }
       return 0;
     };
-    sorted.sort((a, b) => {
-      const sa = (a.trail || a).seasonal || {};
-      const sb = (b.trail || b).seasonal || {};
-      return getSeasonalScore(sb) - getSeasonalScore(sa);
-    });
+    sorted.sort((a, b) => getPopularityScore(b) - getPopularityScore(a));
   } else if (filters.sortBy === 'elevation-up') {
     sorted.sort((a, b) => ((a.trail || a).elevationStart || 0) - ((b.trail || b).elevationStart || 0));
   } else if (filters.sortBy === 'elevation-down') {
