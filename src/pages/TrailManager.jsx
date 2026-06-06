@@ -4,6 +4,7 @@ import PageNav from '../components/PageNav';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, downloadBlob } from '../utils/io';
+import { MONTH_ABBR } from '../utils/constants';
 import { importTrailsFromXls } from '../api/client';
 
 export default function TrailManager() {
@@ -20,7 +21,7 @@ export default function TrailManager() {
     const availableMonths = trail.seasonal?.availableMonths || [];
     return monthly.reduce((sum, v, idx) => {
       const quarterBase = hasQuarterData ? 1 : 0;
-      const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+      const monthBase = availableMonths.includes(MONTH_ABBR[idx]) ? 1 : 0;
       const hikeCount = v || 0;
       const scheduleBase = Math.min(9, hikeCount * 2);
       return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
