@@ -33,7 +33,8 @@ export default function TrailCard({ trail, isActive = false, hikeName }) {
   const scoreMonths = getScoredMonths(seasonal);
   const availableMonthsStr = scoreMonths.length > 0 ? scoreMonths.join(', ') : 'Year-round';
   const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-  const scheduleCount = detailsForTrail?.[trail.id]?.popularity?.scheduleCount;
+  const monthly = detailsForTrail?.[trail.id]?.popularity?.monthly || [];
+  const scheduleCount = monthly.reduce((sum, v) => sum + (v || 0), 0) || null;
 
   return (
     <div className={`rounded-lg shadow-sm hover:shadow-md transition-all border-2 overflow-hidden ${

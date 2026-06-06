@@ -13,17 +13,11 @@ export default function TrailManager() {
   const { trails, loading, trailDetails, saveTrail, deleteTrail, saveTrailDetail } = useTrailStore();
   const [search, setSearch] = useState('');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
-  const [importMode, setImportMode] = useState('replace');
-  const [localCounts, setLocalCounts] = useState(() => {
-    const counts = {};
-    for (const trail of trails) {
-      const pop = trailDetails?.[trail.id]?.popularity;
-      if (pop?.scheduleCount) {
-        counts[trail.id] = pop.scheduleCount;
-      }
-    }
-    return counts;
-  });
+  const getScheduleCount = (trailId) => {
+    const monthly = trailDetails?.[trailId]?.popularity?.monthly;
+    if (!monthly || !Array.isArray(monthly)) return 0;
+    return monthly.reduce((sum, v) => sum + (v || 0), 0);
+  };
   const navigate = useNavigate();
   const hasApiKey = apiKey.trim().length > 0;
 
@@ -104,63 +98,21 @@ export default function TrailManager() {
     });
   };
 
-  const exportScheduleTsv = useCallback(() => {
-    const rows = [['Trail ID', 'Trail Name', 'Schedule Count']];
+  const exportMonthlyTsv = useCallback(() => {
+    const rows = [['Trail ID', 'Trail Name']];
+    const headerCols = [...MONTH_ABBR];
+    rows.push([...headerCols]);
     for (const trail of trails) {
-      const count = localCounts[trail.id] ?? trailDetails?.[trail.id]?.popularity?.scheduleCount ?? 0;
-      rows.push([trail.id, trail.fullName || trail.name, String(count)]);
+      const monthly = trailDetails?.[trail.id]?.popularity?.monthly || [];
+      const row = [trail.id, trail.fullName || trail.name];
+      for (let m = 0; m < 12; m++) {
+        row.push(String(monthly[m] || 0));
+      }
+      rows.push(row);
     }
     const tsv = rows.map(r => r.join('\t')).join('\n');
-    downloadBlob(tsv, 'trail_schedule_count.tsv', 'text/tab-separated-values');
-  }, [trails, localCounts, trailDetails]);
-
-  const importScheduleTsv = useCallback(() => {
-    createFileInput({
-      accept: '.tsv,.txt,.csv',
-      onFile: async (file) => {
-        const text = await file.text();
-        const lines = text.trim().split('\n');
-        if (lines.length < 2) {
-          alert('TSV file is empty or has only a header.');
-          return;
-        }
-        const headerCols = lines[0].split('\t');
-        const isScheduleCountMonthly = headerCols.length >= 14 && headerCols[2]?.trim() === 'Schedule Count' && headerCols[3]?.trim() === 'Jan';
-        let updated = 0;
-        let withMonthly = 0;
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split('\t');
-          if (cols.length < 3) continue;
-          const trailId = cols[0].trim();
-          const count = parseInt(cols[2].trim(), 10);
-          if (isNaN(count)) continue;
-          const trail = trails.find(t => t.id === trailId);
-          if (!trail) continue;
-          const existing = trailDetails?.[trailId]?.popularity || {};
-          const existingCount = existing.scheduleCount || 0;
-          const newCount = importMode === 'add' ? existingCount + count : count;
-          const update = {
-            ...existing,
-            popularity: { ...existing, scheduleCount: newCount },
-          };
-          if (isScheduleCountMonthly) {
-            const monthly = [];
-            for (let m = 3; m < 15; m++) {
-              const val = parseInt(cols[m]?.trim(), 10);
-              monthly.push(isNaN(val) ? 0 : val);
-            }
-            update.popularity = { ...update.popularity, monthly };
-            withMonthly++;
-          }
-          await saveTrailDetail(trailId, update);
-          setLocalCounts(prev => ({ ...prev, [trailId]: newCount }));
-          updated++;
-        }
-        const monthlyMsg = isScheduleCountMonthly ? ` (${withMonthly} with monthly data)` : '';
-        alert(`Updated schedule count for ${updated} trail(s)${monthlyMsg} (${importMode === 'add' ? 'added to existing' : 'replaced'}).`);
-      },
-    });
-  }, [trails, trailDetails, saveTrailDetail, importMode]);
+    downloadBlob(tsv, 'trail_monthly_popularity.tsv', 'text/tab-separated-values');
+  }, [trails, trailDetails]);
 
   const importMonthlyTsv = useCallback(() => {
     createFileInput({
@@ -175,7 +127,7 @@ export default function TrailManager() {
         const headerCols = lines[0].split('\t');
         const isMonthly = headerCols.length >= 14 && headerCols[2]?.trim() === 'Jan';
         if (!isMonthly) {
-          alert('This appears to be a schedule count TSV, not a monthly popularity TSV.\n\nMonthly TSV should have 14 columns: Trail ID, Trail Name, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec');
+          alert('This is not a monthly popularity TSV.\n\nExpected 14 columns: Trail ID, Trail Name, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec');
           return;
         }
         let updated = 0;
@@ -202,13 +154,13 @@ export default function TrailManager() {
     });
   }, [trails, trailDetails, saveTrailDetail]);
 
-  const updateCount = useCallback(async (trailId, value) => {
-    const count = parseInt(value, 10) || 0;
-    setLocalCounts(prev => ({ ...prev, [trailId]: count }));
+  const updateMonthly = useCallback(async (trailId, idx, value) => {
+    const monthly = [...(trailDetails?.[trailId]?.popularity?.monthly || Array(12).fill(0))];
+    monthly[idx] = parseInt(value, 10) || 0;
     const existing = trailDetails?.[trailId]?.popularity || {};
     await saveTrailDetail(trailId, {
       ...existing,
-      popularity: { ...existing, scheduleCount: count },
+      popularity: { ...existing, monthly },
     });
   }, [trailDetails, saveTrailDetail]);
 
@@ -270,32 +222,16 @@ export default function TrailManager() {
             <h3 className="text-sm font-semibold text-gray-800">Trail Manager</h3>
             <div className="flex gap-2">
               <button
-                onClick={exportScheduleTsv}
+                onClick={exportMonthlyTsv}
                 className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-                title={tt('Export schedule counts as TSV file')}
+                title={tt('Export monthly popularity as TSV file')}
               >
-                Export Schedule Count
-              </button>
-              <select
-                value={importMode}
-                onChange={(e) => setImportMode(e.target.value)}
-                className="text-xs px-2 py-1.5 border border-gray-300 rounded bg-white"
-                title={tt('Replace: overwrite existing counts. Add: add imported counts to existing.')}
-              >
-                <option value="replace">Replace</option>
-                <option value="add">Add</option>
-              </select>
-              <button
-                onClick={importScheduleTsv}
-                className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-                title={tt('Import schedule counts from TSV file')}
-              >
-                Import Schedule Count
+                Export Monthly
               </button>
               <button
                 onClick={importMonthlyTsv}
-                className="text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
-                title={tt('Import monthly popularity from trail_monthly_popularity.tsv (generated by match_schedule.py)')}
+                className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                title={tt('Import monthly popularity from TSV file')}
               >
                 Import Monthly
               </button>
@@ -308,12 +244,27 @@ export default function TrailManager() {
                   <th className="text-right px-2 py-3 text-sm font-semibold text-gray-700 w-12">#</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Name</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 w-24">Distance</th>
-                  <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 w-32">Schedule Count</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Jan</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Feb</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Mar</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Apr</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">May</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Jun</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Jul</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Aug</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Sep</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Oct</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Nov</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Dec</th>
+                  <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 w-12">Total</th>
                   <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 w-20">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTrails.map((trail, index) => (
+                {filteredTrails.map((trail, index) => {
+                  const monthly = trailDetails?.[trail.id]?.popularity?.monthly || [];
+                  const total = monthly.reduce((sum, v) => sum + (v || 0), 0);
+                  return (
                   <tr key={`${trail.id}-${index}`} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="px-2 py-3 text-right text-sm text-gray-400">{index + 1}</td>
                     <td className="px-4 py-3">
@@ -325,18 +276,19 @@ export default function TrailManager() {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {trail.distance != null ? `${trail.distance} mi` : 'N/A'}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    {MONTH_ABBR.map((month, idx) => (
+                      <td key={idx} className="px-2 py-3 text-center">
                         <input
                           type="number"
                           min="0"
-                          value={localCounts[trail.id] ?? trailDetails?.[trail.id]?.popularity?.scheduleCount ?? 0}
-                          onChange={(e) => updateCount(trail.id, e.target.value)}
-                          className="w-14 text-right px-2 py-1 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
-                          title={tt(`Schedule count for ${trail.fullName || trail.name}`)}
+                          value={monthly[idx] || ''}
+                          onChange={(e) => updateMonthly(trail.id, idx, e.target.value)}
+                          className="w-8 text-center px-1 py-1 border border-gray-300 rounded text-xs focus:ring-green-500 focus:border-green-500"
+                          title={`${month} popularity`}
                         />
-                      </div>
-                    </td>
+                      </td>
+                    ))}
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-gray-800">{total}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link
@@ -360,7 +312,8 @@ export default function TrailManager() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

@@ -215,20 +215,19 @@ def main():
     if unmatched_count > 10:
         print(f'\n  ...and {unmatched_count - 10} more unmatched hikes')
 
-    print(f'\nWriting schedule count TSV to {output_path}...')
+    print(f'\nWriting monthly popularity TSV to {output_path}...')
     with open(output_path, 'w', encoding='utf-8') as f:
-        header = ['Trail ID', 'Trail Name', 'Schedule Count'] + month_names
+        header = ['Trail ID', 'Trail Name'] + month_names
         f.write('\t'.join(header) + '\n')
         for trail in trails:
             trail_id = trail['id']
             name = safe_str(trail.get('fullName', trail['name']))
             monthly = trail_monthly_counts.get(trail_id, {})
-            total = sum(monthly.values())
             counts = [str(monthly.get(m, 0)) for m in month_names]
-            row = [trail_id, name, str(total)] + counts
+            row = [trail_id, name] + counts
             f.write('\t'.join(row) + '\n')
 
-    print(f'[OK] Saved schedule counts for {len(trails)} trails')
+    print(f'[OK] Saved monthly popularity for {len(trails)} trails')
 
     # Show top trails
     print('\n=== TOP 10 BY SCHEDULE COUNT ===')
