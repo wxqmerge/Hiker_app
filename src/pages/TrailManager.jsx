@@ -244,18 +244,18 @@ export default function TrailManager() {
                   <th className="text-right px-2 py-3 text-sm font-semibold text-gray-700 w-12">#</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Name</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 w-24">Distance</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Jan</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Feb</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Mar</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Apr</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">May</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Jun</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Jul</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Aug</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Sep</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Oct</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Nov</th>
-                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5" title="score = base + (hike_count × 2), capped at 9. Base = 1 if trail has quarter data, 0 otherwise.">Dec</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Jan</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Feb</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Mar</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Apr</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">May</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Jun</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Jul</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Aug</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Sep</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Oct</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Nov</th>
+                  <th className="text-center px-2 py-3 text-sm font-semibold text-gray-700 w-5">Dec</th>
                   <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 w-12">Total</th>
                   <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 w-20">Actions</th>
                 </tr>
