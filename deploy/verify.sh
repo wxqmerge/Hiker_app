@@ -294,16 +294,12 @@ if [ -f "$NGINX_CONF" ]; then
         fi
     fi
 
-   # Check SPA location block
+    # Check SPA location block
     SPA_PATH=$(grep -oE 'location [^ ]+/' "$NGINX_CONF" | grep -v '/api/' | grep -v '/health' | grep -v '/\.' | head -1 | awk '{print $2}')
     if [ -n "$SPA_PATH" ]; then
         SPA_BLOCK=$(sed -n "#location ${SPA_PATH}#,/#}#p" "$NGINX_CONF")
         if echo "$SPA_BLOCK" | grep -q '^\s*alias'; then
             pass "SPA location $SPA_PATH uses 'alias' (serves dist/)"
-        else
-            pass "SPA location $SPA_PATH uses 'root' (correct for SPA)"
-        fi
-    fi
         else
             pass "SPA location $SPA_PATH uses 'root' (correct for SPA)"
         fi
