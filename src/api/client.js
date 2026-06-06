@@ -127,7 +127,14 @@ export async function importTrailsFromXls(file) {
 }
 
 export async function getScheduleHistory() {
-  return request('/api/schedule/history');
+  const res = await fetch(API_BASE ? `${API_BASE}/api/schedule/history` : '/api/schedule/history', {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
+    throw new Error(error.error?.message || `HTTP ${res.status}`);
+  }
+  return res.json();
 }
 
 export async function restoreSchedule(timestamp) {
