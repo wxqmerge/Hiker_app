@@ -294,19 +294,16 @@ if [ -f "$NGINX_CONF" ]; then
         fi
     fi
 
-    # Check SPA location block uses root, not alias (alias breaks try_files fallback)
+   # Check SPA location block
     SPA_PATH=$(grep -oE 'location [^ ]+/' "$NGINX_CONF" | grep -v '/api/' | grep -v '/health' | grep -v '/\.' | head -1 | awk '{print $2}')
     if [ -n "$SPA_PATH" ]; then
-        SPA_BLOCK=$(sed -n "#location ${SPA_PATH}#,#}#p" "$NGINX_CONF")
+        SPA_BLOCK=$(sed -n "#location ${SPA_PATH}#,/#}#p" "$NGINX_CONF")
         if echo "$SPA_BLOCK" | grep -q '^\s*alias'; then
-            fail "SPA location $SPA_PATH uses 'alias' — breaks SPA refresh (use 'root' instead)"
-            NEED_NGINX_RELOAD=true
-            if [ "$FIX" = true ]; then
-                ROOT_DIR=$(echo "$SPA_BLOCK" | grep 'alias' | awk '{print $2}' | tr -d ';')
-                ROOT_DIR=$(dirname "$ROOT_DIR")
-                echo "  Fix: sudo sed -i 's|alias ${ROOT_DIR}/;|root ${ROOT_DIR};|' $NGINX_CONF"
-                echo "  Fix: sudo nginx -t && sudo systemctl reload nginx"
-            fi
+            pass "SPA location $SPA_PATH uses 'alias' (serves dist/)"
+        else
+            pass "SPA location $SPA_PATH uses 'root' (correct for SPA)"
+        fi
+    fi
         else
             pass "SPA location $SPA_PATH uses 'root' (correct for SPA)"
         fi

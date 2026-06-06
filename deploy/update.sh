@@ -223,7 +223,7 @@ if [ "$INSTALL_DEPS" = true ]; then
 fi
 
 echo "[7/13] Building frontend + server..."
-if ! npm run build:all; then
+if ! VITE_BASE="/$SERVICE/" npm run build:all; then
     echo "  ERROR: Build failed."
     echo "  Aborting. Check build output above."
     exit 1
