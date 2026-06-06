@@ -16,6 +16,20 @@ function deepEqual(a, b) {
   return true;
 }
 
+function getApiBase() {
+  if (typeof window === 'undefined') return '';
+  const hostname = window.location.hostname;
+  const path = window.location.pathname;
+  if (hostname.endsWith('.example.com') && !hostname.endsWith('.example.com')) {
+    return `https://${hostname}`;
+  }
+  const match = path.match(/^\/(sothh-[\w-]+)/);
+  if (match) {
+    return `https://${match[1]}.example.com`;
+  }
+  return '';
+}
+
 export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
   const prevDataRef = useRef(null);
   const etagRef = useRef(null);
@@ -36,7 +50,8 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
         headers['If-None-Match'] = etagRef.current;
       }
 
-      const response = await fetch('/api/schedule', { headers });
+      const apiBase = getApiBase();
+      const response = await fetch(`${apiBase}/api/schedule`, { headers });
 
       if (response.status === 304) {
         return;
