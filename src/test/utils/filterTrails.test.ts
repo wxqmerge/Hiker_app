@@ -48,13 +48,13 @@ describe('filterTrails', () => {
   });
 
   it('filters by distance range', () => {
-    const filters = { ...mockFilters, distanceMin: 3, distanceMax: 10 };
+    const filters = { ...mockFilters, distance: { min: 3, max: 10 } };
     const result = filterTrails(mockTrails, filters);
     expect(result).toHaveLength(2); // trail-1 (5.5) and trail-4 (8.0)
   });
 
   it('filters by elevation range', () => {
-    const filters = { ...mockFilters, elevationMin: 1000, elevationMax: 3000 };
+    const filters = { ...mockFilters, elevation: { min: 1000, max: 3000 } };
     const result = filterTrails(mockTrails, filters);
     expect(result).toHaveLength(1); // trail-1 (2000)
   });
@@ -86,7 +86,7 @@ describe('filterTrails', () => {
   });
 
   it('combines multiple filters', () => {
-    const filters = { ...mockFilters, difficulties: ['Difficult'], elevationMin: 4000 };
+    const filters = { ...mockFilters, difficulties: ['Difficult'], elevation: { min: 4000, max: 5000 } };
     const result = filterTrails(mockTrails, filters);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('trail-4');

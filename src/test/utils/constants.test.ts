@@ -41,10 +41,8 @@ describe('constants', () => {
   describe('DEFAULT_FILTERS', () => {
     it('has all required filter fields', () => {
       expect(DEFAULT_FILTERS).toHaveProperty('search', '');
-      expect(DEFAULT_FILTERS).toHaveProperty('distanceMin', 0);
-      expect(DEFAULT_FILTERS).toHaveProperty('distanceMax', 20);
-      expect(DEFAULT_FILTERS).toHaveProperty('elevationMin', 0);
-      expect(DEFAULT_FILTERS).toHaveProperty('elevationMax', 5000);
+      expect(DEFAULT_FILTERS).toHaveProperty('distance', { min: 0, max: 20 });
+      expect(DEFAULT_FILTERS).toHaveProperty('elevation', { min: 0, max: 5000 });
       expect(DEFAULT_FILTERS).toHaveProperty('difficulties', []);
       expect(DEFAULT_FILTERS).toHaveProperty('months', []);
       expect(DEFAULT_FILTERS).toHaveProperty('sortBy', 'name');

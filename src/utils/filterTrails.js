@@ -22,11 +22,11 @@ export function filterTrails(items, filters) {
     }
 
     if (t.distance != null) {
-      if (t.distance < filters.distanceMin || t.distance > filters.distanceMax) return false;
+      if (t.distance < filters.distance.min || t.distance > filters.distance.max) return false;
     }
 
     if (t.elevationStart != null) {
-      if (t.elevationStart < filters.elevationMin || t.elevationStart > filters.elevationMax) return false;
+      if (t.elevationStart < filters.elevation.min || t.elevationStart > filters.elevation.max) return false;
     }
 
     if (filters.difficulties.length > 0 && !filters.difficulties.includes(t.difficulty)) return false;

@@ -12,8 +12,8 @@ describe('useFilters', () => {
   it('returns default filters on init', () => {
     const { result } = renderHook(() => useFilters(mockTrails));
     expect(result.current.filters.search).toBe('');
-    expect(result.current.filters.distanceMax).toBe(20);
-    expect(result.current.filters.elevationMax).toBe(5000);
+    expect(result.current.filters.distance).toEqual({ min: 0, max: 20 });
+    expect(result.current.filters.elevation).toEqual({ min: 0, max: 5000 });
     expect(result.current.filters.difficulties).toEqual([]);
     expect(result.current.filters.months).toEqual([]);
     expect(result.current.filters.sortBy).toBe('name');
@@ -39,7 +39,7 @@ describe('useFilters', () => {
   it('filters by distance', () => {
     const { result } = renderHook(() => useFilters(mockTrails));
     act(() => {
-      result.current.setFilters({ ...result.current.filters, distanceMin: 6, distanceMax: 20 });
+      result.current.setFilters({ ...result.current.filters, distance: { min: 6, max: 20 } });
     });
     expect(result.current.sortedTrails).toHaveLength(1);
     expect(result.current.sortedTrails[0].distance).toBe(12.3);
@@ -48,7 +48,7 @@ describe('useFilters', () => {
   it('filters by elevation', () => {
     const { result } = renderHook(() => useFilters(mockTrails));
     act(() => {
-      result.current.setFilters({ ...result.current.filters, elevationMin: 3000, elevationMax: 5000 });
+      result.current.setFilters({ ...result.current.filters, elevation: { min: 3000, max: 5000 } });
     });
     expect(result.current.sortedTrails).toHaveLength(1);
     expect(result.current.sortedTrails[0].elevationStart).toBe(3500);

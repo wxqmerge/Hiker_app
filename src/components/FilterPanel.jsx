@@ -1,5 +1,6 @@
 import { MONTH_NAMES } from '../utils/constants';
 import { useTooltips } from '../hooks/useTooltips';
+import DualRangeSlider from './DualRangeSlider';
 
 export default function FilterPanel({ filters, setFilters, lookup, resetFilters }) {
   const { title: tt } = useTooltips();
@@ -34,8 +35,8 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
 
   const hasActiveFilters =
     filters.search ||
-    filters.distanceMin > 0 || filters.distanceMax < 20 ||
-    filters.elevationMin > 0 || filters.elevationMax < 5000 ||
+    filters.distance.min > 0 || filters.distance.max < 20 ||
+    filters.elevation.min > 0 || filters.elevation.max < 5000 ||
     filters.difficulties.length > 0 ||
     filters.months.length > 0 ||
     filters.wilderness;
@@ -53,37 +54,29 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
           title={tt('Filter trails by name')}
         />
 
-        {/* Distance */}
-        <label className="flex items-center gap-2 text-sm text-gray-600">
-           <span className="font-medium">Dist</span>
-           <input
-             type="range"
-             min="0"
-             max="20"
-             step="0.5"
-             value={filters.distanceMax}
-             onChange={(e) => setFilters({ ...filters, distanceMax: parseFloat(e.target.value) })}
-             className="w-24 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
-             title={tt('Maximum trail distance in miles')}
-           />
-           <span className="w-10">{filters.distanceMax}mi</span>
-         </label>
+       {/* Distance */}
+        <DualRangeSlider
+          min={0}
+          max={20}
+          step={0.5}
+          value={filters.distance}
+          onChange={(distance) => setFilters({ ...filters, distance })}
+          unit="mi"
+          tooltip="Trail distance range in miles"
+          label="Dist"
+        />
 
         {/* Elevation */}
-       <label className="flex items-center gap-2 text-sm text-gray-600">
-           <span className="font-medium">Elev</span>
-           <input
-             type="range"
-             min="0"
-             max="5000"
-             step="100"
-             value={filters.elevationMax}
-             onChange={(e) => setFilters({ ...filters, elevationMax: parseInt(e.target.value, 10) })}
-             className="w-24 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
-             title={tt('Maximum trail elevation in feet')}
-           />
-           <span className="w-14">{filters.elevationMax}</span>
-         </label>
+        <DualRangeSlider
+          min={0}
+          max={5000}
+          step={100}
+          value={filters.elevation}
+          onChange={(elevation) => setFilters({ ...filters, elevation })}
+          unit="ft"
+          tooltip="Trail elevation range in feet"
+          label="Elev"
+        />
 
         {/* Difficulty */}
        <div className="flex gap-1.5">

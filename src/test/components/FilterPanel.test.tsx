@@ -17,10 +17,8 @@ describe('FilterPanel', () => {
 
   const baseFilters = {
     search: '',
-    distanceMin: 0,
-    distanceMax: 20,
-    elevationMin: 0,
-    elevationMax: 5000,
+    distance: { min: 0, max: 20 },
+    elevation: { min: 0, max: 5000 },
     difficulties: [],
     months: [],
     sortBy: 'name',
@@ -42,13 +40,13 @@ describe('FilterPanel', () => {
   it('renders distance and elevation sliders', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
     const sliders = screen.getAllByRole('slider');
-    expect(sliders.length).toBe(2);
+    expect(sliders.length).toBe(4);
   });
 
   it('renders elevation slider', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
     const sliders = screen.getAllByRole('slider');
-    expect(sliders.length).toBeGreaterThanOrEqual(1);
+    expect(sliders.length).toBeGreaterThanOrEqual(2);
   });
 
   it('renders difficulty buttons', () => {
@@ -157,13 +155,13 @@ describe('FilterPanel', () => {
     expect(screen.queryByText('✕')).not.toBeInTheDocument();
   });
 
-  it('displays current distance max value', () => {
+  it('displays current distance range value', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
-    expect(screen.getByText('20mi')).toBeInTheDocument();
+    expect(screen.getByText('0mi – 20mi')).toBeInTheDocument();
   });
 
-  it('displays current elevation max value', () => {
+  it('displays current elevation range value', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
-    expect(screen.getByText('5000')).toBeInTheDocument();
+    expect(screen.getByText('0ft – 5000ft')).toBeInTheDocument();
   });
 });
