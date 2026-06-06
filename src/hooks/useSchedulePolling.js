@@ -19,6 +19,7 @@ function deepEqual(a, b) {
 export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
   const prevDataRef = useRef(null);
   const etagRef = useRef(null);
+  const serverVersionRef = useRef(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -46,6 +47,16 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
       }
 
       const newEtag = response.headers.get('etag');
+      const newVersion = response.headers.get('x-build-version');
+
+      if (newVersion) {
+        if (serverVersionRef.current && newVersion !== serverVersionRef.current) {
+          console.warn('[Schedule] Version mismatch! Server:', newVersion, 'Client was on:', serverVersionRef.current);
+        }
+        serverVersionRef.current = newVersion;
+        console.log('[Schedule] Server version:', newVersion);
+      }
+
       if (newEtag) {
         etagRef.current = newEtag;
       }

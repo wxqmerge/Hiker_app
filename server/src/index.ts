@@ -14,15 +14,24 @@ import { router as trailsRouter } from './routes/trails.routes.js';
 import { router as scheduleRouter } from './routes/schedule.routes.js';
 import { router as lookupRouter } from './routes/lookup.routes.js';
 import { getWriteHealth, serverVersion } from './services/dataService.js';
+import { buildVersion } from './utils/version.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV !== 'production';
 
+const { hash: buildHash, ts: buildTs, full: buildFull } = buildVersion();
+
 const app: Application = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
 app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  res.set('X-Build-Version', buildHash);
+  res.set('X-Build-Timestamp', buildTs);
+  next();
+});
 
 app.use((req, res, next) => {
   const startTime = Date.now();
@@ -76,6 +85,7 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     version: serverVersion(),
+    build: { hash: buildHash, ts: buildTs, full: buildFull },
     timestamp: new Date().toISOString(),
     writeHealth: {
       lastWriteTime: wh.lastWriteTime,
@@ -119,6 +129,7 @@ if (isMainModule) {
     console.log(`========================================\n`);
     console.log(`✓ Server running on port ${PORT}`);
     console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`✓ Build: ${buildFull}`);
     console.log(`✓ CORS Origins: ${process.env.CORS_ORIGINS || '*'}`);
     console.log(`✓ Admin API Key: ${process.env.ADMIN_API_KEY ? 'Enabled' : '⚠️  NOT SET'}`);
     console.log(`========================================\n`);
