@@ -704,7 +704,7 @@ const getEditedValue = (field) => {
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1">score = QuarterBase + MonthBase + ScheduleBase</p>
+                    <p className="text-sm font-semibold text-gray-800 mt-2">Total: {monthly.reduce((sum, v) => sum + (v || 0), 0)}</p>
                   </div>
                 </div>
               </div>
