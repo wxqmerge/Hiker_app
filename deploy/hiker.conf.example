@@ -47,10 +47,9 @@ server {
     }
 
     # Hiker app - serve frontend from /<SUBDOMAIN>/
-    # If directory name matches URL path, use root (recommended):
     location /<SUBDOMAIN>/ {
-        root /var/www/html;
-        try_files $uri $uri/ /<SUBDOMAIN>/index.html;
+        alias /var/www/html/<SUBDOMAIN>/dist/;
+        try_files $uri $uri/ /var/www/html/<SUBDOMAIN>/dist/index.html;
     }
     # If directory name differs from URL path, use alias with absolute fallback:
     # location /<SUBDOMAIN>/ {
