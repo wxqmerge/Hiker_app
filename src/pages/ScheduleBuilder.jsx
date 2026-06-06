@@ -79,22 +79,17 @@ export default function ScheduleBuilder() {
     const nextMonth = (now.getMonth() + 1) % 12;
     return nextMonth;
   });
+  const [isSaving, setIsSaving] = useState(false); // eslint-disable-line no-unused-vars
+  const [hasApiKey, setHasApiKey] = useState(() => !!localStorage.getItem('hiker-api-key')); // eslint-disable-line no-unused-vars
   const [scheduleStore, setScheduleStore] = useState(() => {
     return {};
   });
-  const [isSaving, setIsSaving] = useState(false); // eslint-disable-line no-unused-vars
-  const [hasApiKey, setHasApiKey] = useState(() => !!localStorage.getItem('hiker-api-key')); // eslint-disable-line no-unused-vars
   // Load server schedule into local store on mount
   useEffect(() => {
     if (scheduleData && Object.keys(scheduleData).length > 0) {
       const converted = serverScheduleToStore(scheduleData);
-      setScheduleStore(prev => {
-        if (Object.keys(prev).length === 0) {
-          lastSavedStoreRef.current = JSON.stringify(converted);
-          return converted;
-        }
-        return prev;
-      });
+      setScheduleStore(converted);
+      lastSavedStoreRef.current = JSON.stringify(converted);
     }
   }, [scheduleData]);
 
@@ -215,7 +210,30 @@ export default function ScheduleBuilder() {
       const newStore = { ...prev, [monthName]: next };
       return newStore;
     });
-  }, []);
+    const serverData = storeToServerSchedule(scheduleStore);
+    const currentStore = scheduleStore;
+    const current = currentStore[monthName] || {};
+    const next = updater(current);
+    const abbr = MONTH_FULL_TO_ABBR[monthName];
+    if (abbr && serverData[abbr]) {
+      serverData[abbr] = [];
+      for (const [day, entry] of Object.entries(next)) {
+        if (entry?.trail_id) {
+          const dayNum = parseInt(day, 10);
+          if (!isNaN(dayNum) && dayNum > 0) {
+            serverData[abbr].push({ day: dayNum, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start });
+          }
+        }
+      }
+      serverData[abbr].sort((a, b) => a.day - b.day);
+    }
+    try {
+      await updateSchedule(serverData);
+      lastSavedStoreRef.current = JSON.stringify(scheduleStore);
+    } catch (error) {
+      console.error('[ScheduleBuilder] Auto-save failed:', error);
+    }
+  }, [scheduleStore]);
 
   const year = 2026;
 
@@ -440,8 +458,6 @@ export default function ScheduleBuilder() {
     try {
       const result = await restoreSchedule(timestamp);
       if (result.success) {
-        const converted = serverScheduleToStore(result.schedule);
-        setScheduleStore(converted);
         closeHistory();
         alert('Schedule restored successfully.');
       }
@@ -450,10 +466,14 @@ export default function ScheduleBuilder() {
     }
   };
 
-  const handleClearCurrentSchedule = () => {
+  const handleClearCurrentSchedule = async () => {
     if (!confirm('Clear the current schedule? Your history will be preserved.')) return;
-    setScheduleStore({});
-    closeHistory();
+    try {
+      await updateSchedule({});
+      closeHistory();
+    } catch (err) {
+      alert('Clear failed: ' + err.message);
+    }
   };
 
   const verifyServerSchedule = async () => {
@@ -538,10 +558,20 @@ export default function ScheduleBuilder() {
             alert('Import failed: ' + (result.error?.message || 'Unknown error'));
             return;
           }
-          setScheduleStore(prev => {
-            const merged = { ...prev, ...result.schedule };
-            return merged;
-          });
+          const serverData = storeToServerSchedule(scheduleStore);
+          const excelData = result.schedule || {};
+          for (const [month, entries] of Object.entries(excelData)) {
+            const abbr = MONTH_FULL_TO_ABBR[month] || month;
+            if (!serverData[abbr]) serverData[abbr] = [];
+            const existingDays = new Set(serverData[abbr].map(e => e.day));
+            for (const entry of entries) {
+              if (!existingDays.has(entry.day) && entry.trail_id) {
+                serverData[abbr].push({ day: entry.day, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start });
+              }
+            }
+            serverData[abbr].sort((a, b) => a.day - b.day);
+          }
+          await updateSchedule(serverData);
           if (result.months.length > 0) {
             const firstMonth = MONTH_NAMES.indexOf(result.months[0]);
             if (firstMonth >= 0) setSelectedMonth(firstMonth);

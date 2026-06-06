@@ -41,8 +41,11 @@ router.get('/', (req, res) => {
   const schedule = getSchedule();
   const version = getScheduleVersion();
   const ifNoneMatch = req.headers['if-none-match'];
-  if (version && ifNoneMatch && ifNoneMatch === version) {
-    return res.status(304).end();
+  if (version && ifNoneMatch) {
+    const clientEtag = ifNoneMatch.replace(/^"|"$/g, '');
+    if (clientEtag === version) {
+      return res.status(304).end();
+    }
   }
   if (version) {
     res.set('ETag', version);
