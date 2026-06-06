@@ -1,49 +1,76 @@
 #!/bin/bash
 
-# Ensure each hiker deployment can be reached via both its domain and example.com
+# Generate /etc/nginx/sites-available/mysite.conf for example.com
 # Run on the server: bash deploy/patch-mysite.sh
 #
 # Auto-detects deployment directories under /var/www/html/
-# and ensures the matching nginx config includes example.com in server_name.
+# and generates a single mysite.conf with location blocks for each.
 
-sites_dir="/etc/nginx/sites-available"
-html_base="/var/www/html"
+SITES_DIR="/etc/nginx/sites-available"
+SITES_ENABLED="/etc/nginx/sites-enabled"
+HTML_BASE="/var/www/html"
+MYCONF="$SITES_DIR/mysite.conf"
 
-for dir in "$html_base"/*/; do
+# Collect deployment directories
+DEPLOYMENTS=()
+for dir in "$HTML_BASE"/*/; do
     [ -d "$dir" ] || continue
     subdir=$(basename "$dir")
     dist_dir="$dir/dist"
-
-    # Skip if no built dist/ exists
     [ -d "$dist_dir" ] || continue
-
-    conf="$sites_dir/$subdir"
-    if [ ! -f "$conf" ]; then
-        echo "WARNING: No config found for $subdir at $conf"
-        continue
-    fi
-
-    # Ensure example.com is in server_name
-    if grep -q "server_name.*example.com" "$conf"; then
-        echo "Skipping $subdir (server_name already includes example.com)"
-        continue
-    fi
-
-    # Add example.com to all server_name directives
-    sudo sed -i 's/server_name \(.*\).example.com;/server_name \1.example.com example.com;/g' "$conf"
-    echo "Added example.com to server_name in $conf"
-
-    # Ensure location block exists for this subdir
-    if ! grep -q "location /$subdir/" "$conf"; then
-        sudo sed -i "/^    listen 443 ssl;/i\\
-    location /$subdir/ {\\
-        alias '"$dist_dir"';\\
-        try_files \$uri \$uri/ /index.html;\\
-    }\\
-" "$conf"
-        echo "Added /$subdir/ location block to $conf"
-    fi
+    DEPLOYMENTS+=("$subdir:$dist_dir")
 done
 
+if [ ${#DEPLOYMENTS[@]} -eq 0 ]; then
+    echo "No deployments found under $HTML_BASE"
+    exit 1
+fi
+
+# Generate the config
+cat > "$MYCONF" << 'HEADER'
+server {
+    server_name example.com;
+
+    root /var/www/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+HEADER
+
+for dep in "${DEPLOYMENTS[@]}"; do
+    name="${dep%%:*}"
+    path="${dep##*:}"
+    cat >> "$MYCONF" << EOF
+    location /$name/ {
+        alias $path;
+        try_files $uri $uri/ /index.html;
+    }
+
+EOF
+done
+
+cat >> "$MYCONF" << 'SSL'
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+    if ($host = example.com) {
+        return 301 https://$host$request_uri;
+    }
+
+    listen 80;
+    server_name example.com;
+    return 404;
+}
+SSL
+
+sudo ln -sf "$MYCONF" "$SITES_ENABLED/mysite.conf"
 sudo nginx -t 2>&1 && sudo systemctl reload nginx
-echo "Done."
+echo "Generated $MYCONF with ${#DEPLOYMENTS[@]} deployment(s)"
