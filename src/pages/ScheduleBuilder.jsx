@@ -90,6 +90,7 @@ export default function ScheduleBuilder() {
       const converted = serverScheduleToStore(scheduleData);
       setScheduleStore(prev => {
         if (Object.keys(prev).length === 0) {
+          lastSavedStoreRef.current = JSON.stringify(converted);
           return converted;
         }
         return prev;
@@ -110,7 +111,13 @@ export default function ScheduleBuilder() {
 
   // Save schedule to server (debounced 1s)
   const saveTimeoutRef = useRef(null);
+  const lastSavedStoreRef = useRef(null);
   const saveScheduleToServer = useCallback(async () => {
+    const currentStoreJson = JSON.stringify(scheduleStore);
+    if (lastSavedStoreRef.current === currentStoreJson) {
+      return;
+    }
+    lastSavedStoreRef.current = currentStoreJson;
     const serverData = storeToServerSchedule(scheduleStore);
     const entryCount = Object.values(serverData).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
     try {
