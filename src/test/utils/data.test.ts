@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getTrailDetailsById } from '../../utils/data';
+import { getTrailDetailsById, findTrailById, findTrailIndexById } from '../../utils/data';
 
 describe('getTrailDetailsById', () => {
   const mockDetails = {
@@ -33,8 +33,98 @@ describe('getTrailDetailsById', () => {
     expect(result).toBeNull();
   });
 
-  it('returns null for empty details', () => {
+ it('returns null for empty details', () => {
     const result = getTrailDetailsById({}, 'trail-1');
     expect(result).toBeNull();
+  });
+});
+
+describe('findTrailById', () => {
+  const mockTrails = [
+    { id: 'trail-1', name: 'Trail One', fullName: 'Trail One Full Name' },
+    { id: '360-rd', name: '360 Rd', fullName: '360 Road' },
+    { id: 'first', name: 'First Trail', fullName: 'First Trail Full Name' },
+    { id: 'mount-rainier', name: 'MR', fullName: 'Mount Rainier Loop' },
+    { id: 'cascade', name: 'Cascade Falls', fullName: 'Cascade Falls Trail' },
+  ];
+
+  it('matches exact trail id', () => {
+    expect(findTrailById(mockTrails, 'trail-1')).toBe(mockTrails[0]);
+    expect(findTrailById(mockTrails, '360-rd')).toBe(mockTrails[1]);
+  });
+
+  it('does not match single-word slug against hyphenated id', () => {
+    expect(findTrailById(mockTrails, '360')).toBeNull();
+  });
+
+  it('falls back to case-insensitive match', () => {
+    expect(findTrailById(mockTrails, 'TRAIL-1')).toBe(mockTrails[0]);
+    expect(findTrailById(mockTrails, 'Trail-1')).toBe(mockTrails[0]);
+  });
+
+  it('falls back to slug word matching in fullName', () => {
+    expect(findTrailById(mockTrails, 'mount-rainier')).toBe(mockTrails[3]);
+    expect(findTrailById(mockTrails, 'cascade-falls')).toBe(mockTrails[4]);
+  });
+
+  it('falls back to slug word matching in name', () => {
+    expect(findTrailById(mockTrails, '360-road')).toBe(mockTrails[1]);
+  });
+
+  it('returns null for no match', () => {
+    expect(findTrailById(mockTrails, 'nonexistent')).toBeNull();
+  });
+
+  it('returns null for null trails', () => {
+    expect(findTrailById(null, 'trail-1')).toBeNull();
+  });
+
+  it('returns null for null trailId', () => {
+    expect(findTrailById(mockTrails, null)).toBeNull();
+  });
+
+  it('returns null for empty trails array', () => {
+    expect(findTrailById([], 'trail-1')).toBeNull();
+  });
+
+  it('only matches full slug words, not partial', () => {
+    expect(findTrailById(mockTrails, 'mount')).toBeNull();
+    expect(findTrailById(mockTrails, 'rain')).toBeNull();
+    expect(findTrailById(mockTrails, 'cas')).toBeNull();
+  });
+});
+
+describe('findTrailIndexById', () => {
+  const mockTrails = [
+    { id: 'trail-1', name: 'Trail One' },
+    { id: '360-rd', name: '360 Rd' },
+    { id: 'cascade', name: 'Cascade Falls' },
+  ];
+
+  it('returns correct index for exact match', () => {
+    expect(findTrailIndexById(mockTrails, 'trail-1')).toBe(0);
+    expect(findTrailIndexById(mockTrails, 'cascade')).toBe(2);
+  });
+
+  it('returns correct index for case-insensitive match', () => {
+    expect(findTrailIndexById(mockTrails, 'TRAIL-1')).toBe(0);
+  });
+
+  it('does not do slug word matching', () => {
+    expect(findTrailIndexById(mockTrails, '360')).toBe(-1);
+    expect(findTrailIndexById(mockTrails, '360-road')).toBe(-1);
+  });
+
+  it('returns -1 for no match', () => {
+    expect(findTrailIndexById(mockTrails, 'nonexistent')).toBe(-1);
+  });
+
+  it('returns -1 for null input', () => {
+    expect(findTrailIndexById(mockTrails, null)).toBe(-1);
+    expect(findTrailIndexById(null, 'trail-1')).toBe(-1);
+  });
+
+  it('returns -1 for empty array', () => {
+    expect(findTrailIndexById([], 'trail-1')).toBe(-1);
   });
 });

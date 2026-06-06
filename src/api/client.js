@@ -1,12 +1,12 @@
 export const API_BASE = import.meta.env.VITE_API_BASE || '';
 
-function getApiBase() {
+export function getApiBase() {
   if (API_BASE) return API_BASE;
   if (typeof window === 'undefined') return '';
   const hostname = window.location.hostname;
   const path = window.location.pathname;
   // Direct subdomain: sothh-app.example.com → https://sothh-app.example.com
-  if (hostname.endsWith('.example.com') && !hostname.endsWith('.example.com')) {
+  if (hostname.endsWith('.example.com') && hostname.split('.').length > 2) {
     return `https://${hostname}`;
   }
   // Path-based: example.com/sothh-dev → https://sothh-dev.example.com

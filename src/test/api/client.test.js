@@ -141,4 +141,71 @@ describe('api/client', () => {
       await expect(getTrails()).rejects.toThrow('Unauthorized');
     });
   });
+
+  describe('getApiBase', () => {
+    it('returns empty string on localhost', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'localhost', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/', writable: true });
+      const { getApiBase } = await import('../../api/client.js');
+      expect(getApiBase()).toBe('');
+    });
+
+    it('returns empty string on root domain', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/', writable: true });
+      const { getApiBase } = await import('../../api/client.js');
+      expect(getApiBase()).toBe('');
+    });
+
+    it('detects subdomain: sothh-app.example.com', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'sothh-app.example.com', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/', writable: true });
+      const { getApiBase } = await import('../../api/client.js');
+      expect(getApiBase()).toBe('https://sothh-app.example.com');
+    });
+
+    it('detects subdomain: sothh-dev.example.com', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'sothh-dev.example.com', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/', writable: true });
+      const { getApiBase } = await import('../../api/client.js');
+      expect(getApiBase()).toBe('https://sothh-dev.example.com');
+    });
+
+    it('detects path-based: example.com/sothh-dev', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/sothh-dev', writable: true });
+      const { getApiBase } = await import('../../api/client.js');
+      expect(getApiBase()).toBe('https://sothh-dev.example.com');
+    });
+
+    it('detects path-based with hyphenated subpath: example.com/sothh-dev-v2', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/sothh-dev-v2', writable: true });
+      const { getApiBase } = await import('../../api/client.js');
+      expect(getApiBase()).toBe('https://sothh-dev-v2.example.com');
+    });
+
+    it('detects path-based: example.com/sothh-app', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/sothh-app', writable: true });
+      const { getApiBase } = await import('../../api/client.js');
+      expect(getApiBase()).toBe('https://sothh-app.example.com');
+    });
+
+    it('returns empty string for non-matching path', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/other-page', writable: true });
+      const { getApiBase } = await import('../../api/client.js');
+      expect(getApiBase()).toBe('');
+    });
+
+    it('request uses getApiBase for URL construction', async () => {
+      Object.defineProperty(window.location, 'hostname', { value: 'sothh-dev.example.com', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/', writable: true });
+      fetchSpy.mockResolvedValue({ ok: true, json: () => Promise.resolve({ trails: [] }) });
+      const { getTrails } = await import('../../api/client.js');
+      await getTrails();
+      expect(fetchSpy).toHaveBeenCalledWith('https://sothh-dev.example.com/api/trails', expect.any(Object));
+    });
+  });
 });

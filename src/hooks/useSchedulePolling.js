@@ -20,7 +20,7 @@ function getApiBase() {
   if (typeof window === 'undefined') return '';
   const hostname = window.location.hostname;
   const path = window.location.pathname;
-  if (hostname.endsWith('.example.com') && !hostname.endsWith('.example.com')) {
+  if (hostname.endsWith('.example.com') && hostname.split('.').length > 2) {
     return `https://${hostname}`;
   }
   const match = path.match(/^\/(sothh-[\w-]+)/);

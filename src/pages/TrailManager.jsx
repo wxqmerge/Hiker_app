@@ -162,7 +162,7 @@ export default function TrailManager() {
                     <td className="px-2 py-3 text-right text-sm text-gray-400">{index + 1}</td>
                     <td className="px-4 py-3">
                       <Link to={`/trail/${trail.id}`} className="text-green-700 hover:text-green-900 font-medium">
-                        {trail.name}
+                        {trail.fullName || trail.name}
                       </Link>
                       <span className="ml-2 text-xs text-gray-400">{trail.id}</span>
                     </td>

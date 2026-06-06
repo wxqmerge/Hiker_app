@@ -555,7 +555,7 @@ export default function TrailDetail() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Parking</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Required Parking Pass</label>
                     <select
                       value={getEditedValue('parking') || ''}
                       onChange={(e) => updateField('parking', e.target.value)}
@@ -570,14 +570,14 @@ export default function TrailDetail() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Range</label>
-                    <input
-                      type="number"
-                      value={getEditedValue('range') || ''}
-                      onChange={(e) => updateField('range', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                    />
-                  </div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Distance from parking lot in minutes (Range) used to calculate carpool fees</label>
+                     <input
+                       type="number"
+                       value={getEditedValue('range') || ''}
+                       onChange={(e) => updateField('range', e.target.value)}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                     />
+                   </div>
                 </div>
               </div>
 
