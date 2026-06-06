@@ -422,10 +422,16 @@ export default function ScheduleBuilder() {
   const verifyServerSchedule = async () => {
     try {
       const [serverData, serverTrails] = await Promise.all([getSchedule(), getTrails()]);
-      const serverConverted = serverScheduleToStore(serverData);
       const local = storeToServerSchedule(scheduleStore);
 
-      const serverEntries = Object.entries(serverConverted).flatMap(([m, d]) => Object.entries(d).map(([day, entry]) => `${m}:${day}:${entry.trail_id}`));
+      // Normalize both to abbreviations for comparison
+      const serverEntries = Object.entries(serverData).flatMap(([m, entries]) => {
+        const abbr = MONTH_FULL_TO_ABBR[m] || m;
+        if (Array.isArray(entries)) {
+          return entries.map(e => `${abbr}:${e.day}:${e.trail_id}`);
+        }
+        return Object.entries(entries).map(([day, entry]) => `${abbr}:${day}:${entry.trail_id}`);
+      });
       const localEntries = Object.entries(local).flatMap(([m, entries]) => entries.map(e => `${m}:${e.day}:${e.trail_id}`));
 
       const serverSet = new Set(serverEntries);
