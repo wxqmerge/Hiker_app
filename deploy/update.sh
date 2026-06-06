@@ -300,15 +300,21 @@ if [ -f "$NGINX_CONF" ]; then
         exit 1
     fi
 else
-    echo "  WARNING: $NGINX_CONF not found — copying from deploy/hiker.conf"
-    sudo cp deploy/hiker.conf "$NGINX_CONF"
-    sudo sed -i "s/sothh_app\.chess4\.us/$DOMAIN/g" "$NGINX_CONF"
-    sudo sed -i "s|proxy_pass http://localhost:3000;|proxy_pass http://localhost:$SERVER_PORT;|" "$NGINX_CONF"
-    NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
-    if [ ! -f "$NGINX_ENABLED" ]; then
-        sudo ln -s "$NGINX_CONF" "$NGINX_ENABLED"
-        echo "  Enabled site."
+    SUBDOMAIN="$SERVICE"
+    TEMPLATE="$DEPLOY_DIR/hiker.conf.example"
+    if [ ! -f "$TEMPLATE" ]; then
+        echo "  ERROR: Template $TEMPLATE not found."
+        exit 1
     fi
+    echo "  WARNING: $NGINX_CONF not found — generating from hiker.conf.example"
+    sed -e "s|<DOMAIN>|$DOMAIN|g" \
+        -e "s|<PORT>|$SERVER_PORT|g" \
+        -e "s|<SUBDOMAIN>|$SUBDOMAIN|g" \
+        "$TEMPLATE" | sudo tee "$NGINX_CONF" > /dev/null
+    NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
+    sudo rm -f "$NGINX_ENABLED"
+    sudo ln -s "$NGINX_CONF" "$NGINX_ENABLED"
+    echo "  Enabled site."
     if sudo nginx -t 2>&1 | grep -q "syntax is ok"; then
         sudo systemctl reload nginx
         echo "  Nginx reloaded."
