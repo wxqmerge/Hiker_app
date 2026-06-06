@@ -685,42 +685,43 @@ export default function TrailDetail() {
 
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Popularity</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Total Schedule Count</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={getEditedValue('scheduleCount') || ''}
-                      onChange={(e) => updateField('scheduleCount', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                      title={tt('Total number of times this trail has been scheduled across all months')}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Also editable via Schedule Count Manager in Trail Manager</p>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min="0"
+                        value={getEditedValue('scheduleCount') || ''}
+                        onChange={(e) => updateField('scheduleCount', e.target.value)}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                        title={tt('Total number of times this trail has been scheduled across all months')}
+                      />
+                      <p className="text-xs text-gray-400">Also editable via Schedule Count Manager in Trail Manager</p>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Popularity</label>
-                  <p className="text-xs text-gray-400 mb-2">How often this trail appears in each month's schedule (0-10+)</p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                    {MONTH_ABBR.map((month, idx) => (
-                      <div key={idx} className="flex flex-col items-center">
-                        <span className="text-xs text-gray-500 mb-1">{month.substring(0, 3)}</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={getEditedValue('monthlyPopularity')[idx] || ''}
-                          onChange={(e) => {
-                            const monthly = [...getEditedValue('monthlyPopularity')];
-                            monthly[idx] = e.target.value ? parseInt(e.target.value, 10) : 0;
-                            updateField('monthlyPopularity', monthly);
-                          }}
-                          className="w-14 text-center px-1 py-1.5 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
-                          title={`${month} popularity score`}
-                        />
-                      </div>
-                    ))}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Popularity</label>
+                    <div className="flex gap-2">
+                      {MONTH_ABBR.map((month, idx) => (
+                        <div key={idx} className="flex flex-col items-center min-w-[40px]">
+                          <span className="text-[10px] text-gray-500 mb-0.5">{month.substring(0, 3)}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="99"
+                            value={getEditedValue('monthlyPopularity')[idx] || ''}
+                            onChange={(e) => {
+                              const monthly = [...getEditedValue('monthlyPopularity')];
+                              monthly[idx] = e.target.value ? parseInt(e.target.value, 10) : 0;
+                              updateField('monthlyPopularity', monthly);
+                            }}
+                            className="w-12 text-center px-1 py-1 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
+                            title={`${month} popularity score`}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
