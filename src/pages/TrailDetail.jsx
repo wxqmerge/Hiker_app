@@ -704,7 +704,7 @@ const getEditedValue = (field) => {
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">Total: <span className="font-semibold">{scheduleCount}</span> — also editable in Trail Manager</p>
+ 
                   </div>
                 </div>
               </div>
