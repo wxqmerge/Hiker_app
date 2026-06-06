@@ -5,4 +5,4 @@ export function useTrails() {
   return { trails, lookup, schedule, trailDetails, loading };
 }
 
-export { useFilters } from './useFilters';
+

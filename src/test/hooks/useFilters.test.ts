@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useFilters } from '../../hooks/useTrails';
+import { useFilters } from '../../hooks/useFilters';
 
 describe('useFilters', () => {
   const mockTrails = globalThis.__TEST_MOCK_DATA__.trails.slice(0, 2);

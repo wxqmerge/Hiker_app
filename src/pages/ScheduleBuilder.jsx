@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useTrails, useFilters } from '../hooks/useTrails';
+import { useTrails } from '../hooks/useTrails';
+import { useFilters } from '../hooks/useFilters';
 import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { useTooltips } from '../hooks/useTooltips';
 import PageNav from '../components/PageNav';
