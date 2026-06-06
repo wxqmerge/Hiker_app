@@ -49,13 +49,8 @@ server {
     # Hiker app - serve frontend from /<SUBDOMAIN>/
     location /<SUBDOMAIN>/ {
         alias /var/www/html/<SUBDOMAIN>/dist/;
-        try_files $uri $uri/ /var/www/html/<SUBDOMAIN>/dist/index.html;
+        try_files $uri $uri/ /index.html;
     }
-    # If directory name differs from URL path, use alias with absolute fallback:
-    # location /<SUBDOMAIN>/ {
-    #     alias /var/www/html/<DIR_NAME>/;
-    #     try_files $uri $uri/ /var/www/html/<DIR_NAME>/index.html;
-    # }
 
     # Return 404 for everything else
     location / {
