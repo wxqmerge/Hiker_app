@@ -79,44 +79,26 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
           label="Elev"
         />
 
-        {/* Difficulty */}
-       <div className="flex gap-1.5">
-           {difficulties.map(diff => (
-             <button
-               key={diff.code}
-               onClick={() => toggleDifficulty(diff.code)}
-               className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-                 filters.difficulties.includes(diff.code)
-                   ? 'bg-green-600 text-white'
-                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-               }`}
-               title={tt(`Toggle ${diff.label} filter`)}
-             >
-               {diff.label}
-             </button>
-           ))}
-         </div>
+       {/* Difficulty */}
+        <div className="flex gap-1.5">
+            {difficulties.map(diff => (
+              <button
+                key={diff.code}
+                onClick={() => toggleDifficulty(diff.code)}
+                className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
+                  filters.difficulties.includes(diff.code)
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={tt(`Toggle ${diff.label} filter`)}
+              >
+                {diff.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Months */}
-      <div className="flex gap-1">
-           {months.map((month, idx) => (
-             <button
-               key={idx}
-               onClick={() => toggleMonth(idx)}
-               className={`w-8 py-1 rounded text-sm font-medium transition-colors ${
-                 filters.months.includes(idx)
-                   ? 'bg-green-600 text-white'
-                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-               }`}
-               title={tt(`Toggle ${month} filter`)}
-             >
-               {month.substring(0, 3)}
-             </button>
-           ))}
-         </div>
-
-        {/* Sort */}
-        <div className="flex gap-1.5 ml-auto">
+         {/* Sort */}
+         <div className="flex gap-1.5 ml-auto">
           <button
             onClick={() => setSortBy('name')}
             className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
@@ -206,6 +188,24 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
             ◆ off
           </button>
         </div>
+
+        {/* Months */}
+        <div className="flex gap-1">
+            {months.map((month, idx) => (
+              <button
+                key={idx}
+                onClick={() => toggleMonth(idx)}
+                className={`w-8 py-1 rounded text-sm font-medium transition-colors ${
+                  filters.months.includes(idx)
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={tt(`Toggle ${month} filter`)}
+              >
+                {month.substring(0, 3)}
+              </button>
+            ))}
+          </div>
 
         {/* Reset */}
         {hasActiveFilters && (
