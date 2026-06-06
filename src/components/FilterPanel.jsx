@@ -67,6 +67,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
         />
 
         {/* Elevation */}
+        <div className="w-px h-10 bg-gray-300 mx-2" />
         <DualRangeSlider
           min={0}
           max={5000}
