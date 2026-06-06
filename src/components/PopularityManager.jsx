@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, downloadBlob } from '../utils/io';
@@ -179,7 +180,7 @@ export default function PopularityManager({ trails, trailDetails }) {
               <th className="text-right px-4 py-2 text-xs font-semibold text-gray-600 w-32">Schedule Count</th>
             </tr>
           </thead>
-          <tbody>
+             <tbody>
             {trails.map(trail => (
               <tr key={trail.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-2 text-sm text-gray-800">
@@ -187,14 +188,25 @@ export default function PopularityManager({ trails, trailDetails }) {
                   <span className="ml-1 text-xs text-gray-400">({trail.id})</span>
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <input
-                    type="number"
-                    min="0"
-                    value={localCounts[trail.id] ?? trailDetails?.[trail.id]?.popularity?.scheduleCount ?? 0}
-                    onChange={(e) => updateCount(trail.id, e.target.value)}
-                    className="w-24 text-right px-2 py-1 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
-                    title={tt(`Schedule count for ${trail.fullName || trail.name}`)}
-                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={localCounts[trail.id] ?? trailDetails?.[trail.id]?.popularity?.scheduleCount ?? 0}
+                      onChange={(e) => updateCount(trail.id, e.target.value)}
+                      className="w-16 text-right px-2 py-1 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
+                      title={tt(`Schedule count for ${trail.fullName || trail.name}`)}
+                    />
+                    <Link
+                      to={`/trail/${trail.id}`}
+                      className="text-green-600 hover:text-green-800"
+                      title={tt('Edit trail details')}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
