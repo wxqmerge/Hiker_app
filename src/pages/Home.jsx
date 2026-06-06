@@ -1,25 +1,16 @@
-import { useState, useEffect } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useFilters } from '../hooks/useFilters';
 import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailList from '../components/TrailList';
-import { getHealth } from '../api/client';
+
+const APP_VERSION = '1.0.0';
 
 export default function Home() {
   const { trails, lookup, loading } = useTrails();
   const { trailDetails } = useTrailStore();
   const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails, trailDetails);
-  const [version, setVersion] = useState(null);
-
-  useEffect(() => {
-    getHealth().then(data => {
-      if (data?.build?.hash) {
-        setVersion(data.build.hash);
-      }
-    }).catch(() => {});
-  }, []);
 
   if (loading) {
     return (
@@ -39,7 +30,7 @@ export default function Home() {
           <PageNav />
           <p className="text-gray-600 text-sm ml-auto">
             Showing {sortedTrails.length} of {trails.length} trails
-            {version && <span className="ml-2 text-xs text-gray-400">v{version}</span>}
+            <span className="ml-2 text-xs text-gray-400">v{APP_VERSION}</span>
           </p>
         </div>
 
