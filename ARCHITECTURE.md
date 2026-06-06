@@ -364,10 +364,22 @@ The dev server proxies `/api` and `/health` requests to the Express server (port
 The API client is a plain JavaScript module (no TypeScript) that wraps `fetch`:
 
 ```javascript
+getApiBase()
+    │
+    ├── Production: auto-detects from URL
+    │   ├── Subdomain: sothh-dev.example.com → https://sothh-dev.example.com
+    │   └── Path: example.com/sothh-dev → https://sothh-dev.example.com
+    │
+    └── Dev/Test: returns '' (relative paths for proxy/mock)
+```
+
+```javascript
 request(path, options)
     │
-    ├── Builds URL: `${API_BASE}${path}`
-    │   └── API_BASE = import.meta.env.VITE_API_BASE || ''
+    ├── Builds URL: `${getApiBase()}${path}`
+    │   └── Sothh-dev: https://sothh-dev.example.com/api/trails
+    │   └── Sothh-app: https://sothh-app.example.com/api/trails
+    │   └── Dev: /api/trails → proxied to localhost:3000
     │
     ├── Sets headers: Content-Type + options.headers + X-API-Key (if apiKey option)
     │   └── X-API-Key from localStorage('hiker-api-key')
@@ -381,6 +393,8 @@ getTrailDetails(), getTrailDetailById(id), updateTrailDetail(id, detail),
 getLookup(), getSchedule(), uploadSchedule(file),
 getScheduleReport(quarter), getScheduleDownload(quarter)
 ```
+
+**Critical**: All `fetch()` calls must go through `request()` or use `getApiBase()`. Never hardcode `/api/` paths — they resolve to wrong domains in multi-deployment setups.
 
 ## Utility Modules
 
@@ -528,6 +542,18 @@ Express (PORT) — single process
 ### Nginx Reverse Proxy
 ```
 /<SUBDOMAIN>/ → alias to frontend (SOTHH app)
-/api/* → proxy_pass to Express
-/health → proxy_pass to Express
+/api/* → not proxied; client calls subdomain directly
+/health → not proxied; client calls subdomain directly
 ```
+
+Nginx serves only static files. Each deployment calls its Express backend directly via its own subdomain. No API proxying needed.
+
+### Multi-Deployment Architecture
+```
+example.com/sothh-app → dist/ → Express port 29969 (https://sothh-app.example.com)
+example.com/sothh-dev → dist/ → Express port 29967 (https://sothh-dev.example.com)
+sothh-app.example.com → dist/ → Express port 29969
+sothh-dev.example.com → dist/ → Express port 29967
+```
+
+The client auto-detects which subdomain to call based on the current URL path or hostname.

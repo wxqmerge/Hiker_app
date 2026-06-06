@@ -47,6 +47,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - `importJSON` accepts both `trailDetails` (camelCase) and `trail_details` (snake_case)
 - Trail ID lookup falls back: `"360-rd"` → `"360"` (first segment)
 - Schedule `findTrailById` uses 3-tier matching: exact → case-insensitive → slug word matching
+- **API Base URL**: `getApiBase()` auto-detects from URL — subdomain (`sothh-dev.example.com`) or path (`example.com/sothh-dev`). All `fetch()` calls must use this or `request()` wrapper. Never hardcode `/api/` paths in production code.
 
 ## Dev Server Gotchas
 - Dev: Vite proxies `/api` and `/health` to `localhost:3000`
