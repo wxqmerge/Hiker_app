@@ -165,3 +165,10 @@ export async function restoreSchedule(timestamp) {
     apiKey: true,
   });
 }
+
+export async function getHealth() {
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}/health`);
+  if (!res.ok) return null;
+  return res.json();
+}

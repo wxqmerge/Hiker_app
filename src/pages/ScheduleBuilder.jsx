@@ -13,6 +13,7 @@ import { getTrailDetailsById, findTrailById as findTrailByIdUtil } from '../util
 import { downloadBlob, createFileInput } from '../utils/io';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
+import { getHealth } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 
 // Convert server schedule format to client format
@@ -77,6 +78,15 @@ export default function ScheduleBuilder() {
   const trailDetails = useTrailDetails();
   const { filters, setFilters } = useFilters(trails, trailDetails);
   const { title: tt } = useTooltips();
+  const [version, setVersion] = useState(null);
+
+  useEffect(() => {
+    getHealth().then(data => {
+      if (data?.build?.hash) {
+        setVersion(data.build.hash);
+      }
+    }).catch(() => {});
+  }, []);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     const nextMonth = (now.getMonth() + 1) % 12;
@@ -783,6 +793,7 @@ const hikeCards = useMemo(() => {
       <main className="container mx-auto px-4 py-3">
         <div className="mb-6 flex items-baseline gap-3">
           <PageNav />
+          {version && <span className="text-xs text-gray-400">v{version}</span>}
           <button
             onClick={() => setShowScheduled(!showScheduled)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
