@@ -232,7 +232,7 @@ echo "  Build complete."
 
 # 7b. Copy built files to parent dir for nginx root
 echo "[7b/13] Deploying built files..."
-cp -r dist/* .
+cp -rf dist/* .
 echo "  Built files deployed."
 
 # 8. Fix systemd service file
