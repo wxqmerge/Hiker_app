@@ -82,11 +82,18 @@ describe('ScheduleBuilder', () => {
     expect(screen.getByText('Export Quarterly Schedule')).toBeInTheDocument();
   });
 
-  it('shows Import Excel Schedule button', () => {
+  it('shows Import SOTHH Schedule.xls button', () => {
     renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText(/Import Excel Schedule/)).toBeInTheDocument();
+    expect(screen.getByText(/Import SOTHH Schedule\.xls/)).toBeInTheDocument();
+  });
+
+  it('shows Import Quarterly Schedule TSV button', () => {
+    renderSchedule();
+    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    fireEvent.click(settingsBtn);
+    expect(screen.getByText(/Import Quarterly Schedule TSV/)).toBeInTheDocument();
   });
 
   it('shows Clear All Data button', () => {

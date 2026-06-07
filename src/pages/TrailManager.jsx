@@ -224,14 +224,14 @@ export default function TrailManager() {
                 className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
                 title={tt('Export monthly popularity as TSV file')}
               >
-                Export Monthly
+                Export Month of Year Pop DB
               </button>
               <button
                 onClick={importMonthlyTsv}
                 className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
                 title={tt('Import monthly popularity from TSV file')}
               >
-                Import Monthly
+                Import Month of Year Pop DB
               </button>
             </div>
           </div>
