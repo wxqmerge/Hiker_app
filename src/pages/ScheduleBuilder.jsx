@@ -178,6 +178,7 @@ export default function ScheduleBuilder() {
   }, [scheduleStore, selectedMonth]);
 
   const [dragData, setDragData] = useState(null);
+  const [pendingSwap, setPendingSwap] = useState(null);
   const [showScheduled, setShowScheduled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -287,8 +288,8 @@ export default function ScheduleBuilder() {
     return Object.values(assignedHikes).filter(v => v?.trail_id).length;
   }, [assignedHikes]);
 
-  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName) => {
-    setDragData({ hikeIndex, sourceDay, hikeName });
+  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName, trailId, earlyStart) => {
+    setDragData({ hikeIndex, sourceDay, hikeName, trailId, earlyStart });
   }, []);
 
   const handleDragEnd = useCallback(() => {
@@ -313,10 +314,11 @@ export default function ScheduleBuilder() {
           <div
             key={day}
             draggable
-            onDragStart={() => hikeIdx && handleDragStart(Number(hikeIdx[0]), day, hikeName)}
+            onDragStart={() => hikeIdx && handleDragStart(Number(hikeIdx[0]), day, hikeName, trailId, earlyStart)}
             onDragEnd={handleDragEnd}
             className="cursor-grab active:cursor-grabbing"
             title={tt('Drag to swap with another date')}
+            style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
           >
             <div className="relative">
               <TrailCard trail={trail} hikeName={trail.fullName || trail.name} isActive={false} selectedMonths={filters.months} />
@@ -344,8 +346,8 @@ export default function ScheduleBuilder() {
   const handleDropOnDate = (targetDay) => {
     if (!dragData) return;
 
-    const { hikeIndex, sourceDay, hikeName } = dragData;
-    const trailId = trailIndexToId[hikeIndex] || dragData.trailId;
+    const { hikeIndex, sourceDay, hikeName, trailId: dragTrailId, earlyStart: dragEarlyStart } = dragData;
+    const trailId = dragTrailId || trailIndexToId[hikeIndex];
 
     if (sourceDay === targetDay) {
       setDragData(null);
@@ -366,35 +368,30 @@ export default function ScheduleBuilder() {
       const targetTrail = findTrailById(targetEntry.trail_id);
       const sourceTrailName = sourceTrail ? (sourceTrail.fullName || sourceTrail.name) : hikeName || trailId;
       const targetTrailName = targetTrail ? (targetTrail.fullName || targetTrail.name) : targetEntry.hike || targetEntry.trail_id;
-      const sourceDayOfWeek = new Date(year, selectedMonth, sourceDay).getDay();
+      const sourceDayOfWeek = sourceDay !== null && sourceDay !== undefined ? new Date(year, selectedMonth, sourceDay).getDay() : null;
       const targetDayOfWeek = new Date(year, selectedMonth, targetDay).getDay();
-      const sourceDayLabel = `${DAY_NAMES[sourceDayOfWeek]} ${sourceDay}`;
+      const sourceDayLabel = sourceDayOfWeek !== null ? `${DAY_NAMES[sourceDayOfWeek]} ${sourceDay}` : 'Available Hikes';
       const targetDayLabel = `${DAY_NAMES[targetDayOfWeek]} ${targetDay}`;
 
-      if (!confirm(`Swap "${sourceTrailName}" (${sourceDayLabel}) with "${targetTrailName}" (${targetDayLabel})?`)) {
-        setDragData(null);
-        return;
-      }
-
-      // Swap: source hike goes to target day, target hike goes to source day
-      const sourceEntry = sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay] : null;
-      const sourceEarlyStart = sourceEntry?.early_start || false;
-
-      updateMonthSchedule(monthName, prev => {
-        const next = { ...prev };
-        next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: sourceEarlyStart };
-        if (sourceDay !== null && sourceDay !== undefined) {
-          next[sourceDay] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start };
-        }
-        return next;
+      setPendingSwap({
+        sourceTrailName,
+        targetTrailName,
+        sourceDayLabel,
+        targetDayLabel,
+        sourceDay,
+        targetDay,
+        sourceEntry: sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay] : null,
+        targetEntry,
+        trailId,
+        hikeName,
+        earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (dragData?.sourceDay !== null && dragData?.sourceDay !== undefined ? (scheduleStore[monthName] || {})[dragData.sourceDay]?.early_start : false),
       });
       setDragData(null);
       return;
     }
 
     // Normal drop on empty date
-    const sourceEntry = sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay] : null;
-    const earlyStart = sourceEntry?.early_start || false;
+    const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : ((sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay] : null)?.early_start || false);
 
     updateMonthSchedule(monthName, prev => {
       const next = { ...prev };
@@ -405,6 +402,26 @@ export default function ScheduleBuilder() {
       return next;
     });
     setDragData(null);
+  };
+
+  const confirmSwap = () => {
+    if (!pendingSwap) return;
+    const { sourceDay, targetDay, targetEntry, trailId, hikeName, earlyStart } = pendingSwap;
+    const monthName = MONTH_NAMES[selectedMonth];
+
+    updateMonthSchedule(monthName, prev => {
+      const next = { ...prev };
+      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart };
+      if (sourceDay !== null && sourceDay !== undefined) {
+        next[sourceDay] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start };
+      }
+      return next;
+    });
+    setPendingSwap(null);
+  };
+
+  const cancelSwap = () => {
+    setPendingSwap(null);
   };
 
   const handleDropOnAvailable = () => {
@@ -1067,19 +1084,23 @@ const hikeCards = useMemo(() => {
 
                     return (
                       <div
-                        key={day}
-                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-green-50'); }}
-                        onDragLeave={(e) => { e.currentTarget.classList.remove('bg-green-50'); }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.currentTarget.classList.remove('bg-green-50');
-                          handleDropOnDate(day);
-                        }}
-                        className={`border-2 rounded-lg p-3 transition-all ${
-                          trailId
-                            ? 'border-green-300 bg-green-50'
-                            : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
-                        }`}
+                         key={day}
+                         draggable={!!trailId}
+                         onDragStart={trailId ? () => handleDragStart(null, day, trailId ? (trail.fullName || trail.name) : hikeName, trailId, earlyStart) : undefined}
+                         onDragEnd={trailId ? handleDragEnd : undefined}
+                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-green-50'); }}
+                         onDragLeave={(e) => { e.currentTarget.classList.remove('bg-green-50'); }}
+                         onDrop={(e) => {
+                           e.preventDefault();
+                           e.currentTarget.classList.remove('bg-green-50');
+                           handleDropOnDate(day);
+                         }}
+                         className={`border-2 rounded-lg p-3 transition-all ${
+                           trailId
+                             ? 'border-green-300 bg-green-50'
+                             : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
+                         }`}
+                         style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
                         title={trailId ? tt('Drop another hike here to swap') : tt('Drop a hike here to schedule')}
                       >
                         <div className="flex items-center justify-between">
@@ -1144,8 +1165,37 @@ const hikeCards = useMemo(() => {
             </div>
           </div>
         </div>
-
- 
+       {pendingSwap && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={cancelSwap}>
+            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm mx-auto" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Swap Hikes?</h3>
+              <div className="space-y-3 text-sm text-gray-700">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">1</div>
+                  <span><strong>{pendingSwap.sourceTrailName}</strong> moves to {pendingSwap.targetDayLabel}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">2</div>
+                  <span><strong>{pendingSwap.targetTrailName}</strong> moves to {pendingSwap.sourceDayLabel}</span>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6 justify-end">
+                <button
+                  onClick={cancelSwap}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSwap}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                >
+                  Swap
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
