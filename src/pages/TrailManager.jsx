@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import PageNav from '../components/PageNav';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
-import { createFileInput, downloadBlob } from '../utils/io';
+import { createFileInput, downloadBlob, parseTrailTsv } from '../utils/io';
 import { MONTH_ABBR } from '../utils/constants';
 import { importTrailsFromXls, getSchedule, updateSchedule } from '../api/client';
 
@@ -102,6 +102,55 @@ export default function TrailManager() {
           window.location.reload();
         } catch (err) {
           alert('Import error: ' + err.message);
+        }
+      },
+    });
+  };
+
+  const handleImportHikeTsv = () => {
+    createFileInput({
+      accept: '.tsv,.txt',
+      onFile: async (file) => {
+        const text = await file.text();
+        try {
+          const { trail: parsedTrail, detail: parsedDetail } = parseTrailTsv(text);
+          if (!parsedTrail.fullName) {
+            alert('Import failed: Trail Name is required.');
+            return;
+          }
+          const existingByName = trails.find(t => t.fullName === parsedTrail.fullName);
+          let targetTrail = existingByName;
+          if (existingByName) {
+            const action = prompt(
+              `Trail "${parsedTrail.fullName}" already exists.\n\n` +
+              `Type "update" to update it, "new" to create a duplicate, or anything else to cancel.`
+            );
+            if (action === 'update') {
+              targetTrail = existingByName;
+            } else if (action === 'new') {
+              parsedTrail.fullName = `${parsedTrail.fullName} (copy)`;
+              parsedTrail.name = `${parsedTrail.name || parsedTrail.fullName} (copy)`;
+              targetTrail = null;
+            } else {
+              return;
+            }
+          }
+          const saved = targetTrail
+            ? await saveTrail({ ...parsedTrail, id: targetTrail.id })
+            : await saveTrail(parsedTrail);
+          const savedId = saved.id || targetTrail?.id;
+          const detailToSave = {};
+          if (parsedDetail.fullDescription) detailToSave.fullDescription = parsedDetail.fullDescription;
+          if (parsedDetail.pros != null) detailToSave.pros = parsedDetail.pros;
+          if (parsedDetail.others != null) detailToSave.others = parsedDetail.others;
+          if (parsedDetail.leaders?.length) detailToSave.leaders = parsedDetail.leaders;
+          if (Object.keys(detailToSave).length > 0) {
+            await saveTrailDetail(savedId, detailToSave);
+          }
+          alert(`Trail "${saved.fullName}" imported successfully!`);
+          navigate(`/trail/${savedId}`);
+        } catch (err) {
+          alert('Import failed: ' + (err.message || 'Invalid TSV format'));
         }
       },
     });
@@ -234,6 +283,12 @@ export default function TrailManager() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Import Database {!hasApiKey && '(need API key)'}
+          </button>
+          <button onClick={handleImportHikeTsv} disabled={!hasApiKey} className={`px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${hasApiKey ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`} title={tt('Import a single hike from TSV file')}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Import Hike TSV {!hasApiKey && '(need API key)'}
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <input
