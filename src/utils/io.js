@@ -57,20 +57,20 @@ function unescapeTsv(str) {
 }
 
 // Export a single trail to TSV format matching the Excel hike page layout
+// Field order mirrors cell positions: A0, B2, D2, G2, I2, B3, G3, B4, G4, Jan-Dec, A6, B13, B16, B19
 export function exportTrailTsv(trail, detail) {
   const rows = [['Label', 'Value']];
   const add = (label, value) => rows.push([label, escapeTsv(String(value ?? ''))]);
 
   add('Trail Name', trail.fullName || trail.name);
-  add('Short Name', trail.name);
   add('Distance', trail.distance ?? '');
   add('Distance Extended', trail.distanceExtended ?? '');
   add('Elevation Start', trail.elevationStart ?? '');
   add('Elevation Max', trail.elevationMax ?? '');
-  add('Difficulty', trail.difficulty);
   add('Parking', trail.parking);
-  add('Range', trail.range ?? '');
   add('Best Season', trail.seasonal?.bestSeason ?? '');
+  add('Difficulty', trail.difficulty);
+  add('Range', trail.range ?? '');
 
   const months = trail.seasonal?.availableMonths || [];
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -123,7 +123,7 @@ export function parseTrailTsv(text) {
   const orderMap = { 'Easy': 1, 'Easy to Mod': 2, 'Moderate': 3, 'Mod to Diff': 4, 'Difficult': 5 };
 
   const trail = {
-    name: map['Short Name'] || map['Trail Name'] || '',
+    name: map['Trail Name'] || '',
     fullName: map['Trail Name'] || '',
     distance: parseNum(map['Distance'], parseFloat),
     distanceExtended: parseNum(map['Distance Extended'], parseFloat),
