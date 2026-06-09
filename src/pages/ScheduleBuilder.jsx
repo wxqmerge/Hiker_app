@@ -269,7 +269,7 @@ export default function ScheduleBuilder() {
       debugLogSearchChange(search, hikeTrailMap.length, filtered.length, sorted.length, assigned);
     }
     return sorted;
-  }, [hikeTrailMap, filters, debugMode, assignedHikes]);
+  }, [hikeTrailMap, filters, debugMode, assignedHikes, trailDetails]);
 
   const wedFriDates = useMemo(() => {
     const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
@@ -341,7 +341,7 @@ export default function ScheduleBuilder() {
         );
       })
       .filter(Boolean);
-  }, [assignedHikes, trailIndexToId, handleDragStart, handleDragEnd, debugMode, selectedMonth, findTrailById, year]);
+  }, [assignedHikes, trailIndexToId, handleDragStart, handleDragEnd, debugMode, selectedMonth, findTrailById, year, dragData, filters.months, tt]);
 
   const handleDropOnDate = (targetDay) => {
     if (!dragData) return;
@@ -809,7 +809,7 @@ const hikeCards = useMemo(() => {
       );
       return cards;
     }, []);
-  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode]);
+  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt]);
 
   if (loading) {
     return (

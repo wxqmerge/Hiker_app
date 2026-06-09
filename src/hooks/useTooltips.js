@@ -14,7 +14,7 @@ export function useTooltips() {
   const toggle = useCallback(() => {
     setEnabled(prev => {
       const next = !prev;
-      try { localStorage.setItem(TOOLTIPS_KEY, next ? 'true' : 'false'); } catch {}
+      try { localStorage.setItem(TOOLTIPS_KEY, next ? 'true' : 'false'); } catch { /* ignore */ }
       return next;
     });
   }, []);
