@@ -135,9 +135,18 @@ export default function TrailManager() {
               return;
             }
           }
+          const generateId = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'new-trail';
+          let newId = targetTrail?.id || generateId(parsedTrail.fullName);
+          let counter = 1;
+          while (trails.find(t => t.id === newId) && !targetTrail) {
+            newId = generateId(parsedTrail.fullName) + '-' + counter++;
+          }
           const saved = targetTrail
             ? await saveTrail({ ...parsedTrail, id: targetTrail.id })
-            : await saveTrail(parsedTrail);
+            : await saveTrail({
+                ...parsedTrail,
+                id: newId,
+              });
           const savedId = saved.id || targetTrail?.id;
           const detailToSave = {};
           if (parsedDetail.fullDescription) detailToSave.fullDescription = parsedDetail.fullDescription;
@@ -148,7 +157,7 @@ export default function TrailManager() {
             await saveTrailDetail(savedId, detailToSave);
           }
           alert(`Trail "${saved.fullName}" imported successfully!`);
-          navigate(`/trail/${savedId}`);
+          navigate(`/trail/${savedId}?edit=true`);
         } catch (err) {
           alert('Import failed: ' + (err.message || 'Invalid TSV format'));
         }

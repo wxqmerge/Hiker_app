@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
@@ -55,12 +55,13 @@ const SEASON_MAP_LOWER = Object.fromEntries(
 
 export default function TrailDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { trails, loading } = useTrails();
   const { trailDetails, saveTrail, saveTrailDetail } = useTrailStore();
   const { title: tt } = useTooltips();
   const [copied, setCopied] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(() => searchParams.get('edit') === 'true');
   const [editedFields, setEditedFields] = useState({});
 
   const trail = useMemo(() => findTrailById(trails, id), [trails, id]);
@@ -162,11 +163,15 @@ const getEditedValue = (field) => {
     }
 
     setIsEditMode(false);
+    searchParams.delete('edit');
+    navigate(`/trail/${id}${searchParams.toString() ? '?' + searchParams.toString() : ''}`, { replace: true });
   };
 
   const cancelEdits = () => {
     setEditedFields({});
     setIsEditMode(false);
+    searchParams.delete('edit');
+    navigate(`/trail/${id}${searchParams.toString() ? '?' + searchParams.toString() : ''}`, { replace: true });
   };
 
   const exportTrailAsTsv = () => {
