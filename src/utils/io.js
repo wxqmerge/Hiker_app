@@ -153,10 +153,20 @@ export function parseTrailTsv(text) {
   };
 
   const trailName = cell(0, 0);
-  const distance = parseNum(cell(2, 1), parseFloat);
-  const distanceExtended = parseNum(cell(2, 3), parseFloat);
-  const elevationStart = parseNum(cell(2, 6), v => parseInt(v, 10));
-  const elevationMax = parseNum(cell(2, 8), v => parseInt(v, 10));
+  let distance = parseNum(cell(2, 1), parseFloat);
+  let distanceExtended = parseNum(cell(2, 3), parseFloat);
+  let elevationStart = parseNum(cell(2, 6), v => parseInt(v, 10));
+  let elevationMax = parseNum(cell(2, 8), v => parseInt(v, 10));
+  // If distanceExtended has a value but distance is empty, move it to distance
+  if (!distance && distanceExtended != null) {
+    distance = distanceExtended;
+    distanceExtended = null;
+  }
+  // If elevationMax has a value but elevationStart is empty, swap them
+  if (!elevationStart && elevationMax != null) {
+    elevationStart = elevationMax;
+    elevationMax = null;
+  }
   const parking = cell(3, 1);
   const bestSeason = cell(3, 6);
   const level = cell(4, 1);
