@@ -357,6 +357,17 @@ const getEditedValue = (field) => {
               <span className="text-gray-300">|</span>
 
               <button
+                onClick={exportTrailAsTsv}
+                className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors text-blue-700 hover:text-blue-900"
+                title={tt('Export this hike as TSV matching Excel format')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export TSV
+              </button>
+
+              <button
                 onClick={copyReport}
                 className={`flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
                   copied ? 'text-green-800' : 'text-green-700 hover:text-green-900'
@@ -601,7 +612,7 @@ const getEditedValue = (field) => {
                   </svg>
                   Import Data
                 </button>
-               <button
+                <button
                     onClick={() => { exportTrailEdits(); setShowSettingsMenu(false); }}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
                     title={tt('Copy this trail\'s report to clipboard')}
@@ -610,16 +621,6 @@ const getEditedValue = (field) => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                     </svg>
                     Copy This Trail's Info
-                  </button>
-                  <button
-                    onClick={() => { exportTrailAsTsv(); setShowSettingsMenu(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                    title={tt('Export this hike as TSV matching Excel format')}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export Hike TSV
                   </button>
               </div>
             )}
