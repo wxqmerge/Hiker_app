@@ -44,6 +44,24 @@ export function createImportFileInput(onImport, onError) {
   });
 }
 
+// Split string into chunks of ~maxLen chars, breaking at word boundaries
+function chunkString(str, maxLen) {
+  const chunks = [];
+  let i = 0;
+  while (i < str.length) {
+    if (i + maxLen >= str.length) {
+      chunks.push(str.slice(i));
+      break;
+    }
+    let end = i + maxLen;
+    const lastSpace = str.lastIndexOf(' ', end);
+    if (lastSpace > i) end = lastSpace;
+    chunks.push(str.slice(i, end));
+    i = end + 1;
+  }
+  return chunks;
+}
+
 // Export a single trail to TSV format matching the Excel hike page layout exactly.
 // Output is a raw cell dump: 20 rows x 9 columns (A-I), tabs between columns.
 // Cell positions:
@@ -90,12 +108,13 @@ export function exportTrailTsv(trail, detail) {
   grid.push([...r()]);
   grid[5][0] = 'General Information';
 
-  // Row 6: Description
-  grid.push([...r()]);
-  grid[6][0] = detail?.fullDescription || '';
-
-  // Rows 7-13: empty
-  for (let i = 7; i <= 13; i++) grid.push([...r()]);
+  // Rows 6-13: Description (split across 8 rows, ~80 chars per row to match Excel wrapping)
+  const desc = detail?.fullDescription || '';
+  const descChunks = desc ? chunkString(desc, 80) : [];
+  for (let i = 6; i <= 13; i++) {
+    grid.push([...r()]);
+    grid[i][0] = descChunks[i - 6] || '';
+  }
 
   // Row 14: Pros
   grid.push([...r()]);
@@ -142,7 +161,7 @@ export function parseTrailTsv(text) {
   const bestSeason = cell(3, 6);
   const level = cell(4, 1);
   const range = cell(4, 6);
-  const description = lines.slice(6, 13).map(l => (l[0] || '').trim()).filter(Boolean).join(' ');
+  const description = lines.slice(6, 14).map(l => (l[0] || '').trim()).filter(Boolean).join(' ');
   const pros = cell(14, 1) || null;
   const others = cell(16, 1) || null;
   const leadersRaw = cell(19, 1);
