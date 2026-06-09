@@ -43,3 +43,110 @@ export function createImportFileInput(onImport, onError) {
     },
   });
 }
+
+// Escape special characters for TSV: tabs, newlines, backslashes
+function escapeTsv(str) {
+  if (!str) return '';
+  return str.replace(/\\/g, '\\\\').replace(/\t/g, '\\t').replace(/\n/g, '\\n');
+}
+
+// Unescape TSV escape sequences
+function unescapeTsv(str) {
+  if (!str) return '';
+  return str.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\\\/g, '\\');
+}
+
+// Export a single trail to TSV format matching the Excel hike page layout
+export function exportTrailTsv(trail, detail) {
+  const rows = [['Label', 'Value']];
+  const add = (label, value) => rows.push([label, escapeTsv(String(value ?? ''))]);
+
+  add('Trail Name', trail.fullName || trail.name);
+  add('Short Name', trail.name);
+  add('Distance', trail.distance ?? '');
+  add('Distance Extended', trail.distanceExtended ?? '');
+  add('Elevation Start', trail.elevationStart ?? '');
+  add('Elevation Max', trail.elevationMax ?? '');
+  add('Difficulty', trail.difficulty);
+  add('Parking', trail.parking);
+  add('Range', trail.range ?? '');
+  add('Best Season', trail.seasonal?.bestSeason ?? '');
+
+  const months = trail.seasonal?.availableMonths || [];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  for (let i = 0; i < 12; i++) {
+    add(MONTHS[i], months.includes(i + 1) ? 'Y' : '');
+  }
+
+  add('Description', detail?.fullDescription ?? '');
+  add('Pros', detail?.pros ?? '');
+  add('Other', detail?.others ?? '');
+  add('Leaders', Array.isArray(detail?.leaders) ? detail.leaders.join(', ') : '');
+  add('Alternate Names', Array.isArray(trail.altNames) ? trail.altNames.join(', ') : '');
+
+  return rows.map(r => r.join('\t')).join('\n');
+}
+
+// Parse TSV back into trail + detail objects
+export function parseTrailTsv(text) {
+  const lines = text.split('\n');
+  if (lines.length < 2) throw new Error('TSV file is empty or has only a header.');
+
+  const map = {};
+  for (let i = 1; i < lines.length; i++) {
+    const idx = lines[i].indexOf('\t');
+    if (idx < 0) continue;
+    const label = unescapeTsv(lines[i].substring(0, idx));
+    const value = unescapeTsv(lines[i].substring(idx + 1));
+    map[label] = value;
+  }
+
+  const parseNum = (v, fn) => {
+    if (!v) return null;
+    try { return fn(v); } catch { return null; }
+  };
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const availableMonths = [];
+  for (let i = 0; i < 12; i++) {
+    if (map[MONTHS[i]]?.trim()) availableMonths.push(i + 1);
+  }
+
+  const leaders = map['Leaders']?.trim()
+    ? map['Leaders'].split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const altNames = map['Alternate Names']?.trim()
+    ? map['Alternate Names'].split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const orderMap = { 'Easy': 1, 'Easy to Mod': 2, 'Moderate': 3, 'Mod to Diff': 4, 'Difficult': 5 };
+
+  const trail = {
+    name: map['Short Name'] || map['Trail Name'] || '',
+    fullName: map['Trail Name'] || '',
+    distance: parseNum(map['Distance'], parseFloat),
+    distanceExtended: parseNum(map['Distance Extended'], parseFloat),
+    elevationStart: parseNum(map['Elevation Start'], v => parseInt(v, 10)),
+    elevationMax: parseNum(map['Elevation Max'], v => parseInt(v, 10)),
+    difficulty: map['Difficulty'] || 'Unknown',
+    parking: map['Parking'] || '',
+    range: map['Range'] || '',
+    notes: map['Trail Name'] ? map['Trail Name'].substring(0, 200) : '',
+    seasonal: {
+      availableMonths,
+      bestSeason: map['Best Season'] || '',
+    },
+    difficultyOrder: orderMap[map['Difficulty']] ?? 99,
+    altNames: altNames.length > 0 ? altNames : undefined,
+  };
+
+  const detail = {
+    fullDescription: map['Description'] || '',
+    pros: map['Pros'] || null,
+    others: map['Other'] || null,
+    leaders: leaders.length > 0 ? leaders : [],
+  };
+
+  return { trail, detail };
+}
