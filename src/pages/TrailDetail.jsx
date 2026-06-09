@@ -1,11 +1,11 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
-import { downloadBlob, createImportFileInput, exportTrailTsv } from '../utils/io';
+import { downloadBlob, exportTrailTsv } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 
 const SEASON_MAP = {
@@ -57,25 +57,14 @@ export default function TrailDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { trails, loading } = useTrails();
-  const { trailDetails, saveTrail, saveTrailDetail, exportJSON, importJSON: importTrailData } = useTrailStore();
+  const { trailDetails, saveTrail, saveTrailDetail } = useTrailStore();
   const { title: tt } = useTooltips();
   const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedFields, setEditedFields] = useState({});
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   const trail = useMemo(() => findTrailById(trails, id), [trails, id]);
   const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (showSettingsMenu && !e.target.closest('.fixed.bottom-6')) {
-        setShowSettingsMenu(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showSettingsMenu]);
 
   const trailDetailsResult = useMemo(() => getTrailDetailsById(trailDetails, id), [trailDetails, id]);
 
@@ -186,47 +175,6 @@ const getEditedValue = (field) => {
   const cancelEdits = () => {
     setEditedFields({});
     setIsEditMode(false);
-  };
-
-  const exportEdits = async () => {
-    const data = await exportJSON();
-    downloadBlob(JSON.stringify(data, null, 2), 'trail-data.json');
-  };
-
-  const importEdits = () => {
-    createImportFileInput(
-      async (imported) => {
-        await importTrailData(imported);
-        alert('Data imported successfully!');
-        window.location.reload();
-      },
-      (msg) => alert(msg)
-    );
-  };
-
-  const exportTrailEdits = () => {
-    let text = `Trail: ${trail.name}\n\n`;
-
-    const desc = getEditedValue('description');
-    if (desc) text += `Description: ${desc}\n\n`;
-
-    const notes = getEditedValue('notes');
-    if (notes) text += `Notes: ${notes}\n\n`;
-
-    const pros = getEditedValue('pros');
-    if (pros) text += `Pros: ${pros}\n\n`;
-
-    const others = getEditedValue('others');
-    if (others) text += `Others: ${others}\n\n`;
-
-    const leaders = getEditedValue('leaders');
-    if (leaders) {
-      const leaderArr = Array.isArray(leaders) ? leaders : [leaders];
-      text += `Leaders: ${leaderArr.join(', ')}\n`;
-    }
-
-    navigator.clipboard.writeText(text);
-    alert('Trail edits copied to clipboard!');
   };
 
   const exportTrailAsTsv = () => {
@@ -389,6 +337,17 @@ const getEditedValue = (field) => {
                     Copy Report
                   </>
                 )}
+              </button>
+
+              <button
+                onClick={startEditMode}
+                className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors text-green-700 hover:text-green-900"
+                title={tt('Edit trail details')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Edit
               </button>
             </div>
           </div>
@@ -580,61 +539,6 @@ const getEditedValue = (field) => {
               );
             })()}
           </div>
-        </div>
-
-        <div className="fixed bottom-6 right-6 flex gap-3">
-          <div className="relative">
-            <button
-              onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-              className="p-4 bg-gray-700 hover:bg-gray-800 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400"
-              title={tt('Export/Import data')}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-            </button>
-
-            {showSettingsMenu && (
-              <div className="absolute bottom-full right-0 mb-3 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[180px] z-50">
-                <button
-                  onClick={() => { exportEdits(); setShowSettingsMenu(false); }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                  title={tt('Export all trail data as JSON')}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export All Data
-                </button>
-                <button onClick={() => { importEdits(); setShowSettingsMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('Import trail data from JSON file')}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Import Data
-                </button>
-                <button
-                    onClick={() => { exportTrailEdits(); setShowSettingsMenu(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                    title={tt('Copy this trail\'s report to clipboard')}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    Copy This Trail's Info
-                  </button>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={startEditMode}
-            className="p-4 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-400"
-            title={tt('Edit trail details')}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-          </button>
         </div>
       </main>
 

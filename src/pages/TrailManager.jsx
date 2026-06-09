@@ -3,13 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import PageNav from '../components/PageNav';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
-import { createFileInput, downloadBlob, exportTrailTsv, parseTrailTsv } from '../utils/io';
+import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv } from '../utils/io';
 import { MONTH_ABBR } from '../utils/constants';
 import { importTrailsFromXls, getSchedule, updateSchedule } from '../api/client';
 
 export default function TrailManager() {
   const { title: tt } = useTooltips();
-  const { trails, loading, trailDetails, saveTrail, deleteTrail, saveTrailDetail } = useTrailStore();
+  const { trails, loading, trailDetails, saveTrail, deleteTrail, saveTrailDetail, exportJSON, importJSON } = useTrailStore();
   const [search, setSearch] = useState('');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const getScheduleCount = (trailId) => {
@@ -246,6 +246,35 @@ export default function TrailManager() {
     });
   }, [hasApiKey]);
 
+  const exportAllDataJson = useCallback(async () => {
+    try {
+      const data = await exportJSON();
+      downloadBlob(JSON.stringify(data, null, 2), 'trail-data.json');
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+    }
+  }, [exportJSON]);
+
+  const importAllDataJson = useCallback(() => {
+    if (!hasApiKey) {
+      alert('API key required for data import.');
+      return;
+    }
+    createImportFileInput(
+      async (imported) => {
+        if (!confirm('Import trail data? This will upsert all trails and details from the file.')) return;
+        try {
+          await importJSON(imported);
+          alert('Data imported successfully!');
+          window.location.reload();
+        } catch (err) {
+          alert('Import failed: ' + err.message);
+        }
+      },
+      (msg) => alert(msg)
+    );
+  }, [hasApiKey, importJSON]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -289,6 +318,18 @@ export default function TrailManager() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Import Hike TSV {!hasApiKey && '(need API key)'}
+          </button>
+          <button onClick={exportAllDataJson} className="px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white" title={tt('Export all trail data as JSON')}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export All JSON
+          </button>
+          <button onClick={importAllDataJson} disabled={!hasApiKey} className={`px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${hasApiKey ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`} title={tt('Import all trail data from JSON file')}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Import All JSON {!hasApiKey && '(need API key)'}
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <input
