@@ -95,9 +95,10 @@ export function useTrailStore() {
       if (idx >= 0) {
         newTrails = _trails.map(t => t.id === trail.id ? trail : t);
       } else {
-        newTrails = [..._trails, trail];
+        newTrails = [..._trails, trail].sort((a, b) => (a.fullName || a.name || '').localeCompare(b.fullName || b.name || ''));
       }
       setState(newTrails, _trailDetails, false, _lookup, _schedule);
+      return trail;
     } catch (error) {
       console.error('[useTrailStore] saveTrail error:', error);
       throw error;
