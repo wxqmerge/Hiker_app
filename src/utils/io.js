@@ -142,7 +142,7 @@ export function parseTrailTsv(text) {
   const bestSeason = cell(3, 6);
   const level = cell(4, 1);
   const range = cell(4, 6);
-  const description = cell(6, 0);
+  const description = lines.slice(6, 13).map(l => (l[0] || '').trim()).filter(Boolean).join(' ');
   const pros = cell(14, 1) || null;
   const others = cell(16, 1) || null;
   const leadersRaw = cell(19, 1);
