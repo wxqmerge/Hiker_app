@@ -31,10 +31,7 @@ router.get('/details/:id', (req, res) => {
 router.put('/details/:id', requireAdminKey, async (req, res) => {
   try {
     const existing = getTrailDetailById(req.params.id);
-    if (!existing) {
-      return res.status(404).json({ success: false, error: { message: 'Trail detail not found' } });
-    }
-    await updateTrailDetail(req.params.id, { ...existing, ...req.body });
+    await updateTrailDetail(req.params.id, existing ? { ...existing, ...req.body } : req.body);
     res.json({ success: true, detail: getTrailDetailById(req.params.id) });
   } catch (error) {
     console.error('[TRAILS] Error updating trail detail:', error);
@@ -53,10 +50,7 @@ router.get('/:id', (req, res) => {
 router.put('/:id', requireAdminKey, async (req, res) => {
   try {
     const existing = getTrailById(req.params.id);
-    if (!existing) {
-      return res.status(404).json({ success: false, error: { message: 'Trail not found' } });
-    }
-    await updateTrail({ ...existing, ...req.body });
+    await updateTrail(existing ? { ...existing, ...req.body } : req.body);
     res.json({ success: true, trail: getTrailById(req.params.id) });
   } catch (error) {
     console.error('[TRAILS] Error updating trail:', error);
