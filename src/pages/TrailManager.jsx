@@ -5,7 +5,7 @@ import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, downloadBlob } from '../utils/io';
 import { MONTH_ABBR } from '../utils/constants';
-import { importTrailsFromXls } from '../api/client';
+import { importTrailsFromXls, getSchedule, updateSchedule } from '../api/client';
 
 export default function TrailManager() {
   const { title: tt } = useTooltips();
@@ -162,6 +162,41 @@ export default function TrailManager() {
     });
   }, [trails, trailDetails, saveTrailDetail]);
 
+  const exportScheduleJson = useCallback(async () => {
+    try {
+      const schedule = await getSchedule();
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const filename = `schedule_${dateStr}.json`;
+      const json = JSON.stringify(schedule, null, 2);
+      downloadBlob(json, filename, 'application/json');
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+    }
+  }, []);
+
+  const importScheduleJson = useCallback(async () => {
+    if (!hasApiKey) {
+      alert('API key required for schedule import.');
+      return;
+    }
+    createFileInput({
+      accept: '.json',
+      onFile: async (file) => {
+        const text = await file.text();
+        try {
+          const schedule = JSON.parse(text);
+          if (!confirm('Replace the entire schedule with this data? This will overwrite all current schedule entries.')) return;
+          await updateSchedule(schedule);
+          alert('Schedule imported successfully!');
+          window.location.reload();
+        } catch {
+          alert('Import failed: Invalid JSON format');
+        }
+      },
+    });
+  }, [hasApiKey]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -232,6 +267,25 @@ export default function TrailManager() {
                 title={tt('Import monthly popularity from TSV file')}
               >
                 Import Month of Year Pop DB
+              </button>
+              <button
+                onClick={exportScheduleJson}
+                className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                title={tt('Export the full schedule as a JSON file')}
+              >
+                Export Schedule JSON
+              </button>
+              <button
+                onClick={importScheduleJson}
+                disabled={!hasApiKey}
+                className={`text-xs px-3 py-1.5 rounded transition-colors ${
+                  hasApiKey
+                    ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+                title={tt('Import a full schedule from a JSON file')}
+              >
+                Import Schedule JSON
               </button>
             </div>
           </div>
