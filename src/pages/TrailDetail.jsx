@@ -372,8 +372,8 @@ const getEditedValue = (field) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
                 <p className="text-2xl font-bold text-gray-800">
-                  {getEditedValue('distance') != null ? getEditedValue('distance').toFixed(1) : 'N/A'}
-                  {getEditedValue('distanceExtended') != null && ` / ${getEditedValue('distanceExtended').toFixed(1)}`}
+                  {getEditedValue('distance') != null ? Number(getEditedValue('distance')).toFixed(1) : 'N/A'}
+                  {getEditedValue('distanceExtended') != null && ` / ${Number(getEditedValue('distanceExtended')).toFixed(1)}`}
                 </p>
                 <p className="text-sm text-gray-500">miles</p>
               </div>
