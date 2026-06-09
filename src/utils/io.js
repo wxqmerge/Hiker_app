@@ -44,108 +44,137 @@ export function createImportFileInput(onImport, onError) {
   });
 }
 
-// Escape special characters for TSV: tabs, newlines, backslashes
-function escapeTsv(str) {
-  if (!str) return '';
-  return str.replace(/\\/g, '\\\\').replace(/\t/g, '\\t').replace(/\n/g, '\\n');
-}
-
-// Unescape TSV escape sequences
-function unescapeTsv(str) {
-  if (!str) return '';
-  return str.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\\\/g, '\\');
-}
-
-// Export a single trail to TSV format matching the Excel hike page layout
-// Field order mirrors cell positions: A0, B2, D2, G2, I2, B3, G3, B4, G4, Jan-Dec, A6, B13, B16, B19
+// Export a single trail to TSV format matching the Excel hike page layout exactly.
+// Output is a raw cell dump: 20 rows x 9 columns (A-I), tabs between columns.
+// Cell positions:
+//   A0=Trail Name, B2=Distance, D2=Dist Extended, G2=Elev Start, I2=Elev Max
+//   B3=Parking, G3=Best Season, B4=Level, G4=Range
+//   A6=Description, B14=Pros, B16=Other, B19=Leaders
 export function exportTrailTsv(trail, detail) {
-  const rows = [['Label', 'Value']];
-  const add = (label, value) => rows.push([label, escapeTsv(String(value ?? ''))]);
+  const r = (len = 9) => Array(len).fill('');
+  const grid = [];
 
-  add('Trail Name', trail.fullName || trail.name);
-  add('Distance', trail.distance ?? '');
-  add('Distance Extended', trail.distanceExtended ?? '');
-  add('Elevation Start', trail.elevationStart ?? '');
-  add('Elevation Max', trail.elevationMax ?? '');
-  add('Parking', trail.parking);
-  add('Best Season', trail.seasonal?.bestSeason ?? '');
-  add('Difficulty', trail.difficulty);
-  add('Range', trail.range ?? '');
+  // Row 0: Trail Name
+  grid.push([...r()]);
+  grid[0][0] = trail.fullName || trail.name || '';
 
-  const months = trail.seasonal?.availableMonths || [];
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  for (let i = 0; i < 12; i++) {
-    add(MONTHS[i], months.includes(i + 1) ? 'Y' : '');
-  }
+  // Row 1: empty
+  grid.push([...r()]);
 
-  add('Description', detail?.fullDescription ?? '');
-  add('Pros', detail?.pros ?? '');
-  add('Other', detail?.others ?? '');
-  add('Leaders', Array.isArray(detail?.leaders) ? detail.leaders.join(', ') : '');
-  add('Alternate Names', Array.isArray(trail.altNames) ? trail.altNames.join(', ') : '');
+  // Row 2: Miles & Elevation
+  grid.push([...r()]);
+  grid[2][0] = 'Miles';
+  grid[2][1] = trail.distance ?? '';
+  grid[2][2] = 'to';
+  grid[2][3] = trail.distanceExtended ?? '';
+  grid[2][5] = 'Elevation';
+  grid[2][6] = trail.elevationStart ?? '';
+  grid[2][7] = 'to';
+  grid[2][8] = trail.elevationMax ?? '';
 
-  return rows.map(r => r.join('\t')).join('\n');
+  // Row 3: Parking & Season
+  grid.push([...r()]);
+  grid[3][0] = 'Parking';
+  grid[3][1] = trail.parking || '';
+  grid[3][5] = 'Season';
+  grid[3][6] = trail.seasonal?.bestSeason || '';
+
+  // Row 4: Level & Range
+  grid.push([...r()]);
+  grid[4][0] = 'Level';
+  grid[4][1] = trail.difficulty || '';
+  grid[4][5] = 'Range';
+  grid[4][6] = trail.range ?? '';
+
+  // Row 5: General Information
+  grid.push([...r()]);
+  grid[5][0] = 'General Information';
+
+  // Row 6: Description
+  grid.push([...r()]);
+  grid[6][0] = detail?.fullDescription || '';
+
+  // Rows 7-13: empty
+  for (let i = 7; i <= 13; i++) grid.push([...r()]);
+
+  // Row 14: Pros
+  grid.push([...r()]);
+  grid[14][0] = 'Pros';
+  grid[14][1] = detail?.pros || '';
+
+  // Row 15: empty
+  grid.push([...r()]);
+
+  // Row 16: Other
+  grid.push([...r()]);
+  grid[16][0] = 'Other';
+  grid[16][1] = detail?.others || '';
+
+  // Rows 17-18: empty
+  for (let i = 17; i <= 18; i++) grid.push([...r()]);
+
+  // Row 19: Leaders
+  grid.push([...r()]);
+  grid[19][0] = 'Leaders';
+  grid[19][1] = Array.isArray(detail?.leaders) ? detail.leaders.join(', ') : '';
+
+  return grid.map(row => row.join('\t')).join('\n');
 }
 
-// Parse TSV back into trail + detail objects
+// Parse TSV in the raw Excel cell layout format back into trail + detail objects.
+// Expects 20 rows x 9 columns (A-I), tabs between columns.
 export function parseTrailTsv(text) {
-  const lines = text.split('\n');
-  if (lines.length < 2) throw new Error('TSV file is empty or has only a header.');
+  const lines = text.split('\n').map(l => l.split('\t'));
+  if (lines.length < 20) throw new Error('TSV file must have 20 rows.');
 
-  const map = {};
-  for (let i = 1; i < lines.length; i++) {
-    const idx = lines[i].indexOf('\t');
-    if (idx < 0) continue;
-    const label = unescapeTsv(lines[i].substring(0, idx));
-    const value = unescapeTsv(lines[i].substring(idx + 1));
-    map[label] = value;
-  }
-
+  const cell = (row, col) => (lines[row]?.[col] || '').trim();
   const parseNum = (v, fn) => {
     if (!v) return null;
     try { return fn(v); } catch { return null; }
   };
 
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const availableMonths = [];
-  for (let i = 0; i < 12; i++) {
-    if (map[MONTHS[i]]?.trim()) availableMonths.push(i + 1);
-  }
-
-  const leaders = map['Leaders']?.trim()
-    ? map['Leaders'].split(',').map(s => s.trim()).filter(Boolean)
-    : [];
-
-  const altNames = map['Alternate Names']?.trim()
-    ? map['Alternate Names'].split(',').map(s => s.trim()).filter(Boolean)
+  const trailName = cell(0, 0);
+  const distance = parseNum(cell(2, 1), parseFloat);
+  const distanceExtended = parseNum(cell(2, 3), parseFloat);
+  const elevationStart = parseNum(cell(2, 6), v => parseInt(v, 10));
+  const elevationMax = parseNum(cell(2, 8), v => parseInt(v, 10));
+  const parking = cell(3, 1);
+  const bestSeason = cell(3, 6);
+  const level = cell(4, 1);
+  const range = cell(4, 6);
+  const description = cell(6, 0);
+  const pros = cell(14, 1) || null;
+  const others = cell(16, 1) || null;
+  const leadersRaw = cell(19, 1);
+  const leaders = leadersRaw
+    ? leadersRaw.split(',').map(s => s.trim()).filter(Boolean)
     : [];
 
   const orderMap = { 'Easy': 1, 'Easy to Mod': 2, 'Moderate': 3, 'Mod to Diff': 4, 'Difficult': 5 };
 
   const trail = {
-    name: map['Trail Name'] || '',
-    fullName: map['Trail Name'] || '',
-    distance: parseNum(map['Distance'], parseFloat),
-    distanceExtended: parseNum(map['Distance Extended'], parseFloat),
-    elevationStart: parseNum(map['Elevation Start'], v => parseInt(v, 10)),
-    elevationMax: parseNum(map['Elevation Max'], v => parseInt(v, 10)),
-    difficulty: map['Difficulty'] || 'Unknown',
-    parking: map['Parking'] || '',
-    range: map['Range'] || '',
-    notes: map['Trail Name'] ? map['Trail Name'].substring(0, 200) : '',
+    name: trailName || '',
+    fullName: trailName || '',
+    distance,
+    distanceExtended,
+    elevationStart,
+    elevationMax,
+    difficulty: level || 'Unknown',
+    parking,
+    range: range || '',
+    notes: trailName ? trailName.substring(0, 200) : '',
     seasonal: {
-      availableMonths,
-      bestSeason: map['Best Season'] || '',
+      availableMonths: [],
+      bestSeason,
     },
-    difficultyOrder: orderMap[map['Difficulty']] ?? 99,
-    altNames: altNames.length > 0 ? altNames : undefined,
+    difficultyOrder: orderMap[level] ?? 99,
   };
 
   const detail = {
-    fullDescription: map['Description'] || '',
-    pros: map['Pros'] || null,
-    others: map['Other'] || null,
-    leaders: leaders.length > 0 ? leaders : [],
+    fullDescription: description || '',
+    pros,
+    others,
+    leaders,
   };
 
   return { trail, detail };

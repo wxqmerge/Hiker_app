@@ -1,116 +1,135 @@
-# Hike TSV Import Format Specification
+# Hike TSV Format — Individual Trail Sheet
 
-This format mirrors a single trail sheet from `Hike Data BaseM.xls`. Each trail has its own sheet with data laid out in specific rows and columns. The TSV exports this as a 2-column `Label \t Value` table.
+This format mirrors a single trail sheet from `Hike Data BaseM.xls` exactly. Each trail is one sheet with a fixed row/column layout. The TSV is a direct dump of the cells — tabs separate columns, newlines separate rows.
 
 ## File Format
 
 - **Encoding**: UTF-8
 - **Line endings**: `\n` (LF)
-- **Field separator**: `\t` (tab, U+0009)
-- **Escaping**: literal tabs, newlines, and backslashes in values must be escaped:
-  - `\` → `\\`
-  - tab → `\t`
-  - newline → `\n`
+- **Column separator**: `\t` (tab)
+- **Rows**: exactly 20 rows (row 0 – row 19)
+- **Columns**: 9 columns per row (A – I), separated by 8 tabs
+- **Empty cells**: empty string between tabs
+- **No header row** — the layout is positional
 
-## Source: Excel Sheet Cell Layout
-
-The TSV labels correspond to these exact cell positions on an individual trail sheet:
+## Cell Layout
 
 ```
-  A                          B                    C    D                F               G                H    I
-0 Trail Name
-1
-2 Miles                    Distance              0    Distance Extended  Elevation      Elevation Start  0    Elevation Max
-3 0                        Parking                                           Season     Best Season
-4 0                        Difficulty                                        Range      Range
-5 General Information
-6 Description (spans multiple rows if needed)
-7
-8
-9
-10
-11
-12
-13 Pros                   Pros text
-14
-15
-16 Other                  Other text
-17
-18
-19 Leaders                Leader names (comma-separated)
+Row  Col A                    Col B          Col C  Col D             Col F            Col G            Col H  Col I
+0    Trail Name
+1    (empty)
+2    Miles                    Distance       to     Distance Extended  Elevation        Elevation Start  to     Elevation Max
+3    Parking                  Parking Value                     Season         Best Season
+4    Level                    Level Value                       Range          Range Value
+5    General Information
+6    Description text (spans to row 12 if long)
+7    (empty or continuation)
+8    (empty)
+9    (empty)
+10   (empty)
+11   (empty)
+12   (empty)
+13   (empty)
+14   Pros                     Pros text
+15   (empty)
+16   Other                    Other text
+17   (empty)
+18   (empty)
+19   Leaders                  Leader names (comma-separated)
 ```
 
-Monthly availability (Jan–Dec) is derived from the Index sheet quarterly markers and included in the TSV for completeness.
+## Field Descriptions
 
-## TSV Row Specification
+| Row | Cell | Field | Required | Description |
+|-----|------|-------|----------|-------------|
+| 0 | A | **Trail Name** | **yes** | Full trail name. Must be non-empty. |
+| 2 | B | **Distance** | no | Base trail distance in miles (number) |
+| 2 | D | **Distance Extended** | no | Extended route distance in miles (number) |
+| 2 | G | **Elevation Start** | no | Starting elevation in feet (integer) |
+| 2 | I | **Elevation Max** | no | Maximum elevation in feet (integer) |
+| 3 | B | **Parking** | no | Parking pass required (see enum below) |
+| 3 | G | **Best Season** | no | Preferred season (see values below) |
+| 4 | B | **Level** | no | Trail difficulty (see enum below) |
+| 4 | G | **Range** | no | Distance from parking lot in minutes (integer, used for ride cost) |
+| 6 | A | **Description** | no | Full trail description from "General Information" section |
+| 14 | B | **Pros** | no | Planner notes about trail pros |
+| 16 | B | **Other** | no | Additional info (warnings, parking tips, facilities) |
+| 19 | B | **Leaders** | no | Comma-separated trail leader names |
 
-Every row has exactly one tab separating the label from the value. Lines without a tab are ignored.
+## Enumerations
 
-| # | Label | Excel Cell | Required | Type | Description |
-|---|-------|------------|----------|------|-------------|
-| 1 | `Label` | — | — | — | Header row (skipped on import) |
-| 2 | `Trail Name` | A0 | **yes** | string | Full trail name (must be non-empty) |
-| 3 | `Distance` | B2 | no | number | Base trail distance in miles |
-| 4 | `Distance Extended` | D2 | no | number | Extended route distance in miles |
-| 5 | `Elevation Start` | G2 | no | integer | Starting elevation in feet |
-| 6 | `Elevation Max` | I2 | no | integer | Maximum elevation in feet |
-| 7 | `Parking` | B3 | no | string | Parking pass: `Discover`, `Nat'l Park/Golden`, `NW Forest/Golden`, `Am Beau/Golden`, `N/A`, or empty |
-| 8 | `Best Season` | G3 | no | string | Preferred season. Normalized on import (e.g., `Spring/Summer` → `Spring / Summer`) |
-| 9 | `Difficulty` | B4 | no | enum | `Easy`, `Easy to Mod`, `Moderate`, `Mod to Diff`, `Difficult`. Defaults to `Unknown` |
-| 10 | `Range` | G4 | no | integer | Distance from parking lot in minutes (ride cost calculation) |
-| 11 | `Jan` | Index | no | flag | Non-empty = available in January |
-| 12 | `Feb` | Index | no | flag | Non-empty = available in February |
-| 13 | `Mar` | Index | no | flag | Non-empty = available in March |
-| 14 | `Apr` | Index | no | flag | Non-empty = available in April |
-| 15 | `May` | Index | no | flag | Non-empty = available in May |
-| 16 | `Jun` | Index | no | flag | Non-empty = available in June |
-| 17 | `Jul` | Index | no | flag | Non-empty = available in July |
-| 18 | `Aug` | Index | no | flag | Non-empty = available in August |
-| 19 | `Sep` | Index | no | flag | Non-empty = available in September |
-| 20 | `Oct` | Index | no | flag | Non-empty = available in October |
-| 21 | `Nov` | Index | no | flag | Non-empty = available in November |
-| 22 | `Dec` | Index | no | flag | Non-empty = available in December |
-| 23 | `Description` | A6 | no | string | Full trail description (from "General Information" section). Escape `\n` for multi-line |
-| 24 | `Pros` | B13 | no | string | Planner notes about trail pros |
-| 25 | `Other` | B16 | no | string | Additional info (parking tips, warnings, facilities) |
-| 26 | `Leaders` | B19 | no | string | Comma-separated trail leader names |
-| 27 | `Alternate Names` | — | no | string | Comma-separated alternate names for schedule matching |
+### Parking (Row 3, Col B)
 
-## Complete Example
+| Value | Description |
+|-------|-------------|
+| `Discover` | Discover Pass required |
+| `Nat'l Park/Golden` | National Park Annual Pass or Golden Age/Lifetime Pass |
+| `NW Forest/Golden` | Northwest Forest Pass or Golden Age/Lifetime Pass |
+| `Am Beau/Golden` | America the Beautiful Pass or Golden Age/Lifetime Pass |
+| `Limited 4` | Limited 4-hour parking permit |
+| `N/A` or `n/a` | No parking pass required |
+| *(empty)* | Not specified |
+
+### Level (Row 4, Col B)
+
+| Value | Description |
+|-------|-------------|
+| `Easy` | Flat, well-maintained trail |
+| `Easy to Mod` | Mostly easy with some moderate sections |
+| `Moderate` | Moderate elevation gain or terrain |
+| `Mod to Diff` | Mostly moderate with some difficult sections |
+| `Difficult` | Steep, rough, or technically challenging |
+| *(empty)* | Unknown difficulty |
+
+### Best Season (Row 3, Col G)
+
+Free-form text. Common values observed in the database:
+
+| Value | Notes |
+|-------|-------|
+| `Any` | Year-round |
+| `All` | Year-round |
+| `Spring`, `Summer`, `Fall`, `Winter` | Single season |
+| `Spring/Summer`, `Summer/Fall`, `Fall/Winter`, etc. | Multi-season (slash-separated) |
+| `Fall/Spring/Summer` | Three seasons |
+| `Low Tide` | Tide-dependent |
+| Month names (`Jun`, `Jul`, `Aug`, `Sep`, `Nov`, `May`) | Specific months |
+| `Any except Jan.` | Seasonal restriction |
+| `July/Aug`, `June/July`, `July/Sept.`, etc. | Month ranges |
+
+### Leaders (Row 19, Col B)
+
+Comma-separated list of names. Each name is trimmed of whitespace.
+
+## Complete Example (Barnes Creek)
 
 ```
-Label	Value
-Trail Name	Anderson Lake State Park
-Distance	5
-Distance Extended	7.1
-Elevation Start	250
-Elevation Max	600
-Parking	Discover
-Best Season	Any
-Difficulty	Easy to Mod
-Range	30
-Jan	Y
-Feb	Y
-Mar	Y
-Apr	Y
-May	Y
-Jun	Y
-Jul	Y
-Aug	Y
-Sep	Y
-Oct	Y
-Nov	Y
-Dec	Y
-Description	Head to the Tamanowas Rock Sanctuary (Sacred Rock) via Split Rock from the Savage Memorial Trail, Cascade Trail, and San Juan Trail, on the west side of the lake.  Many possible loops in this state park.
-Pros	Sacred, interesting rocks.  The other one off of the Cascade Trail is called:  Peregrine Rock, the largest erratic rock in Jefferson County?
-Other	Usually a Wed. hike.  Slot rock is the 1st trail past the Priv. Property sign.
-Leaders	Matt, Pat
-Alternate Names	AndLkODT
+Barnes Creek
+								(to be represented as: "Barnes Creek\t\t\t\t\t\t\t\t\n\nMiles\t7.5\tto\t9\t\tElevation\t1640\tto\t2000\n...")
+```
+
+Full TSV content:
+```
+Barnes Creek
+								(empty row)
+Miles	7.5	to	9		Elevation	1640	to	2000
+Parking	Nat'l Park/Golden				Season	Fall/Spring/Summer
+Level	Mod to Diff				Range	51
+General Information
+Pass turn-off to Marymere Falls @ about 3/4 mi. & proceed up the valley along Barnes Creek, crossing 3 bridges and some old-growth, giant trees. At ~ 3.75 miles, pass Dismal Draw Camp and proceed on up to the Aurora Divide junction at ~4-1/2 miles and @ 2,050', which is a good turn-around point.  Views of Mt. Storm King.
+								(empty rows 7-13)
+Pros
+								(empty row)
+Other	Slippery bridges--1st one w/o handrail @ ~ 1.4 mi.  Two-three slides which could present a problem. 3,300 cumulative?
+								(empty rows 17-18)
+Leaders	Pat, Paul
 ```
 
 ## Import Behavior
 
-- If a trail with the same `Trail Name` already exists, the importer prompts to **update**, create a **new** copy, or **cancel**
-- `notes` is auto-populated as the first 200 characters of `Trail Name`
-- `difficultyOrder` is computed automatically from `Difficulty`
-- `availableMonths` is built from whichever month fields have non-empty values, stored as 1-indexed month numbers
+- **Trail Name** (row 0, col A) is the primary identifier. If a trail with the same name already exists, the importer prompts to **update**, create a **new** copy, or **cancel**
+- `notes` is auto-populated as the first 200 characters of the trail name
+- `difficulty` is mapped from `Level`: `Easy` → 1, `Easy to Mod` → 2, `Moderate` → 3, `Mod to Diff` → 4, `Difficult` → 5
+- `availableMonths` is NOT included in individual trail sheets — it comes from the Index sheet
+- Empty `Level` defaults to `Unknown`
+- `altNames` is NOT stored on individual sheets — managed separately in the app
