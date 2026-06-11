@@ -729,15 +729,15 @@ export default function ScheduleBuilder() {
 const findTrailByHikeName = (hikeName, trailsList) => {
       if (!hikeName || !trailsList?.length) return null;
       const withoutEarlyStart = hikeName.replace(/\s*\(?Early Start\)?\s*/gi, '').trim();
-      const normalized = withoutEarlyStart.toLowerCase().replace(/\s*\([^)]*\)/g, '').trim();
+      const normalized = withoutEarlyStart.toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
       for (const trail of trailsList) {
         if (trail.id.toLowerCase() === normalized) return trail;
         if (trail.fullName?.toLowerCase() === normalized) return trail;
         if (trail.name?.toLowerCase() === normalized) return trail;
       }
-      const hikeWords = normalized.split(/\s+/);
+      const hikeWords = normalized.replace(/\//g, ' ').split(/\s+/).filter(w => w.length > 1);
       for (const trail of trailsList) {
-        const trailSlug = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').split(/\s+/);
+        const trailSlug = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\//g, ' ').split(/\s+/).filter(w => w.length > 1);
         const match = hikeWords.every(w => w.length > 2 && trailSlug.some(t => t.includes(w)));
         if (match) return trail;
       }
@@ -775,7 +775,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
         if (!entry || !entry.trail_id) continue;
 
         const trail = findTrailById(entry.trail_id);
-        let hikeName = trail ? trail.id : entry.trail_id;
+        let hikeName = trail ? trail.fullName || trail.name : entry.trail_id;
         if (entry.early_start) hikeName += ' (Early Start)';
 
         if (dayOfWeek === 3) {
