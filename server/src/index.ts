@@ -15,6 +15,7 @@ import { router as scheduleRouter } from './routes/schedule.routes.js';
 import { router as lookupRouter } from './routes/lookup.routes.js';
 import { getWriteHealth, serverVersion } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
+import { requireAdminKey } from './middleware/auth.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -100,7 +101,8 @@ app.use('/api/trails', trailsRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/lookup', lookupRouter);
 
-app.get('/api/validate', requireAdminKey, async (_req, res) => {
+const validateAuth = isDev ? ((_req: Request, _res: Response, next: Function) => next()) : requireAdminKey;
+app.get('/api/validate', validateAuth, async (_req, res) => {
   const fs = await import('fs/promises');
   const path = (await import('path')).default;
   const __filename = (await import('url')).fileURLToPath(import.meta.url);
