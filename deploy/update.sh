@@ -247,6 +247,8 @@ echo "  Owner: $DEPLOY_USER:$DEPLOY_GROUP"
 sudo chown -R "$DEPLOY_USER:$DEPLOY_GROUP" "$DIR"
 find "$DIR" -type d -not -path "*/node_modules/*" -exec chmod 755 {} +
 find "$DIR" -type f -not -path "*/node_modules/*" -exec chmod 644 {} +
+# Restore execute bits on node_modules/.bin/* (chown -R can affect them)
+find "$DIR/node_modules/.bin" -type f -exec chmod 755 {} + 2>/dev/null || true
 chmod 600 "$DIR/server/.env" 2>/dev/null || true
 chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
 chmod 775 "$DIR/exported_data" 2>/dev/null || true
