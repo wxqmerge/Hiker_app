@@ -136,7 +136,8 @@ const getEditedValue = (field) => {
     if (editedFields.range !== undefined) updatedTrail.range = editedFields.range;
     if (editedFields.notes !== undefined) updatedTrail.notes = editedFields.notes;
    if (editedFields.altNames !== undefined) updatedTrail.altNames = editedFields.altNames;
-    if (editedFields.webLinks !== undefined) updatedTrail.webLinks = editedFields.webLinks;
+    if (editedFields.webLink !== undefined) updatedTrail.webLink = editedFields.webLink;
+    if (editedFields.webLinkLabel !== undefined) updatedTrail.webLinkLabel = editedFields.webLinkLabel;
 
     if (editedFields.bestSeason !== undefined || editedFields.availableMonths !== undefined) {
       if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
@@ -492,25 +493,20 @@ const getEditedValue = (field) => {
             </div>
           )}
 
-          {trail.webLinks && trail.webLinks.length > 0 && (
+          {trail.webLink && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Web Links</h3>
-              <div className="space-y-2">
-                {trail.webLinks.map((link, idx) => (
-                  <a
-                    key={idx}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                    <span className="truncate">{link.label}</span>
-                  </a>
-                ))}
-              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Web Link</h3>
+              <a
+                href={trail.webLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span className="truncate">{trail.webLinkLabel || trail.webLink}</span>
+              </a>
             </div>
           )}
 
@@ -862,59 +858,24 @@ const getEditedValue = (field) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Web Links</label>
-                    <div className="space-y-2">
-                      {(editedFields.webLinks || trail.webLinks || []).map((link, idx) => (
-                        <div key={idx} className="flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="Label"
-                            value={link.label || ''}
-                            onChange={(e) => {
-                              const links = [...(editedFields.webLinks || trail.webLinks || [])];
-                              links[idx] = { ...links[idx], label: e.target.value };
-                              updateField('webLinks', links);
-                            }}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                          />
-                          <input
-                            type="url"
-                            placeholder="https://example.com"
-                            value={link.url || ''}
-                            onChange={(e) => {
-                              const links = [...(editedFields.webLinks || trail.webLinks || [])];
-                              links[idx] = { ...links[idx], url: e.target.value };
-                              updateField('webLinks', links);
-                            }}
-                            className="flex-[2] px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const links = [...(editedFields.webLinks || trail.webLinks || [])];
-                              links.splice(idx, 1);
-                              updateField('webLinks', links);
-                            }}
-                            className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const links = [...(editedFields.webLinks || trail.webLinks || [])];
-                          links.push({ label: '', url: '' });
-                          updateField('webLinks', links);
-                        }}
-                        className="text-sm text-green-600 hover:text-green-800 font-medium"
-                      >
-                        + Add Link
-                      </button>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Web Link Label</label>
+                    <input
+                      type="text"
+                      value={editedFields.webLinkLabel ?? (trail.webLinkLabel || '')}
+                      onChange={(e) => updateField('webLinkLabel', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                      placeholder="e.g., Trail Report, GPX File"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Web Link URL</label>
+                    <input
+                      type="url"
+                      value={editedFields.webLink ?? (trail.webLink || '')}
+                      onChange={(e) => updateField('webLink', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                      placeholder="https://example.com/trail"
+                    />
                   </div>
                 </div>
               </div>

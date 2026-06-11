@@ -18,12 +18,9 @@ export function generateReportText(trail, trailDetails = null) {
     }
   }
   
-  // Append web links if available
-  if (trail.webLinks && trail.webLinks.length > 0) {
-    report += '\n\nLinks:\n';
-    trail.webLinks.forEach(link => {
-      report += `${link.label}: ${link.url}\n`;
-    });
+  // Append web link if available
+  if (trail.webLink) {
+    report += `\n\n${trail.webLinkLabel || 'Link'}: ${trail.webLink}\n`;
   }
   
   return report;

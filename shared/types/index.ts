@@ -14,11 +14,6 @@ interface SeasonalData {
   bestSeason?: string;
 }
 
-export interface TrailWebLink {
-  label: string;
-  url: string;
-}
-
 export interface Trail {
   id: string;
   name: string;
@@ -38,7 +33,8 @@ export interface Trail {
   bestSeason?: string;
   availableMonths?: string[];
   isWilderness?: boolean;
-  webLinks?: TrailWebLink[];
+  webLink?: string;
+  webLinkLabel?: string;
 }
 
 export interface TrailDetail {
