@@ -5,6 +5,12 @@
 #   --force          Bypass all cooldowns and force package update
 #   --force-critical Force package update for critical security patches (2-day cooldown)
 
+# Self-fix: restore execute permission if stripped by Windows
+SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+if [ ! -x "$SCRIPT_PATH" ]; then
+    sudo chmod +x "$SCRIPT_PATH"
+fi
+
 # Don't exit on error - keep SSH session alive
 # We handle errors manually below
 
