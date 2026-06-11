@@ -1,4 +1,5 @@
 import { formatTrailLine } from './formatTrail';
+import { getGoogleAllTrailsSearchUrl } from './url.js';
 
 // Generate formatted report text from trail data
 // Format: Trail Name◆︎  [Difficulty]  distance / elevation  parking  ride-$X
@@ -21,6 +22,11 @@ export function generateReportText(trail, trailDetails = null) {
   // Append web link if available
   if (trail.webLink) {
     report += `\n\nLink: ${trail.webLink}\n`;
+  } else {
+    const searchUrl = getGoogleAllTrailsSearchUrl(trail.fullName || trail.name);
+    if (searchUrl) {
+      report += `\n\nLink: ${searchUrl}\n`;
+    }
   }
   
   return report;

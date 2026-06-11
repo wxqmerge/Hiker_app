@@ -49,8 +49,10 @@ describe('TrailList', () => {
     );
     const links = screen.getAllByRole('link');
     expect(links.length).toBeGreaterThanOrEqual(2);
-    expect(links[0]).toHaveAttribute('href', '/trail/trail-1');
-    expect(links[1]).toHaveAttribute('href', '/trail/trail-2');
+    const trailLinks = links.filter(l => l.getAttribute('href')?.startsWith('/trail/'));
+    expect(trailLinks.length).toBeGreaterThanOrEqual(2);
+    expect(trailLinks[0]).toHaveAttribute('href', '/trail/trail-1');
+    expect(trailLinks[1]).toHaveAttribute('href', '/trail/trail-2');
   });
 
   it('renders Copy Report buttons for each trail', () => {

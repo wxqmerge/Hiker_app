@@ -7,6 +7,7 @@ import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
+import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 
 // Extract month abbreviations from seasonal scores, sorted by month order
 function getScoredMonths(seasonal) {
@@ -138,7 +139,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
          )}
           
           {/* Web Link */}
-          {trail.webLink && (
+          {trail.webLink ? (
             <a
               href={trail.webLink}
               target="_blank"
@@ -150,6 +151,19 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
               <span className="truncate">Link</span>
+            </a>
+          ) : (
+            <a
+              href={getGoogleAllTrailsSearchUrl(trail.fullName || trail.name)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+              title={`Search for ${trail.fullName || trail.name} on AllTrails`}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="truncate">Search</span>
             </a>
           )}
           

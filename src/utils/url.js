@@ -30,3 +30,9 @@ export function getHealthUrl() {
   }
   return '/health';
 }
+
+export function getGoogleAllTrailsSearchUrl(trailName) {
+  if (!trailName) return '';
+  const query = encodeURIComponent(`alltrails.com ${trailName}`);
+  return `https://www.google.com/search?q=${query}`;
+}
