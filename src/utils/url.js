@@ -33,6 +33,6 @@ export function getHealthUrl() {
 
 export function getGoogleAllTrailsSearchUrl(trailName) {
   if (!trailName) return '';
-  const query = encodeURIComponent(`alltrails.com ${trailName}`);
+  const query = encodeURIComponent(`alltrails.com+washington+${trailName}`);
   return `https://www.google.com/search?q=${query}`;
 }

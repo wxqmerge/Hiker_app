@@ -158,7 +158,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-              title={`Search for ${trail.fullName || trail.name} on AllTrails`}
+              title={`Search for ${trail.fullName || trail.name} on AllTrails in Washington`}
             >
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
