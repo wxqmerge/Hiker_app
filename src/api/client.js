@@ -1,7 +1,7 @@
 import { getApiBase } from '../utils/url.js';
 export { getApiBase };
 
-async function request(path, options = {}) {
+export async function request(path, options = {}) {
   const apiBase = getApiBase();
   const url = `${apiBase}${path}`;
   const headers = {

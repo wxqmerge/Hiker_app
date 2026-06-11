@@ -32,7 +32,7 @@ export default function TrailManager() {
   const handleValidateDatabase = async () => {
     setValidating(true);
     try {
-      const res = await request('GET', '/api/validate');
+      const res = await request('/api/validate');
       setValidationResults(res);
     } catch (err) {
       setValidationResults({ valid: false, results: [{ file: '(request)', valid: false, error: err.message }] });
