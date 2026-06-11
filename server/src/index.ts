@@ -101,8 +101,7 @@ app.use('/api/trails', trailsRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/lookup', lookupRouter);
 
-const validateAuth = isDev ? ((_req: Request, _res: Response, next: Function) => next()) : requireAdminKey;
-app.get('/api/validate', validateAuth, async (_req, res) => {
+app.get('/api/validate', requireAdminKey, async (_req, res) => {
   const fs = await import('fs/promises');
   const path = (await import('path')).default;
   const __filename = (await import('url')).fileURLToPath(import.meta.url);
