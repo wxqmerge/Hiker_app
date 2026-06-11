@@ -5,7 +5,7 @@ import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv } from '../utils/io';
 import { MONTH_ABBR } from '../utils/constants';
-import { importTrailsFromXls, getSchedule, updateSchedule } from '../api/client';
+import { importTrailsFromXls, getSchedule, updateSchedule, request } from '../api/client';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 
 export default function TrailManager() {
@@ -13,6 +13,8 @@ export default function TrailManager() {
   const { trails, loading, trailDetails, saveTrail, deleteTrail, saveTrailDetail, exportJSON, importJSON } = useTrailStore();
   const [search, setSearch] = useState('');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
+  const [validationResults, setValidationResults] = useState(null);
+  const [validating, setValidating] = useState(false);
   const getScheduleCount = (trailId) => {
     const trail = trails.find(t => t.id === trailId);
     if (!trail) return 0;
@@ -26,6 +28,18 @@ export default function TrailManager() {
   };
   const navigate = useNavigate();
   const hasApiKey = apiKey.trim().length > 0;
+
+  const handleValidateDatabase = async () => {
+    setValidating(true);
+    try {
+      const res = await request('GET', '/api/validate');
+      setValidationResults(res);
+    } catch (err) {
+      setValidationResults({ valid: false, results: [{ file: '(request)', valid: false, error: err.message }] });
+    } finally {
+      setValidating(false);
+    }
+  };
 
   const handleSaveApiKey = () => {
     localStorage.setItem('hiker-api-key', apiKey);
@@ -357,6 +371,17 @@ export default function TrailManager() {
             <h3 className="text-sm font-semibold text-gray-800">Trail Manager</h3>
             <div className="flex gap-2">
               <button
+                onClick={handleValidateDatabase}
+                disabled={validating}
+                className="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white rounded transition-colors flex items-center gap-1"
+                title={tt('Verify all database files in exported_data are usable')}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {validating ? 'Validating...' : 'Validate Database'}
+              </button>
+              <button
                 onClick={exportMonthlyTsv}
                 className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
                 title={tt('Export monthly popularity as TSV file')}
@@ -390,8 +415,33 @@ export default function TrailManager() {
                 Import Schedule JSON
               </button>
             </div>
-          </div>
-          <div className="overflow-x-auto">
+           </div>
+           {validationResults && (
+             <div className={`px-4 py-2 border-b ${validationResults.valid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+               <div className="flex items-center gap-2">
+                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   {validationResults.valid ? (
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                   ) : (
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                   )}
+                 </svg>
+                 <span className={`text-sm font-medium ${validationResults.valid ? 'text-green-800' : 'text-red-800'}`}>
+                   {validationResults.valid ? 'All database files are valid' : `${validationResults.results.filter(r => !r.valid).length} file(s) with errors`}
+                 </span>
+               </div>
+               <div className="mt-1 space-y-0.5">
+                 {validationResults.results.map((r, i) => (
+                   <div key={i} className={`text-xs ${r.valid ? 'text-green-700' : 'text-red-700'}`}>
+                     {r.valid ? '✓' : '✗'} {r.file}
+                     {r.recordCount != null && ` (${r.recordCount} ${r.recordCount === 1 ? 'entry' : 'entries'})`}
+                     {!r.valid && ` — ${r.error}`}
+                   </div>
+                 ))}
+               </div>
+             </div>
+           )}
+           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>

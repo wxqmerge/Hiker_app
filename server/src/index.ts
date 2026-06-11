@@ -100,6 +100,52 @@ app.use('/api/trails', trailsRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/lookup', lookupRouter);
 
+app.get('/api/validate', async (_req, res) => {
+  const fs = await import('fs/promises');
+  const path = (await import('path')).default;
+  const __filename = (await import('url')).fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const DATA_DIR = path.join(__dirname, '../exported_data');
+
+  const results: Array<{ file: string; valid: boolean; error?: string; recordCount?: number }> = [];
+
+  const filesToCheck = ['trails.json', 'trail_details.json', 'lookup.json', 'schedule.json'];
+  for (const filename of filesToCheck) {
+    const filePath = path.join(DATA_DIR, filename);
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      let count: number | undefined;
+      if (Array.isArray(parsed)) count = parsed.length;
+      else if (parsed && typeof parsed === 'object') count = Object.keys(parsed).length;
+      results.push({ file: filename, valid: true, recordCount: count });
+    } catch (err) {
+      results.push({ file: filename, valid: false, error: (err as Error).message });
+    }
+  }
+
+  try {
+    const historyDir = path.join(DATA_DIR, 'schedule_history');
+    const files = await fs.readdir(historyDir);
+    const historyFiles = files.filter(f => f.startsWith('schedule_') && f.endsWith('.json'));
+    for (const filename of historyFiles) {
+      const filePath = path.join(historyDir, filename);
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        JSON.parse(content);
+        results.push({ file: `schedule_history/${filename}`, valid: true });
+      } catch (err) {
+        results.push({ file: `schedule_history/${filename}`, valid: false, error: (err as Error).message });
+      }
+    }
+  } catch {
+    // schedule_history dir may not exist
+  }
+
+  const allValid = results.every(r => r.valid);
+  res.json({ valid: allValid, results });
+});
+
 if (isDev) {
   app.use((_req, _res, next) => {
     const req = _req as http.IncomingMessage;
