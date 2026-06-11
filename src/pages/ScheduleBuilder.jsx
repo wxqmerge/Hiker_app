@@ -88,6 +88,7 @@ export default function ScheduleBuilder() {
   const trailDetails = useTrailDetails();
   const { filters, setFilters } = useFilters(trails, trailDetails);
   const { title: tt } = useTooltips();
+  const leaderDebounceRef = useRef(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     const nextMonth = (now.getMonth() + 1) % 12;
@@ -165,6 +166,12 @@ export default function ScheduleBuilder() {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
   }, [scheduleStore, saveScheduleToServer]);
+
+  useEffect(() => {
+    return () => {
+      if (leaderDebounceRef.current) clearTimeout(leaderDebounceRef.current);
+    };
+  }, []);
 
   const assignedHikes = useMemo(() => {
     const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
@@ -1266,20 +1273,74 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                                    (ID: {trailId})
                                  </div>
                                  <input
-                                   type="text"
-                                   placeholder="Leader / Shadow"
-                                   value={leader || ''}
-                                   onChange={(e) => {
-                                     const entry = assignedHikes[day];
-                                     updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
-                                       const next = { ...prev };
-                                       next[day] = { ...entry, leader: e.target.value };
-                                       return next;
-                                     });
-                                   }}
-                                   className="mt-1 w-full text-xs border border-gray-300 rounded px-1.5 py-0.5 focus:ring-green-500 focus:border-green-500 truncate"
-                                   onClick={(e) => e.stopPropagation()}
-                                 />
+                                     type="text"
+                                     placeholder="Leader / Shadow"
+                                     value={leader || ''}
+                                     onChange={(e) => {
+                                       const value = e.target.value;
+                                       const entry = assignedHikes[day];
+                                       setScheduleStore(prev => {
+                                         const current = prev[MONTH_NAMES[selectedMonth]] || {};
+                                         const next = { ...current, [day]: { ...entry, leader: value } };
+                                         return { ...prev, [MONTH_NAMES[selectedMonth]]: next };
+                                       });
+                                       if (leaderDebounceRef.current) clearTimeout(leaderDebounceRef.current);
+                                       leaderDebounceRef.current = setTimeout(async () => {
+                                         const serverData = storeToServerSchedule(scheduleStore);
+                                         const abbr = MONTH_FULL_TO_ABBR[MONTH_NAMES[selectedMonth]];
+                                         if (abbr && serverData[abbr]) {
+                                           const next = serverData[abbr].map(entry => {
+                                             const updated = scheduleStore[MONTH_NAMES[selectedMonth]]?.[day];
+                                             if (updated && entry.day === parseInt(day, 10)) {
+                                               return { ...entry, leader: updated.leader || '' };
+                                             }
+                                             return entry;
+                                           });
+                                           serverData[abbr] = next;
+                                           try {
+                                             const apiBase = getApiBase();
+                                             const res = await fetch(`${apiBase}/api/schedule`, {
+                                               method: 'PUT',
+                                               headers: {
+                                                 'Content-Type': 'application/json',
+                                                 ...(hasApiKey ? { 'X-API-Key': localStorage.getItem('hiker-api-key') || '' } : {}),
+                                               },
+                                               body: JSON.stringify(serverData),
+                                             });
+                                             const result = await res.json();
+                                             if (result.success) {
+                                               const freshData = await getSchedule();
+                                               setScheduleStore(() => {
+                                                 const store = {};
+                                                 if (!freshData) return store;
+                                                 for (const [key, entries] of Object.entries(freshData)) {
+                                                   const fullName = MONTH_ABBR_TO_FULL[key] || (MONTH_NAMES.includes(key) ? key : null);
+                                                   if (!fullName) continue;
+                                                   store[fullName] = {};
+                                                   if (Array.isArray(entries)) {
+                                                     for (const entry of entries) {
+                                                       const dayKey = String(entry.day);
+                                                       if (dayKey === 'NaN' || dayKey === 'null' || dayKey === 'undefined') continue;
+                                                       store[fullName][dayKey] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start, leader: entry.leader || '' };
+                                                     }
+                                                   } else if (entries && typeof entries === 'object') {
+                                                     Object.assign(store[fullName], entries);
+                                                   }
+                                                 }
+                                                 return store;
+                                               });
+                                             } else {
+                                               console.error('Failed to save leader:', result.error?.message || 'Unknown error');
+                                             }
+                                           } catch (err) {
+                                             console.error('Failed to save leader:', err);
+                                           }
+                                         }
+                                       }, 500);
+                                     }}
+                                    className="mt-1 w-full text-xs border border-gray-300 rounded px-1.5 py-0.5 focus:ring-green-500 focus:border-green-500 truncate"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
                                </div>
                              ) : trailId ? (
                               <div className="text-sm text-gray-400 italic">
