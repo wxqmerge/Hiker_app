@@ -21,6 +21,16 @@ function ApiKeySync() {
 
 function App() {
   useEffect(() => {
+    const host = window.location.hostname;
+    if (host && !host.includes('localhost') && !host.includes('127.')) {
+      const prefix = host.split('.')[0];
+      document.title = prefix;
+    } else {
+      document.title = 'hiker-app';
+    }
+  }, []);
+
+  useEffect(() => {
     ensureScheduleWritable().then((result) => {
       if (result && !result.success) {
         const failed = result.results?.filter(r => !r.success);
