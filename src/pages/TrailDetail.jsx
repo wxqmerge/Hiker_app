@@ -4,6 +4,7 @@ import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
+import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
 import { downloadBlob, exportTrailTsv } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
@@ -60,6 +61,7 @@ export default function TrailDetail() {
   const { trails, loading } = useTrails();
   const { trailDetails, saveTrail, saveTrailDetail } = useTrailStore();
   const { title: tt } = useTooltips();
+  const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(() => searchParams.get('edit') === 'true');
   const [editedFields, setEditedFields] = useState({});
@@ -209,7 +211,7 @@ const getEditedValue = (field) => {
   };
 
   const copyReport = async () => {
-    await copyToClipboard(genReport(trail, trailDetailsResult?.[id]), setCopied);
+    await copyToClipboard(genReport(trail, trailDetailsResult?.[id]), setCopied, showToast);
   };
 
   const goToPrevious = () => {

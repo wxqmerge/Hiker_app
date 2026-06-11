@@ -14,7 +14,7 @@ import { downloadBlob, createFileInput } from '../utils/io';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, getApiBase } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 import { setSchedule } from '../hooks/useTrailStore';
 
 async function loadSchedule() {

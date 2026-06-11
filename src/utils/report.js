@@ -50,17 +50,18 @@ export function getRideCost(range) {
 }
 
 // Copy text to clipboard
-export async function copyToClipboard(text, setCopied) {
+export async function copyToClipboard(text, setCopied, showToast) {
   try {
     await navigator.clipboard.writeText(text);
     if (setCopied) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+    if (showToast) showToast('Trail report copied to clipboard', 'success');
     return true;
   } catch (err) {
     console.error('Failed to copy:', err);
-    alert('Failed to copy to clipboard');
+    if (showToast) showToast('Failed to copy to clipboard', 'error');
     return false;
   }
 }

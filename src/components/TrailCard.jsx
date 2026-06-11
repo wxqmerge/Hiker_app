@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
+import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
@@ -15,6 +16,7 @@ function getScoredMonths(seasonal) {
 }
 
 export default function TrailCard({ trail, isActive = false, hikeName, selectedMonths }) {
+  const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
@@ -24,7 +26,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
     e.stopPropagation();
     
     const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-    await copyToClipboard(genReport(trail, detailsForTrail), setCopied);
+    await copyToClipboard(genReport(trail, detailsForTrail), setCopied, showToast);
   };
 
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;

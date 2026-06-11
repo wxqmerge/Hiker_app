@@ -172,3 +172,13 @@ export async function getHealth() {
   if (!res.ok) return null;
   return res.json();
 }
+
+export async function ensureScheduleWritable() {
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}/api/schedule/ensure-writable`);
+  if (!res.ok) {
+    console.warn('[CLIENT] Failed to ensure schedule files are writable');
+    return null;
+  }
+  return res.json();
+}

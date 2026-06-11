@@ -308,6 +308,33 @@ router.post('/import-trails-xls', requireAdminKey, upload.single('file'), async 
   }
 });
 
+router.get('/ensure-writable', async (_req, res) => {
+  try {
+    const dataDir = path.join(PROJECT_ROOT, 'exported_data');
+    const files = await fs.promises.readdir(dataDir);
+    const results: Array<{ file: string; success: boolean; error?: string }> = [];
+
+    for (const file of files) {
+      if (file === 'schedule_history') continue;
+      const filePath = path.join(dataDir, file);
+      try {
+        const stat = await fs.promises.stat(filePath);
+        if (!stat.isDirectory) {
+          await fs.promises.chmod(filePath, 0o666);
+          results.push({ file, success: true });
+        }
+      } catch (error) {
+        results.push({ file, success: false, error: (error as Error).message });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error('[SCHEDULE] Error ensuring writable:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to ensure files are writable' } });
+  }
+});
+
 router.post('/upload', requireAdminKey, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
