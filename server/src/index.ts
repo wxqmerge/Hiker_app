@@ -105,7 +105,7 @@ app.get('/api/validate', async (_req, res) => {
   const path = (await import('path')).default;
   const __filename = (await import('url')).fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const DATA_DIR = path.join(__dirname, '../exported_data');
+  const DATA_DIR = path.join(__dirname, '../../exported_data');
 
   const results: Array<{ file: string; valid: boolean; error?: string; recordCount?: number }> = [];
 
