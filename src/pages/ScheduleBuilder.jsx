@@ -627,34 +627,121 @@ export default function ScheduleBuilder() {
   };
 
   const importScheduleTsv = () => {
-    createFileInput({
-      accept: '.tsv,.txt',
-      onFile: async (file) => {
-        try {
-          const text = await file.text();
-          const apiBase = getApiBase();
-          const res = await fetch(`${apiBase}/api/schedule/upload`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'text/tab-separated-values',
-              ...(hasApiKey ? { 'X-API-Key': localStorage.getItem('hiker-api-key') || '' } : {}),
-            },
-            body: text,
-          });
-          const result = await res.json();
-          if (!result.success) {
-            alert('Import failed: ' + (result.error?.message || 'Unknown error'));
-            return;
-          }
-          await loadSchedule();
-          alert(`Imported: ${result.message}`);
-        } catch (err) {
-          alert('Import error: ' + err.message);
-        }
-      },
-      onCleanup: () => setShowSettings(false),
-    });
-  };
+     createFileInput({
+       accept: '.tsv,.txt',
+       onFile: async (file) => {
+         try {
+           const text = await file.text();
+           const lines = text.split('\n').map(l => l.split('\t'));
+
+           let headerIdx = -1;
+           for (let i = 0; i < Math.min(lines.length, 10); i++) {
+             if (lines[i][0] === 'Month' && lines[i][2] === 'Hike') {
+               headerIdx = i;
+               break;
+             }
+           }
+
+           if (headerIdx < 0) {
+             alert('Could not find quarterly schedule header in file.');
+             return;
+           }
+
+           const schedule = {};
+           let unmatchedCount = 0;
+           let matchedCount = 0;
+
+           for (let i = headerIdx + 1; i < lines.length; i++) {
+             const row = lines[i];
+             if (row.length < 9) continue;
+
+             const wedMonth = row[0]?.trim();
+             const wedDay = parseInt(row[1], 10);
+             const wedHike = row[2]?.trim();
+             const wedLeader = row[3]?.trim();
+
+             const friMonth = row[5]?.trim();
+             const friDay = parseInt(row[6], 10);
+             const friHike = row[7]?.trim();
+             const friLeader = row[8]?.trim();
+
+             if (!isNaN(wedDay) && wedHike) {
+               const trail = findTrailByHikeName(wedHike, trails);
+               if (trail) {
+                 const fullName = MONTH_NAMES.find(n => n.toLowerCase() === wedMonth?.toLowerCase());
+                 const monthKey = fullName || wedMonth;
+                 if (!schedule[monthKey]) schedule[monthKey] = [];
+                 schedule[monthKey].push({ day: wedDay, hike: wedHike, trail_id: trail.id, leader: wedLeader || '' });
+                 matchedCount++;
+               } else {
+                 unmatchedCount++;
+               }
+             }
+
+             if (!isNaN(friDay) && friHike) {
+               const trail = findTrailByHikeName(friHike, trails);
+               if (trail) {
+                 const fullName = MONTH_NAMES.find(n => n.toLowerCase() === friMonth?.toLowerCase());
+                 const monthKey = fullName || friMonth;
+                 if (!schedule[monthKey]) schedule[monthKey] = [];
+                 schedule[monthKey].push({ day: friDay, hike: friHike, trail_id: trail.id, leader: friLeader || '' });
+                 matchedCount++;
+               } else {
+                 unmatchedCount++;
+               }
+             }
+           }
+
+           if (!Object.keys(schedule).length) {
+             alert('No valid schedule data found in file.');
+             return;
+           }
+
+           const apiBase = getApiBase();
+           const res = await fetch(`${apiBase}/api/schedule`, {
+             method: 'PUT',
+             headers: {
+               'Content-Type': 'application/json',
+               ...(hasApiKey ? { 'X-API-Key': localStorage.getItem('hiker-api-key') || '' } : {}),
+             },
+             body: JSON.stringify(schedule),
+           });
+           const result = await res.json();
+           if (!result.success) {
+             alert('Import failed: ' + (result.error?.message || 'Unknown error'));
+             return;
+           }
+
+           await loadSchedule();
+           let msg = `Imported: ${matchedCount} hikes across ${Object.keys(schedule).length} month(s).`;
+           if (unmatchedCount > 0) {
+             msg += `\n${unmatchedCount} hike(s) could not be matched to a trail.`;
+           }
+           alert(msg);
+         } catch (err) {
+           alert('Import error: ' + err.message);
+         }
+       },
+       onCleanup: () => setShowSettings(false),
+     });
+   };
+
+   const findTrailByHikeName = (hikeName, trailsList) => {
+     if (!hikeName || !trailsList?.length) return null;
+     const normalized = hikeName.toLowerCase().replace(/\s*\([^)]*\)/g, '').trim();
+     for (const trail of trailsList) {
+       if (trail.id.toLowerCase() === normalized) return trail;
+       if (trail.fullName?.toLowerCase() === normalized) return trail;
+       if (trail.name?.toLowerCase() === normalized) return trail;
+     }
+     const hikeWords = normalized.split(/\s+/);
+     for (const trail of trailsList) {
+       const trailSlug = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').split(/\s+/);
+       const match = hikeWords.every(w => w.length > 2 && trailSlug.some(t => t.includes(w)));
+       if (match) return trail;
+     }
+     return null;
+   };
 
   const getQuarterForMonth = (monthIndex) => {
     // Calendar quarters: Q1=Jan/Feb/Mar, Q2=Apr/May/Jun, Q3=Jul/Aug/Sep, Q4=Oct/Nov/Dec
