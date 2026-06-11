@@ -235,6 +235,19 @@ echo "[7b/13] Deploying built files..."
 cp -rf dist/* .
 echo "  Built files deployed."
 
+# 7c. Fix ownership and permissions
+echo "[7c/13] Fixing ownership and permissions..."
+echo "  Owner: $DEPLOY_USER:$DEPLOY_GROUP"
+sudo chown -R "$DEPLOY_USER:$DEPLOY_GROUP" "$DIR"
+find "$DIR" -type d -exec chmod 755 {} +
+find "$DIR" -type f -exec chmod 644 {} +
+chmod 600 "$DIR/server/.env" 2>/dev/null || true
+chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
+chmod 775 "$DIR/exported_data" 2>/dev/null || true
+chmod 775 "$DIR/exported_data/schedule_history" 2>/dev/null || true
+find "$DIR/exported_data" -type f -exec chmod 664 {} + 2>/dev/null || true
+echo "  Done."
+
 # 8. Fix systemd service file
 echo "[8/13] Fixing systemd service file if needed..."
 SERVICE_FILE="/etc/systemd/system/$SERVICE.service"
