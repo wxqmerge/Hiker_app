@@ -22,12 +22,19 @@ function ApiKeySync() {
 function App() {
   useEffect(() => {
     const host = window.location.hostname;
+    const path = window.location.pathname;
+    let prefix = null;
     if (host && !host.includes('localhost') && !host.includes('127.')) {
-      const prefix = host.split('.')[0];
-      document.title = prefix;
-    } else {
-      document.title = 'hiker-app';
+      if (host.endsWith('.example.com') && host.split('.').length > 2) {
+        prefix = host.split('.')[0];
+      } else {
+        const match = path.match(/^\/(sothh-[\w-]+)/);
+        if (match) {
+          prefix = match[1];
+        }
+      }
     }
+    document.title = prefix || 'hiker-app';
   }, []);
 
   useEffect(() => {
