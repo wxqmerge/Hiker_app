@@ -291,8 +291,8 @@ export default function ScheduleBuilder() {
     return Object.values(assignedHikes).filter(v => v?.trail_id).length;
   }, [assignedHikes]);
 
-  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName, trailId, earlyStart) => {
-    setDragData({ hikeIndex, sourceDay, hikeName, trailId, earlyStart });
+  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader) => {
+    setDragData({ hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader });
   }, []);
 
   const handleDragEnd = useCallback(() => {
@@ -309,15 +309,15 @@ export default function ScheduleBuilder() {
     return allDays
       .filter(day => assignedHikes[day]?.trail_id)
       .map(day => {
-        const { trail_id: trailId, hike: hikeName, early_start: earlyStart } = assignedHikes[day];
-        const trail = findTrailById(trailId);
-        if (!trail) return null;
-        const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
-        return (
-          <div
-            key={day}
-            draggable
-            onDragStart={() => hikeIdx && handleDragStart(Number(hikeIdx[0]), day, hikeName, trailId, earlyStart)}
+         const { trail_id: trailId, hike: hikeName, early_start: earlyStart, leader } = assignedHikes[day];
+         const trail = findTrailById(trailId);
+         if (!trail) return null;
+         const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
+         return (
+           <div
+             key={day}
+             draggable
+             onDragStart={() => hikeIdx && handleDragStart(Number(hikeIdx[0]), day, hikeName, trailId, earlyStart, leader)}
             onDragEnd={handleDragEnd}
             className="cursor-grab active:cursor-grabbing"
             title={tt('Drag to swap with another date')}
@@ -403,7 +403,7 @@ export default function ScheduleBuilder() {
       if (sourceDay !== null && sourceDay !== undefined) {
         delete next[sourceDay];
       }
-      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader };
+      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: leader };
       return next;
     });
     setDragData(null);
@@ -1178,7 +1178,7 @@ const hikeCards = useMemo(() => {
                       <div
                          key={day}
                          draggable={!!trailId}
-                         onDragStart={trailId ? () => handleDragStart(null, day, trailId ? (trail.fullName || trail.name) : hikeName, trailId, earlyStart) : undefined}
+                         onDragStart={trailId ? () => handleDragStart(null, day, trailId ? (trail.fullName || trail.name) : hikeName, trailId, earlyStart, leader) : undefined}
                          onDragEnd={trailId ? handleDragEnd : undefined}
                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-green-50'); }}
                          onDragLeave={(e) => { e.currentTarget.classList.remove('bg-green-50'); }}
