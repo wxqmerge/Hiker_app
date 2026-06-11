@@ -6,6 +6,7 @@ import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv } from '../utils/io';
 import { MONTH_ABBR } from '../utils/constants';
 import { importTrailsFromXls, getSchedule, updateSchedule } from '../api/client';
+import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 
 export default function TrailManager() {
   const { title: tt } = useTooltips();
@@ -17,14 +18,10 @@ export default function TrailManager() {
     if (!trail) return 0;
     const monthly = trailDetails?.[trailId]?.popularity?.monthly;
     if (!monthly || !Array.isArray(monthly)) return 0;
-    const seasonalKeys = Object.keys(trail.seasonal || {}).filter(k => MONTH_ABBR.includes(k));
-    const hasQuarterData = seasonalKeys.length > 0;
+    const { hasQuarterData } = getSeasonalInfo(trail.seasonal || {});
     return monthly.reduce((sum, v, idx) => {
-      const quarterBase = hasQuarterData ? 1 : 0;
-      const monthBase = seasonalKeys.includes(MONTH_ABBR[idx]) ? 1 : 0;
       const hikeCount = v || 0;
-      const scheduleBase = Math.min(9, hikeCount * 2);
-      return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
+      return sum + calculateMonthlyScore(hikeCount, idx, [], hasQuarterData);
     }, 0);
   };
   const navigate = useNavigate();

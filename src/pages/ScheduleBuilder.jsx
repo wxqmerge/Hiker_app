@@ -11,7 +11,8 @@ import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportText } from '../utils/report';
 import { getTrailDetailsById, findTrailById as findTrailByIdUtil } from '../utils/data';
 import { downloadBlob, createFileInput } from '../utils/io';
-import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, getApiBase } from '../api/client';
+import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails } from '../api/client';
+import { getApiBase, getHealthUrl } from '../utils/url.js';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const APP_VERSION = '1.0.1';
@@ -110,20 +111,7 @@ export default function ScheduleBuilder() {
   useSchedulePolling({ setSchedule }, 5000);
 
   useEffect(() => {
-    const hostname = window.location.hostname;
-    const path = window.location.pathname;
-    let healthUrl;
-    if (hostname.endsWith('.example.com')) {
-      healthUrl = `https://${hostname}/health`;
-    } else {
-      const match = path.match(/^\/(sothh-[\w-]+)/);
-      if (match) {
-        healthUrl = `https://${match[1]}.example.com/health`;
-      } else {
-        healthUrl = '/health';
-      }
-    }
-    fetch(healthUrl)
+    fetch(getHealthUrl())
       .then(r => r.json())
       .then(data => {
         console.log('[ScheduleBuilder] Server health:', data.status, 'Build:', data.build?.full);
@@ -719,15 +707,14 @@ export default function ScheduleBuilder() {
               return;
             }
 
-           const apiBase = getApiBase();
-           const res = await fetch(`${apiBase}/api/schedule`, {
-             method: 'PUT',
-             headers: {
-               'Content-Type': 'application/json',
-               ...(hasApiKey ? { 'X-API-Key': localStorage.getItem('hiker-api-key') || '' } : {}),
-             },
-             body: JSON.stringify(schedule),
-           });
+           const res = await fetch(`${getApiBase()}/api/schedule`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(hasApiKey ? { 'X-API-Key': localStorage.getItem('hiker-api-key') || '' } : {}),
+              },
+              body: JSON.stringify(schedule),
+            });
            const result = await res.json();
            if (!result.success) {
              alert('Import failed: ' + (result.error?.message || 'Unknown error'));
@@ -1295,8 +1282,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                                         });
                                         serverData[abbr] = next;
                                         try {
-                                          const apiBase = getApiBase();
-                                          const res = await fetch(`${apiBase}/api/schedule`, {
+                                          const res = await fetch(`${getApiBase()}/api/schedule`, {
                                             method: 'PUT',
                                             headers: {
                                               'Content-Type': 'application/json',

@@ -1,0 +1,19 @@
+import { MONTH_ABBR } from './constants';
+
+export function getSeasonalInfo(seasonal) {
+  const seasonalKeys = Object.keys(seasonal || {}).filter(k => MONTH_ABBR.includes(k));
+  const hasQuarterData = seasonalKeys.length > 0;
+  return { seasonalKeys, hasQuarterData };
+}
+
+export function calculateMonthlyScore(hikeCount, monthIdx, availableMonths, hasQuarterData = false) {
+  const quarterBase = hasQuarterData ? 1 : 0;
+  let monthBase;
+  if (hasQuarterData) {
+    monthBase = 1;
+  } else {
+    monthBase = availableMonths.includes(monthIdx + 1) ? 1 : 0;
+  }
+  const scheduleBase = Math.min(9, (hikeCount || 0) * 2);
+  return Math.min(9, quarterBase + monthBase + scheduleBase);
+}

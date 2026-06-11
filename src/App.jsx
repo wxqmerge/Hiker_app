@@ -5,6 +5,8 @@ import TrailManager from './pages/TrailManager';
 import ScheduleBuilder from './pages/ScheduleBuilder';
 import { useEffect } from 'react';
 import { ensureScheduleWritable } from './api/client.js';
+import { getApiBase } from './utils/url.js';
+import { useToast } from './components/Toast.jsx';
 import ToastContainer from './components/Toast.jsx';
 
 function ApiKeySync() {
@@ -20,21 +22,17 @@ function ApiKeySync() {
 }
 
 function App() {
+  const showToast = useToast();
+
   useEffect(() => {
-    const host = window.location.hostname;
-    const path = window.location.pathname;
-    let prefix = null;
-    if (host && !host.includes('localhost') && !host.includes('127.')) {
-      if (host.endsWith('.example.com') && host.split('.').length > 2) {
-        prefix = host.split('.')[0];
-      } else {
-        const match = path.match(/^\/(sothh-[\w-]+)/);
-        if (match) {
-          prefix = match[1];
-        }
-      }
+    const apiBase = getApiBase();
+    if (apiBase) {
+      const host = new URL(apiBase).hostname;
+      const prefix = host.split('.')[0];
+      document.title = prefix;
+    } else {
+      document.title = 'hiker-app';
     }
-    document.title = prefix || 'hiker-app';
   }, []);
 
   useEffect(() => {

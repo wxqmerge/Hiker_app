@@ -6,6 +6,7 @@ import { getTrailDetailsById } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
+import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 
 // Extract month abbreviations from seasonal scores, sorted by month order
 function getScoredMonths(seasonal) {
@@ -37,19 +38,15 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
   const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
   const monthly = detailsForTrail?.[trail.id]?.popularity?.monthly || [];
   const trailSeasonal = trail?.seasonal || {};
-  const seasonalKeys = Object.keys(trailSeasonal).filter(k => MONTH_ABBR.includes(k));
-  const hasQuarterData = seasonalKeys.length > 0;
+  const { hasQuarterData } = getSeasonalInfo(trailSeasonal);
   const availableMonths = Object.entries(seasonal)
     .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
     .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
   const popScore = monthly.length > 0
     ? (() => {
-        const allScores = monthly.map((hikeCount, idx) => {
-          const quarterBase = hasQuarterData ? 1 : 0;
-          const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-          const scheduleBase = Math.min(9, (hikeCount || 0) * 2);
-          return Math.min(9, quarterBase + monthBase + scheduleBase);
-        });
+        const allScores = monthly.map((hikeCount, idx) =>
+          calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
+        );
         if (selectedMonths && selectedMonths.length > 0) {
           return selectedMonths.reduce((sum, mIdx) => sum + (allScores[mIdx] || 0), 0);
         }

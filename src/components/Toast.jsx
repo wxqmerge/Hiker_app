@@ -9,10 +9,6 @@ export function useToast() {
   return show;
 }
 
-export function showToast(message, type = 'info') {
-  listeners.forEach(fn => fn({ id: Date.now() + Math.random(), message, type }));
-}
-
 export default function ToastContainer() {
   const [toasts, setToasts] = useState([]);
 

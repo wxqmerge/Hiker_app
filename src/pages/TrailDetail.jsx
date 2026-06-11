@@ -6,6 +6,7 @@ import { useTooltips } from '../hooks/useTooltips';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
+import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import { downloadBlob, exportTrailTsv } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 
@@ -107,20 +108,16 @@ const getEditedValue = (field) => {
       if (pop.monthlyScore && pop.monthlyScore.length > 0) return pop.monthlyScore;
       const monthly = pop.monthly || [];
       const availableMonths = getEditedValue('availableMonths') || [];
-      return monthly.map((hikeCount, idx) => {
-        const quarterBase = hasQuarterData ? 1 : 0;
-        const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-        const scheduleBase = Math.min(9, (hikeCount || 0) * 2);
-        return Math.min(9, quarterBase + monthBase + scheduleBase);
-      });
+      return monthly.map((hikeCount, idx) =>
+        calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
+      );
     }
 
     return null;
   };
 
   const trailSeasonal = trail?.seasonal || {};
-  const seasonalKeys = Object.keys(trailSeasonal).filter(k => MONTH_ABBR.includes(k));
-  const hasQuarterData = seasonalKeys.length > 0;
+  const { hasQuarterData } = getSeasonalInfo(trailSeasonal);
 
   const startEditMode = () => {
     setEditedFields({});
@@ -494,27 +491,23 @@ const getEditedValue = (field) => {
               </div>
             )}
 
-           {(() => {
-               const monthly = trailDetailsResult?.[id]?.popularity?.monthly || [];
-               const trailForPop = trails.find(t => t.id === id);
-               const popSeasonal = trailForPop?.seasonal || {};
-               const seasonalKeys = Object.keys(popSeasonal).filter(k => MONTH_ABBR.includes(k));
-               const hasQuarterData = seasonalKeys.length > 0;
-               if (monthly.length === 0) return null;
-               return (
-                 <div className="mb-6">
-                   <h3 className="text-lg font-semibold text-gray-800 mb-3">Popularity</h3>
-                   <div className="grid grid-cols-1 gap-4">
-                     {monthly.length > 0 && (
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-500 mb-2">Monthly Popularity</p>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {MONTH_ABBR.map((month, idx) => {
-                             const hikeCount = monthly[idx] || 0;
-                             const quarterBase = hasQuarterData ? 1 : 0;
-                             const monthBase = seasonalKeys.includes(MONTH_ABBR[idx]) ? 1 : 0;
-                            const scheduleBase = Math.min(9, hikeCount * 2);
-                            const score = Math.min(9, quarterBase + monthBase + scheduleBase);
+          {(() => {
+                const monthly = trailDetailsResult?.[id]?.popularity?.monthly || [];
+                const trailForPop = trails.find(t => t.id === id);
+                const popSeasonal = trailForPop?.seasonal || {};
+                const { hasQuarterData } = getSeasonalInfo(popSeasonal);
+                if (monthly.length === 0) return null;
+                return (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Popularity</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      {monthly.length > 0 && (
+                       <div className="bg-gray-50 rounded-lg p-4">
+                         <p className="text-sm text-gray-500 mb-2">Monthly Popularity</p>
+                         <div className="flex gap-1.5 flex-wrap">
+                           {MONTH_ABBR.map((month, idx) => {
+                              const hikeCount = monthly[idx] || 0;
+                             const score = calculateMonthlyScore(hikeCount, idx, [], hasQuarterData);
                             const intensity = Math.min(score / 9, 1);
                             const bg = score > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
                             const text = score > 0 ? 'text-green-800' : 'text-gray-400';
@@ -671,40 +664,38 @@ const getEditedValue = (field) => {
                       ))}
                     </div>
                    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200">
-                      {(() => {
-                          const seasonalKeys = Object.keys(trail.seasonal || {}).filter(k => MONTH_ABBR.includes(k));
-                          const hasQuarterData = seasonalKeys.length > 0;
-                          const availableMonths = getEditedValue('availableMonths') || [];
-                          return MONTH_ABBR.map((month, idx) => {
-                             const quarterBase = hasQuarterData ? 1 : 0;
-                             const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-                           const hikeCount = getEditedValue('monthlyPopularity')[idx] || 0;
-                           const scheduleBase = Math.min(9, hikeCount * 2);
-                           const score = Math.min(9, quarterBase + monthBase + scheduleBase);
-                           return (
-                             <div key={idx} className="flex flex-col items-center min-w-[40px]">
-                               <span className="text-[9px] text-gray-400 leading-tight">
-                                 {quarterBase}+{monthBase}+{scheduleBase}={score}
-                               </span>
-                             </div>
-                           );
-                         });
-                       })()}
+                       {(() => {
+                           const { hasQuarterData } = getSeasonalInfo(trail.seasonal || {});
+                           const availableMonths = getEditedValue('availableMonths') || [];
+                           return MONTH_ABBR.map((month, idx) => {
+                            const hikeCount = getEditedValue('monthlyPopularity')[idx] || 0;
+                            const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
+                            const quarterBase = hasQuarterData ? 1 : 0;
+                            const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+                            const scheduleBase = Math.min(9, hikeCount * 2);
+                            return (
+                              <div key={idx} className="flex flex-col items-center min-w-[40px]">
+                                <span className="text-[9px] text-gray-400 leading-tight">
+                                  {quarterBase}+{monthBase}+{scheduleBase}={score}
+                                </span>
+                              </div>
+                            );
+                          });
+                        })()}
                     </div>
                      <div className="mt-3 pt-3 border-t border-gray-200">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Monthly Score</p>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {(() => {
-                          const seasonalKeys = Object.keys(trail.seasonal || {}).filter(k => MONTH_ABBR.includes(k));
-                          const hasQuarterData = seasonalKeys.length > 0;
-                          const availableMonths = getEditedValue('availableMonths') || [];
-                          const monthly = getEditedValue('monthlyPopularity') || [];
-                         return MONTH_ABBR.map((month, idx) => {
-                             const hikeCount = monthly[idx] || 0;
-                             const quarterBase = hasQuarterData ? 1 : 0;
-                             const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-                             const scheduleBase = Math.min(9, hikeCount * 2);
-                             const score = Math.min(9, quarterBase + monthBase + scheduleBase);
+                       <p className="text-sm font-medium text-gray-700 mb-2">Monthly Score</p>
+                       <div className="flex gap-1.5 flex-wrap">
+                         {(() => {
+                           const { hasQuarterData } = getSeasonalInfo(trail.seasonal || {});
+                           const availableMonths = getEditedValue('availableMonths') || [];
+                           const monthly = getEditedValue('monthlyPopularity') || [];
+                          return MONTH_ABBR.map((month, idx) => {
+                              const hikeCount = monthly[idx] || 0;
+                              const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
+                              const quarterBase = hasQuarterData ? 1 : 0;
+                              const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+                              const scheduleBase = Math.min(9, hikeCount * 2);
                              const intensity = Math.min(score / 9, 1);
                              const bg = score > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
                              const text = score > 0 ? 'text-green-800' : 'text-gray-400';

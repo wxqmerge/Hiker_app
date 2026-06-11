@@ -1,12 +1,5 @@
 import { MONTH_ABBR } from './constants';
-
-function getAvailableMonths(seasonal) {
-  if (!seasonal) return [];
-  if (Array.isArray(seasonal.availableMonths)) return seasonal.availableMonths;
-  return Object.entries(seasonal)
-    .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
-    .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
-}
+import { getSeasonalInfo, calculateMonthlyScore } from './score.js';
 
 function getTrailMonthlyScore(trail, trailDetails, idx) {
   const rawId = trail?.id || trail?.trail?.id;
@@ -131,34 +124,24 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
           : t.monthlyScore.filter((_, i) => filters.months.includes(i));
         return scores.reduce((sum, s) => sum + (s || 0), 0);
       }
-      // Fallback: calculate from monthly array (same formula as TrailDetail.jsx)
+      // Fallback: calculate from monthly array
       if (details?.popularity?.monthly) {
         const monthly = details.popularity.monthly;
-        const seasonalKeys = Object.keys(seasonal).filter(k => MONTH_ABBR.includes(k));
-        const hasQuarterData = seasonalKeys.length > 0;
-        const availableMonths = getAvailableMonths(seasonal);
+        const { hasQuarterData } = getSeasonalInfo(seasonal);
         const scores = filters.months.length === 0
           ? monthly
           : monthly.filter((_, i) => filters.months.includes(i));
         return scores.reduce((sum, hikeCount, idx) => {
-          const quarterBase = hasQuarterData ? 1 : 0;
-          const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-          const scheduleBase = Math.min(9, (hikeCount || 0) * 2);
-          return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
+          return sum + calculateMonthlyScore(hikeCount, idx, [], hasQuarterData);
         }, 0);
       }
       if (t.monthly) {
-        const seasonalKeys = Object.keys(seasonal).filter(k => MONTH_ABBR.includes(k));
-        const hasQuarterData = seasonalKeys.length > 0;
-        const availableMonths = getAvailableMonths(seasonal);
+        const { hasQuarterData } = getSeasonalInfo(seasonal);
         const scores = filters.months.length === 0
           ? t.monthly
           : t.monthly.filter((_, i) => filters.months.includes(i));
         return scores.reduce((sum, hikeCount, idx) => {
-          const quarterBase = hasQuarterData ? 1 : 0;
-          const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-          const scheduleBase = Math.min(9, (hikeCount || 0) * 2);
-          return sum + Math.min(9, quarterBase + monthBase + scheduleBase);
+          return sum + calculateMonthlyScore(hikeCount, idx, [], hasQuarterData);
         }, 0);
       }
       // Standard { Jan: 3, Feb: 2, ... } format
