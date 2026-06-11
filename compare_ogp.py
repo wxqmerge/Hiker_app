@@ -25,6 +25,7 @@ def get_info(path):
 def collect_paths(base):
     paths = set()
     for root, dirs, files in os.walk(base):
+        dirs[:] = [d for d in dirs if d != ".git"]
         rel = root.replace(base, "", 1).lstrip("/")
         for f in files + dirs:
             paths.add(os.path.join(rel, f))
