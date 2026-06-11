@@ -30,9 +30,13 @@ export default function TrailManager() {
   const hasApiKey = apiKey.trim().length > 0;
 
   const handleValidateDatabase = async () => {
+    if (!hasApiKey) {
+      alert('API key required for database validation.');
+      return;
+    }
     setValidating(true);
     try {
-      const res = await request('/api/validate');
+      const res = await request('/api/validate', { apiKey: true });
       setValidationResults(res);
     } catch (err) {
       setValidationResults({ valid: false, results: [{ file: '(request)', valid: false, error: err.message }] });
@@ -372,14 +376,18 @@ export default function TrailManager() {
             <div className="flex gap-2">
               <button
                 onClick={handleValidateDatabase}
-                disabled={validating}
-                className="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white rounded transition-colors flex items-center gap-1"
+                disabled={validating || !hasApiKey}
+                className={`text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-1 ${
+                  hasApiKey && !validating
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
                 title={tt('Verify all database files in exported_data are usable')}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                {validating ? 'Validating...' : 'Validate Database'}
+                {validating ? 'Validating...' : 'Validate Database'} {!hasApiKey && '(need API key)'}
               </button>
               <button
                 onClick={exportMonthlyTsv}
