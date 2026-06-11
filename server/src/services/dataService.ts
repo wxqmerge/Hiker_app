@@ -54,6 +54,7 @@ function normalizeEntry(entry: any): any {
     hike: String(entry.hike || ''),
     trail_id: String(entry.trail_id || ''),
     early_start: !!entry.early_start,
+    leader: String(entry.leader || ''),
   };
 }
 
