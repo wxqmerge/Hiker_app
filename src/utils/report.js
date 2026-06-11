@@ -20,7 +20,7 @@ export function generateReportText(trail, trailDetails = null) {
   
   // Append web link if available
   if (trail.webLink) {
-    report += `\n\n${trail.webLinkLabel || 'Link'}: ${trail.webLink}\n`;
+    report += `\n\nLink: ${trail.webLink}\n`;
   }
   
   return report;

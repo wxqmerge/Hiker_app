@@ -137,7 +137,6 @@ const getEditedValue = (field) => {
     if (editedFields.notes !== undefined) updatedTrail.notes = editedFields.notes;
    if (editedFields.altNames !== undefined) updatedTrail.altNames = editedFields.altNames;
     if (editedFields.webLink !== undefined) updatedTrail.webLink = editedFields.webLink;
-    if (editedFields.webLinkLabel !== undefined) updatedTrail.webLinkLabel = editedFields.webLinkLabel;
 
     if (editedFields.bestSeason !== undefined || editedFields.availableMonths !== undefined) {
       if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
@@ -505,7 +504,7 @@ const getEditedValue = (field) => {
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
-                <span className="truncate">{trail.webLinkLabel || trail.webLink}</span>
+                <span className="truncate">{trail.webLink}</span>
               </a>
             </div>
           )}
@@ -858,17 +857,7 @@ const getEditedValue = (field) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Web Link Label</label>
-                    <input
-                      type="text"
-                      value={editedFields.webLinkLabel ?? (trail.webLinkLabel || '')}
-                      onChange={(e) => updateField('webLinkLabel', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                      placeholder="e.g., Trail Report, GPX File"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Web Link URL</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Web Link</label>
                     <input
                       type="url"
                       value={editedFields.webLink ?? (trail.webLink || '')}

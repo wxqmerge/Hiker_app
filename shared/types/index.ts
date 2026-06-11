@@ -34,7 +34,6 @@ export interface Trail {
   availableMonths?: string[];
   isWilderness?: boolean;
   webLink?: string;
-  webLinkLabel?: string;
 }
 
 export interface TrailDetail {
