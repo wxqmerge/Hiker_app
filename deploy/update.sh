@@ -229,10 +229,6 @@ if [ "$INSTALL_DEPS" = true ]; then
 fi
 
 echo "[7/13] Building frontend + server..."
-# Fix execute permissions on node_modules binaries (stripped by Windows)
-if [ -d "node_modules/.bin" ]; then
-    find node_modules/.bin -type f -exec chmod +x {} + 2>/dev/null || true
-fi
 if ! VITE_BASE="/$SERVICE/" npm run build:all; then
     echo "  ERROR: Build failed."
     echo "  Aborting. Check build output above."
@@ -249,8 +245,8 @@ echo "  Built files deployed."
 echo "[7c/13] Fixing ownership and permissions..."
 echo "  Owner: $DEPLOY_USER:$DEPLOY_GROUP"
 sudo chown -R "$DEPLOY_USER:$DEPLOY_GROUP" "$DIR"
-find "$DIR" -type d -exec chmod 755 {} +
-find "$DIR" -type f -exec chmod 644 {} +
+find "$DIR" -type d -not -path "*/node_modules/*" -exec chmod 755 {} +
+find "$DIR" -type f -not -path "*/node_modules/*" -exec chmod 644 {} +
 chmod 600 "$DIR/server/.env" 2>/dev/null || true
 chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
 chmod 775 "$DIR/exported_data" 2>/dev/null || true
