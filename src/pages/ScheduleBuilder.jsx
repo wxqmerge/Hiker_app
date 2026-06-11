@@ -599,7 +599,7 @@ export default function ScheduleBuilder() {
             const existingDays = new Set(serverData[abbr].map(e => e.day));
             for (const entry of entries) {
               if (!existingDays.has(entry.day) && entry.trail_id) {
-                serverData[abbr].push({ day: entry.day, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start });
+                serverData[abbr].push({ day: entry.day, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
               }
             }
             serverData[abbr].sort((a, b) => a.day - b.day);

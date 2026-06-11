@@ -131,7 +131,7 @@ def parse_xls(xls_path, trails_path):
         sample = ' | '.join([safe_str(c)[:30] for c in rows[0][:6]])
         return {'error': f'Cannot find expected columns (Month, Date/Wed/Fri, Hike). First row: "{sample}"'}
 
-    # Find all Month/(Wed|Fri|Date)/Hike column triplets
+    # Find all Month/(Wed|Fri|Date)/Hike/Leader column quadruplets
     num_cols = len(rows[0])
     header_strs = [safe_str(c).lower() for c in rows[header_row]]
     all_cols = []
@@ -141,7 +141,8 @@ def parse_xls(xls_path, trails_path):
                 if header_strs[d] in ('date', 'wed', 'fri', 'wednesday', 'friday'):
                     for h in range(d + 1, num_cols):
                         if header_strs[h] == 'hike':
-                            all_cols.append((c, d, h))
+                            leader_col = h + 1 if h + 1 < num_cols else None
+                            all_cols.append((c, d, h, leader_col))
                             break
                     break
 
@@ -153,12 +154,13 @@ def parse_xls(xls_path, trails_path):
     current_month = ''
 
     for i in range(header_row + 1, len(rows)):
-        for m_col, d_col, h_col in all_cols:
+        for m_col, d_col, h_col, leader_col in all_cols:
             if m_col >= len(rows[i]) or d_col >= len(rows[i]) or h_col >= len(rows[i]):
                 continue
             month_val = safe_str(rows[i][m_col])
             day_val = safe_str(rows[i][d_col])
             hike_val = safe_str(rows[i][h_col])
+            leader_val = safe_str(rows[i][leader_col]) if leader_col is not None and leader_col < len(rows[i]) else ''
 
             if not month_val and not day_val and not hike_val:
                 continue
@@ -176,7 +178,7 @@ def parse_xls(xls_path, trails_path):
                 continue
 
             if 0 < day <= 31:
-                hikes.append({'month': current_month, 'day': day, 'hike': hike_val})
+                hikes.append({'month': current_month, 'day': day, 'hike': hike_val, 'leader': leader_val})
 
     # Match hikes to trails
     matched = []
@@ -199,7 +201,8 @@ def parse_xls(xls_path, trails_path):
         schedule_by_month[full_month][str(entry['day'])] = {
             'trail_id': entry['trail_id'],
             'hike': entry['hike'] or None,
-            'early_start': entry['early_start']
+            'early_start': entry['early_start'],
+            'leader': entry.get('leader', '') or ''
         }
 
     return {
