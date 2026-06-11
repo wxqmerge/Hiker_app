@@ -163,6 +163,7 @@ const getEditedValue = (field) => {
       await saveTrailDetail(trail.id, updatedDetail);
     }
 
+    setEditedFields({});
     setIsEditMode(false);
     searchParams.delete('edit');
     navigate(`/trail/${id}${searchParams.toString() ? '?' + searchParams.toString() : ''}`, { replace: true });
