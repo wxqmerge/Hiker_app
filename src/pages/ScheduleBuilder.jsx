@@ -34,7 +34,7 @@ function serverScheduleToStore(serverData) {
     for (const entry of entries) {
       const day = String(entry.day);
       if (day === 'NaN' || day === 'null' || day === 'undefined') continue;
-      store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start };
+      store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start, leader: entry.leader || '' };
     }
   }
   return store;
@@ -51,7 +51,7 @@ function storeToServerSchedule(store) {
       if (entry?.trail_id) {
         const dayNum = parseInt(day, 10);
         if (!isNaN(dayNum) && dayNum > 0) {
-          serverData[abbr].push({ day: dayNum, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start });
+          serverData[abbr].push({ day: dayNum, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
         }
       }
     }
@@ -166,13 +166,16 @@ export default function ScheduleBuilder() {
     const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
     const result = {};
     Object.entries(raw).forEach(([day, val]) => {
+      let entry;
       if (typeof val === 'string') {
-        result[day] = { trail_id: val, hike: null, early_start: false };
+        entry = { trail_id: val, hike: null, early_start: false };
       } else if (val && typeof val === 'object') {
-        result[day] = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null, early_start: !!val.early_start };
+        entry = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null, early_start: !!val.early_start };
       } else {
-        result[day] = { trail_id: null, hike: null, early_start: false };
+        entry = { trail_id: null, hike: null, early_start: false };
       }
+      entry.leader = val?.leader || '';
+      result[day] = entry;
     });
     return result;
   }, [scheduleStore, selectedMonth]);
@@ -232,7 +235,7 @@ export default function ScheduleBuilder() {
         if (entry?.trail_id) {
           const dayNum = parseInt(day, 10);
           if (!isNaN(dayNum) && dayNum > 0) {
-            serverData[abbr].push({ day: dayNum, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start });
+       serverData[abbr].push({ day: dayNum, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
           }
         }
       }
@@ -346,7 +349,7 @@ export default function ScheduleBuilder() {
   const handleDropOnDate = (targetDay) => {
     if (!dragData) return;
 
-    const { hikeIndex, sourceDay, hikeName, trailId: dragTrailId, earlyStart: dragEarlyStart } = dragData;
+    const { hikeIndex, sourceDay, hikeName, trailId: dragTrailId, earlyStart: dragEarlyStart, leader: dragLeader } = dragData;
     const trailId = dragTrailId || trailIndexToId[hikeIndex];
 
     if (sourceDay === targetDay) {
@@ -385,6 +388,7 @@ export default function ScheduleBuilder() {
         trailId,
         hikeName,
         earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (dragData?.sourceDay !== null && dragData?.sourceDay !== undefined ? (scheduleStore[monthName] || {})[dragData.sourceDay]?.early_start : false),
+        leader: dragLeader || (dragData?.sourceDay !== null && dragData?.sourceDay !== undefined ? (scheduleStore[monthName] || {})[dragData.sourceDay]?.leader : ''),
       });
       setDragData(null);
       return;
@@ -392,13 +396,14 @@ export default function ScheduleBuilder() {
 
     // Normal drop on empty date
     const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : ((sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay] : null)?.early_start || false);
+    const leader = dragLeader || (sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay]?.leader : '');
 
     updateMonthSchedule(monthName, prev => {
       const next = { ...prev };
       if (sourceDay !== null && sourceDay !== undefined) {
         delete next[sourceDay];
       }
-      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart };
+      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader };
       return next;
     });
     setDragData(null);
@@ -406,15 +411,15 @@ export default function ScheduleBuilder() {
 
   const confirmSwap = () => {
     if (!pendingSwap) return;
-    const { sourceDay, targetDay, targetEntry, trailId, hikeName, earlyStart } = pendingSwap;
+    const { sourceDay, targetDay, targetEntry, trailId, hikeName, earlyStart, leader: swapLeader } = pendingSwap;
     const monthName = MONTH_NAMES[selectedMonth];
 
     updateMonthSchedule(monthName, prev => {
       const next = { ...prev };
-      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart };
+      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: swapLeader };
       if (sourceDay !== null && sourceDay !== undefined) {
-        next[sourceDay] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start };
-      }
+         next[sourceDay] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start, leader: targetEntry.leader || '' };
+       }
       return next;
     });
     setPendingSwap(null);
@@ -686,9 +691,9 @@ export default function ScheduleBuilder() {
         if (entry.early_start) hikeName += ' (Early Start)';
 
         if (dayOfWeek === 3) {
-          wedHikes.push({ month: monthAbbr, day, hike: hikeName });
+          wedHikes.push({ month: monthAbbr, day, hike: hikeName, leader: entry.leader || '' });
         } else if (dayOfWeek === 5) {
-          friHikes.push({ month: monthAbbr, day, hike: hikeName });
+          friHikes.push({ month: monthAbbr, day, hike: hikeName, leader: entry.leader || '' });
         }
       }
     }
@@ -733,7 +738,7 @@ export default function ScheduleBuilder() {
         else row.push('');
         row.push(w ? String(w.day) : '');
         row.push(w ? w.hike : '');
-        row.push('');
+        row.push(w ? (w.leader || '') : '');
 
         // Spacer
         row.push('');
@@ -743,7 +748,7 @@ export default function ScheduleBuilder() {
         else row.push('');
         row.push(f ? String(f.day) : '');
         row.push(f ? f.hike : '');
-        row.push('');
+        row.push(f ? (f.leader || '') : '');
 
         rows.push(pad(row, cols));
       }
@@ -1079,7 +1084,7 @@ const hikeCards = useMemo(() => {
                 <div className="space-y-3">
                   {wedFriDates.map((day) => {
                     const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
-                    const { trail_id: trailId, hike: hikeName, early_start: earlyStart } = assignedHikes[day] || { trail_id: null, hike: null, early_start: false };
+                    const { trail_id: trailId, hike: hikeName, early_start: earlyStart, leader } = assignedHikes[day] || { trail_id: null, hike: null, early_start: false, leader: '' };
                     const trail = findTrailById(trailId);
 
                     return (
@@ -1115,16 +1120,31 @@ const hikeCards = useMemo(() => {
                             </div>
                             <div className="w-px h-8 bg-gray-200"></div>
                             {trailId && trail ? (
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-900 truncate">
-                                  {trail ? trail.fullName || trail.name : hikeName}
-                                  {earlyStart && <span className="ml-1 text-orange-500" title="Early Start">⏰</span>}
-                                </div>
-                                <div className="text-xs text-gray-500 truncate">
-                                  (ID: {trailId})
-                                </div>
-                              </div>
-                            ) : trailId ? (
+                               <div className="flex-1 min-w-0">
+                                 <div className="text-sm font-medium text-gray-900 truncate">
+                                   {trail ? trail.fullName || trail.name : hikeName}
+                                   {earlyStart && <span className="ml-1 text-orange-500" title="Early Start">⏰</span>}
+                                 </div>
+                                 <div className="text-xs text-gray-500 truncate">
+                                   (ID: {trailId})
+                                 </div>
+                                 <input
+                                   type="text"
+                                   placeholder="Leader / Shadow"
+                                   value={leader || ''}
+                                   onChange={(e) => {
+                                     const entry = assignedHikes[day];
+                                     updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
+                                       const next = { ...prev };
+                                       next[day] = { ...entry, leader: e.target.value };
+                                       return next;
+                                     });
+                                   }}
+                                   className="mt-1 w-full text-xs border border-gray-300 rounded px-1.5 py-0.5 focus:ring-green-500 focus:border-green-500 truncate"
+                                   onClick={(e) => e.stopPropagation()}
+                                 />
+                               </div>
+                             ) : trailId ? (
                               <div className="text-sm text-gray-400 italic">
                                 Trail not found (ID: {trailId})
                               </div>
