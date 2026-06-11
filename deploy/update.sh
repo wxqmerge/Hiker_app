@@ -229,6 +229,10 @@ if [ "$INSTALL_DEPS" = true ]; then
 fi
 
 echo "[7/13] Building frontend + server..."
+# Fix execute permissions on node_modules binaries (stripped by Windows)
+if [ -d "node_modules/.bin" ]; then
+    find node_modules/.bin -type f -exec chmod +x {} + 2>/dev/null || true
+fi
 if ! VITE_BASE="/$SERVICE/" npm run build:all; then
     echo "  ERROR: Build failed."
     echo "  Aborting. Check build output above."
