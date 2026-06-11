@@ -107,23 +107,112 @@ app.get('/api/validate', async (_req, res) => {
   const __dirname = path.dirname(__filename);
   const DATA_DIR = path.join(__dirname, '../../exported_data');
 
-  const results: Array<{ file: string; valid: boolean; error?: string; recordCount?: number }> = [];
+  const MONTH_KEYS = new Set(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+  const results: Array<{ file: string; valid: boolean; error?: string; recordCount?: number; issues?: string[] }> = [];
 
-  const filesToCheck = ['trails.json', 'trail_details.json', 'lookup.json', 'schedule.json'];
-  for (const filename of filesToCheck) {
-    const filePath = path.join(DATA_DIR, filename);
+  function addResult(file: string, valid: boolean, opts?: { error?: string; recordCount?: number; issues?: string[] }) {
+    results.push({ file, valid, ...opts });
+  }
+
+  // trails.json
+  {
+    const filePath = path.join(DATA_DIR, 'trails.json');
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const parsed = JSON.parse(content);
-      let count: number | undefined;
-      if (Array.isArray(parsed)) count = parsed.length;
-      else if (parsed && typeof parsed === 'object') count = Object.keys(parsed).length;
-      results.push({ file: filename, valid: true, recordCount: count });
+      const issues: string[] = [];
+      if (!parsed || typeof parsed !== 'object') {
+        issues.push('root must be an object');
+      } else if (!Array.isArray(parsed.trails)) {
+        issues.push('missing "trails" array');
+      } else if (parsed.trails.length === 0) {
+        issues.push('"trails" array is empty');
+      } else {
+        const sample = parsed.trails[0];
+        const requiredFields = ['id', 'name'];
+        const missing = requiredFields.filter(f => !(f in sample));
+        if (missing.length) issues.push(`trails[0] missing fields: ${missing.join(', ')}`);
+        const nonStrings = parsed.trails.filter((t: any) => typeof t.id !== 'string' || !t.id);
+        if (nonStrings.length) issues.push(`${nonStrings.length} trail(s) with invalid/missing "id"`);
+      }
+      addResult('trails.json', issues.length === 0, { recordCount: Array.isArray(parsed?.trails) ? parsed.trails.length : 0, issues: issues.length ? issues : undefined });
     } catch (err) {
-      results.push({ file: filename, valid: false, error: (err as Error).message });
+      addResult('trails.json', false, { error: (err as Error).message });
     }
   }
 
+  // trail_details.json
+  {
+    const filePath = path.join(DATA_DIR, 'trail_details.json');
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const issues: string[] = [];
+      if (!parsed || typeof parsed !== 'object') {
+        issues.push('root must be an object keyed by trail ID');
+      } else {
+        const keys = Object.keys(parsed);
+        if (keys.length === 0) {
+          issues.push('object is empty');
+        } else {
+          const sample = parsed[keys[0]];
+          if (!sample || typeof sample !== 'object' || Array.isArray(sample)) {
+            issues.push(`values must be objects, got ${Array.isArray(sample) ? 'array' : typeof sample}`);
+          }
+        }
+      }
+      addResult('trail_details.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
+    } catch (err) {
+      addResult('trail_details.json', false, { error: (err as Error).message });
+    }
+  }
+
+  // lookup.json
+  {
+    const filePath = path.join(DATA_DIR, 'lookup.json');
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const issues: string[] = [];
+      if (!parsed || typeof parsed !== 'object') {
+        issues.push('root must be an object');
+      } else {
+        if (!Array.isArray(parsed.difficulties)) issues.push('missing "difficulties" array');
+        if (typeof parsed.parkingLevels !== 'object' || Array.isArray(parsed.parkingLevels)) issues.push('"parkingLevels" must be an object');
+      }
+      addResult('lookup.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
+    } catch (err) {
+      addResult('lookup.json', false, { error: (err as Error).message });
+    }
+  }
+
+  // schedule.json
+  {
+    const filePath = path.join(DATA_DIR, 'schedule.json');
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const issues: string[] = [];
+      if (!parsed || typeof parsed !== 'object') {
+        issues.push('root must be an object');
+      } else {
+        const keys = Object.keys(parsed);
+        if (keys.length === 0) {
+          issues.push('object is empty');
+        } else {
+          const invalidKeys = keys.filter(k => !MONTH_KEYS.has(k));
+          if (invalidKeys.length) issues.push(`invalid month keys: ${invalidKeys.join(', ')}`);
+          const nonArrayEntries = keys.filter(k => !Array.isArray(parsed[k]));
+          if (nonArrayEntries.length) issues.push(`month(s) with non-array values: ${nonArrayEntries.join(', ')}`);
+        }
+      }
+      addResult('schedule.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
+    } catch (err) {
+      addResult('schedule.json', false, { error: (err as Error).message });
+    }
+  }
+
+  // schedule_history/*.json
   try {
     const historyDir = path.join(DATA_DIR, 'schedule_history');
     const files = await fs.readdir(historyDir);
@@ -132,10 +221,16 @@ app.get('/api/validate', async (_req, res) => {
       const filePath = path.join(historyDir, filename);
       try {
         const content = await fs.readFile(filePath, 'utf-8');
-        JSON.parse(content);
-        results.push({ file: `schedule_history/${filename}`, valid: true });
+        const parsed = JSON.parse(content);
+        const issues: string[] = [];
+        if (!parsed?.schedule) {
+          issues.push('missing "schedule" property');
+        } else if (typeof parsed.schedule !== 'object') {
+          issues.push('"schedule" must be an object');
+        }
+        addResult(`schedule_history/${filename}`, issues.length === 0, { issues: issues.length ? issues : undefined });
       } catch (err) {
-        results.push({ file: `schedule_history/${filename}`, valid: false, error: (err as Error).message });
+        addResult(`schedule_history/${filename}`, false, { error: (err as Error).message });
       }
     }
   } catch {

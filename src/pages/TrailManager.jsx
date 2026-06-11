@@ -435,7 +435,8 @@ export default function TrailManager() {
                    <div key={i} className={`text-xs ${r.valid ? 'text-green-700' : 'text-red-700'}`}>
                      {r.valid ? '✓' : '✗'} {r.file}
                      {r.recordCount != null && ` (${r.recordCount} ${r.recordCount === 1 ? 'entry' : 'entries'})`}
-                     {!r.valid && ` — ${r.error}`}
+                     {r.issues && r.issues.length > 0 && ` — ${r.issues.join('; ')}`}
+                     {!r.valid && !r.issues && r.error && ` — ${r.error}`}
                    </div>
                  ))}
                </div>
