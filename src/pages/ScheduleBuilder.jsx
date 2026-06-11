@@ -597,7 +597,7 @@ export default function ScheduleBuilder() {
             const abbr = MONTH_FULL_TO_ABBR[month] || month;
             if (!serverData[abbr]) serverData[abbr] = [];
             const existingDays = new Set(serverData[abbr].map(e => e.day));
-            for (const entry of entries) {
+            for (const entry of Object.values(entries)) {
               if (!existingDays.has(entry.day) && entry.trail_id) {
                 serverData[abbr].push({ day: entry.day, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
               }
