@@ -9,6 +9,12 @@ import {
   updateTrailDetail,
 } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
+import {
+  whitelistTrailFields,
+  whitelistTrailDetailFields,
+  TrailUpdateSchema,
+  TrailDetailUpdateSchema,
+} from '../middleware/validation.middleware.js';
 
 const router = Router();
 
@@ -31,7 +37,12 @@ router.get('/details/:id', (req, res) => {
 router.put('/details/:id', requireAdminKey, async (req, res) => {
   try {
     const existing = getTrailDetailById(req.params.id);
-    await updateTrailDetail(req.params.id, existing ? { ...existing, ...req.body } : req.body);
+    const whitelisted = whitelistTrailDetailFields(req.body);
+    const result = TrailDetailUpdateSchema.safeParse(whitelisted);
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid trail detail fields', details: result.error.issues } });
+    }
+    await updateTrailDetail(req.params.id, (existing ? { ...existing, ...result.data } : result.data) as any);
     res.json({ success: true, detail: getTrailDetailById(req.params.id) });
   } catch (error) {
     console.error('[TRAILS] Error updating trail detail:', error);
@@ -50,7 +61,12 @@ router.get('/:id', (req, res) => {
 router.put('/:id', requireAdminKey, async (req, res) => {
   try {
     const existing = getTrailById(req.params.id);
-    await updateTrail(existing ? { ...existing, ...req.body } : req.body);
+    const whitelisted = whitelistTrailFields(req.body);
+    const result = TrailUpdateSchema.safeParse(whitelisted);
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid trail fields', details: result.error.issues } });
+    }
+    await updateTrail((existing ? { ...existing, ...result.data } : result.data) as any);
     res.json({ success: true, trail: getTrailById(req.params.id) });
   } catch (error) {
     console.error('[TRAILS] Error updating trail:', error);

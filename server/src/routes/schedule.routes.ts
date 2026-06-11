@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { getSchedule, updateSchedule, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp, clearScheduleHistory, getScheduleVersion } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
+import { ScheduleEntrySchema, ScheduleSchema, RestoreTimestampSchema } from '../middleware/validation.middleware.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -55,12 +56,16 @@ router.get('/', (req, res) => {
 
 router.put('/', requireAdminKey, async (req, res) => {
   try {
-    const entryCount = Object.values(req.body).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
+    const result = ScheduleSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid schedule data', details: result.error.issues } });
+    }
+    const entryCount = result.data ? Object.values(result.data).reduce((n: number, entries: any) => n + entries.length, 0) : 0;
     console.log('[SCHEDULE] PUT schedule -', entryCount, 'entries');
     const oldSchedule = getSchedule();
     const oldCount = Object.values(oldSchedule).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
     console.log('[SCHEDULE] Previous:', oldCount, 'entries');
-    await updateSchedule(req.body);
+    await updateSchedule(result.data);
     const newVersion = getScheduleVersion();
     console.log('[SCHEDULE] Save complete, new version:', newVersion.substring(0, 8));
     res.json({ success: true, etag: newVersion });
@@ -82,16 +87,15 @@ router.get('/history', async (_req, res) => {
 
 router.post('/history/restore', requireAdminKey, async (req, res) => {
   try {
-    const { timestamp } = req.body;
-    if (!timestamp) {
-      return res.status(400).json({ success: false, error: { message: 'timestamp is required' } });
+    const result = RestoreTimestampSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid restore request' } });
     }
-    const restored = await restoreScheduleByTimestamp(timestamp);
+    const restored = await restoreScheduleByTimestamp(result.data.timestamp);
     res.json({ success: true, schedule: restored });
   } catch (error) {
     console.error('[SCHEDULE] Error restoring schedule:', error);
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    res.status(404).json({ success: false, error: { message: msg } });
+    res.status(404).json({ success: false, error: { message: 'Failed to restore schedule' } });
   }
 });
 
@@ -164,9 +168,16 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
       return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
     }
 
+    // Validate file content (magic bytes for OLE2/Excel)
+    const buffer = req.file.buffer;
+    const isOle2 = buffer[0] === 0xd0 && buffer[1] === 0xcf && buffer[2] === 0x11 && buffer[3] === 0xe0;
+    if (!isOle2) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid file format. Only XLS files are accepted.' } });
+    }
+
     // Save uploaded file temporarily
     const tmpPath = path.join(PROJECT_ROOT, 'tmp_upload.xls');
-    fs.writeFileSync(tmpPath, req.file.buffer);
+    fs.writeFileSync(tmpPath, buffer);
 
     const trailsPath = path.join(PROJECT_ROOT, 'exported_data/trails.json');
 
@@ -221,12 +232,12 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
       if (stderr.includes('No module named')) {
         return res.status(500).json({
           success: false,
-          error: { message: `Python dependency missing: ${stderr.split('\n').pop()}. Run: sudo apt install python3-pandas` }
+          error: { message: 'Python dependency missing. Contact administrator.' }
         });
       }
       return res.status(500).json({
         success: false,
-        error: { message: `Python script error: ${stderr || stdout || pyError.message}` }
+        error: { message: 'Python script failed. Contact administrator.' }
       });
     }
   } catch (error) {
@@ -245,12 +256,10 @@ router.post('/import-trails-xls', requireAdminKey, upload.single('file'), async 
       return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
     }
 
-    // Restrict to exact filename
-    if (req.file.originalname !== 'Hike Data BaseM.xls') {
-      return res.status(400).json({
-        success: false,
-        error: { message: `Invalid filename: "${req.file.originalname}". Only "Hike Data BaseM.xls" is accepted.` }
-      });
+    // Validate file content (magic bytes for OLE2/Excel)
+    const isOle2 = req.file.buffer[0] === 0xd0 && req.file.buffer[1] === 0xcf && req.file.buffer[2] === 0x11 && req.file.buffer[3] === 0xe0;
+    if (!isOle2) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid file format. Only XLS files are accepted.' } });
     }
 
     // Save file to expected location
@@ -296,7 +305,7 @@ router.post('/import-trails-xls', requireAdminKey, upload.single('file'), async 
       console.error('[TRAILS] Python script error:', pyError);
       res.status(500).json({
         success: false,
-        error: { message: `Failed to run extraction script: ${pyError instanceof Error ? pyError.message : 'Unknown error'}` }
+        error: { message: 'Failed to run extraction script. Contact administrator.' }
       });
     } finally {
       // Clean up the uploaded file (keep it for future use)
@@ -341,7 +350,16 @@ router.post('/upload', requireAdminKey, upload.single('file'), async (req, res) 
       return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
     }
 
+    // Validate file size (max 1MB)
+    if (req.file.buffer.length > 1024 * 1024) {
+      return res.status(400).json({ success: false, error: { message: 'File too large. Maximum size is 1MB.' } });
+    }
+
+    // Validate file is valid UTF-8 text
     const content = req.file.buffer.toString('utf-8');
+    if (!content || content.length === 0) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid file format.' } });
+    }
     const lines = content.split('\n').map(l => l.trim()).filter(l => l);
 
     let currentMonth = '';
