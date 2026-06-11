@@ -29,12 +29,16 @@ function serverScheduleToStore(serverData) {
   for (const [key, entries] of Object.entries(serverData)) {
     // Abbreviation → full name, or already full name
     const fullName = MONTH_ABBR_TO_FULL[key] || (MONTH_NAMES.includes(key) ? key : null);
-    if (!fullName || !Array.isArray(entries)) continue;
+    if (!fullName) continue;
     store[fullName] = {};
-    for (const entry of entries) {
-      const day = String(entry.day);
-      if (day === 'NaN' || day === 'null' || day === 'undefined') continue;
-      store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start, leader: entry.leader || '' };
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        const day = String(entry.day);
+        if (day === 'NaN' || day === 'null' || day === 'undefined') continue;
+        store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start, leader: entry.leader || '' };
+      }
+    } else if (entries && typeof entries === 'object') {
+      Object.assign(store[fullName], entries);
     }
   }
   return store;
@@ -388,7 +392,7 @@ export default function ScheduleBuilder() {
         trailId,
         hikeName,
         earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (dragData?.sourceDay !== null && dragData?.sourceDay !== undefined ? (scheduleStore[monthName] || {})[dragData.sourceDay]?.early_start : false),
-        leader: dragLeader || (dragData?.sourceDay !== null && dragData?.sourceDay !== undefined ? (scheduleStore[monthName] || {})[dragData.sourceDay]?.leader : ''),
+        leader: dragLeader || (sourceDay !== null && sourceDay !== undefined ? (scheduleStore[monthName] || {})[sourceDay]?.leader : targetEntry.leader || ''),
       });
       setDragData(null);
       return;
@@ -627,75 +631,93 @@ export default function ScheduleBuilder() {
   };
 
   const importScheduleTsv = () => {
-     createFileInput({
-       accept: '.tsv,.txt',
-       onFile: async (file) => {
-         try {
-           const text = await file.text();
-           const lines = text.split('\n').map(l => l.split('\t'));
+      createFileInput({
+        accept: '.tsv,.txt',
+        onFile: async (file) => {
+          try {
+            const text = await file.text();
+            const lines = text.split('\n').map(l => l.split('\t'));
+            console.log('[TSV Import] Lines:', lines.length, 'Trails:', trails?.length);
 
-           let headerIdx = -1;
-           for (let i = 0; i < Math.min(lines.length, 10); i++) {
-             if (lines[i][0] === 'Month' && lines[i][2] === 'Hike') {
-               headerIdx = i;
-               break;
-             }
-           }
+            let headerIdx = -1;
+            for (let i = 0; i < Math.min(lines.length, 10); i++) {
+              if (lines[i][0] === 'Month' && lines[i][2] === 'Hike') {
+                headerIdx = i;
+                break;
+              }
+            }
+            console.log('[TSV Import] Header index:', headerIdx);
 
-           if (headerIdx < 0) {
-             alert('Could not find quarterly schedule header in file.');
-             return;
-           }
+            if (headerIdx < 0) {
+              alert('Could not find quarterly schedule header in file.');
+              return;
+            }
 
-           const schedule = {};
-           let unmatchedCount = 0;
-           let matchedCount = 0;
+            const schedule = {};
+             let unmatchedCount = 0;
+             let matchedCount = 0;
+             let currentMonth = '';
 
-           for (let i = headerIdx + 1; i < lines.length; i++) {
-             const row = lines[i];
-             if (row.length < 9) continue;
+            for (let i = headerIdx + 1; i < lines.length; i++) {
+               const row = lines[i];
+               console.log('[TSV Import] Row', i, 'length:', row.length, 'data:', row.slice(0, 10));
+               if (row.length < 5) continue;
 
-             const wedMonth = row[0]?.trim();
-             const wedDay = parseInt(row[1], 10);
-             const wedHike = row[2]?.trim();
-             const wedLeader = row[3]?.trim();
+               const rawWedMonth = row[0]?.trim();
+               const wedDay = parseInt(row[1], 10);
+               const wedHike = row[2]?.trim();
+               const wedLeader = row[3]?.trim();
 
-             const friMonth = row[5]?.trim();
-             const friDay = parseInt(row[6], 10);
-             const friHike = row[7]?.trim();
-             const friLeader = row[8]?.trim();
+              if (rawWedMonth) {
+                  const wm = MONTH_ABBR_TO_FULL[rawWedMonth] || MONTH_NAMES.find(n => n.toLowerCase().startsWith(rawWedMonth.toLowerCase()));
+                  if (wm) currentMonth = wm;
+                }
 
-             if (!isNaN(wedDay) && wedHike) {
-               const trail = findTrailByHikeName(wedHike, trails);
-               if (trail) {
-                 const fullName = MONTH_NAMES.find(n => n.toLowerCase() === wedMonth?.toLowerCase());
-                 const monthKey = fullName || wedMonth;
-                 if (!schedule[monthKey]) schedule[monthKey] = [];
-                 schedule[monthKey].push({ day: wedDay, hike: wedHike, trail_id: trail.id, leader: wedLeader || '' });
-                 matchedCount++;
-               } else {
-                 unmatchedCount++;
+              if (!isNaN(wedDay) && wedHike && currentMonth) {
+                  if (!schedule[currentMonth]) schedule[currentMonth] = {};
+                  const trail = findTrailByHikeName(wedHike, trails);
+                  if (trail) {
+                    const hasEarlyStart = /\(early start\)/i.test(wedHike);
+                    schedule[currentMonth][wedDay] = { trail_id: trail.id, hike: wedHike, leader: wedLeader || '', early_start: hasEarlyStart };
+                    matchedCount++;
+                  } else {
+                    console.log('[TSV Import] Unmatched Wed:', wedHike);
+                    unmatchedCount++;
+                  }
+                }
+
+               if (row.length >= 9) {
+                 const rawFriMonth = row[5]?.trim();
+                 const friDay = parseInt(row[6], 10);
+                 const friHike = row[7]?.trim();
+                 const friLeader = row[8]?.trim();
+
+                 if (rawFriMonth) {
+                    const fm = MONTH_ABBR_TO_FULL[rawFriMonth] || MONTH_NAMES.find(n => n.toLowerCase().startsWith(rawFriMonth.toLowerCase()));
+                    if (fm) currentMonth = fm;
+                  }
+
+                if (!isNaN(friDay) && friHike && currentMonth) {
+                    if (!schedule[currentMonth]) schedule[currentMonth] = {};
+                    const trail = findTrailByHikeName(friHike, trails);
+                    if (trail) {
+                      const hasEarlyStart = /\(early start\)/i.test(friHike);
+                      schedule[currentMonth][friDay] = { trail_id: trail.id, hike: friHike, leader: friLeader || '', early_start: hasEarlyStart };
+                      matchedCount++;
+                    } else {
+                      console.log('[TSV Import] Unmatched Fri:', friHike);
+                      unmatchedCount++;
+                    }
+                  }
                }
-             }
+            }
 
-             if (!isNaN(friDay) && friHike) {
-               const trail = findTrailByHikeName(friHike, trails);
-               if (trail) {
-                 const fullName = MONTH_NAMES.find(n => n.toLowerCase() === friMonth?.toLowerCase());
-                 const monthKey = fullName || friMonth;
-                 if (!schedule[monthKey]) schedule[monthKey] = [];
-                 schedule[monthKey].push({ day: friDay, hike: friHike, trail_id: trail.id, leader: friLeader || '' });
-                 matchedCount++;
-               } else {
-                 unmatchedCount++;
-               }
-             }
-           }
+            console.log('[TSV Import] Matched:', matchedCount, 'Unmatched:', unmatchedCount, 'Schedule:', JSON.stringify(schedule).substring(0, 200));
 
-           if (!Object.keys(schedule).length) {
-             alert('No valid schedule data found in file.');
-             return;
-           }
+            if (!Object.keys(schedule).length) {
+              alert('No valid schedule data found in file.');
+              return;
+            }
 
            const apiBase = getApiBase();
            const res = await fetch(`${apiBase}/api/schedule`, {
@@ -727,22 +749,49 @@ export default function ScheduleBuilder() {
    };
 
 const findTrailByHikeName = (hikeName, trailsList) => {
-      if (!hikeName || !trailsList?.length) return null;
-      const withoutEarlyStart = hikeName.replace(/\s*\(?Early Start\)?\s*/gi, '').trim();
-      const normalized = withoutEarlyStart.toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
-      for (const trail of trailsList) {
-        if (trail.id.toLowerCase() === normalized) return trail;
-        if (trail.fullName?.toLowerCase() === normalized) return trail;
-        if (trail.name?.toLowerCase() === normalized) return trail;
-      }
-      const hikeWords = normalized.replace(/\//g, ' ').split(/\s+/).filter(w => w.length > 1);
-      for (const trail of trailsList) {
-        const trailSlug = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\//g, ' ').split(/\s+/).filter(w => w.length > 1);
-        const match = hikeWords.every(w => w.length > 2 && trailSlug.some(t => t.includes(w)));
-        if (match) return trail;
-      }
-      return null;
-    };
+        if (!hikeName || !trailsList?.length) return null;
+        const withoutEarlyStart = hikeName.replace(/\s*\(?Early Start\)?\s*/gi, '').trim();
+        const normalized = withoutEarlyStart.toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+        console.log('[TSV Import] Trying to match:', hikeName, '→ normalized:', normalized);
+        for (const trail of trailsList) {
+          const trailFullName = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+          if (trailFullName === normalized) {
+            console.log('[TSV Import] Exact match →', trail.fullName || trail.name);
+            return trail;
+          }
+          const trailIdSlug = trail.id.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+          const hikeWords = normalized.split(/\s+/).filter(w => w.length > 2);
+          if (hikeWords.length === 0) continue;
+          const trailIdWords = trailIdSlug.split(/\s+/).filter(w => w.length > 2);
+          if (trailIdWords.length === 0) continue;
+          const matchCount = hikeWords.filter(hw => trailIdWords.some(tw => tw.includes(hw) || hw.includes(tw))).length;
+          if (matchCount / hikeWords.length >= 0.8) {
+            console.log('[TSV Import] ID match →', trail.fullName || trail.name);
+            return trail;
+          }
+        }
+        const stopWords = new Set(['to','from','via','the','of','and','at','on','in','up','down','off','by','for','with']);
+        const hikeSignificant = normalized.replace(/\//g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+        if (hikeSignificant.length === 0) return null;
+        let bestMatch = null;
+        let bestScore = 0;
+        for (const trail of trailsList) {
+          const trailName = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\//g, ' ').split(/\s+/);
+          const trailSignificant = trailName.filter(w => w.length > 2 && !stopWords.has(w));
+          const matchCount = hikeSignificant.filter(hw => trailSignificant.some(tw => tw.includes(hw) || hw.includes(tw))).length;
+          const score = matchCount / hikeSignificant.length;
+          if (score > bestScore && score >= 0.6) {
+            bestScore = score;
+            bestMatch = trail;
+          }
+        }
+        if (bestMatch) {
+          console.log('[TSV Import] Partial match →', bestMatch.fullName || bestMatch.name, '(score:', bestScore.toFixed(2), ')');
+        } else {
+          console.log('[TSV Import] No match found for:', hikeName);
+        }
+        return bestMatch;
+      };
 
   const getQuarterForMonth = (monthIndex) => {
     // Calendar quarters: Q1=Jan/Feb/Mar, Q2=Apr/May/Jun, Q3=Jul/Aug/Sep, Q4=Oct/Nov/Dec
@@ -877,19 +926,19 @@ const findTrailByHikeName = (hikeName, trailsList) => {
     downloadBlob(output, `${month.toLowerCase()}_${year}.txt`, 'text/plain');
   };
 
-const hikeCards = useMemo(() => {
-     return filteredHikes.reduce((cards, item) => {
-       const trail = item.trail;
-       if (!trail) return cards;
-       cards.push(
-        <div
-          key={`${trail.id}-${item.hikeIndex}`}
-          draggable
-          onDragStart={() => handleDragStart(item.hikeIndex, null, item.hike)}
-          onDragEnd={handleDragEnd}
-          className="cursor-grab active:cursor-grabbing"
-          title={tt('Drag to schedule on a date')}
-        >
+  const hikeCards = useMemo(() => {
+      return filteredHikes.reduce((cards, item) => {
+        const trail = item.trail;
+        if (!trail) return cards;
+        cards.push(
+         <div
+           key={`${trail.id}-${item.hikeIndex}`}
+           draggable
+           onDragStart={() => handleDragStart(item.hikeIndex, null, item.hike, trail.id, false, '')}
+           onDragEnd={handleDragEnd}
+           className="cursor-grab active:cursor-grabbing"
+           title={tt('Drag to schedule on a date')}
+         >
           <div className="relative">
             <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} />
             {debugMode && (
