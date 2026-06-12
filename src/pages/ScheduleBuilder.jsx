@@ -902,8 +902,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
       const trail = findTrailById(trailId);
       if (trail) {
         const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-        let report = generateReportText(trail, detailsForTrail);
-        if (earlyStart) report += ' (Early Start)';
+        let report = generateReportText(trail, detailsForTrail, earlyStart);
         output += `${dayOfWeek}, ${month} ${day}\t${report}\n\n`;
       } else {
         output += `${dayOfWeek}, ${month} ${day}\tTBD\n\n`;

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { generateReportText, getRideCost, copyToClipboard } from '../../utils/report';
 
 describe('getRideCost', () => {
@@ -83,6 +83,20 @@ describe('generateReportText', () => {
     };
     const result = generateReportText(mockTrail, trailDetails);
     expect(result).toContain('Mount Rainier');
+  });
+
+  it('includes (Early Start) after trail name when earlyStart is true', () => {
+    const result = generateReportText(mockTrail, null, true);
+    expect(result).toContain('(Early Start)');
+    expect(result).toContain('[Moderate]');
+    const earlyStartIdx = result.indexOf('(Early Start)');
+    const difficultyIdx = result.indexOf('[Moderate]');
+    expect(earlyStartIdx).toBeLessThan(difficultyIdx);
+  });
+
+  it('does not include (Early Start) when earlyStart is false', () => {
+    const result = generateReportText(mockTrail, null, false);
+    expect(result).not.toContain('(Early Start)');
   });
 });
 
