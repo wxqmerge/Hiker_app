@@ -44,10 +44,10 @@ export function generateReportText(trail, trailDetails = null, earlyStart = fals
 
 // Helper function to strip planner metadata from descriptions
 function stripPlannerMetadata(text) {
-  // Remove "Pros [content]" section (non-greedy, stops at "Others" or end)
-  text = text.replace(/\s*Pros\s*.+?(?=\s*Others|$)/gi, '');
-  // Remove "Others [content]" section
-  text = text.replace(/\s*Others\s*.+/gi, '');
+  // Remove "Pros [content]" section (non-greedy, stops at "Other"/"Others" or end)
+  text = text.replace(/\s*Pros\s*.*?(?=\s*Others?|$)/gi, '');
+  // Remove "Other"/"Others [content]" section
+  text = text.replace(/\s*Others?\s*.+/gi, '');
   return text.trim();
 }
 
