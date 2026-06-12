@@ -58,12 +58,12 @@ function buildTrailLineHtml(trail, earlyStart) {
   const parking = trail.parking || '';
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : '';
 
-  let line = `${name}◆︎`;
-  if (earlyStart) line += ' (Early Start)';
-  line += `  ${difficulty}\t${distanceText} / ${elevationText}\t${parking}`;
-  if (rideCost) line += `\t${rideCost}`;
+  let line = esc(`${name}◆︎`);
+  if (earlyStart) line += ' <span class="early-start">(Early Start)</span>';
+  line += `  ${esc(difficulty)}\t${esc(distanceText)} / ${esc(elevationText)}\t${esc(parking)}`;
+  if (rideCost) line += `\t${esc(rideCost)}`;
 
-  return esc(line);
+  return line;
 }
 
 export function generateReportHtml(entries, title) {
@@ -104,7 +104,8 @@ export function generateReportHtml(entries, title) {
   body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
   h1 { font-size: 24pt; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 30px; }
   .entry { margin-bottom: 28px; }
-  .entry-header { font-size: 18pt; font-weight: bold; font-family: Arial, sans-serif; white-space: pre; }
+  .entry-header { font-size: 18pt; font-weight: bold; font-family: Arial, sans-serif; white-space: pre-wrap; }
+  .early-start { color: red; }
   .entry-desc { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 4px; white-space: pre-line; }
   .entry-link { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 6px; }
   .entry-link a { color: blue; }
