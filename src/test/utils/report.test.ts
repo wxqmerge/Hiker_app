@@ -61,15 +61,14 @@ describe('generateReportText', () => {
     expect(result).toContain('This is a beautiful trail with great views.');
   });
 
-  it('strips Pros section from description', () => {
+  it('exports full description as-is', () => {
     const trailDetails = {
       'trail-1': {
-        fullDescription: 'Beautiful trail.\n\nPros: Great views.\nOthers: Parking is easy.',
+        fullDescription: 'Beautiful trail with great views.',
       },
     };
     const result = generateReportText(mockTrail, trailDetails);
-    expect(result).not.toContain('Pros:');
-    expect(result).not.toContain('Others:');
+    expect(result).toContain('Beautiful trail with great views.');
   });
 
   it('handles missing trailDetails', () => {

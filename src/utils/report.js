@@ -24,11 +24,7 @@ export function generateReportText(trail, trailDetails = null, earlyStart = fals
 
   // Append description if available
   if (trailDetails && trailDetails[trail.id]) {
-    let description = trailDetails[trail.id].fullDescription || '';
-    
-    // Strip planner metadata (Pros, Others sections)
-    description = stripPlannerMetadata(description);
-    
+    const description = trailDetails[trail.id].fullDescription || '';
     if (description.trim()) {
       report += '\n' + description.trim();
     }
@@ -40,15 +36,6 @@ export function generateReportText(trail, trailDetails = null, earlyStart = fals
   }
   
   return report;
-}
-
-// Helper function to strip planner metadata from descriptions
-function stripPlannerMetadata(text) {
-  // Remove "Pros [content]" section (non-greedy, stops at "Other"/"Others" or end)
-  text = text.replace(/\s*Pros\s*.*?(?=\s*Others?|$)/gi, '');
-  // Remove "Other"/"Others [content]" section
-  text = text.replace(/\s*Others?\s*.+/gi, '');
-  return text.trim();
 }
 
 // Convert range value to ride cost based on VBA formula:
