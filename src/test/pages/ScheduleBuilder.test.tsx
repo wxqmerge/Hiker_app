@@ -40,11 +40,11 @@ describe('ScheduleBuilder', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('renders Export Monthly Description in settings menu', () => {
+  it('renders Export Monthly HTML in settings menu', () => {
     renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText('Export Monthly Description')).toBeInTheDocument();
+    expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
   });
 
   it('renders FilterPanel', () => {
@@ -72,7 +72,7 @@ describe('ScheduleBuilder', () => {
     renderSchedule();
     const settingsBtn = screen.getByTitle('Import/Export schedule');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText('Export Monthly Description')).toBeInTheDocument();
+    expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
   });
 
   it('shows Export Quarterly Schedule button', () => {

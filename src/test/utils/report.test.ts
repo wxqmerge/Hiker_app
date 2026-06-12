@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { generateReportText, getRideCost, copyToClipboard } from '../../utils/report';
+import { generateReportText, generateReportHtml, getRideCost, copyToClipboard } from '../../utils/report';
 
 describe('getRideCost', () => {
   it('returns ride-$3 for range < 30', () => {
@@ -123,5 +123,77 @@ describe('copyToClipboard', () => {
     const result = await copyToClipboard('test', setStatus);
     expect(result).toBe(false);
     vi.restoreAllMocks();
+  });
+});
+
+describe('generateReportHtml', () => {
+  const mockTrail = {
+    id: 'trail-1',
+    name: 'Rainier',
+    fullName: 'Mount Rainier',
+    distance: 5.5,
+    elevationStart: 2000,
+    elevationMax: 4000,
+    difficulty: 'Moderate',
+    parking: 'Lot',
+    range: 45,
+    webLink: 'https://example.com/rainier',
+  };
+
+  it('includes title in h1', () => {
+    const html = generateReportHtml([], 'Over-the-Hill Hike Descriptions -- Jun, 2026');
+    expect(html).toContain('<h1>Over-the-Hill Hike Descriptions -- Jun, 2026</h1>');
+  });
+
+  it('renders trail header line in bold', () => {
+    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: false }];
+    const html = generateReportHtml(entries, 'Title');
+    expect(html).toContain('entry-header');
+    expect(html).toContain('Mount Rainier');
+    expect(html).toContain('[Moderate]');
+    expect(html).toContain('font-weight: bold');
+  });
+
+  it('renders description', () => {
+    const entries = [{
+      dateStr: 'Fri, Jun 12',
+      trail: mockTrail,
+      trailDetails: { 'trail-1': { fullDescription: 'Beautiful trail.' } },
+      earlyStart: false,
+    }];
+    const html = generateReportHtml(entries, 'Title');
+    expect(html).toContain('Beautiful trail.');
+  });
+
+  it('renders web link as clickable blue anchor', () => {
+    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: false }];
+    const html = generateReportHtml(entries, 'Title');
+    expect(html).toContain('<a href="https://example.com/rainier"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('color: blue');
+  });
+
+  it('renders TBD for missing trail', () => {
+    const entries = [{ dateStr: 'Wed, Jun 10', trail: null, trailDetails: null, earlyStart: false }];
+    const html = generateReportHtml(entries, 'Title');
+    expect(html).toContain('TBD');
+  });
+
+  it('includes (Early Start) when earlyStart is true', () => {
+    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: true }];
+    const html = generateReportHtml(entries, 'Title');
+    expect(html).toContain('(Early Start)');
+  });
+
+  it('escapes HTML special characters in description', () => {
+    const entries = [{
+      dateStr: 'Fri, Jun 12',
+      trail: mockTrail,
+      trailDetails: { 'trail-1': { fullDescription: 'Use & enjoy <the> trail.' } },
+      earlyStart: false,
+    }];
+    const html = generateReportHtml(entries, 'Title');
+    expect(html).toContain('&amp;');
+    expect(html).toContain('&lt;the&gt;');
   });
 });

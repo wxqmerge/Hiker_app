@@ -8,8 +8,8 @@ import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
-import { generateReportText } from '../utils/report';
-import { getTrailDetailsById, findTrailById as findTrailByIdUtil } from '../utils/data';
+import { generateReportHtml } from '../utils/report';
+import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { downloadBlob, createFileInput } from '../utils/io';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails } from '../api/client';
 import { getApiBase, getHealthUrl } from '../utils/url.js';
@@ -888,28 +888,25 @@ const findTrailByHikeName = (hikeName, trailsList) => {
 
   const handleExport = () => {
     const month = MONTH_NAMES[selectedMonth];
-    let output = `Over-the-Hill Hike Descriptions -- ${month}, ${year}\n`;
+    const title = `Over-the-Hill Hike Descriptions -- ${month}, ${year}`;
 
-    for (const day of wedFriDates) {
+    const entries = wedFriDates.map(day => {
       const { trail_id: trailId, early_start: earlyStart } = assignedHikes[day] || { trail_id: null, early_start: false };
       const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
+      const dateStr = `${dayOfWeek}, ${month} ${day}`;
 
-      if (!trailId) {
-        output += `${dayOfWeek}, ${month} ${day}\tTBD\n\n`;
-        continue;
-      }
+      if (!trailId) return { dateStr, trail: null, trailDetails: null, earlyStart: false };
 
       const trail = findTrailById(trailId);
-      if (trail) {
-        const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-        let report = generateReportText(trail, detailsForTrail, earlyStart);
-        output += `${dayOfWeek}, ${month} ${day}\t${report}\n\n`;
-      } else {
-        output += `${dayOfWeek}, ${month} ${day}\tTBD\n\n`;
-      }
-    }
+      if (!trail) return { dateStr, trail: null, trailDetails: null, earlyStart: false };
 
-    downloadBlob(output, `${month.toLowerCase()}_${year}.txt`, 'text/plain');
+      return { dateStr, trail, trailDetails: trailDetails, earlyStart };
+    });
+
+    const html = generateReportHtml(entries, title);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   };
 
   const hikeCards = useMemo(() => {
@@ -992,12 +989,12 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                 <button
                     onClick={handleExport}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                    title={tt('Export monthly hike descriptions as text')}
+                    title={tt('Export monthly hike descriptions as HTML in a new tab')}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" />
                     </svg>
-                    Export Monthly Description
+                    Export Monthly HTML
                   </button>
                <button onClick={exportExcelSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('Export quarterly schedule as TSV file')}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

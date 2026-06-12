@@ -1,4 +1,10 @@
 import { formatTrailLine } from './formatTrail';
+
+// Escape HTML special characters
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // Generate formatted report text from trail data
 // Format: Trail Name◆︎  [Difficulty]  distance / elevation  parking  ride-$X
 //         [newline + description]
@@ -36,6 +42,79 @@ export function generateReportText(trail, trailDetails = null, earlyStart = fals
   }
   
   return report;
+}
+
+// Generate HTML report for the monthly schedule
+function buildTrailLineHtml(trail, earlyStart) {
+  let name = trail.fullName || trail.name;
+  name = name.replace(/◆\uFE0E?$/, '').replace(/◆+$/, '');
+
+  const difficulty = `[${trail.difficulty}]`;
+  let distanceText = trail.distance != null ? trail.distance.toFixed(1) : 'N/A';
+  if (trail.distanceExtended) distanceText += `-${trail.distanceExtended.toFixed(1)}`;
+  const elevStart = trail.elevationStart != null ? trail.elevationStart.toLocaleString() : '0';
+  const elevMax = trail.elevationMax != null ? trail.elevationMax.toLocaleString() : elevStart;
+  const elevationText = `${elevStart}'-${elevMax}'`;
+  const parking = trail.parking || '';
+  const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : '';
+
+  let line = `${name}◆︎`;
+  if (earlyStart) line += ' (Early Start)';
+  line += `  ${difficulty}\t${distanceText} / ${elevationText}\t${parking}`;
+  if (rideCost) line += `\t${rideCost}`;
+
+  return esc(line);
+}
+
+export function generateReportHtml(entries, title) {
+  let sections = entries.map(entry => {
+    const { dateStr, trail, trailDetails, earlyStart } = entry;
+
+    if (!trail) {
+      return `<div class="entry"><div class="entry-header">${esc(dateStr)}\tTBD</div></div>`;
+    }
+
+    let html = `<div class="entry">`;
+    html += `<div class="entry-header">${esc(dateStr)}\t${buildTrailLineHtml(trail, earlyStart)}</div>`;
+
+    // Description
+    if (trailDetails && trailDetails[trail.id]) {
+      const desc = trailDetails[trail.id].fullDescription || '';
+      if (desc.trim()) {
+        html += `<div class="entry-desc">${esc(desc.trim()).replace(/\n/g, '<br>')}</div>`;
+      }
+    }
+
+    // Web link
+    if (trail.webLink) {
+      html += `<div class="entry-link"><a href="${esc(trail.webLink)}" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(title)}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
+  h1 { font-size: 24pt; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 30px; }
+  .entry { margin-bottom: 28px; }
+  .entry-header { font-size: 18pt; font-weight: bold; font-family: Arial, sans-serif; white-space: pre; }
+  .entry-desc { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 4px; white-space: pre-line; }
+  .entry-link { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 6px; }
+  .entry-link a { color: blue; }
+</style>
+</head>
+<body>
+<h1>${esc(title)}</h1>
+${sections}
+</body>
+</html>`;
 }
 
 // Convert range value to ride cost based on VBA formula:
