@@ -7,7 +7,7 @@ import { generateReportText as genReport, copyToClipboard, getRideCost } from '.
 import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
-import { downloadBlob, exportTrailTsv, shareGpxFile } from '../utils/io';
+import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 
@@ -113,7 +113,7 @@ const getEditedValue = (field) => {
         calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
       );
     }
-    if (field === 'gpxData') return editedFields.gpxData ?? trail.gpxData;
+    if (field === 'gpxData') return (editedFields.gpxData ?? trail.gpxData) || '';
 
     return null;
   };
@@ -139,7 +139,10 @@ const getEditedValue = (field) => {
     if (editedFields.notes !== undefined) updatedTrail.notes = editedFields.notes;
    if (editedFields.altNames !== undefined) updatedTrail.altNames = editedFields.altNames;
     if (editedFields.webLink !== undefined) updatedTrail.webLink = editedFields.webLink;
-    if (editedFields.gpxData !== undefined) updatedTrail.gpxData = editedFields.gpxData;
+    if (editedFields.gpxData !== undefined) {
+      if (editedFields.gpxData === '') delete updatedTrail.gpxData;
+      else updatedTrail.gpxData = editedFields.gpxData;
+    }
 
     if (editedFields.bestSeason !== undefined || editedFields.availableMonths !== undefined) {
       if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
@@ -903,14 +906,44 @@ const getEditedValue = (field) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">GPX Data (XML)</label>
-                    <textarea
-                      value={editedFields.gpxData ?? (trail.gpxData || '')}
-                      onChange={(e) => updateField('gpxData', e.target.value)}
-                      rows={6}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 font-mono text-xs"
-                      placeholder='<?xml version="1.0" encoding="UTF-8"?>&#10;<gpx ...>&#10;  <trk>&#10;    <trkseg>&#10;      <trkpt lat="47.0" lon="-121.0">...</trkpt>&#10;    </trkseg>&#10;  </trk>&#10;</gpx>'
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">GPX Track</label>
+                    <div className="flex gap-2">
+                      {(editedFields.gpxData ?? trail.gpxData) && (
+                        <button
+                          onClick={() => {
+                            const gpx = editedFields.gpxData ?? trail.gpxData;
+                            const safeName = (trail.fullName || trail.name).replace(/[^a-zA-Z0-9]/g, '_');
+                            downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
+                          }}
+                          className="px-3 py-2 text-sm bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
+                        >
+                          Download GPX
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          createFileInput({
+                            accept: '.gpx',
+                            onFile: (file) => {
+                              const reader = new FileReader();
+                              reader.onload = (e) => updateField('gpxData', e.target.result);
+                              reader.readAsText(file);
+                            }
+                          });
+                        }}
+                        className="px-3 py-2 text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition-colors"
+                      >
+                        {(editedFields.gpxData ?? trail.gpxData) ? 'Replace GPX' : 'Import GPX'}
+                      </button>
+                      {(editedFields.gpxData ?? trail.gpxData) && (
+                        <button
+                          onClick={() => updateField('gpxData', '')}
+                          className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
