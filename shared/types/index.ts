@@ -34,6 +34,7 @@ export interface Trail {
   availableMonths?: string[];
   isWilderness?: boolean;
   webLink?: string;
+  gpxData?: string;
 }
 
 export interface TrailDetail {

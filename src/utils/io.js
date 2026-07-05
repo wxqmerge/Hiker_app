@@ -1,3 +1,23 @@
+// Share a GPX file via Web Share API (mobile) with download fallback (desktop)
+export async function shareGpxFile(gpxContent, trailName) {
+  const safeName = (trailName || 'route').replace(/[^a-zA-Z0-9]/g, '_');
+  const filename = `${safeName}.gpx`;
+  const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
+  const file = new File([blob], filename, { type: 'application/gpx+xml' });
+
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: trailName });
+      return true;
+    } catch (err) {
+      if (err.name === 'AbortError') return false;
+    }
+  }
+
+  downloadBlob(gpxContent, filename, 'application/gpx+xml');
+  return true;
+}
+
 // Download a blob as a file
 export function downloadBlob(data, filename, type = 'application/json') {
   const blob = new Blob([data], { type });

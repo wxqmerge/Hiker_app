@@ -40,7 +40,10 @@ export function generateReportText(trail, trailDetails = null, earlyStart = fals
   if (trail.webLink) {
     report += `\n\nLink: ${trail.webLink}\n`;
   }
-  
+  if (trail.gpxData) {
+    report += '\nGPX: available\n';
+  }
+
   return report;
 }
 
@@ -88,6 +91,9 @@ export function generateReportHtml(entries, title) {
     // Web link
     if (trail.webLink) {
       html += `<div class="entry-link"><a href="${esc(trail.webLink)}" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></div>`;
+    }
+    if (trail.gpxData) {
+      html += '<div class="entry-gpx">GPX: available</div>';
     }
 
     html += `</div>`;

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
+import { shareGpxFile } from '../utils/io';
 import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
@@ -140,8 +141,8 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
          </div>
        </Link>
 
-       {/* Web Link / Search - outside Link to avoid nested anchors */}
-       <div className="px-4 pb-2">
+        {/* Web Link / Search / GPX - outside Link to avoid nested anchors */}
+        <div className="px-4 pb-2 flex items-center gap-2">
          {trail.webLink ? (
            <a
              href={trail.webLink}
@@ -156,20 +157,36 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
              <span className="truncate">Link</span>
            </a>
          ) : (
-           <a
-             href={getGoogleAllTrailsSearchUrl(trail.fullName || trail.name)}
-             target="_blank"
-             rel="noopener noreferrer"
-             className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-             title={`Search for ${trail.fullName || trail.name} on AllTrails in Washington`}
-           >
-             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-             </svg>
-             <span className="truncate">Search</span>
-           </a>
-         )}
-       </div>
+            <a
+              href={getGoogleAllTrailsSearchUrl(trail.fullName || trail.name)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+              title={`Search for ${trail.fullName || trail.name} on AllTrails in Washington`}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="truncate">Search</span>
+            </a>
+          )}
+          {trail.gpxData && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                shareGpxFile(trail.gpxData, trail.fullName || trail.name);
+              }}
+              className="flex items-center gap-1 text-green-600 hover:text-green-800"
+              title={`Share GPX for ${trail.fullName || trail.name} (opens in Organic Maps or downloads)`}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              <span className="truncate">GPX</span>
+            </button>
+          )}
+        </div>
 
       {/* Pop score indicator */}
       {hasPopScore && (

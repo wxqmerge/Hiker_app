@@ -7,7 +7,7 @@ import { generateReportText as genReport, copyToClipboard, getRideCost } from '.
 import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
-import { downloadBlob, exportTrailTsv } from '../utils/io';
+import { downloadBlob, exportTrailTsv, shareGpxFile } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 
@@ -113,6 +113,7 @@ const getEditedValue = (field) => {
         calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
       );
     }
+    if (field === 'gpxData') return editedFields.gpxData ?? trail.gpxData;
 
     return null;
   };
@@ -138,6 +139,7 @@ const getEditedValue = (field) => {
     if (editedFields.notes !== undefined) updatedTrail.notes = editedFields.notes;
    if (editedFields.altNames !== undefined) updatedTrail.altNames = editedFields.altNames;
     if (editedFields.webLink !== undefined) updatedTrail.webLink = editedFields.webLink;
+    if (editedFields.gpxData !== undefined) updatedTrail.gpxData = editedFields.gpxData;
 
     if (editedFields.bestSeason !== undefined || editedFields.availableMonths !== undefined) {
       if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
@@ -527,6 +529,22 @@ const getEditedValue = (field) => {
             </div>
           )}
 
+          {trail.gpxData && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">GPX Track</h3>
+              <button
+                onClick={() => shareGpxFile(trail.gpxData, trail.fullName || trail.name)}
+                className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
+                title="Share GPX to Organic Maps (mobile) or download (desktop)"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                <span>Share GPX (opens in Organic Maps or downloads)</span>
+              </button>
+            </div>
+          )}
+
           {(() => {
                 const monthly = trailDetailsResult?.[id]?.popularity?.monthly || [];
                 const trailForPop = trails.find(t => t.id === id);
@@ -882,6 +900,16 @@ const getEditedValue = (field) => {
                       onChange={(e) => updateField('webLink', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                       placeholder="https://example.com/trail"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">GPX Data (XML)</label>
+                    <textarea
+                      value={editedFields.gpxData ?? (trail.gpxData || '')}
+                      onChange={(e) => updateField('gpxData', e.target.value)}
+                      rows={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 font-mono text-xs"
+                      placeholder='<?xml version="1.0" encoding="UTF-8"?>&#10;<gpx ...>&#10;  <trk>&#10;    <trkseg>&#10;      <trkpt lat="47.0" lon="-121.0">...</trkpt>&#10;    </trkseg>&#10;  </trk>&#10;</gpx>'
                     />
                   </div>
                 </div>
