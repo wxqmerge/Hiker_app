@@ -63,5 +63,5 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - ESLint ignores `server/`, `scripts/`, `shared/` — only lints `src/`
 
 ## Deployment
-- Nginx uses `alias` for subpath `/<SUBDOMAIN>/`
+- Nginx uses `alias` for subpath `/<SUBDOMAIN>/` — **not** subdomain root. Access via `https://main-domain/<SUBDOMAIN>/`, NOT `https://<SUBDOMAIN>.main-domain/`
 - Hairpin NAT: server may not reach its own public domain; use `localhost` fallbacks

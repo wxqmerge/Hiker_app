@@ -1,3 +1,6 @@
+# NOTE: FrontendUrl must be the subpath form (https://main-domain/<subpath>/),
+# NOT the subdomain form (https://<subdomain>.main-domain/).
+# Nginx serves the app at a path, not at a subdomain root.
 param(
     [Parameter(Mandatory=$true)]
     [string]$FrontendUrl,
