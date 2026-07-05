@@ -5,7 +5,7 @@ import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailList from '../components/TrailList';
 
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 
 export default function Home() {
   const { trails, lookup, loading } = useTrails();

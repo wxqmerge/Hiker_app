@@ -15,7 +15,7 @@ import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSched
 import { getApiBase, getHealthUrl } from '../utils/url.js';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 import { setSchedule } from '../hooks/useTrailStore';
 
 async function loadSchedule() {
