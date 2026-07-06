@@ -3,6 +3,42 @@ export function sanitizeFilename(name, fallback = 'file') {
   return (name || fallback).replace(/[^a-zA-Z0-9]/g, '_');
 }
 
+// Extract the first GPS coordinate from GPX XML content
+export function getFirstCoordinateFromGpx(gpxContent) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(gpxContent, 'application/xml');
+  // Check for parsing errors
+  if (doc.querySelector('parsererror')) return null;
+  // Try trkpt first (track points)
+  const trkpt = doc.querySelector('trkpt');
+  if (trkpt) {
+    const lat = parseFloat(trkpt.getAttribute('lat'));
+    const lon = parseFloat(trkpt.getAttribute('lon'));
+    if (!isNaN(lat) && !isNaN(lon)) return { lat, lon };
+  }
+  // Fallback to wpt (waypoints)
+  const wpt = doc.querySelector('wpt');
+  if (wpt) {
+    const lat = parseFloat(wpt.getAttribute('lat'));
+    const lon = parseFloat(wpt.getAttribute('lon'));
+    if (!isNaN(lat) && !isNaN(lon)) return { lat, lon };
+  }
+  // Fallback to rtept (route points)
+  const rtept = doc.querySelector('rtept');
+  if (rtept) {
+    const lat = parseFloat(rtept.getAttribute('lat'));
+    const lon = parseFloat(rtept.getAttribute('lon'));
+    if (!isNaN(lat) && !isNaN(lon)) return { lat, lon };
+  }
+  return null;
+}
+
+// Open Google Maps for a trailhead coordinate
+export function openGoogleMapsTrailhead(lat, lon) {
+  const url = `https://www.google.com/maps?q=${lat},${lon}`;
+  window.open(url, '_blank');
+}
+
 // Open GPX file in associated app (mobile: Web Share, desktop: download with extension)
 export async function shareGpxFile(gpxContent, trailName) {
   const safeName = sanitizeFilename(trailName, 'route');

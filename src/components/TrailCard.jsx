@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
-import { shareGpxFile } from '../utils/io';
+import { shareGpxFile, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
 import { getGpx } from '../api/client';
 import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById, getScoredMonths } from '../utils/data';
@@ -203,6 +203,30 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
               <span className="truncate">GPX</span>
+            </button>
+          )}
+          {trail.hasGpx && (
+            <button
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const gpx = await getGpx(trail.id);
+                if (!gpx) return;
+                const coord = getFirstCoordinateFromGpx(gpx);
+                if (coord) {
+                  openGoogleMapsTrailhead(coord.lat, coord.lon);
+                } else {
+                  showToast('No GPS coordinates found in GPX file', 'error');
+                }
+              }}
+              className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
+              title={`Open trailhead for ${trail.fullName || trail.name} in Google Maps (uses first point from GPX)`}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="truncate">TH</span>
             </button>
           )}
         </div>
