@@ -1,12 +1,22 @@
 # NOTE: FrontendUrl must be the subpath form (https://main-domain/<subpath>/),
 # NOT the subdomain form (https://<subdomain>.main-domain/).
 # Nginx serves the app at a path, not at a subdomain root.
+#
+# Usage:
+#   .\test-external.ps1 -FrontendUrl "https://example.com/sothh-dev"
+#   .\test-external.ps1 -FrontendUrl "https://example.com/sothh-dev" -ApiKey "your-key"
+#   .\test-external.ps1 -FrontendUrl "https://example.com/sothh-dev" -ApiUrl "https://sothh-dev.example.com" -ApiKey "your-key"
+#
+# Parameters:
+#   FrontendUrl  (required)  Frontend URL with subpath, e.g. https://example.com/sothh-dev
+#   ApiUrl       (optional)  API server URL, auto-detected from FrontendUrl if omitted
+#   ApiKey       (optional)  API key for write endpoint auth tests; without it, write tests only check 401
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$true, HelpMessage="Frontend URL with subpath, e.g. https://example.com/sothh-dev")]
     [string]$FrontendUrl,
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory=$false, HelpMessage="API server URL (auto-detected if omitted)")]
     [string]$ApiUrl,
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory=$false, HelpMessage="API key for write endpoint auth tests")]
     [string]$ApiKey
 )
 
