@@ -212,6 +212,15 @@ export async function updateTrail(trail: Trail & { gpxData?: string }): Promise<
     updatedTrail.hasGpx = false;
   }
 
+  // Handle GPX file upload: update gpxIndex when gpxFile is set
+  if (updatedTrail.gpxFile) {
+    gpxIndex[trail.id] = updatedTrail.gpxFile;
+    updatedTrail.hasGpx = true;
+  } else if (updatedTrail.gpxFile === '') {
+    delete gpxIndex[trail.id];
+    updatedTrail.hasGpx = false;
+  }
+
   if (trailIdx >= 0) {
     trails[trailIdx] = updatedTrail;
   } else {

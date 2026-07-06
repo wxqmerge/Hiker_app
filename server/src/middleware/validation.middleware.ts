@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // --- Trail field whitelist ---
 export const TRAIL_FIELDS = new Set([
-  'name', 'fullName', 'distance', 'distanceExtended',
+  'id', 'name', 'fullName', 'distance', 'distanceExtended',
   'elevationStart', 'elevationMax', 'difficulty',
   'parking', 'range', 'notes', 'altNames', 'difficultyOrder',
   'seasonal', 'webLink', 'gpxData', 'hasGpx', 'gpxFile',

@@ -225,8 +225,7 @@ export default function TrailManager() {
           }
           const existing = trailDetails?.[trailId]?.popularity || {};
           await saveTrailDetail(trailId, {
-            ...existing,
-            popularity: { ...existing, monthly },
+            popularity: { ...existing, monthly, monthlyScore: undefined },
           });
           updated++;
         }

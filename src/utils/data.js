@@ -19,7 +19,7 @@ export function findTrailById(trails, trailId) {
 
   // Case-insensitive match
   const lower = trailId.toLowerCase();
-  const ciMatch = trails.find(t => t.id.toLowerCase() === lower);
+  const ciMatch = trails.find(t => t.id && t.id.toLowerCase() === lower);
   if (ciMatch) return ciMatch;
 
   // Slug word matching

@@ -222,7 +222,7 @@ const getEditedValue = (field) => {
         newDetail.popularity = { monthly: newMonthly, monthlyScore: scores };
       }
       if (Object.keys(newDetail).length > 0) {
-        await saveTrailDetail(duplicateId, newDetail);
+        await saveTrailDetail(newId, newDetail);
       }
 
       showToast('Trail duplicated successfully!');

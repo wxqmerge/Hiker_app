@@ -65,10 +65,11 @@ router.get('/:id', (req, res) => {
 });
 
 router.put('/:id', requireAdminKey, async (req, res) => {
-  try {
-    const existing = getTrailById(req.params.id);
-    const whitelisted = whitelistTrailFields(req.body);
-    await updateTrail((existing ? { ...existing, ...whitelisted } : whitelisted) as any);
+    try {
+      const existing = getTrailById(req.params.id);
+      const whitelisted = whitelistTrailFields(req.body);
+      const trailData = existing ? { ...existing, ...whitelisted } : { ...whitelisted, id: req.params.id };
+      await updateTrail(trailData as any);
     res.json({ success: true, trail: getTrailById(req.params.id) });
   } catch (error) {
     console.error('[TRAILS] Error updating trail:', error);
