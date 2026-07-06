@@ -1,10 +1,16 @@
-// Share a GPX file via Web Share API (mobile) with download fallback (desktop)
+// Sanitize a string for use as a filename
+export function sanitizeFilename(name, fallback = 'file') {
+  return (name || fallback).replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+// Open GPX file in associated app (mobile: Web Share, desktop: download with extension)
 export async function shareGpxFile(gpxContent, trailName) {
-  const safeName = (trailName || 'route').replace(/[^a-zA-Z0-9]/g, '_');
+  const safeName = sanitizeFilename(trailName, 'route');
   const filename = `${safeName}.gpx`;
   const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
   const file = new File([blob], filename, { type: 'application/gpx+xml' });
 
+  // Mobile: Web Share API opens directly in app
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: trailName });
@@ -14,6 +20,9 @@ export async function shareGpxFile(gpxContent, trailName) {
     }
   }
 
+  // Desktop: download with .gpx extension so OS file association works
+  // If browser has "Open compatible downloads" enabled (Chrome default), it will
+  // automatically prompt to open in the associated app (GPXsee, Locus, etc.)
   downloadBlob(gpxContent, filename, 'application/gpx+xml');
   return true;
 }

@@ -3,6 +3,7 @@ dotenv.config({ path: '.env' });
 dotenv.config({ path: '../.env' });
 
 import express, { Application, Request, Response } from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -13,6 +14,7 @@ import http from 'http';
 import { router as trailsRouter } from './routes/trails.routes.js';
 import { router as scheduleRouter } from './routes/schedule.routes.js';
 import { router as lookupRouter } from './routes/lookup.routes.js';
+import { router as dataRouter } from './routes/data.routes.js';
 import { getWriteHealth, serverVersion } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
 import { requireAdminKey } from './middleware/auth.middleware.js';
@@ -64,6 +66,7 @@ app.use(cors({
 }));
 
 app.use('/api', apiLimiter);
+app.use(compression());
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -78,8 +81,8 @@ app.use(helmet({
   },
 }));
 
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 app.get('/health', (_req: Request, res: Response) => {
   const wh = getWriteHealth();
@@ -100,6 +103,7 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/trails', trailsRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/lookup', lookupRouter);
+app.use('/api/data', dataRouter);
 
 app.get('/api/validate', requireAdminKey, async (_req, res) => {
   const fs = await import('fs/promises');

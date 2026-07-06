@@ -5,7 +5,7 @@ export const TRAIL_FIELDS = new Set([
   'name', 'fullName', 'distance', 'distanceExtended',
   'elevationStart', 'elevationMax', 'difficulty',
   'parking', 'range', 'notes', 'altNames', 'difficultyOrder',
-  'seasonal', 'webLink', 'gpxData',
+  'seasonal', 'webLink', 'gpxData', 'hasGpx', 'gpxFile',
 ]);
 
 export const TRAIL_DETAIL_FIELDS = new Set([
@@ -41,6 +41,7 @@ export const TrailUpdateSchema = z.object({
   seasonal: z.record(z.string(), z.unknown()).optional(),
   webLink: z.string().url().optional().or(z.literal('')),
   gpxData: z.string().optional(),
+  hasGpx: z.boolean().optional(),
 });
 
 // --- Trail detail update schema ---

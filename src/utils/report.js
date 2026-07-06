@@ -1,4 +1,4 @@
-import { formatTrailLine } from './formatTrail';
+import { formatTrailLine, buildTrailLineParts } from './formatTrail';
 
 // Escape HTML special characters
 function esc(s) {
@@ -9,17 +9,7 @@ function esc(s) {
 // Format: Trail Name◆︎  [Difficulty]  distance / elevation  parking  ride-$X
 //         [newline + description]
 export function generateReportText(trail, trailDetails = null, earlyStart = false) {
-  let name = trail.fullName || trail.name;
-  name = name.replace(/◆\uFE0E?$/, '').replace(/◆+$/, '');
-
-  const difficulty = `[${trail.difficulty}]`;
-  let distanceText = trail.distance != null ? trail.distance.toFixed(1) : 'N/A';
-  if (trail.distanceExtended) distanceText += `-${trail.distanceExtended.toFixed(1)}`;
-  const elevStart = trail.elevationStart != null ? trail.elevationStart.toLocaleString() : '0';
-  const elevMax = trail.elevationMax != null ? trail.elevationMax.toLocaleString() : elevStart;
-  const elevationText = `${elevStart}'-${elevMax}'`;
-  const parking = trail.parking || '';
-  const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : '';
+  const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
 
   let line = `${name}◆︎`;
   if (earlyStart) line += ' (Early Start)';
@@ -40,7 +30,7 @@ export function generateReportText(trail, trailDetails = null, earlyStart = fals
   if (trail.webLink) {
     report += `\n\nLink: ${trail.webLink}\n`;
   }
-  if (trail.gpxData) {
+  if (trail.hasGpx) {
     report += '\nGPX: available\n';
   }
 
@@ -49,17 +39,7 @@ export function generateReportText(trail, trailDetails = null, earlyStart = fals
 
 // Generate HTML report for the monthly schedule
 function buildTrailLineHtml(trail, earlyStart) {
-  let name = trail.fullName || trail.name;
-  name = name.replace(/◆\uFE0E?$/, '').replace(/◆+$/, '');
-
-  const difficulty = `[${trail.difficulty}]`;
-  let distanceText = trail.distance != null ? trail.distance.toFixed(1) : 'N/A';
-  if (trail.distanceExtended) distanceText += `-${trail.distanceExtended.toFixed(1)}`;
-  const elevStart = trail.elevationStart != null ? trail.elevationStart.toLocaleString() : '0';
-  const elevMax = trail.elevationMax != null ? trail.elevationMax.toLocaleString() : elevStart;
-  const elevationText = `${elevStart}'-${elevMax}'`;
-  const parking = trail.parking || '';
-  const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : '';
+  const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
 
   let line = esc(`${name}◆︎`);
   if (earlyStart) line += ' <span class="early-start">(Early Start)</span>';
@@ -92,7 +72,7 @@ export function generateReportHtml(entries, title) {
     if (trail.webLink) {
       html += `<div class="entry-link"><a href="${esc(trail.webLink)}" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></div>`;
     }
-    if (trail.gpxData) {
+    if (trail.hasGpx) {
       html += '<div class="entry-gpx">GPX: available</div>';
     }
 

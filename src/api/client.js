@@ -37,6 +37,34 @@ export async function getTrails() {
   return data.trails || [];
 }
 
+export async function getGpx(trailId) {
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}/api/trails/gpx/${trailId}`);
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    const error = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
+    throw new Error(error.error?.message || `HTTP ${res.status}`);
+  }
+  return res.text();
+}
+
+export async function uploadGpxFile(trailId, file) {
+  const apiBase = getApiBase();
+  const apiKey = localStorage.getItem('hiker-api-key');
+  const formData = new FormData();
+  formData.append('gpx', file);
+  const res = await fetch(`${apiBase}/api/trails/gpx/${trailId}`, {
+    method: 'POST',
+    headers: { 'X-API-Key': apiKey || '' },
+    body: formData,
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: { message: 'Upload failed' } }));
+    throw new Error(error.error?.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function updateTrail(trail) {
   return request(`/api/trails/${trail.id}`, {
     method: 'PUT',
@@ -163,6 +191,33 @@ export async function ensureScheduleWritable() {
   if (!res.ok) {
     console.warn('[CLIENT] Failed to ensure schedule files are writable');
     return null;
+  }
+  return res.json();
+}
+
+export async function exportDataZip() {
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}/api/data/export-zip`);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: { message: 'Export failed' } }));
+    throw new Error(error.error?.message || `HTTP ${res.status}`);
+  }
+  return res.blob();
+}
+
+export async function importDataZip(file) {
+  const formData = new FormData();
+  formData.append('zip', file);
+  const apiKey = localStorage.getItem('hiker-api-key');
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}/api/data/import-zip`, {
+    method: 'POST',
+    headers: { 'X-API-Key': apiKey || '' },
+    body: formData,
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: { message: 'Import failed' } }));
+    throw new Error(error.error?.message || `HTTP ${res.status}`);
   }
   return res.json();
 }

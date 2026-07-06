@@ -4,6 +4,8 @@ const path = require('path');
 const GPX_DIR = path.join(__dirname, '..', 'GPX');
 const TRAILS_FILE = path.join(__dirname, '..', 'exported_data', 'trails.json');
 const MATCHES_FILE = path.join(__dirname, 'gpx_matches.json');
+const INDEX_FILE = path.join(__dirname, '..', 'exported_data', 'gpx_index.json');
+const GPX_UPLOAD_DIR = path.join(__dirname, '..', 'exported_data', 'gpx');
 
 // Load data
 const trailsData = JSON.parse(fs.readFileSync(TRAILS_FILE, 'utf-8'));
@@ -18,7 +20,8 @@ for (const m of matches) {
   matchesByTrail[m.trailId].push(m.gpxFile);
 }
 
-// Import GPX data
+// Build gpx_index: trailId -> gpx filename
+const gpxIndex = {};
 let imported = 0;
 let skipped = 0;
 
@@ -29,20 +32,20 @@ for (const [trailId, gpxFiles] of Object.entries(matchesByTrail)) {
     skipped++;
     continue;
   }
-  
-  // If trail already has GPX data, skip (unless we want to overwrite)
-  if (trail.gpxData) {
-    console.log(`SKIP: ${trail.fullName} already has GPX data`);
+
+  // Filter to only files that actually exist on disk
+  const existingFiles = gpxFiles.filter(f => fs.existsSync(path.join(GPX_DIR, f)));
+  if (existingFiles.length === 0) {
+    console.log(`SKIP: ${trail.fullName} — none of ${gpxFiles.length} matched GPX files exist on disk`);
     skipped++;
     continue;
   }
-  
-  // Use the first GPX file (or largest if multiple)
-  let selectedFile = gpxFiles[0];
-  if (gpxFiles.length > 1) {
-    // Pick the largest file (most detailed track)
+
+  // Pick the largest existing file (most detailed track)
+  let selectedFile = existingFiles[0];
+  if (existingFiles.length > 1) {
     let maxSize = 0;
-    for (const f of gpxFiles) {
+    for (const f of existingFiles) {
       const size = fs.statSync(path.join(GPX_DIR, f)).size;
       if (size > maxSize) {
         maxSize = size;
@@ -50,24 +53,40 @@ for (const [trailId, gpxFiles] of Object.entries(matchesByTrail)) {
       }
     }
   }
-  
-  // Read GPX content
-  const gpxContent = fs.readFileSync(path.join(GPX_DIR, selectedFile), 'utf-8');
-  
-  // Validate it's actually a GPX file
-  if (!gpxContent.includes('<gpx') && !gpxContent.includes('<?xml')) {
-    console.log(`SKIP: ${selectedFile} doesn't appear to be valid GPX`);
-    skipped++;
-    continue;
-  }
-  
-  // Set GPX data
-  trail.gpxData = gpxContent;
+
+  // Set hasGpx flag on trail, remove old gpxData
+  trail.hasGpx = true;
+  delete trail.gpxData;
+
+  // Add to index
+  gpxIndex[trailId] = selectedFile;
   imported++;
-  console.log(`IMPORT: ${trail.fullName} (${trailId}) ← ${selectedFile}`);
+  console.log(`INDEX: ${trail.fullName} (${trailId}) ← ${selectedFile}`);
 }
 
-// Save updated trails
+// Clear hasGpx for trails not in the index, and migrate any remaining embedded gpxData to files
+for (const trail of trailsData.trails) {
+  if (trail.gpxData) {
+    // Migrate embedded GPX to file-based storage
+    fs.mkdirSync(GPX_UPLOAD_DIR, { recursive: true });
+    const gpxFilePath = path.join(GPX_UPLOAD_DIR, `${trail.id}.gpx`);
+    fs.writeFileSync(gpxFilePath, trail.gpxData, 'utf-8');
+    gpxIndex[trail.id] = `${trail.id}.gpx`;
+    trail.hasGpx = true;
+    console.log(`MIGRATE: ${trail.fullName} (${trail.id}) → ${trail.id}.gpx`);
+  }
+  if (!gpxIndex[trail.id]) {
+    trail.hasGpx = false;
+  }
+  delete trail.gpxData;
+}
+
+// Save updated trails (without embedded GPX)
 fs.writeFileSync(TRAILS_FILE, JSON.stringify(trailsData, null, 2));
-console.log(`\nDone! Imported ${imported} GPX files, skipped ${skipped}`);
-console.log(`Updated ${TRAILS_FILE}`);
+
+// Save gpx index
+fs.writeFileSync(INDEX_FILE, JSON.stringify(gpxIndex, null, 2));
+
+console.log(`\nDone! Indexed ${imported} GPX files, skipped ${skipped}`);
+console.log(`Updated ${TRAILS_FILE} (GPX data removed)`);
+console.log(`Created ${INDEX_FILE}`);

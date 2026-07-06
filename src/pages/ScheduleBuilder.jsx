@@ -707,15 +707,7 @@ export default function ScheduleBuilder() {
               return;
             }
 
-           const res = await fetch(`${getApiBase()}/api/schedule`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(hasApiKey ? { 'X-API-Key': localStorage.getItem('hiker-api-key') || '' } : {}),
-              },
-              body: JSON.stringify(schedule),
-            });
-           const result = await res.json();
+            const result = await updateSchedule(schedule);
            if (!result.success) {
              alert('Import failed: ' + (result.error?.message || 'Unknown error'));
              return;
@@ -1278,15 +1270,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                                         });
                                         serverData[abbr] = next;
                                         try {
-                                          const res = await fetch(`${getApiBase()}/api/schedule`, {
-                                            method: 'PUT',
-                                            headers: {
-                                              'Content-Type': 'application/json',
-                                              ...(hasApiKey ? { 'X-API-Key': localStorage.getItem('hiker-api-key') || '' } : {}),
-                                            },
-                                            body: JSON.stringify(serverData),
-                                          });
-                                          const result = await res.json();
+                                          const result = await updateSchedule(serverData);
                                           if (result.success) {
                                             const freshData = await getSchedule();
                                             setScheduleStore(() => {

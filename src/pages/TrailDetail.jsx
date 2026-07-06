@@ -7,9 +7,11 @@ import { generateReportText as genReport, copyToClipboard, getRideCost } from '.
 import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
-import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput } from '../utils/io';
+import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput, sanitizeFilename } from '../utils/io';
+import { getGpx, uploadGpxFile } from '../api/client';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
+import MonthlyScoreGrid, { ScoreBreakdownRow } from '../components/MonthlyScoreGrid.jsx';
 
 const SEASON_MAP = {
   'All': 'All',
@@ -67,6 +69,8 @@ export default function TrailDetail() {
   const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(() => searchParams.get('edit') === 'true');
   const [editedFields, setEditedFields] = useState({});
+  const [isDuplicate, setIsDuplicate] = useState(false);
+  const [duplicateId, setDuplicateId] = useState('');
 
   const trail = useMemo(() => findTrailById(trails, id), [trails, id]);
   const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
@@ -126,7 +130,109 @@ const getEditedValue = (field) => {
     setIsEditMode(true);
   };
 
+  const startDuplicate = () => {
+    const baseId = trail.id.replace(/-\d+$/, '');
+    let newId = `${baseId}-2`;
+    let counter = 2;
+    while (trails.find(t => t.id === newId)) {
+      counter++;
+      newId = `${baseId}-${counter}`;
+    }
+    setDuplicateId(newId);
+    setEditedFields({
+      id: newId,
+      fullName: trail.fullName || trail.name,
+      name: trail.name,
+      distance: trail.distance,
+      distanceExtended: trail.distanceExtended,
+      elevationStart: trail.elevationStart,
+      elevationMax: trail.elevationMax,
+      difficulty: trail.difficulty,
+      parking: trail.parking,
+      range: trail.range,
+      notes: trail.notes || '',
+      seasonal: trail.seasonal ? { ...trail.seasonal } : {},
+      altNames: trail.altNames ? [...trail.altNames] : [],
+      webLink: trail.webLink || '',
+      gpxFile: '',
+      hasGpx: false,
+      bestSeason: trail.seasonal?.bestSeason || '',
+      availableMonths: trail.seasonal?.availableMonths || [],
+      description: trailDetailsResult?.[id]?.fullDescription || '',
+      pros: trailDetailsResult?.[id]?.pros || '',
+      others: trailDetailsResult?.[id]?.others || '',
+      leaders: trailDetailsResult?.[id]?.leaders ? [...trailDetailsResult?.[id]?.leaders] : [],
+      monthlyPopularity: trailDetailsResult?.[id]?.popularity?.monthly ? [...trailDetailsResult?.[id]?.popularity?.monthly] : [],
+      monthlyScore: trailDetailsResult?.[id]?.popularity?.monthlyScore ? [...trailDetailsResult?.[id]?.popularity?.monthlyScore] : [],
+    });
+    setIsDuplicate(true);
+    setIsEditMode(true);
+  };
+
   const saveEdits = async () => {
+    if (isDuplicate) {
+      const newName = editedFields.fullName || '';
+      const originalName = trail.fullName || trail.name;
+      const newId = editedFields.id || duplicateId;
+      if (!newName || newName === originalName) {
+        showToast('Please change the trail name before saving.', 'error');
+        return;
+      }
+      if (trails.find(t => t.id === newId && t.id !== trail.id)) {
+        showToast(`Trail ID "${newId}" already exists.`, 'error');
+        return;
+      }
+      if (newId.length > 24) {
+        showToast('Trail ID is too long (max 24 characters).', 'error');
+        return;
+      }
+      const newTrail = {
+        id: newId,
+        name: newName.split('/')[0].trim(),
+        fullName: newName,
+        distance: editedFields.distance ?? trail.distance,
+        distanceExtended: editedFields.distanceExtended ?? trail.distanceExtended,
+        elevationStart: editedFields.elevationStart ?? trail.elevationStart,
+        elevationMax: editedFields.elevationMax ?? trail.elevationMax,
+        difficulty: editedFields.difficulty || 'Unknown',
+        parking: editedFields.parking || '',
+        range: editedFields.range || '',
+        notes: editedFields.notes || '',
+        seasonal: {
+          bestSeason: normalizeSeason(editedFields.bestSeason || ''),
+          availableMonths: editedFields.availableMonths || [],
+        },
+        altNames: editedFields.altNames || [],
+        webLink: editedFields.webLink || '',
+        gpxFile: editedFields.gpxFile || '',
+        hasGpx: !!editedFields.gpxFile,
+        difficultyOrder: (trail.difficultyOrder ?? 99),
+      };
+      await saveTrail(newTrail);
+
+      const newDetail = {};
+      if (editedFields.description) newDetail.fullDescription = editedFields.description;
+      if (editedFields.pros) newDetail.pros = editedFields.pros;
+      if (editedFields.others) newDetail.others = editedFields.others;
+      if (editedFields.leaders) newDetail.leaders = editedFields.leaders;
+
+      const newMonthly = editedFields.monthlyPopularity || [];
+      if (newMonthly.length > 0) {
+        const scores = getEditedValue('monthlyScore') || [];
+        newDetail.popularity = { monthly: newMonthly, monthlyScore: scores };
+      }
+      if (Object.keys(newDetail).length > 0) {
+        await saveTrailDetail(duplicateId, newDetail);
+      }
+
+      showToast('Trail duplicated successfully!');
+      setEditedFields({});
+      setIsDuplicate(false);
+      setIsEditMode(false);
+      navigate(`/trail/${newId}`);
+      return;
+    }
+
     const updatedTrail = { ...trail };
     if (editedFields.fullName !== undefined) updatedTrail.fullName = editedFields.fullName;
     if (editedFields.distance !== undefined) updatedTrail.distance = editedFields.distance;
@@ -177,6 +283,8 @@ const getEditedValue = (field) => {
   const cancelEdits = () => {
     setEditedFields({});
     setIsEditMode(false);
+    setIsDuplicate(false);
+    setDuplicateId('');
     searchParams.delete('edit');
     navigate(`/trail/${id}${searchParams.toString() ? '?' + searchParams.toString() : ''}`, { replace: true });
   };
@@ -207,7 +315,7 @@ const getEditedValue = (field) => {
       leaders: getEditedValue('leaders') || [],
     };
     const tsv = exportTrailTsv(tsvTrail, tsvDetail);
-    const safeName = (trail.name || 'trail').replace(/[^a-zA-Z0-9]/g, '_');
+    const safeName = sanitizeFilename(trail.name, 'trail');
     downloadBlob(tsv, `${safeName}.tsv`, 'text/tab-separated-values');
   };
 
@@ -352,6 +460,16 @@ const getEditedValue = (field) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
                 Edit
+              </button>
+              <button
+                onClick={startDuplicate}
+                className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors text-blue-700 hover:text-blue-900"
+                title="Duplicate this trail as a new entry"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Duplicate
               </button>
             </div>
           </div>
@@ -532,61 +650,55 @@ const getEditedValue = (field) => {
             </div>
           )}
 
-          {trail.gpxData && (
+          {trail.gpxFile && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">GPX Track</h3>
-              <button
-                onClick={() => shareGpxFile(trail.gpxData, trail.fullName || trail.name)}
-                className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
-                title="Share GPX to Organic Maps (mobile) or download (desktop)"
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                </svg>
-                <span>Share GPX (opens in Organic Maps or downloads)</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => shareGpxFile(trail.gpxFile, trail.name)}
+                  className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
+                  title="Share GPX to Organic Maps (mobile) or download (desktop)"
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  <span>Share GPX (opens in Organic Maps or downloads)</span>
+                </button>
+                <span className="text-sm text-gray-500" title="Matched GPX file">
+                  {trail.gpxFile}
+                </span>
+              </div>
             </div>
           )}
 
-          {(() => {
-                const monthly = trailDetailsResult?.[id]?.popularity?.monthly || [];
-                const trailForPop = trails.find(t => t.id === id);
-                const popSeasonal = trailForPop?.seasonal || {};
-                const { hasQuarterData } = getSeasonalInfo(popSeasonal);
-                if (monthly.length === 0) return null;
-                return (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Popularity</h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      {monthly.length > 0 && (
+               {(() => {
+                 const monthly = trailDetailsResult?.[id]?.popularity?.monthly || [];
+                 const trailForPop = trails.find(t => t.id === id);
+                 const popSeasonal = trailForPop?.seasonal || {};
+                 if (monthly.length === 0) return null;
+                 return (
+                   <div className="mb-6">
+                     <h3 className="text-lg font-semibold text-gray-800 mb-3">Popularity</h3>
+                     <div className="grid grid-cols-1 gap-4">
                        <div className="bg-gray-50 rounded-lg p-4">
                          <p className="text-sm text-gray-500 mb-2">Monthly Popularity</p>
-                         <div className="flex gap-1.5 flex-wrap">
-                           {MONTH_ABBR.map((month, idx) => {
-                              const hikeCount = monthly[idx] || 0;
-                             const score = calculateMonthlyScore(hikeCount, idx, [], hasQuarterData);
-                            const intensity = Math.min(score / 9, 1);
-                            const bg = score > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
-                            const text = score > 0 ? 'text-green-800' : 'text-gray-400';
-                            return (
-                              <div
-                                key={idx}
-                                className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium ${bg} ${text}`}
-                                title={`${month}: ${hikeCount} hikes -> score ${score}`}
-                              >
-                                <span className="text-[9px] leading-none">{month.substring(0, 3)}</span>
-                                {score > 0 && <span className="text-sm leading-none mt-0.5 font-bold">{score}</span>}
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+                         <MonthlyScoreGrid
+                           monthly={monthly}
+                           availableMonths={getAvailableMonthsFromSeasonal(popSeasonal, true)}
+                           seasonal={popSeasonal}
+                         />
+                         <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200">
+                           <ScoreBreakdownRow
+                             monthly={monthly}
+                             availableMonths={getAvailableMonthsFromSeasonal(popSeasonal, true)}
+                             seasonal={popSeasonal}
+                           />
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                 );
+               })()}
           </div>
         </div>
       </main>
@@ -595,7 +707,30 @@ const getEditedValue = (field) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit {trail.name}</h2>
+              {isDuplicate ? (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Duplicate Trail</h2>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-yellow-700">
+                      This is a copy of <strong>{trail.fullName || trail.name}</strong>. Change the name below before saving.
+                    </p>
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Trail ID</label>
+                      <input
+                        type="text"
+                        value={editedFields.id || ''}
+                        onChange={(e) => updateField('id', e.target.value.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase())}
+                        maxLength={24}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 font-mono text-sm"
+                        placeholder="e.g. oat-horse-living-room"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Letters, numbers, hyphens, underscores only (max 24 chars)</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit {trail.name}</h2>
+              )}
 
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Basic Information</h3>
@@ -907,42 +1042,47 @@ const getEditedValue = (field) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">GPX Track</label>
-                    <div className="flex gap-2">
-                      {(editedFields.gpxData ?? trail.gpxData) && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        {(editedFields.gpxFile ?? trail.gpxFile) ? (
+                          <>
+                            <span className="text-gray-700">{editedFields.gpxFile ?? trail.gpxFile}</span>
+                            <span className="text-gray-400">(uploaded)</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">No GPX file</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
                         <button
-                          onClick={() => {
-                            const gpx = editedFields.gpxData ?? trail.gpxData;
-                            const safeName = (trail.fullName || trail.name).replace(/[^a-zA-Z0-9]/g, '_');
-                            downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
+                          onClick={async () => {
+                            createFileInput({
+                              accept: '.gpx',
+                              onFile: async (file) => {
+                                try {
+                                  const result = await uploadGpxFile(trail.id, file);
+                                  updateField('gpxFile', result.gpxFile);
+                                  updateField('hasGpx', true);
+                                  showToast('GPX uploaded successfully');
+                                } catch (err) {
+                                  showToast(err.message, 'error');
+                                }
+                              }
+                            });
                           }}
-                          className="px-3 py-2 text-sm bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
+                          className="px-3 py-2 text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition-colors"
                         >
-                          Download GPX
+                          {(editedFields.gpxFile ?? trail.gpxFile) ? 'Replace GPX' : 'Upload GPX'}
                         </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          createFileInput({
-                            accept: '.gpx',
-                            onFile: (file) => {
-                              const reader = new FileReader();
-                              reader.onload = (e) => updateField('gpxData', e.target.result);
-                              reader.readAsText(file);
-                            }
-                          });
-                        }}
-                        className="px-3 py-2 text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition-colors"
-                      >
-                        {(editedFields.gpxData ?? trail.gpxData) ? 'Replace GPX' : 'Import GPX'}
-                      </button>
-                      {(editedFields.gpxData ?? trail.gpxData) && (
-                        <button
-                          onClick={() => updateField('gpxData', '')}
-                          className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          Remove
-                        </button>
-                      )}
+                        {(editedFields.gpxFile ?? trail.gpxFile) && (
+                          <button
+                            onClick={() => updateField('gpxFile', '')}
+                            className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -957,9 +1097,14 @@ const getEditedValue = (field) => {
                 </button>
                 <button
                   onClick={saveEdits}
-                  className="px-4 py-2 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                  disabled={isDuplicate && ((editedFields.fullName || '') === (trail.fullName || trail.name))}
+                  className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                    isDuplicate && (editedFields.fullName || '') === (trail.fullName || trail.name)
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
                 >
-                  Save Changes
+                  {isDuplicate ? 'Save New Trail' : 'Save Changes'}
                 </button>
               </div>
             </div>

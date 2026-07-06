@@ -10,148 +10,162 @@ const trails = trailsData.trails;
 const allFiles = fs.readdirSync(GPX_DIR);
 const gpxFiles = allFiles.filter(f => f.endsWith('.gpx'));
 
-// Direct mapping from GPX filename patterns to trail IDs
-// Format: [regex pattern, trailId]
-const directMatches = [
-  [/360[_\s-]Road/i, '360'],
-  [/Anderson[_\s-]Lake/i, 'anderson'],
-  [/Aurora[_\s-]Creek/i, 'aurora'],
-  [/Badger/i, 'badger'],
-  [/Blyn[_\s-]Tower.*Uncas/i, 'blyn-tower'],
-  [/Blyn/i, 'blyn'],
-  [/Bogachiel/i, 'bogachiel'],
-  [/Boulder[_\s-]Creek/i, 'boulder'],
-  [/Borderline/i, 'borderline'],
-  [/Burnt[_\s-]Hill.*Johnson/i, 'burnt'],
-  [/Burnt[_\s-]Hill.*Louella/i, 'burnt-hill-from'],
-  [/Burnt[_\s-]Hill.*cabin/i, 'burnt-hill'],
-  [/Camp[_\s-]Handy/i, 'camp'],
-  [/Cascade[_\s-]Rock/i, 'cascade'],
-  [/Cassidy/i, 'cassidy'],
-  [/Chetzemoka/i, 'chetzemoka'],
-  [/Deer[_\s-]Hair/i, 'deer-hair'],
-  [/Deer[_\s-]Lake[_\s-]Potholes/i, 'deer-lake'],
-  [/Deer[_\s-]Ridge/i, 'slab-camp'],
-  [/Dosewallips/i, 'dosewallips'],
-  [/Dungeness.*Spit/i, 'dungeness-spit'],
-  [/Dungeness.*dike/i, 'dungeness'],
-  [/Dungeness.*Fish/i, 'dungeness-fish'],
-  [/Dungeness.*Levee/i, 'dungeness-levee'],
-  [/Dungeness/i, 'dungeness'],
-  [/Eden[_\s-]Valley[_\s-]East/i, 'oat-eden'],
-  [/Eden[_\s-]Valley[_\s-]West/i, 'oat-eden-valley'],
-  [/Elis[_\s-]creek.*angeles/i, 'mt-angeles'],
-  [/Elwha.*Beach/i, 'elwha'],
-  [/Elwha.*dam.*east/i, 'elwha'],
-  [/Elwha.*fishery/i, 'elwha-fish'],
-  [/Elwha.*west/i, 'w'],
-  [/Elwha/i, 'elwha'],
-  [/Fort[_\s-]Flagler/i, 'fort-flagler'],
-  [/Fort[_\s-]Townsend/i, 'fort'],
-  [/Galloping[_\s-]Goose.*Victoria/i, 'victoriacanada'],
-  [/Galloping[_\s-]Goose/i, 'victoriacanada'],
-  [/Gibbs[_\s-]Lake/i, 'gibbs'],
-  [/Gold[_\s-]Creek/i, 'gold'],
-  [/Griff/i, 'griff'],
-  [/Heather.*halfway/i, 'heather'],
-  [/Heather[_\s-]Park/i, 'heather'],
-  [/Horse.*living.*room/i, 'oat---mile'],
-  [/Hansville/i, 'hansville'],
-  [/Hurricane.*SnowShoe/i, 'hurricane-ridge'],
-  [/Hurricane[_\s-]Ridge/i, 'hurricane-ridge'],
-  [/Hurricane/i, 'hurricane'],
-  [/Johnson[_\s-]Creek/i, 'burnt'],
-  [/Karpen/i, 'karpen'],
-  [/Larry[_\s-]Scott.*Milo/i, 'larry-scott'],
-  [/Larry[_\s-]Scott/i, 'larry'],
-  [/Little[_\s-]Hump.*Murhut/i, 'little-humpmurhut'],
-  [/Little[_\s-]Hump/i, 'little-humpbig'],
-  [/Little[_\s-]River/i, 'little-river'],
-  [/Lovers[_\s-]Lane/i, 'lovers'],
-  [/Lower[_\s-]Grey[_\s-]Wolf/i, 'oldlower'],
-  [/Lyre[_\s-]River/i, 'lyre'],
-  [/M0.*living.*room/i, 'oat---mile'],
-  [/Miller.*ESB/i, 'miller-peninsula'],
-  [/Miller.*Thompson/i, 'miller-peninsula-to'],
-  [/Miller/i, 'miller'],
-  [/Mink[_\s-]Lake/i, 'mink'],
-  [/Mt[_\s-]Townsend/i, 'mt-townsend'],
-  [/Mt[_\s-]Walker/i, 'mt-walker'],
-  [/Mt[_\s-]Zion/i, 'mt-zion'],
-  [/Murhut/i, 'little-humpmurhut'],
-  [/N[_\s-]Sulduc/i, 'n'],
-  [/Ned[_\s-]Hill/i, 'ned'],
-  [/Newberry[_\s-]Hill/i, 'newberry'],
-  [/North[_\s-]Kitsap/i, 'n-kitsap'],
-  [/OAT/i, 'oat'],
-  [/Old[_\s-]Angeles/i, 'mt'],
-  [/Othh[_\s-]Reservoir/i, 'oat'],
-  [/Ozette.*Triangle/i, 'ozette'],
-  [/Pats[_\s-]Prairie/i, 'pats'],
-  [/Peabody/i, 'peabody'],
-  [/Ranger[_\s-]Hole/i, 'little-humpmurhut'],
-  [/Royal[_\s-]Basin/i, 'royal-lakebasin'],
-  [/Royal[_\s-]Creek/i, 'royal'],
-  [/Slide[_\s-]Camp/i, 'slab-camp-to-slide'],
-  [/Slab[_\s-]Camp.*Duncan/i, 'slab-camp-to'],
-  [/Slab[_\s-]Camp/i, 'slab'],
-  [/Sleepy[_\s-]Hollow/i, 'sleepy'],
-  [/Snider[_\s-]Ridge/i, 'snider'],
-  [/Spruce.*East/i, 'spruce'],
-  [/Spruce.*West/i, 'spruce-rr'],
-  [/Steam[_\s-]Donkey.*Maple/i, 'steam'],
-  [/Steam[_\s-]Donkey/i, 'steam'],
-  [/Storm[_\s-]King/i, 'storm'],
-  [/Teal/i, 'teal'],
-  [/Thompson[_\s-]Spit/i, 'miller-peninsula-to'],
-  [/Timberton/i, 'timberton'],
-  [/Tubal[_\s-]Cain/i, 'tubal'],
-  [/Tunnel[_\s-]Creek/i, 'tunnel'],
-  [/Verne[_\s-]Samuelson/i, 'verne'],
-  [/Victoria.*Canada/i, 'victoriacanada'],
-  [/Victoria.*Galloping/i, 'victoriacanada'],
-  [/West[_\s-]Elwha/i, 'w'],
-  [/Bear[_\s-]Creek.*Pearrygin/i, 'barnes'],
-  [/Ellis[_\s-]creek.*angeles/i, 'mt-angeles'],
-];
+// Words to ignore when scoring — group names, trail type descriptors
+const NOISE_WORDS = new Set([
+  'w', 'othh', 'ramblers', 'sotth', 'with', 'the', 'and', 'off', 'of',
+  'at', 'from', 'to', 'via', 'near', 'a', 'in', 'on',
+  'trail', 'trails', 'loop', 'walk', 'hike', 'drive', 'road', 'rd',
+  'state', 'county', 'park', 'historical', 'conservation', 'area',
+  'campground', 'reserve', 'beach', 'shore', 'spit',
+  'morning', 'evening', 'afternoon',
+]);
 
-function matchTrail(gpxFile) {
-  for (const [pattern, trailId] of directMatches) {
-    if (pattern.test(gpxFile)) {
-      const trail = trails.find(t => t.id === trailId);
-      if (trail) {
-        return { trail, score: 100 };
+// Trail name aliases — extra keywords for fuzzy matching
+// trailId → array of alternative names/keywords to match against
+const TRAIL_ALIASES = {
+  'barnes': ['bear creek', 'pearrygin lake'],
+  'elwha-fish': ['elwha fishery', 'fish hatchery'],
+  'w': ['west elwha', 'lower west elwha', 'elwha dam site'],
+  'n': ['sol duc', 'sulduc', 'north fork'],
+  'oat': ['reservoir', 'llama'],
+  'little-humpbig': ['duckabush'],
+  'mt-angeles': ['ellis creek', 'angeles foothills'],
+  'mt': ['lake angeles', 'old angeles road'],
+  'heather': ['heather park', 'halfway rock'],
+};
+
+// Tokenize a string into meaningful words for comparison
+function tokenize(str) {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(w => w.length > 1 && !NOISE_WORDS.has(w));
+}
+
+// Score how well a GPX file matches a trail (higher = better)
+function scoreMatch(gpxFile, trail) {
+  const gpxName = gpxFile.replace(/\.gpx$/i, '');
+  const gpxTokens = tokenize(gpxName);
+
+  // Combine trail name tokens with alias tokens
+  let trailTokens = tokenize(trail.fullName || trail.name);
+  const aliases = TRAIL_ALIASES[trail.id] || [];
+  const aliasTokens = aliases.flatMap(a => tokenize(a));
+  trailTokens = [...new Set([...trailTokens, ...aliasTokens])];
+
+  if (gpxTokens.length === 0 || trailTokens.length === 0) return 0;
+
+  // Count exact overlapping words
+  const trailSet = new Set(trailTokens);
+  const gpxSet = new Set(gpxTokens);
+  let exactMatches = 0;
+  for (const t of gpxSet) {
+    if (trailSet.has(t)) exactMatches++;
+  }
+
+  // Count partial matches (one token contained in another)
+  let partialMatches = 0;
+  for (const gt of gpxSet) {
+    for (const tt of trailSet) {
+      if (gt !== tt && (gt.includes(tt) || tt.includes(gt))) {
+        partialMatches++;
       }
     }
   }
-  return null;
+
+  // Jaccard-like score
+  const union = new Set([...gpxTokens, ...trailTokens]).size;
+  const overlap = exactMatches / union;
+  const partialBonus = partialMatches / union * 0.3;
+
+  // Bonus if one name is contained in the other (normalized)
+  const gpxStr = tokenize(gpxName).join(' ');
+  const trailStr = tokenize(trail.fullName || trail.name).join(' ');
+  let containmentBonus = 0;
+  if (trailStr.includes(gpxStr) || gpxStr.includes(trailStr)) {
+    containmentBonus = 0.2;
+  }
+
+  // Bonus for shared bigrams (two consecutive words)
+  const gpxBigrams = new Set();
+  for (let i = 0; i < gpxTokens.length - 1; i++) {
+    gpxBigrams.add(`${gpxTokens[i]} ${gpxTokens[i + 1]}`);
+  }
+  const trailBigrams = new Set();
+  for (let i = 0; i < trailTokens.length - 1; i++) {
+    trailBigrams.add(`${trailTokens[i]} ${trailTokens[i + 1]}`);
+  }
+  let bigramMatches = 0;
+  for (const bg of gpxBigrams) {
+    if (trailBigrams.has(bg)) bigramMatches++;
+  }
+  const bigramBonus = bigramMatches * 0.1;
+
+  return Math.min(overlap + partialBonus + containmentBonus + bigramBonus, 1.0);
 }
 
+// Match each GPX file to the best trail
 const matches = [];
 const unmatched = [];
+const MIN_SCORE = 0.20;
 
 for (const gpxFile of gpxFiles) {
-  const match = matchTrail(gpxFile);
-  if (match) {
+  let bestTrail = null;
+  let bestScore = 0;
+
+  for (const trail of trails) {
+    const s = scoreMatch(gpxFile, trail);
+    if (s > bestScore) {
+      bestScore = s;
+      bestTrail = trail;
+    }
+  }
+
+  if (bestScore >= MIN_SCORE && bestTrail) {
     matches.push({
       gpxFile,
-      trailId: match.trail.id,
-      trailName: match.trail.fullName || match.trail.name,
-      score: match.score
+      trailId: bestTrail.id,
+      trailName: bestTrail.fullName || bestTrail.name,
+      score: Math.round(bestScore * 100)
     });
   } else {
-    unmatched.push(gpxFile);
+    unmatched.push({ gpxFile, bestScore: Math.round(bestScore * 100) });
   }
 }
 
+// Sort by score descending
+matches.sort((a, b) => b.score - a.score);
+
 console.log('=== GPX FILE MATCHES ===\n');
 for (const m of matches) {
-  console.log(`${m.gpxFile.padEnd(50)} → ${m.trailName} (${m.trailId})`);
+  const barLen = Math.floor(m.score / 10);
+  const scoreBar = '█'.repeat(barLen) + '░'.repeat(Math.max(0, 10 - barLen));
+  console.log(`${m.gpxFile.padEnd(55)} → ${m.trailName.padEnd(45)} [${scoreBar}] ${m.score}%`);
 }
 
 console.log(`\n=== UNMATCHED GPX FILES (${unmatched.length}) ===`);
-for (const f of unmatched) {
-  console.log(`  ${f}`);
+for (const u of unmatched) {
+  console.log(`  ${u.gpxFile} (best score: ${u.bestScore}%)`);
+}
+
+// Show potential conflicts (multiple GPX files → same trail)
+const byTrail = {};
+for (const m of matches) {
+  if (!byTrail[m.trailId]) byTrail[m.trailId] = [];
+  byTrail[m.trailId].push(m);
+}
+const conflicts = Object.entries(byTrail).filter(([, ms]) => ms.length > 1);
+if (conflicts.length > 0) {
+  console.log(`\n=== MULTIPLE GPX PER TRAIL (${conflicts.length} trails) ===`);
+  for (const [id, ms] of conflicts) {
+    console.log(`\n  ${id}:`);
+    for (const m of ms) {
+      console.log(`    ${m.gpxFile} (${m.score}%)`);
+    }
+  }
 }
 
 // Write matches for import

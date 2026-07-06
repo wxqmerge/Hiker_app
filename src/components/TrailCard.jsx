@@ -2,25 +2,19 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { shareGpxFile } from '../utils/io';
+import { getGpx } from '../api/client';
 import { useToast } from '../components/Toast.jsx';
-import { getTrailDetailsById } from '../utils/data';
+import { getTrailDetailsById, getScoredMonths } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 
-// Extract month abbreviations from seasonal scores, sorted by month order
-function getScoredMonths(seasonal) {
-  return Object.entries(seasonal)
-    .filter(([k, v]) => typeof v === 'number' && v > 0 && !['bestSeason', 'availableMonths'].includes(k))
-    .sort(([a], [b]) => MONTH_ABBR.indexOf(a) - MONTH_ABBR.indexOf(b))
-    .map(([m]) => m);
-}
-
 export default function TrailCard({ trail, isActive = false, hikeName, selectedMonths }) {
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
+  const [nameCopied, setNameCopied] = useState(false);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
 
@@ -30,6 +24,13 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
     
     const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
     await copyToClipboard(genReport(trail, detailsForTrail), setCopied, showToast);
+  };
+
+  const handleCopyName = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const name = hikeName || trail.fullName || trail.name;
+    await copyToClipboard(name, setNameCopied, showToast);
   };
 
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
@@ -68,8 +69,25 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
          className="block p-4"
          title={tt('View full trail details')}
        >
-         <div className="flex justify-between items-start mb-2">
-           <h3 className="text-lg font-bold text-gray-900">{hikeName || trail.fullName || trail.name}</h3>
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-bold text-gray-900">{hikeName || trail.fullName || trail.name}</h3>
+              <button
+                onClick={handleCopyName}
+                className="text-gray-400 hover:text-green-700 flex-shrink-0"
+                title={tt('Copy trail name to clipboard')}
+              >
+                {nameCopied ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                )}
+              </button>
+            </div>
            <span className={`px-2 py-1 rounded-full text-xs font-medium ${DIFFICULTY_COLORS[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
              {trail.difficulty}
            </span>
@@ -170,15 +188,16 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
               <span className="truncate">Search</span>
             </a>
           )}
-          {trail.gpxData && (
+          {trail.hasGpx && (
             <button
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                shareGpxFile(trail.gpxData, trail.fullName || trail.name);
+                const gpx = await getGpx(trail.id);
+                if (gpx) shareGpxFile(gpx, trail.fullName || trail.name);
               }}
               className="flex items-center gap-1 text-green-600 hover:text-green-800"
-              title={`Share GPX for ${trail.fullName || trail.name} (opens in Organic Maps or downloads)`}
+              title={`${trail.gpxFile ? `GPX: ${trail.gpxFile} — ` : ''}Share GPX for ${trail.fullName || trail.name} (opens in Organic Maps or downloads)`}
             >
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />

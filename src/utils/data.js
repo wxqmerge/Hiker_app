@@ -52,15 +52,30 @@ export function findTrailIndexById(trails, trailId) {
 }
 
 /**
- * Extract available months from seasonal data
+ * Extract scored months from seasonal data
+ * @param {Object} seasonal - Seasonal data object
+ * @param {Object} opts - Options
+ * @param {boolean} opts.sort - Sort by month order (default: true)
+ * @param {boolean} opts.asIndices - Return 1-based month indices instead of abbreviations (default: false)
+ * @returns {Array} - Array of month abbreviations or 1-based indices
+ */
+export function getScoredMonths(seasonal, { sort = true, asIndices = false } = {}) {
+  if (!seasonal) return [];
+  let months = Object.entries(seasonal)
+    .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1);
+  if (sort) months.sort(([a], [b]) => MONTH_ABBR.indexOf(a) - MONTH_ABBR.indexOf(b));
+  return asIndices
+    ? months.map(([k]) => MONTH_ABBR.indexOf(k) + 1)
+    : months.map(([k]) => k);
+}
+
+/**
+ * Extract available months from seasonal data (1-based indices, backward compat)
  * @param {Object} seasonal - Seasonal data object
  * @returns {Array<number>} - Array of 1-based month indices
  */
 export function getAvailableMonthsFromSeasonal(seasonal) {
-  if (!seasonal) return [];
-  return Object.entries(seasonal)
-    .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
-    .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
+  return getScoredMonths(seasonal, { asIndices: true });
 }
 
 /**

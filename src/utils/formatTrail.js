@@ -1,7 +1,7 @@
 import { getRideCost } from './report';
 
-// Format trail core info for text output
-export function formatTrailLine(trail) {
+// Build structured trail line parts from a trail object
+export function buildTrailLineParts(trail) {
   let name = trail.fullName || trail.name;
   name = name.replace(/◆\uFE0E?$/, '').replace(/◆+$/, '');
 
@@ -13,6 +13,13 @@ export function formatTrailLine(trail) {
   const elevationText = `${elevStart}'-${elevMax}'`;
   const parking = trail.parking || '';
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : '';
+
+  return { name, difficulty, distanceText, elevationText, parking, rideCost };
+}
+
+// Format trail core info for text output
+export function formatTrailLine(trail) {
+  const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
 
   let line = `${name}◆︎  ${difficulty}\t${distanceText} / ${elevationText}\t${parking}`;
   if (rideCost) line += `\t${rideCost}`;

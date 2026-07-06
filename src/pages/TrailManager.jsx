@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import PageNav from '../components/PageNav';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
-import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv } from '../utils/io';
+import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv, sanitizeFilename } from '../utils/io';
 import { MONTH_ABBR } from '../utils/constants';
-import { importTrailsFromXls, getSchedule, updateSchedule, request } from '../api/client';
+import { importTrailsFromXls, getSchedule, updateSchedule, request, exportDataZip, importDataZip } from '../api/client';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 
 export default function TrailManager() {
@@ -299,6 +299,44 @@ export default function TrailManager() {
     );
   }, [hasApiKey, importJSON]);
 
+  const exportAllDataZip = useCallback(async () => {
+    try {
+      const blob = await exportDataZip();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const date = new Date().toISOString().slice(0, 10);
+      a.download = `hiker-data-${date}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+    }
+  }, []);
+
+  const importAllDataZip = useCallback(() => {
+    if (!hasApiKey) {
+      alert('API key required for data import.');
+      return;
+    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!confirm('Import all data from ZIP? This will overwrite matching JSON files on the server. ' + Object.keys(JSON.parse(JSON.stringify({ trails: 1, details: 2, schedule: 3, lookup: 4, gpx: 5 }))).length + ' files will be checked.')) return;
+      try {
+        const result = await importDataZip(file);
+        alert(`Data imported successfully! ${result.imported} file(s) written.`);
+        window.location.reload();
+      } catch (err) {
+        alert('Import failed: ' + err.message);
+      }
+    };
+    input.click();
+  }, [hasApiKey]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -354,6 +392,18 @@ export default function TrailManager() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Import All JSON {!hasApiKey && '(need API key)'}
+          </button>
+          <button onClick={exportAllDataZip} className="px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white" title={tt('Export all server data (trails, details, schedule, lookup, gpx) as ZIP')}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            Export ZIP
+          </button>
+          <button onClick={importAllDataZip} disabled={!hasApiKey} className={`px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${hasApiKey ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`} title={tt('Import all server data from ZIP file (overwrites matching JSON)')}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            Import ZIP {!hasApiKey && '(need API key)'}
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <input
@@ -492,7 +542,7 @@ export default function TrailManager() {
                           onClick={() => {
                             const tsvDetail = trailDetails?.[trail.id] || {};
                             const tsv = exportTrailTsv(trail, tsvDetail);
-                            const safeName = (trail.name || 'trail').replace(/[^a-zA-Z0-9]/g, '_');
+                            const safeName = sanitizeFilename(trail.name, 'trail');
                             downloadBlob(tsv, `${safeName}.tsv`, 'text/tab-separated-values');
                           }}
                           className="text-blue-600 hover:text-blue-800"
