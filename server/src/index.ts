@@ -242,6 +242,98 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
     // schedule_history dir may not exist
   }
 
+  // gpx_index.json
+  {
+    const filePath = path.join(DATA_DIR, 'gpx_index.json');
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const issues: string[] = [];
+      if (!parsed || typeof parsed !== 'object') {
+        issues.push('root must be an object keyed by trail ID');
+      } else {
+        const keys = Object.keys(parsed);
+        if (keys.length === 0) {
+          issues.push('object is empty');
+        }
+      }
+      addResult('gpx_index.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
+    } catch (err) {
+      addResult('gpx_index.json', false, { error: (err as Error).message });
+    }
+  }
+
+  // Cross-reference checks: trail IDs, GPX files, popularity data
+  {
+    const issues: string[] = [];
+    try {
+      const trailsContent = await fs.readFile(path.join(DATA_DIR, 'trails.json'), 'utf-8');
+      const detailsContent = await fs.readFile(path.join(DATA_DIR, 'trail_details.json'), 'utf-8');
+      const gpxContent = await fs.readFile(path.join(DATA_DIR, 'gpx_index.json'), 'utf-8');
+      const trails: any[] = JSON.parse(trailsContent).trails || [];
+      const details: any = JSON.parse(detailsContent);
+      const gpxIndex: Record<string, string> = JSON.parse(gpxContent);
+
+      // Check for duplicate trail IDs
+      const trailIds = trails.map((t: any) => t.id);
+      const idCounts: Record<string, number> = trailIds.reduce((acc, id: string) => { acc[id] = (acc[id] || 0) + 1; return acc; }, {} as Record<string, number>);
+      const duplicates = Object.entries(idCounts).filter(([, count]) => count > 1);
+      if (duplicates.length) {
+        issues.push(`Duplicate trail IDs: ${duplicates.map(([id]) => `"${id}" (${idCounts[id]} times)`).join(', ')}`);
+      }
+
+      // Check trail IDs missing from details
+      const detailIds = new Set(Object.keys(details));
+      const missingDetails = trails.filter((t: any) => !detailIds.has(t.id));
+      if (missingDetails.length) {
+        issues.push(`${missingDetails.length} trail(s) missing details: ${missingDetails.slice(0, 5).map((t: any) => `"${t.id}"`).join(', ')}${missingDetails.length > 5 ? ` (+${missingDetails.length - 5} more)` : ''}`);
+      }
+
+      // Check trail IDs with hasGpx but missing from gpx_index
+      const gpxIds = new Set(Object.keys(gpxIndex));
+      const hasGpxMissing = trails.filter((t: any) => t.hasGpx && !gpxIds.has(t.id));
+      if (hasGpxMissing.length) {
+        issues.push(`${hasGpxMissing.length} trail(s) have hasGpx=true but no GPX mapping: ${hasGpxMissing.slice(0, 5).map((t: any) => `"${t.id}"`).join(', ')}`);
+      }
+
+      // Check for GPX files that exist in index but not on disk
+      const gpxDir = path.join(DATA_DIR, 'gpx');
+      try {
+        const gpxFilesOnDisk = await fs.readdir(gpxDir);
+        const missingGpxFiles = Object.entries(gpxIndex).filter(([, filename]) => !gpxFilesOnDisk.includes(filename));
+        if (missingGpxFiles.length) {
+          issues.push(`${missingGpxFiles.length} GPX file(s) in index but missing on disk: ${missingGpxFiles.slice(0, 5).map(([id, file]) => `"${id}" (${file})`).join(', ')}`);
+        }
+        // Check for corrupted GPX files (too small)
+        const corruptedGpx: string[] = [];
+        for (const filename of gpxFilesOnDisk) {
+          if (filename.endsWith('.gpx')) {
+            const stat = await fs.stat(path.join(gpxDir, filename));
+            if (stat.size < 100) {
+              corruptedGpx.push(`${filename} (${stat.size} bytes)`);
+            }
+          }
+        }
+        if (corruptedGpx.length) {
+          issues.push(`${corruptedGpx.length} corrupted GPX file(s) (too small): ${corruptedGpx.join(', ')}`);
+        }
+      } catch {
+        // gpx dir may not exist
+      }
+
+      // Check popularity data structure
+      const trailsWithPop = Object.entries(details).filter(([, v]: [string, any]) => v?.popularity?.monthly);
+      const invalidMonthly = trailsWithPop.filter(([, v]: [string, any]) => !Array.isArray(v.popularity.monthly) || v.popularity.monthly.length !== 12);
+      if (invalidMonthly.length) {
+        issues.push(`${invalidMonthly.length} trail(s) with invalid monthly popularity data (must be 12-element array)`);
+      }
+
+      addResult('cross-reference', issues.length === 0, { recordCount: trails.length, issues: issues.length ? issues : undefined });
+    } catch (err) {
+      addResult('cross-reference', false, { error: (err as Error).message });
+    }
+  }
+
   const allValid = results.every(r => r.valid);
   res.json({ valid: allValid, results });
 });
