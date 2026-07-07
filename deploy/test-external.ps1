@@ -230,7 +230,7 @@ $GpxSize = if ($GpxParts.Count -gt 1) { [int]$GpxParts[1] } else { 0 }
 if ($GpxCode -eq 200 -and $GpxSize -gt 0) {
     Write-Host "PASS GPX endpoint ($GpxTestTrail) - HTTP $GpxCode ($($GpxSize) bytes)" -ForegroundColor Green
 } else {
-    Write-Host "FAIL GPX endpoint ($GpxTestTrail) - HTTP $GpxCode ($($GpxSize) bytes) — GPX files may be missing on server" -ForegroundColor Red
+    Write-Host "FAIL GPX endpoint ($GpxTestTrail) - HTTP $GpxCode ($($GpxSize) bytes) - GPX files may be missing on server" -ForegroundColor Red
     $script:Errors++
 }
 
@@ -252,7 +252,7 @@ if ($TrailsRaw) {
     Write-Host "  Trails w/ hasGpx: $TrailsWithGpx"
     Write-Host "  Trails w/ gpxFile: $TrailsWithGpxFile"
     if ($TrailsWithGpx -gt 0 -and $TrailsWithGpxFile -eq 0) {
-        Write-Host "  WARNING: hasGpx set but no gpxFile — GPX files not imported" -ForegroundColor Yellow
+        Write-Host "  WARNING: hasGpx set but no gpxFile - GPX files not imported" -ForegroundColor Yellow
         $script:Warnings++
     }
 
@@ -270,11 +270,11 @@ if ($TrailsRaw) {
         $GpxSize2 = if ($GpxParts2.Count -gt 1) { [int]$GpxParts2[1] } else { 0 }
         Write-Host "    GPX fetch:  HTTP $GpxCode2 ($($GpxSize2) bytes)" -ForegroundColor $(if ($GpxCode2 -eq 200 -and $GpxSize2 -gt 0) { 'Green' } else { 'Red' })
         if ($GpxCode2 -ne 200 -or $GpxSize2 -eq 0) {
-            Write-Host "    ⚠ GPX file referenced but not on server disk — re-export/import ZIP" -ForegroundColor Yellow
+            Write-Host "    ! GPX file referenced but not on server disk - re-export/import ZIP" -ForegroundColor Yellow
             $script:Warnings++
         }
     } elseif (-not $OatHorse) {
-        Write-Host "    ⚠ Trail not found on server — data not synced from localhost" -ForegroundColor Yellow
+        Write-Host "    ! Trail not found on server - data not synced from localhost" -ForegroundColor Yellow
         $script:Warnings++
     }
 } else {
@@ -298,7 +298,7 @@ if ($DetailsRaw) {
     Write-Host "  With popularity:  $WithPopularity"
     Write-Host "  With monthly:     $WithMonthly"
     if ($WithMonthly -lt 100) {
-        Write-Host "  ⚠ Low monthly data count — popularity may not be imported" -ForegroundColor Yellow
+        Write-Host "  ! Low monthly data count - popularity may not be imported" -ForegroundColor Yellow
         $script:Warnings++
     }
 } else {
