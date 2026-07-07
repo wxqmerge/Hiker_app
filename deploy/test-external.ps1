@@ -227,8 +227,11 @@ $GpxResult = & curl.exe -s -o NUL -w "%{http_code},%{size_download}" -k --max-ti
 $GpxParts = $GpxResult.Trim().Split(',')
 $GpxCode = [int]$GpxParts[0]
 $GpxSize = if ($GpxParts.Count -gt 1) { [int]$GpxParts[1] } else { 0 }
-if ($GpxCode -eq 200 -and $GpxSize -gt 0) {
+if ($GpxCode -eq 200 -and $GpxSize -gt 100) {
     Write-Host "PASS GPX endpoint ($GpxTestTrail) - HTTP $GpxCode ($($GpxSize) bytes)" -ForegroundColor Green
+} elseif ($GpxCode -eq 200 -and $GpxSize -gt 0) {
+    Write-Host "WARN GPX endpoint ($GpxTestTrail) - HTTP $GpxCode but only $($GpxSize) bytes (likely corrupted)" -ForegroundColor Yellow
+    $script:Warnings++
 } else {
     Write-Host "FAIL GPX endpoint ($GpxTestTrail) - HTTP $GpxCode ($($GpxSize) bytes) - GPX files may be missing on server" -ForegroundColor Red
     $script:Errors++
