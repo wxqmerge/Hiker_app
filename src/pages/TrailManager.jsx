@@ -4,6 +4,8 @@ import PageNav from '../components/PageNav';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv, sanitizeFilename } from '../utils/io';
+import JSZip from 'jszip';
+import { getGpx } from '../api/client';
 import { MONTH_ABBR } from '../utils/constants';
 import { importTrailsFromXls, getSchedule, updateSchedule, request, exportDataZip, importDataZip } from '../api/client';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
@@ -313,6 +315,44 @@ export default function TrailManager() {
     }
   }, []);
 
+  const exportGpxZip = useCallback(async () => {
+    const trailsWithGpx = trails.filter(t => t.hasGpx);
+    if (trailsWithGpx.length === 0) {
+      alert('No trails have GPX files.');
+      return;
+    }
+    const zip = new JSZip();
+    let downloaded = 0;
+    let failed = 0;
+    for (const trail of trailsWithGpx) {
+      try {
+        const gpx = await getGpx(trail.id);
+        if (gpx) {
+          const safeName = sanitizeFilename(trail.fullName || trail.name, trail.id);
+          zip.file(`${safeName}.gpx`, gpx);
+          downloaded++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+    if (downloaded === 0) {
+      alert('Failed to fetch any GPX files.');
+      return;
+    }
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const date = new Date().toISOString().slice(0, 10);
+    a.download = `trails-gpx-${date}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert(`Exported ${downloaded} GPX file(s).${failed > 0 ? ` (${failed} failed)` : ''}`);
+  }, [trails]);
+
   const importAllDataZip = useCallback(() => {
     if (!hasApiKey) {
       alert('API key required for data import.');
@@ -403,6 +443,12 @@ export default function TrailManager() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
             </svg>
             Import ZIP {!hasApiKey && '(need API key)'}
+          </button>
+          <button onClick={exportGpxZip} className="px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white" title={tt('Download all GPX files as a ZIP, renamed by trail name')}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            Export GPX ZIP
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <input
