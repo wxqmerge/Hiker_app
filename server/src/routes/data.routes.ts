@@ -16,7 +16,7 @@ const TMP_DIR = path.join(__dirname, '../../../tmp');
 await fs.mkdir(TMP_DIR, { recursive: true });
 
 const router = Router();
-const upload = multer({ dest: TMP_DIR, limits: { fileSize: 50 * 1024 * 1024 } });
+const upload = multer({ dest: TMP_DIR, limits: { fileSize: 200 * 1024 * 1024 } });
 
 const JSON_FILES = ['trails.json', 'trail_details.json', 'lookup.json', 'schedule.json', 'gpx_index.json'];
 
