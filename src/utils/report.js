@@ -1,4 +1,4 @@
-import { formatTrailLine, buildTrailLineParts } from './formatTrail';
+import { buildTrailLineParts } from './formatTrail';
 
 // Escape HTML special characters
 function esc(s) {

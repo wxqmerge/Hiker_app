@@ -12,7 +12,7 @@ import { generateReportHtml } from '../utils/report';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { downloadBlob, createFileInput } from '../utils/io';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails } from '../api/client';
-import { getApiBase, getHealthUrl } from '../utils/url.js';
+import { getHealthUrl } from '../utils/url.js';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 
 const APP_VERSION = __APP_VERSION;

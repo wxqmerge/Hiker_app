@@ -1,13 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-
-const listeners = new Set();
-
-export function useToast() {
-  const show = useCallback((message, type = 'info') => {
-    listeners.forEach(fn => fn({ id: Date.now() + Math.random(), message, type }));
-  }, []);
-  return show;
-}
+import { useState, useEffect } from 'react';
+import { getToastListeners } from '../hooks/useToast';
 
 export default function ToastContainer() {
   const [toasts, setToasts] = useState([]);
@@ -19,9 +11,10 @@ export default function ToastContainer() {
         setToasts(prev => prev.filter(t => t.id !== toast.id));
       }, 2500);
     };
-    listeners.add(handler);
+    const l = getToastListeners();
+    l.add(handler);
     return () => {
-      listeners.delete(handler);
+      l.delete(handler);
     };
   }, []);
 

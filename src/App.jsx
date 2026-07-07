@@ -6,7 +6,7 @@ import ScheduleBuilder from './pages/ScheduleBuilder';
 import { useEffect } from 'react';
 import { ensureScheduleWritable } from './api/client.js';
 import { getApiBase } from './utils/url.js';
-import { useToast } from './components/Toast.jsx';
+import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 
 function ApiKeySync() {
@@ -44,7 +44,7 @@ function App() {
         }
       }
     }).catch(() => {});
-  }, []);
+  }, [showToast]);
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>

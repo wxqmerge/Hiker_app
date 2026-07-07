@@ -4,11 +4,11 @@ import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
-import { useToast } from '../components/Toast.jsx';
+import { useToast } from '../hooks/useToast';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput, sanitizeFilename } from '../utils/io';
-import { getGpx, uploadGpxFile } from '../api/client';
+import { uploadGpxFile } from '../api/client';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 import MonthlyScoreGrid, { ScoreBreakdownRow } from '../components/MonthlyScoreGrid.jsx';
@@ -161,9 +161,9 @@ const getEditedValue = (field) => {
       description: trailDetailsResult?.[id]?.fullDescription || '',
       pros: trailDetailsResult?.[id]?.pros || '',
       others: trailDetailsResult?.[id]?.others || '',
-      leaders: trailDetailsResult?.[id]?.leaders ? [...trailDetailsResult?.[id]?.leaders] : [],
-      monthlyPopularity: trailDetailsResult?.[id]?.popularity?.monthly ? [...trailDetailsResult?.[id]?.popularity?.monthly] : [],
-      monthlyScore: trailDetailsResult?.[id]?.popularity?.monthlyScore ? [...trailDetailsResult?.[id]?.popularity?.monthlyScore] : [],
+      leaders: trailDetailsResult?.[id]?.leaders ? [...trailDetailsResult[id].leaders] : [],
+      monthlyPopularity: trailDetailsResult?.[id]?.popularity?.monthly ? [...trailDetailsResult[id].popularity.monthly] : [],
+      monthlyScore: trailDetailsResult?.[id]?.popularity?.monthlyScore ? [...trailDetailsResult[id].popularity.monthlyScore] : [],
     });
     setIsDuplicate(true);
     setIsEditMode(true);

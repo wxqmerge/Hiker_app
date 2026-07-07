@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openOrganicMaps, downloadBlob } from '../utils/io';
 import { getGpx } from '../api/client';
-import { useToast } from '../components/Toast.jsx';
+import { useToast } from '../hooks/useToast';
 import { getTrailDetailsById, getScoredMonths } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
