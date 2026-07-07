@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
-import { shareGpxFile, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openOrganicMaps } from '../utils/io';
+import { getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openOrganicMaps, downloadBlob } from '../utils/io';
 import { getGpx } from '../api/client';
 import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById, getScoredMonths } from '../utils/data';
@@ -15,8 +15,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
-  const [gpxShared, setGpxShared] = useState(false);
-  useEffect(() => { setGpxShared(false); }, [trail.id]);
+  const [gpxDownloading, setGpxDownloading] = useState(false);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
 
@@ -195,31 +194,23 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
               onClick={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!gpxShared) {
+                if (gpxDownloading) return;
+                setGpxDownloading(true);
+                try {
                   const gpx = await getGpx(trail.id);
                   if (gpx) {
-                    shareGpxFile(gpx, trail.fullName || trail.name);
-                    setGpxShared(true);
+                    const safeName = (trail.fullName || trail.name || 'route').replace(/[^a-zA-Z0-9]/g, '_');
+                    downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
                   }
-                } else {
-                  const gpx = await getGpx(trail.id);
-                  if (gpx) {
-                    const coord = getFirstCoordinateFromGpx(gpx);
-                    if (coord) {
-                      openOrganicMaps(coord.lat, coord.lon, trail.fullName || trail.name);
-                    } else {
-                      showToast('No GPS coordinates found in GPX file', 'error');
-                    }
-                  }
+                } finally {
+                  setTimeout(() => setGpxDownloading(false), 1000);
                 }
               }}
               className="flex items-center gap-1 text-green-600 hover:text-green-800"
-              title={gpxShared
-                ? `Open ${trail.fullName || trail.name} in Organic Maps (uses first point from GPX)`
-                : `${trail.gpxFile ? `GPX: ${trail.gpxFile} — ` : ''}Share GPX for ${trail.fullName || trail.name} (click again to open in Organic Maps)`}
+              title={`Download GPX for ${trail.fullName || trail.name}`}
             >
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               <span className="truncate">GPX</span>
             </button>
@@ -239,13 +230,37 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
                 }
               }}
               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
-              title={`Open trailhead for ${trail.fullName || trail.name} in Google Maps (uses first point from GPX)`}
+              title={`Open trailhead for ${trail.fullName || trail.name} in Google Maps`}
             >
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <span className="truncate">TH</span>
+            </button>
+          )}
+          {trail.hasGpx && (
+            <button
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const gpx = await getGpx(trail.id);
+                if (!gpx) return;
+                const coord = getFirstCoordinateFromGpx(gpx);
+                if (coord) {
+                  openOrganicMaps(coord.lat, coord.lon, trail.fullName || trail.name);
+                } else {
+                  showToast('No GPS coordinates found in GPX file', 'error');
+                }
+              }}
+              className="flex items-center gap-1 text-purple-600 hover:text-purple-800"
+              title={`Open trailhead for ${trail.fullName || trail.name} in Organic Maps`}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="truncate">GPX_TH</span>
             </button>
           )}
         </div>
