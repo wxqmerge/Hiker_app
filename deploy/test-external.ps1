@@ -220,6 +220,93 @@ Test-Endpoint -Base $FrontendUrl -Path "$subpath/api/trails" -Label "GET /api/tr
 Test-Endpoint -Base $FrontendUrl -Path "$subpath/api/schedule" -Label "GET /api/schedule via frontend" -ExpectedStatus 200
 
 Write-Host ""
+Write-Host "--- GPX Endpoints ---"
+# Test GPX endpoint for a known trail that should have GPX
+$GpxTestTrail = "oat"
+$GpxResult = & curl.exe -s -o NUL -w "%{http_code},%{size_download}" -k --max-time 5 "$ApiUrl/api/trails/gpx/$GpxTestTrail" | Out-String
+$GpxParts = $GpxResult.Trim().Split(',')
+$GpxCode = [int]$GpxParts[0]
+$GpxSize = if ($GpxParts.Count -gt 1) { [int]$GpxParts[1] } else { 0 }
+if ($GpxCode -eq 200 -and $GpxSize -gt 0) {
+    Write-Host "PASS GPX endpoint ($GpxTestTrail) - HTTP $GpxCode ($($GpxSize) bytes)" -ForegroundColor Green
+} else {
+    Write-Host "FAIL GPX endpoint ($GpxTestTrail) - HTTP $GpxCode ($($GpxSize) bytes) — GPX files may be missing on server" -ForegroundColor Red
+    $script:Errors++
+}
+
+Write-Host ""
+Write-Host "--- Data Summary (compare with localhost) ---"
+# Fetch trails data
+$TrailsRaw = (& curl.exe -s -k --max-time 10 "$ApiUrl/api/trails")
+if ($TrailsRaw) {
+    $TrailsData = $TrailsRaw | ConvertFrom-Json
+    $TrailCount = $TrailsData.trails.Count
+    $TrailsWithGpx = ($TrailsData.trails | Where-Object { $_.hasGpx -eq $true }).Count
+    $TrailsWithGpxFile = ($TrailsData.trails | Where-Object { $_.gpxFile }).Count
+    $OatHorse = $TrailsData.trails | Where-Object { $_.id -eq 'oat-horse-to-living-room' }
+    $OatHorseName = if ($OatHorse) { $OatHorse.fullName } else { 'MISSING' }
+    $OatHorseGpx = if ($OatHorse) { $OatHorse.gpxFile } else { 'N/A' }
+    $OatHorseHasGpx = if ($OatHorse) { $OatHorse.hasGpx } else { 'N/A' }
+
+    Write-Host "  Trails:           $TrailCount (expected ~180+)" -ForegroundColor $(if ($TrailCount -ge 180) { 'Green' } else { 'Yellow' })
+    Write-Host "  Trails w/ hasGpx: $TrailsWithGpx"
+    Write-Host "  Trails w/ gpxFile: $TrailsWithGpxFile"
+    if ($TrailsWithGpx -gt 0 -and $TrailsWithGpxFile -eq 0) {
+        Write-Host "  WARNING: hasGpx set but no gpxFile — GPX files not imported" -ForegroundColor Yellow
+        $script:Warnings++
+    }
+
+    Write-Host ""
+    Write-Host "  'OAT - Horse Parking to Living Room':"
+    Write-Host "    ID:         $($OatHorse.id)"
+    Write-Host "    Name:       $OatHorseName"
+    Write-Host "    gpxFile:    $OatHorseGpx"
+    Write-Host "    hasGpx:     $OatHorseHasGpx"
+    if ($OatHorse -and $OatHorseGpx -and $OatHorseHasGpx) {
+        # Test if the actual GPX file is accessible
+        $GpxTest2 = & curl.exe -s -o NUL -w "%{http_code},%{size_download}" -k --max-time 5 "$ApiUrl/api/trails/gpx/oat-horse-to-living-room" | Out-String
+        $GpxParts2 = $GpxTest2.Trim().Split(',')
+        $GpxCode2 = [int]$GpxParts2[0]
+        $GpxSize2 = if ($GpxParts2.Count -gt 1) { [int]$GpxParts2[1] } else { 0 }
+        Write-Host "    GPX fetch:  HTTP $GpxCode2 ($($GpxSize2) bytes)" -ForegroundColor $(if ($GpxCode2 -eq 200 -and $GpxSize2 -gt 0) { 'Green' } else { 'Red' })
+        if ($GpxCode2 -ne 200 -or $GpxSize2 -eq 0) {
+            Write-Host "    ⚠ GPX file referenced but not on server disk — re-export/import ZIP" -ForegroundColor Yellow
+            $script:Warnings++
+        }
+    } elseif (-not $OatHorse) {
+        Write-Host "    ⚠ Trail not found on server — data not synced from localhost" -ForegroundColor Yellow
+        $script:Warnings++
+    }
+} else {
+    Write-Host "  Could not fetch trails data" -ForegroundColor Red
+    $script:Errors++
+}
+
+# Fetch trail details summary
+$DetailsRaw = (& curl.exe -s -k --max-time 10 "$ApiUrl/api/trails/details")
+if ($DetailsRaw) {
+    $DetailsData = $DetailsRaw | ConvertFrom-Json
+    $DetailCount = ($DetailsData.PSObject.Properties | Measure-Object).Count
+    $WithPopularity = 0
+    $WithMonthly = 0
+    foreach ($prop in $DetailsData.PSObject.Properties) {
+        if ($prop.Value -and $prop.Value.popularity) { $WithPopularity++ }
+        if ($prop.Value -and $prop.Value.popularity -and $prop.Value.popularity.monthly) { $WithMonthly++ }
+    }
+    Write-Host ""
+    Write-Host "  Trail details:    $DetailCount (expected ~180+)" -ForegroundColor $(if ($DetailCount -ge 180) { 'Green' } else { 'Yellow' })
+    Write-Host "  With popularity:  $WithPopularity"
+    Write-Host "  With monthly:     $WithMonthly"
+    if ($WithMonthly -lt 100) {
+        Write-Host "  ⚠ Low monthly data count — popularity may not be imported" -ForegroundColor Yellow
+        $script:Warnings++
+    }
+} else {
+    Write-Host "  Could not fetch trail details" -ForegroundColor Red
+    $script:Errors++
+}
+
+Write-Host ""
 Write-Host "=== Summary ==="
 if ($Errors -eq 0 -and $Warnings -eq 0) {
     Write-Host "All checks passed." -ForegroundColor Green
