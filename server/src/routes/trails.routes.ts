@@ -119,6 +119,27 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), async (req, re
       await fs.unlink(req.file.path).catch(() => {});
       return res.status(404).json({ success: false, error: { message: 'Trail not found' } });
     }
+
+    // Validate GPX file before saving
+    const content = await fs.readFile(req.file.path, 'utf-8');
+    if (content.length < 100) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(400).json({ success: false, error: { message: `GPX file too small (${content.length} bytes) - likely corrupted` } });
+    }
+    // Check for valid XML structure
+    if (!content.includes('<?xml') || !content.includes('<gpx')) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(400).json({ success: false, error: { message: 'Invalid GPX file - missing XML header or GPX root element' } });
+    }
+    // Check for at least one coordinate point
+    const hasTrkpt = content.includes('<trkpt');
+    const hasWpt = content.includes('<wpt');
+    const hasRtept = content.includes('<rtept');
+    if (!hasTrkpt && !hasWpt && !hasRtept) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(400).json({ success: false, error: { message: 'Invalid GPX file - no GPS coordinates found (needs trkpt, wpt, or rtept)' } });
+    }
+
     // Save with trail name (sanitized), not the original filename
     const safeName = (existing.fullName || existing.name || req.params.id).replace(/[^a-zA-Z0-9]/g, '_');
     const gpxFileName = `${safeName}.gpx`;

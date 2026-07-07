@@ -113,6 +113,22 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), async (req, re
           continue;
         }
       }
+      // Validate GPX files
+      if (ext === '.gpx') {
+        const gpxContent = content.toString('utf-8');
+        if (gpxContent.length < 100) {
+          console.warn(`[DATA] Skipping corrupted GPX (too small): ${name}`);
+          continue;
+        }
+        if (!gpxContent.includes('<?xml') || !gpxContent.includes('<gpx')) {
+          console.warn(`[DATA] Skipping invalid GPX (bad XML): ${name}`);
+          continue;
+        }
+        if (!gpxContent.includes('<trkpt') && !gpxContent.includes('<wpt') && !gpxContent.includes('<rtept')) {
+          console.warn(`[DATA] Skipping GPX with no coordinates: ${name}`);
+          continue;
+        }
+      }
 
       await fs.mkdir(path.dirname(target), { recursive: true });
       await fs.writeFile(target, content);
