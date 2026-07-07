@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
-import { shareGpxFile, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
+import { shareGpxFile, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openOrganicMaps } from '../utils/io';
 import { getGpx } from '../api/client';
 import { useToast } from '../components/Toast.jsx';
 import { getTrailDetailsById, getScoredMonths } from '../utils/data';
@@ -15,6 +15,8 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
+  const [gpxShared, setGpxShared] = useState(false);
+  useEffect(() => { setGpxShared(false); }, [trail.id]);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
 
@@ -193,11 +195,28 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
               onClick={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const gpx = await getGpx(trail.id);
-                if (gpx) shareGpxFile(gpx, trail.fullName || trail.name);
+                if (!gpxShared) {
+                  const gpx = await getGpx(trail.id);
+                  if (gpx) {
+                    shareGpxFile(gpx, trail.fullName || trail.name);
+                    setGpxShared(true);
+                  }
+                } else {
+                  const gpx = await getGpx(trail.id);
+                  if (gpx) {
+                    const coord = getFirstCoordinateFromGpx(gpx);
+                    if (coord) {
+                      openOrganicMaps(coord.lat, coord.lon, trail.fullName || trail.name);
+                    } else {
+                      showToast('No GPS coordinates found in GPX file', 'error');
+                    }
+                  }
+                }
               }}
               className="flex items-center gap-1 text-green-600 hover:text-green-800"
-              title={`${trail.gpxFile ? `GPX: ${trail.gpxFile} — ` : ''}Share GPX for ${trail.fullName || trail.name} (opens in Organic Maps or downloads)`}
+              title={gpxShared
+                ? `Open ${trail.fullName || trail.name} in Organic Maps (uses first point from GPX)`
+                : `${trail.gpxFile ? `GPX: ${trail.gpxFile} — ` : ''}Share GPX for ${trail.fullName || trail.name} (click again to open in Organic Maps)`}
             >
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
