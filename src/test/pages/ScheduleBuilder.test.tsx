@@ -25,11 +25,6 @@ describe('ScheduleBuilder', () => {
     expect(screen.getByText('Browse Trails')).toBeInTheDocument();
   });
 
-  it('renders Scheduled toggle button', () => {
-    renderSchedule();
-    expect(screen.getByText(/Scheduled/)).toBeInTheDocument();
-  });
-
   it('renders Settings button', () => {
     renderSchedule();
     expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
@@ -60,12 +55,6 @@ describe('ScheduleBuilder', () => {
   it('shows available hikes section', () => {
     renderSchedule();
     expect(screen.getByText(/Available Hikes/)).toBeInTheDocument();
-  });
-
-  it('toggles scheduled section', () => {
-    renderSchedule();
-    const toggle = screen.getByText(/Scheduled/);
-    fireEvent.click(toggle);
   });
 
   it('opens settings menu', () => {
@@ -234,9 +223,4 @@ describe('ScheduleBuilder', () => {
     expect(availableHikes).toBeInTheDocument();
   });
 
-  it('shows assigned count in scheduled button', () => {
-    renderSchedule();
-    const scheduledBtn = screen.getByText(/Scheduled \(\d+\)/);
-    expect(scheduledBtn).toBeInTheDocument();
-  });
 });

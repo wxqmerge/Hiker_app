@@ -209,6 +209,16 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
           if (invalidKeys.length) issues.push(`invalid month keys: ${invalidKeys.join(', ')}`);
           const nonArrayEntries = keys.filter(k => !Array.isArray(parsed[k]));
           if (nonArrayEntries.length) issues.push(`month(s) with non-array values: ${nonArrayEntries.join(', ')}`);
+          let totalScheduled = 0;
+          for (const k of keys) {
+            const entries = parsed[k];
+            if (Array.isArray(entries)) {
+              totalScheduled += entries.filter((e: any) => e?.trail_id).length;
+            }
+          }
+          if (totalScheduled === 0) {
+            issues.push('no scheduled hikes found — schedule is empty');
+          }
         }
       }
       addResult('schedule.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });

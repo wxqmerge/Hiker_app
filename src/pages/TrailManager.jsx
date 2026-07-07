@@ -1,6 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageNav from '../components/PageNav';
+
+const APP_VERSION = __APP_VERSION;
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv, sanitizeFilename } from '../utils/io';
@@ -14,6 +16,7 @@ export default function TrailManager() {
   const { title: tt } = useTooltips();
   const { trails, loading, trailDetails, saveTrail, deleteTrail, saveTrailDetail, exportJSON, importJSON } = useTrailStore();
   const [search, setSearch] = useState('');
+  const [gpxFilter, setGpxFilter] = useState('all');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const [validationResults, setValidationResults] = useState(null);
   const [validating, setValidating] = useState(false);
@@ -53,14 +56,13 @@ export default function TrailManager() {
   };
 
   const filteredTrails = useMemo(() => {
-    if (!search) return trails;
     const q = search.toLowerCase();
-    return trails.filter(t =>
-      t.name?.toLowerCase().includes(q) ||
-      t.fullName?.toLowerCase().includes(q) ||
-      t.id?.toLowerCase().includes(q)
-    );
-  }, [trails, search]);
+    return trails.filter(t => {
+      const matchesSearch = !q || t.name?.toLowerCase().includes(q) || t.fullName?.toLowerCase().includes(q) || t.id?.toLowerCase().includes(q);
+      const matchesGpx = gpxFilter === 'all' || (gpxFilter === 'gpx' ? t.hasGpx : !t.hasGpx);
+      return matchesSearch && matchesGpx;
+    });
+  }, [trails, search, gpxFilter]);
 
   const handleDelete = async (trail) => {
     if (confirm(`Delete trail "${trail.name}"?`)) {
@@ -389,9 +391,22 @@ export default function TrailManager() {
       <main className="container mx-auto px-4 py-3 max-w-5xl">
         <div className="flex items-baseline justify-between mb-4">
           <PageNav />
-          <p className="text-gray-600 text-sm ml-auto">
-            {filteredTrails.length} of {trails.length} trails
-          </p>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">v{APP_VERSION}</span>
+            <p className="text-gray-600 text-sm">
+              {filteredTrails.length} of {trails.length} trails
+            </p>
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title={tt('Go back to previous page')}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -402,6 +417,11 @@ export default function TrailManager() {
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 min-w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
           />
+          <div className="flex items-center gap-1 text-sm">
+            <button onClick={() => setGpxFilter('all')} className={`px-2.5 py-1 rounded-md transition-colors ${gpxFilter === 'all' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>All</button>
+            <button onClick={() => setGpxFilter('gpx')} className={`px-2.5 py-1 rounded-md transition-colors ${gpxFilter === 'gpx' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>GPX</button>
+            <button onClick={() => setGpxFilter('noGpx')} className={`px-2.5 py-1 rounded-md transition-colors ${gpxFilter === 'noGpx' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>No GPX</button>
+          </div>
           <button onClick={handleNewTrail} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2" title={tt('Add a new trail')}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

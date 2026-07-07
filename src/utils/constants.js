@@ -24,7 +24,8 @@ export const DEFAULT_FILTERS = {
   difficulties: [],
   months: [],
   sortBy: 'name',
-  wilderness: false
+  wilderness: false,
+  gpx: 'all'
 };
 
 export const DIFFICULTY_COLORS = {

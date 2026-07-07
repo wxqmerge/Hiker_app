@@ -174,7 +174,6 @@ export default function ScheduleBuilder() {
 
   const [dragData, setDragData] = useState(null);
   const [pendingSwap, setPendingSwap] = useState(null);
-  const [showScheduled, setShowScheduled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [historyEntries, setHistoryEntries] = useState([]);
@@ -291,7 +290,7 @@ export default function ScheduleBuilder() {
     setDragData(null);
   }, []);
 
-  const scheduledCards = useMemo(() => {
+  const _scheduledCards = useMemo(() => {
     const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
     const allDays = [];
     for (let day = 1; day <= daysInMonth; day++) {
@@ -955,17 +954,6 @@ const findTrailByHikeName = (hikeName, trailsList) => {
         <div className="mb-6 flex items-baseline gap-3">
           <PageNav />
           <span className="text-xs text-gray-400">v{APP_VERSION}</span>
-          <button
-            onClick={() => setShowScheduled(!showScheduled)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              showScheduled
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Toggle scheduled hikes list')}
-          >
-            Scheduled ({assignedCount})
-          </button>
           <div className="relative">
             <button
               onClick={() => setShowSettings(!showSettings)}
@@ -1074,26 +1062,6 @@ const findTrailByHikeName = (hikeName, trailsList) => {
           lookup={lookup}
           resetFilters={() => setFilters({ ...DEFAULT_FILTERS })}
         />
-
-        {/* Scheduled Hikes Section */}
-        {showScheduled && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-4">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-800">
-                Assigned Hikes ({scheduledCards.length})
-              </h3>
-            </div>
-            <div className="p-4">
-              {scheduledCards.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No hikes assigned yet</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {scheduledCards}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Schedule History Panel */}
         {showHistory && (

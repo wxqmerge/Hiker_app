@@ -39,7 +39,8 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
     filters.elevation.min > 0 || filters.elevation.max < 5000 ||
     filters.difficulties.length > 0 ||
     filters.months.length > 0 ||
-    filters.wilderness;
+    filters.wilderness ||
+    (filters.gpx && filters.gpx !== 'all');
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3.5 mb-4">
@@ -186,6 +187,43 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
             title={tt('Sort non-wilderness trails first')}
           >
             ◆ off
+          </button>
+        </div>
+
+        {/* GPX */}
+        <div className="flex gap-1.5 items-center">
+          <button
+            onClick={() => setFilters(prev => ({ ...prev, gpx: 'all' }))}
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.gpx === 'all'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title={tt('Show all trails')}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilters(prev => ({ ...prev, gpx: 'gpx' }))}
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.gpx === 'gpx'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title={tt('Filter trails with GPX')}
+          >
+            GPX
+          </button>
+          <button
+            onClick={() => setFilters(prev => ({ ...prev, gpx: 'noGpx' }))}
+            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
+              filters.gpx === 'noGpx'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title={tt('Filter trails without GPX')}
+          >
+            No GPX
           </button>
         </div>
 

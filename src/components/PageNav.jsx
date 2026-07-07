@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
 
 const links = [
-  { to: '/', label: 'Browse Trails' },
+  { to: '/', label: 'Calendar' },
+  { to: '/browse', label: 'Browse Trails' },
   { to: '/trails', label: 'Trail Manager' },
   { to: '/schedule', label: 'Schedule Builder' },
 ];

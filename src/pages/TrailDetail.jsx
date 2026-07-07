@@ -1,5 +1,7 @@
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useMemo } from 'react';
+
+const APP_VERSION = __APP_VERSION;
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
@@ -375,6 +377,7 @@ const getEditedValue = (field) => {
               <div className="text-sm text-gray-600">
                 Trail {currentIndex + 1} of {trails.length}
               </div>
+              <span className="text-xs text-gray-400">v{APP_VERSION}</span>
             </div>
 
             <div className="text-center flex-1 min-w-0">

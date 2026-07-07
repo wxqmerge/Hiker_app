@@ -1,0 +1,559 @@
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { useTrails } from '../hooks/useTrails';
+import { useSchedulePolling } from '../hooks/useSchedulePolling';
+import { useTooltips } from '../hooks/useTooltips';
+import { useToast } from '../hooks/useToast';
+import PageNav from '../components/PageNav';
+import TrailCard from '../components/TrailCard';
+import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
+import { findTrailById as findTrailByIdUtil } from '../utils/data';
+import { getGpx, updateSchedule } from '../api/client';
+import { getRideCost } from '../utils/report';
+import { setSchedule } from '../hooks/useTrailStore';
+import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
+
+const APP_VERSION = __APP_VERSION;
+
+function serverScheduleToStore(serverData) {
+  const store = {};
+  if (!serverData) return store;
+  for (const [key, entries] of Object.entries(serverData)) {
+    const fullName = MONTH_ABBR_TO_FULL[key] || (MONTH_NAMES.includes(key) ? key : null);
+    if (!fullName) continue;
+    store[fullName] = {};
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        const day = String(entry.day);
+        if (day === 'NaN' || day === 'null' || day === 'undefined') continue;
+        store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start, leader: entry.leader || '' };
+      }
+    } else if (entries && typeof entries === 'object') {
+      Object.assign(store[fullName], entries);
+    }
+  }
+  return store;
+}
+
+function storeToServerSchedule(store) {
+  const serverData = {};
+  for (const [fullName, days] of Object.entries(store)) {
+    const abbr = MONTH_FULL_TO_ABBR[fullName];
+    if (!abbr || !days || typeof days !== 'object') continue;
+    serverData[abbr] = [];
+    for (const [day, entry] of Object.entries(days)) {
+      if (entry?.trail_id) {
+        const dayNum = parseInt(day, 10);
+        if (!isNaN(dayNum) && dayNum > 0) {
+          serverData[abbr].push({ day: dayNum, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
+        }
+      }
+    }
+    serverData[abbr].sort((a, b) => a.day - b.day);
+  }
+  return serverData;
+}
+
+export default function Calendar() {
+  const { trails, schedule: scheduleData, loading } = useTrails();
+  const { title: tt } = useTooltips();
+  const showToast = useToast();
+
+  const year = 2026;
+
+  const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
+
+  const nextHike = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let m = 0; m < 12; m++) {
+      const monthData = scheduleStore[MONTH_NAMES[m]] || {};
+      const daysInMonth = new Date(year, m + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, m, day);
+        const dow = date.getDay();
+        if ((dow === 3 || dow === 5) && date >= today) {
+          const entry = monthData[day];
+          if (entry?.trail_id) {
+            const trail = findTrailByIdUtil(trails, entry.trail_id);
+            if (trail) {
+              return {
+                day,
+                monthIndex: m,
+                date,
+                trail,
+                trailId: entry.trail_id,
+                hikeName: entry.hike || trail.fullName || trail.name,
+                leader: entry.leader || '',
+                earlyStart: !!entry.early_start,
+              };
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }, [scheduleStore, trails]);
+
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
+  const hasSyncedInitialMonth = useRef(false);
+
+  useEffect(() => {
+    if (!hasSyncedInitialMonth.current && nextHike && !loading) {
+      hasSyncedInitialMonth.current = true;
+      setSelectedMonth(nextHike.monthIndex);
+    }
+  }, [loading, nextHike]);
+  const hasApiKey = !!localStorage.getItem('hiker-api-key');
+  const [dragData, setDragData] = useState(null);
+  const [pendingSwap, setPendingSwap] = useState(null);
+  const [gpxDownloading, setGpxDownloading] = useState(false);
+
+  useSchedulePolling({ setSchedule }, 5000);
+
+  const assignedHikes = useMemo(() => {
+    const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
+    const result = {};
+    Object.entries(raw).forEach(([day, val]) => {
+      let entry;
+      if (typeof val === 'string') {
+        entry = { trail_id: val, hike: null, early_start: false };
+      } else if (val && typeof val === 'object') {
+        entry = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null, early_start: !!val.early_start };
+      } else {
+        entry = { trail_id: null, hike: null, early_start: false };
+      }
+      entry.leader = val?.leader || '';
+      result[day] = entry;
+    });
+    return result;
+  }, [scheduleStore, selectedMonth]);
+
+  const assignedCount = useMemo(() => {
+    return Object.values(assignedHikes).filter(v => v?.trail_id).length;
+  }, [assignedHikes]);
+
+  const findTrailById = useCallback((trailId) => findTrailByIdUtil(trails, trailId), [trails]);
+
+  const trailIndexToId = useMemo(() => {
+    const map = {};
+    trails.forEach((t, idx) => {
+      map[idx + 1] = t.id;
+    });
+    return map;
+  }, [trails]);
+
+  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader) => {
+    setDragData({ hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader });
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDragData(null);
+  }, []);
+
+  const scheduledCards = useMemo(() => {
+    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+    const allDays = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, selectedMonth, day);
+      if (date.getDay() === 3 || date.getDay() === 5) allDays.push(day);
+    }
+    return allDays
+      .filter(day => assignedHikes[day]?.trail_id)
+      .map(day => {
+        const { trail_id: trailId, hike: hikeName, early_start: earlyStart, leader } = assignedHikes[day];
+        const trail = findTrailById(trailId);
+        if (!trail) return null;
+        const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
+        return (
+          <div
+            key={day}
+            draggable={hasApiKey}
+            onDragStart={() => hikeIdx && hasApiKey && handleDragStart(Number(hikeIdx[0]), day, hikeName, trailId, earlyStart, leader)}
+            onDragEnd={handleDragEnd}
+            className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
+            title={hasApiKey ? tt('Drag to swap with another date') : undefined}
+            style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
+          >
+            <div className="relative">
+              <TrailCard trail={trail} hikeName={trail.fullName || trail.name} isActive={false} leader={leader} />
+              <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
+                {day}
+                <span className="text-[8px]">{new Date(year, selectedMonth, day).getDay() === 3 ? 'W' : 'F'}</span>
+              </div>
+              {earlyStart && (
+                <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start">
+                  ⏰
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })
+      .filter(Boolean);
+  }, [assignedHikes, trailIndexToId, handleDragStart, handleDragEnd, selectedMonth, findTrailById, year, dragData, tt, hasApiKey]);
+
+  const applyScheduleChange = useCallback(async (monthName, updater) => {
+    const newStore = { ...scheduleStore };
+    const current = newStore[monthName] || {};
+    newStore[monthName] = updater(current);
+    const serverData = storeToServerSchedule(newStore);
+    try {
+      await updateSchedule(serverData);
+      setSchedule(serverData);
+    } catch (error) {
+      console.error('[Calendar] Failed to save schedule:', error);
+      alert('Failed to save schedule to server: ' + error.message);
+    }
+  }, [scheduleStore]);
+
+  const confirmSwap = () => {
+    if (!pendingSwap) return;
+    const { sourceDay, targetDay, targetEntry, trailId, hikeName, earlyStart, leader: swapLeader } = pendingSwap;
+    const monthName = MONTH_NAMES[selectedMonth];
+
+    applyScheduleChange(monthName, (current) => {
+      const next = { ...current };
+      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: swapLeader };
+      if (sourceDay !== null && sourceDay !== undefined) {
+        next[sourceDay] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start, leader: targetEntry.leader || '' };
+      }
+      return next;
+    });
+    setPendingSwap(null);
+  };
+
+  const cancelSwap = () => {
+    setPendingSwap(null);
+  };
+
+  const handleCardDrop = (targetDay) => {
+    if (!dragData || !hasApiKey) return;
+
+    const { hikeIndex, sourceDay, hikeName, trailId: dragTrailId, earlyStart: dragEarlyStart, leader: dragLeader } = dragData;
+    const trailId = dragTrailId || trailIndexToId[hikeIndex];
+
+    if (sourceDay === targetDay) {
+      setDragData(null);
+      return;
+    }
+
+    if (!trailId) {
+      setDragData(null);
+      return;
+    }
+
+    const monthName = MONTH_NAMES[selectedMonth];
+    const monthData = scheduleStore[monthName] || {};
+    const targetEntry = monthData[targetDay];
+
+    if (targetEntry && targetEntry.trail_id) {
+      const sourceTrail = findTrailById(trailId);
+      const targetTrail = findTrailById(targetEntry.trail_id);
+      const sourceTrailName = sourceTrail ? (sourceTrail.fullName || sourceTrail.name) : hikeName || trailId;
+      const targetTrailName = targetTrail ? (targetTrail.fullName || targetTrail.name) : targetEntry.hike || targetEntry.trail_id;
+      const sourceDayOfWeek = sourceDay !== null && sourceDay !== undefined ? new Date(year, selectedMonth, sourceDay).getDay() : null;
+      const targetDayOfWeek = new Date(year, selectedMonth, targetDay).getDay();
+      const sourceDayLabel = sourceDayOfWeek !== null ? `${DAY_NAMES[sourceDayOfWeek]} ${sourceDay}` : 'Available Hikes';
+      const targetDayLabel = `${DAY_NAMES[targetDayOfWeek]} ${targetDay}`;
+
+      setPendingSwap({
+        sourceTrailName,
+        targetTrailName,
+        sourceDayLabel,
+        targetDayLabel,
+        sourceDay,
+        targetDay,
+        sourceEntry: sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay] : null,
+        targetEntry,
+        trailId,
+        hikeName,
+        earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.early_start : false),
+        leader: dragLeader || (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.leader : ''),
+      });
+      setDragData(null);
+      return;
+    }
+
+    const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : ((sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay] : null)?.early_start || false);
+    const leader = dragLeader || (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.leader : '');
+
+    applyScheduleChange(monthName, (current) => {
+      const next = { ...current };
+      if (sourceDay !== null && sourceDay !== undefined) {
+        delete next[sourceDay];
+      }
+      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: leader };
+      return next;
+    });
+    setDragData(null);
+  };
+
+  const wedFriDates = useMemo(() => {
+    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+    const dates = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, selectedMonth, day);
+      const dayOfWeek = date.getDay();
+      if (dayOfWeek === 3 || dayOfWeek === 5) {
+        dates.push(day);
+      }
+    }
+    return dates;
+  }, [selectedMonth]);
+
+  const handleGpxDownload = useCallback(async () => {
+    if (!nextHike || gpxDownloading) return;
+    setGpxDownloading(true);
+    try {
+      const gpx = await getGpx(nextHike.trailId);
+      if (gpx) {
+        const safeName = (nextHike.trail.fullName || nextHike.trail.name || 'route').replace(/[^a-zA-Z0-9]/g, '_');
+        downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
+      }
+    } finally {
+      setTimeout(() => setGpxDownloading(false), 1000);
+    }
+  }, [nextHike, gpxDownloading]);
+
+  const handleTrailhead = useCallback(async () => {
+    if (!nextHike) return;
+    const gpx = await getGpx(nextHike.trailId);
+    if (!gpx) return;
+    const coord = getFirstCoordinateFromGpx(gpx);
+    if (coord) {
+      openGoogleMapsTrailhead(coord.lat, coord.lon);
+    } else {
+      showToast('No GPS coordinates found in GPX file', 'error');
+    }
+  }, [nextHike, showToast]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading schedule...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <main className="container mx-auto px-4 py-3">
+        <div className="mb-6 flex items-baseline gap-3">
+          <PageNav />
+          <span className="text-xs text-gray-400">v{APP_VERSION}</span>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
+            title={tt('Select month to view')}
+          >
+            {MONTH_NAMES.map((name, idx) => {
+              const monthAbbr = name.substring(0, 3);
+              const count = scheduleData?.[monthAbbr] ? Object.keys(scheduleData[monthAbbr]).length : 0;
+              return (
+                <option key={idx} value={idx}>
+                  {name} ({count} hikes)
+                </option>
+              );
+            })}
+          </select>
+          <p className="text-gray-600 text-sm ml-auto">
+            {assignedCount}/{wedFriDates.length} dates filled
+          </p>
+        </div>
+
+        {nextHike && selectedMonth === nextHike.monthIndex && (() => {
+          const trail = nextHike.trail;
+          const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
+          return (
+          <div className="mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg overflow-hidden">
+            <div className="p-5 md:p-7">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex-shrink-0 w-20 h-20 bg-white/20 rounded-xl flex flex-col items-center justify-center">
+                    <span className="text-3xl font-bold text-white leading-none">{nextHike.day}</span>
+                    <span className="text-base text-green-100 font-medium">{DAY_NAMES[nextHike.date.getDay()]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h2 className="text-2xl md:text-3xl font-bold text-white truncate">
+                        {nextHike.hikeName}
+                      </h2>
+                      <span className={`px-3 py-1 rounded-full text-base font-medium ${DIFFICULTY_COLORS[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
+                        {trail.difficulty}
+                      </span>
+                      {nextHike.earlyStart && (
+                        <span className="px-3 py-1 rounded-full text-base font-medium bg-orange-500 text-white">Early Start</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 text-green-100 text-lg">
+                      <span>{MONTH_NAMES[nextHike.monthIndex]} {nextHike.day}</span>
+                      {nextHike.leader && (
+                        <>
+                          <span className="text-green-300">•</span>
+                          <span>Leader: <span className="font-medium text-white">{nextHike.leader}</span></span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5 flex-shrink-0">
+                    {trail.hasGpx && (
+                      <>
+                        <button
+                          onClick={handleGpxDownload}
+                          disabled={gpxDownloading}
+                          className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors disabled:opacity-50"
+                          title={`Download GPX for ${nextHike.hikeName}`}
+                        >
+                          <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          <span>GPX</span>
+                        </button>
+                        <button
+                          onClick={handleTrailhead}
+                          className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors"
+                          title={`Open trailhead for ${nextHike.hikeName} in Google Maps`}
+                        >
+                          <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span>TH</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-white/20">
+                  <div className="flex items-center gap-2 text-green-50">
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    <span className="text-base">
+                      {trail.distance?.toFixed(1) || 'N/A'} mi
+                      {trail.distanceExtended && ` / ${trail.distanceExtended.toFixed(1)}`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-green-50">
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    <span className="text-base">
+                      {trail.elevationStart?.toLocaleString() || 'N/A'}'
+                      {trail.elevationMax && ` - ${trail.elevationMax.toLocaleString()}'`}
+                    </span>
+                  </div>
+                  {trail.parking && (
+                    <div className="flex items-center gap-2 text-green-50">
+                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <span className="text-base truncate">{trail.parking}</span>
+                    </div>
+                  )}
+                  {trail.range && (
+                    <div className="flex items-center gap-2 text-green-50">
+                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                      <span className="text-base truncate">{trail.range} min{rideCost ? ` / ${rideCost}` : ''}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          );
+        })()}
+
+        {scheduledCards.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-800">
+                Assigned Hikes (0)
+              </h3>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-gray-500 text-center py-8">No hikes assigned for {MONTH_NAMES[selectedMonth]}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-800">
+                Assigned Hikes ({scheduledCards.length})
+              </h3>
+            </div>
+            <div className="p-4">
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!dragData) return;
+                }}
+              >
+                {scheduledCards.map((card, idx) => (
+                  <div
+                    key={idx}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (!dragData) return;
+                      const targetDay = parseInt(scheduledCards[idx]?.key, 10);
+                      if (targetDay) handleCardDrop(targetDay);
+                    }}
+                  >
+                    {card}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {pendingSwap && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Swap Hikes?</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">{pendingSwap.sourceDayLabel}:</span>
+                  <span className="font-medium">{pendingSwap.sourceTrailName}</span>
+                </div>
+                <div className="flex justify-center text-gray-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">{pendingSwap.targetDayLabel}:</span>
+                  <span className="font-medium">{pendingSwap.targetTrailName}</span>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={cancelSwap}
+                  className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSwap}
+                  className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                >
+                  Confirm Swap
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

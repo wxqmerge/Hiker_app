@@ -75,6 +75,11 @@ export function filterTrails(items, filters, trailDetails) {
       if (!name.includes('\u25C6')) return false;
     }
 
+    if (filters.gpx && filters.gpx !== 'all') {
+      const hasGpx = !!t.hasGpx;
+      if ((filters.gpx === 'gpx' && !hasGpx) || (filters.gpx === 'noGpx' && hasGpx)) return false;
+    }
+
     return true;
   });
 }
