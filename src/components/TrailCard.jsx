@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openOrganicMaps, downloadBlob } from '../utils/io';
 import { getGpx } from '../api/client';
