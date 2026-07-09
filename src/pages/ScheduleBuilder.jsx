@@ -97,7 +97,7 @@ export default function ScheduleBuilder() {
     return nextMonth;
   });
   const [isSaving, setIsSaving] = useState(false); // eslint-disable-line no-unused-vars
-  const [hasApiKey, setHasApiKey] = useState(() => !!localStorage.getItem('hiker-api-key')); // eslint-disable-line no-unused-vars
+  const hasApiKey = !!localStorage.getItem('hiker-api-key');
   const [scheduleStore, setScheduleStore] = useState(() => {
     return {};
   });
@@ -1182,14 +1182,14 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                            e.currentTarget.classList.remove('bg-green-50');
                            handleDropOnDate(day);
                          }}
-                          onDoubleClick={() => trailId && navigate(`/trail/${trailId}?edit=true`)}
+                          onDoubleClick={() => trailId && hasApiKey && navigate(`/trail/${trailId}?edit=true`)}
                           className={`border-2 rounded-lg p-3 transition-all ${
                             trailId
                               ? 'border-green-300 bg-green-50 cursor-pointer'
                               : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
                           }`}
                           style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
-                         title={trailId ? tt('Drop another hike here to swap · Double-click to edit trail') : tt('Drop a hike here to schedule')}
+                         title={trailId ? tt('Drop another hike here to swap · Double-click to edit trail (requires API key)') : tt('Drop a hike here to schedule')}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
