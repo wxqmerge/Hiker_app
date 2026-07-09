@@ -13,8 +13,19 @@ OK=0
 FAIL=0
 SKIP=0
 
+# Detect the project repo from the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CALLER_REMOTE=$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null)
+CALLER_REPO=$(basename "$CALLER_REMOTE" .git)
+
+if [ -z "$CALLER_REPO" ]; then
+    echo "Error: could not detect git repo from $SCRIPT_DIR"
+    echo "This script must be run from within a project directory."
+    exit 1
+fi
+
 echo "========================================"
-echo "  Update ALL App Instances"
+echo "  Update ALL $CALLER_REPO Instances"
 echo "  Base: $BASE"
 echo "  Flags: ${FLAGS:-none}"
 echo "========================================"
@@ -32,6 +43,17 @@ for dir in "$BASE"/*/; do
         continue
     fi
 
+    # Detect repo from remote origin — must match calling project
+    remote=$(git -C "$dir" remote get-url origin 2>/dev/null)
+    repo=$(basename "$remote" .git)
+
+    if [ "$repo" != "$CALLER_REPO" ]; then
+        echo "  ⊘ $name — different repo ($repo), skipping"
+        SKIP=$((SKIP + 1))
+        echo ""
+        continue
+    fi
+
     # Must have deploy/update.sh
     if [ ! -f "$dir/deploy/update.sh" ]; then
         echo "  ⊘ $name — no deploy/update.sh, skipping"
@@ -39,10 +61,6 @@ for dir in "$BASE"/*/; do
         echo ""
         continue
     fi
-
-    # Detect repo from remote origin
-    remote=$(git -C "$dir" remote get-url origin 2>/dev/null)
-    repo=$(basename "$remote" .git)
 
     echo "========================================"
     echo "  Updating: $name  (repo: $repo)"
