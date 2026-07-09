@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTrails } from '../hooks/useTrails';
 import { useFilters } from '../hooks/useFilters';
 import { useSchedulePolling } from '../hooks/useSchedulePolling';
@@ -87,6 +88,7 @@ function debugLogSearchChange(search, hikeTrailMapLen, filteredLen, sortedLen, a
 export default function ScheduleBuilder() {
   const { trails, loading, lookup, schedule: scheduleData } = useTrails();
   const trailDetails = useTrailDetails();
+  const navigate = useNavigate();
   const { filters, setFilters } = useFilters(trails, trailDetails);
   const { title: tt } = useTooltips();
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -1180,13 +1182,14 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                            e.currentTarget.classList.remove('bg-green-50');
                            handleDropOnDate(day);
                          }}
-                         className={`border-2 rounded-lg p-3 transition-all ${
-                           trailId
-                             ? 'border-green-300 bg-green-50'
-                             : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
-                         }`}
-                         style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
-                        title={trailId ? tt('Drop another hike here to swap') : tt('Drop a hike here to schedule')}
+                          onDoubleClick={() => trailId && navigate(`/trail/${trailId}?edit=true`)}
+                          className={`border-2 rounded-lg p-3 transition-all ${
+                            trailId
+                              ? 'border-green-300 bg-green-50 cursor-pointer'
+                              : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
+                          }`}
+                          style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
+                         title={trailId ? tt('Drop another hike here to swap · Double-click to edit trail') : tt('Drop a hike here to schedule')}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
