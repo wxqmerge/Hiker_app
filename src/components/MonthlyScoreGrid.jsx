@@ -1,5 +1,6 @@
 import { MONTH_ABBR } from '../utils/constants';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
+import MonthGrid from './MonthGrid';
 
 // Render a grid of monthly score badges
 // @param {Object} props
@@ -13,8 +14,10 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
 
   return (
-    <div className="flex gap-1.5 flex-wrap">
-      {MONTH_ABBR.map((month, idx) => {
+    <MonthGrid
+      months={MONTH_ABBR}
+      className="flex gap-1.5 flex-wrap"
+      renderMonth={(month, idx) => {
         const hikeCount = monthly[idx] || 0;
         const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
         const quarterBase = hasQuarterData ? 1 : 0;
@@ -38,8 +41,8 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
             {score > 0 && <span className="text-sm leading-none mt-0.5 font-bold">{score}</span>}
           </div>
         );
-      })}
-    </div>
+      }}
+    />
   );
 }
 
@@ -52,19 +55,24 @@ export function ScoreBreakdownRow({ monthly, availableMonths = [], seasonal }) {
   if (!monthly || monthly.length === 0) return null;
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
 
-  return MONTH_ABBR.map((month, idx) => {
-    const hikeCount = monthly[idx] || 0;
-    const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
-    const quarterBase = hasQuarterData ? 1 : 0;
-    const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-    const scheduleBase = Math.min(9, hikeCount * 2);
+  return (
+    <MonthGrid
+      months={MONTH_ABBR}
+      renderMonth={(month, idx) => {
+        const hikeCount = monthly[idx] || 0;
+        const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
+        const quarterBase = hasQuarterData ? 1 : 0;
+        const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+        const scheduleBase = Math.min(9, hikeCount * 2);
 
-    return (
-      <div key={idx} className="flex flex-col items-center min-w-[40px]">
-        <span className="text-[9px] text-gray-400 leading-tight">
-          {quarterBase}+{monthBase}+{scheduleBase}={score}
-        </span>
-      </div>
-    );
-  });
+        return (
+          <div key={idx} className="flex flex-col items-center min-w-[40px]">
+            <span className="text-[9px] text-gray-400 leading-tight">
+              {quarterBase}+{monthBase}+{scheduleBase}={score}
+            </span>
+          </div>
+        );
+      }}
+    />
+  );
 }

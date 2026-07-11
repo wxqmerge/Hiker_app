@@ -4,10 +4,11 @@ export { getApiBase };
 export async function request(path, options = {}) {
   const apiBase = getApiBase();
   const url = `${apiBase}${path}`;
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  const headers = { ...options.headers };
+
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (options.apiKey) {
     headers['X-API-Key'] = localStorage.getItem('hiker-api-key') || '';
@@ -16,20 +17,39 @@ export async function request(path, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
   });
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
+    const errMsg = error.error?.message || `HTTP ${res.status}`;
+    if (options.throwOnError !== false) {
+      throw new Error(errMsg);
+    }
+    return { error: errMsg, status: res.status };
   }
 
-  const data = await res.json();
-  return {
-    ...data,
-    _etag: res.headers?.get('etag') || null,
-    _status: res.status,
-  };
+  let data;
+  const responseType = options.responseType || 'json';
+  if (responseType === 'blob') {
+    data = await res.blob();
+  } else if (responseType === 'text') {
+    data = await res.text();
+  } else {
+    data = await res.json();
+    if (options.stripMetadata) {
+      const { _etag: _, _status: __, ...rest } = data;
+      data = rest;
+    } else {
+      data = {
+        ...data,
+        _etag: res.headers?.get('etag') || null,
+        _status: res.status,
+      };
+    }
+  }
+
+  return data;
 }
 
 export async function getTrails() {
@@ -38,31 +58,22 @@ export async function getTrails() {
 }
 
 export async function getGpx(trailId) {
-  const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}/api/trails/gpx/${trailId}`);
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    const error = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
+  try {
+    return await request(`/api/trails/gpx/${trailId}`, { responseType: 'text' });
+  } catch (err) {
+    if (err.message.includes('HTTP 404')) return null;
+    throw err;
   }
-  return res.text();
 }
 
 export async function uploadGpxFile(trailId, file) {
-  const apiBase = getApiBase();
-  const apiKey = localStorage.getItem('hiker-api-key');
   const formData = new FormData();
   formData.append('gpx', file);
-  const res = await fetch(`${apiBase}/api/trails/gpx/${trailId}`, {
+  return request(`/api/trails/gpx/${trailId}`, {
     method: 'POST',
-    headers: { 'X-API-Key': apiKey || '' },
     body: formData,
+    apiKey: true,
   });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: { message: 'Upload failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
-  }
-  return res.json();
 }
 
 export async function updateTrail(trail) {
@@ -81,9 +92,7 @@ export async function deleteTrail(id) {
 }
 
 export async function getTrailDetails() {
-  const data = await request('/api/trails/details');
-  const { _etag: _, _status: __, ...rest } = data;
-  return rest;
+  return request('/api/trails/details', { stripMetadata: true });
 }
 
 export async function updateTrailDetail(id, detail) {
@@ -95,15 +104,11 @@ export async function updateTrailDetail(id, detail) {
 }
 
 export async function getLookup() {
-  const data = await request('/api/lookup');
-  const { _etag: _, _status: __, ...rest } = data;
-  return rest;
+  return request('/api/lookup', { stripMetadata: true });
 }
 
 export async function getSchedule() {
-  const data = await request('/api/schedule');
-  const { _etag: _, _status: __, ...rest } = data;
-  return rest;
+  return request('/api/schedule', { stripMetadata: true });
 }
 
 export async function updateSchedule(schedule) {
@@ -117,57 +122,25 @@ export async function updateSchedule(schedule) {
 export async function importScheduleFromXls(file) {
   const formData = new FormData();
   formData.append('file', file);
-
-  const apiKey = localStorage.getItem('hiker-api-key');
-  const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}/api/schedule/import-xls`, {
+  return request('/api/schedule/import-xls', {
     method: 'POST',
-    headers: {
-      'X-API-Key': apiKey || '',
-    },
     body: formData,
+    apiKey: true,
   });
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: { message: 'Import failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
-  }
-
-  return res.json();
 }
 
 export async function importTrailsFromXls(file) {
   const formData = new FormData();
   formData.append('file', file);
-
-  const apiKey = localStorage.getItem('hiker-api-key');
-  const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}/api/schedule/import-trails-xls`, {
+  return request('/api/schedule/import-trails-xls', {
     method: 'POST',
-    headers: {
-      'X-API-Key': apiKey || '',
-    },
     body: formData,
+    apiKey: true,
   });
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: { message: 'Import failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
-  }
-
-  return res.json();
 }
 
 export async function getScheduleHistory() {
-  const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}/api/schedule/history`, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
-  }
-  return res.json();
+  return request('/api/schedule/history');
 }
 
 export async function restoreSchedule(timestamp) {
@@ -179,45 +152,32 @@ export async function restoreSchedule(timestamp) {
 }
 
 export async function getHealth() {
-  const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}/health`);
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    return await request('/health');
+  } catch {
+    return null;
+  }
 }
 
 export async function ensureScheduleWritable() {
-  const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}/api/schedule/ensure-writable`);
-  if (!res.ok) {
+  try {
+    return await request('/api/schedule/ensure-writable');
+  } catch {
     console.warn('[CLIENT] Failed to ensure schedule files are writable');
     return null;
   }
-  return res.json();
 }
 
 export async function exportDataZip() {
-  const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}/api/data/export-zip`);
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: { message: 'Export failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
-  }
-  return res.blob();
+  return request('/api/data/export-zip', { responseType: 'blob' });
 }
 
 export async function importDataZip(file) {
   const formData = new FormData();
   formData.append('zip', file);
-  const apiKey = localStorage.getItem('hiker-api-key');
-  const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}/api/data/import-zip`, {
+  return request('/api/data/import-zip', {
     method: 'POST',
-    headers: { 'X-API-Key': apiKey || '' },
     body: formData,
+    apiKey: true,
   });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: { message: 'Import failed' } }));
-    throw new Error(error.error?.message || `HTTP ${res.status}`);
-  }
-  return res.json();
 }

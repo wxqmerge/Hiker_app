@@ -2,10 +2,11 @@ import { useMemo } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
+import { getDaysInMonth, createDate } from '../utils/dateUtils';
 
 function findNextHikeInMonth(scheduleStore, trails, m, year) {
   const monthData = scheduleStore[MONTH_NAMES[m]] || {};
-  const daysInMonth = new Date(year, m + 1, 0).getDate();
+  const daysInMonth = getDaysInMonth(year, m);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (now.getHours() >= 12) {
@@ -13,7 +14,7 @@ function findNextHikeInMonth(scheduleStore, trails, m, year) {
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, m, day);
+    const date = createDate(year, m, day);
     const dow = date.getDay();
     if ((dow === 3 || dow === 5) && date >= today) {
       const entry = monthData[day];

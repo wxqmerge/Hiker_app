@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
+import { getDaysInMonth, createDate } from '../utils/dateUtils';
 
 /**
  * Shared schedule data hook for ScheduleBuilder and Calendar pages.
@@ -33,10 +34,10 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
   }, [assignedHikes]);
 
   const wedFriDates = useMemo(() => {
-    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+    const daysInMonth = getDaysInMonth(year, selectedMonth);
     const dates = [];
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, selectedMonth, day);
+      const date = createDate(year, selectedMonth, day);
       const dayOfWeek = date.getDay();
       if (dayOfWeek === 3 || dayOfWeek === 5) {
         dates.push(day);

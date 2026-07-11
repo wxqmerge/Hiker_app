@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import GPXHelp from '../components/GPXHelp';
+import MonthGrid from '../components/MonthGrid';
 
 const APP_VERSION = __APP_VERSION;
 import { useTrails } from '../hooks/useTrails';
@@ -837,8 +838,10 @@ const getEditedValue = (field) => {
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Popularity <span className="text-xs text-gray-400 font-normal">How often the hike appears in each month's schedule</span></label>
-                    <div className="flex gap-2">
-                      {MONTH_ABBR.map((month, idx) => (
+                    <MonthGrid
+                      months={MONTH_ABBR}
+                      className="flex gap-2"
+                      renderMonth={(month, idx) => (
                         <div key={idx} className="flex flex-col items-center min-w-[40px]">
                           <span className="text-[10px] text-gray-500 mb-0.5">{month.substring(0, 3)}</span>
                           <input
@@ -855,61 +858,27 @@ const getEditedValue = (field) => {
                             title={`${month} hike count`}
                           />
                         </div>
-                      ))}
+                      )}
+                    />
+                    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200">
+                        <ScoreBreakdownRow
+                          monthly={getEditedValue('monthlyPopularity') || []}
+                          availableMonths={getEditedValue('availableMonths') || []}
+                          seasonal={{ ...trail.seasonal, bestSeason: getEditedValue('bestSeason') }}
+                        />
                     </div>
-                   <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200">
-                       {(() => {
-                           const { hasQuarterData } = getSeasonalInfo(trail.seasonal || {});
-                           const availableMonths = getEditedValue('availableMonths') || [];
-                           return MONTH_ABBR.map((month, idx) => {
-                            const hikeCount = getEditedValue('monthlyPopularity')[idx] || 0;
-                            const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
-                            const quarterBase = hasQuarterData ? 1 : 0;
-                            const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-                            const scheduleBase = Math.min(9, hikeCount * 2);
-                            return (
-                              <div key={idx} className="flex flex-col items-center min-w-[40px]">
-                                <span className="text-[9px] text-gray-400 leading-tight">
-                                  {quarterBase}+{monthBase}+{scheduleBase}={score}
-                                </span>
-                              </div>
-                            );
-                          });
-                        })()}
-                    </div>
-                     <div className="mt-3 pt-3 border-t border-gray-200">
-                       <p className="text-sm font-medium text-gray-700 mb-2">Monthly Score</p>
-                       <div className="flex gap-1.5 flex-wrap">
-                         {(() => {
-                           const { hasQuarterData } = getSeasonalInfo(trail.seasonal || {});
-                           const availableMonths = getEditedValue('availableMonths') || [];
-                           const monthly = getEditedValue('monthlyPopularity') || [];
-                          return MONTH_ABBR.map((month, idx) => {
-                              const hikeCount = monthly[idx] || 0;
-                              const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
-                              const quarterBase = hasQuarterData ? 1 : 0;
-                              const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-                              const scheduleBase = Math.min(9, hikeCount * 2);
-                             const intensity = Math.min(score / 9, 1);
-                             const bg = score > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
-                             const text = score > 0 ? 'text-green-800' : 'text-gray-400';
-                             return (
-                               <div
-                                 key={idx}
-                                 className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium ${bg} ${text}`}
-                                 title={`${month}: ${quarterBase}+${monthBase}+${scheduleBase}=${score}`}
-                               >
-                                 <span className="text-[9px] leading-none">{month.substring(0, 3)}</span>
-                                 {score > 0 && <span className="text-sm leading-none mt-0.5 font-bold">{score}</span>}
-                               </div>
-                             );
-                           });
-                        })()}
-                      </div>
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Monthly Score</p>
+                        <MonthlyScoreGrid
+                          monthly={getEditedValue('monthlyPopularity') || []}
+                          availableMonths={getEditedValue('availableMonths') || []}
+                          seasonal={{ ...trail.seasonal, bestSeason: getEditedValue('bestSeason') }}
+                        />
                         <p className="text-xs text-gray-400 mt-2">Per-month popularity score (0-9) for filtering</p>
-                      <p className="text-xs text-gray-400 mt-2">QuarterBase(1 if quarter data exists) + MonthBase(1 if month in schedule) + ScheduleBase(hike_count × 2, max 9) = Score (max 9)</p>
+                        <p className="text-xs text-gray-400 mt-2">QuarterBase(1 if quarter data exists) + MonthBase(1 if month in schedule) + ScheduleBase(hike_count × 2, max 9) = Score (max 9)</p>
+                      </div>
 
-                    </div>
+
                   </div>
                 </div>
               </div>
@@ -948,28 +917,30 @@ const getEditedValue = (field) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Available Months</label>
-                  <div className="flex flex-wrap gap-2">
-                    {MONTH_ABBR.map((month, idx) => (
-                      <label key={idx} className="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200">
-                        <input
-                          type="checkbox"
-                          checked={getEditedValue('availableMonths').includes(idx + 1)}
-                          onChange={(e) => {
-                            const months = [...getEditedValue('availableMonths')];
-                            if (e.target.checked) {
-                              months.push(idx + 1);
-                            } else {
-                              const i = months.indexOf(idx + 1);
-                              if (i > -1) months.splice(i, 1);
-                            }
-                            updateField('availableMonths', months.sort((a, b) => a - b));
-                          }}
-                          className="rounded"
-                        />
-                        <span className="text-sm">{month}</span>
-                      </label>
-                    ))}
-                  </div>
+                   <MonthGrid
+                     months={MONTH_ABBR}
+                     className="flex flex-wrap gap-2"
+                     renderMonth={(month, idx) => (
+                       <label key={idx} className="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200">
+                         <input
+                           type="checkbox"
+                           checked={getEditedValue('availableMonths').includes(idx + 1)}
+                           onChange={(e) => {
+                             const months = [...getEditedValue('availableMonths')];
+                             if (e.target.checked) {
+                               months.push(idx + 1);
+                             } else {
+                               const i = months.indexOf(idx + 1);
+                               if (i > -1) months.splice(i, 1);
+                             }
+                             updateField('availableMonths', months.sort((a, b) => a - b));
+                           }}
+                           className="rounded"
+                         />
+                         <span className="text-sm">{month}</span>
+                       </label>
+                     )}
+                   />
                 </div>
               </div>
 

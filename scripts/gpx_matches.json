@@ -1,0 +1,481 @@
+[
+  {
+    "gpxFile": "360_Road_Lookout_Hill_Rd__off_of_Palo_Alto_Rd_.gpx",
+    "trailId": "360",
+    "trailName": "360 Road/Lookout Hill Rd. off of Palo Alto Rd.",
+    "score": 100
+  },
+  {
+    "gpxFile": "Anderson_lake_DNR.gpx",
+    "trailId": "anderson-lake",
+    "trailName": "Anderson Lake State Park - DNR",
+    "score": 100
+  },
+  {
+    "gpxFile": "Anderson_Lake_State_Park.gpx",
+    "trailId": "anderson",
+    "trailName": "Anderson Lake State Park",
+    "score": 100
+  },
+  {
+    "gpxFile": "Blyn_Tower_from_W_Uncas_Rd.gpx",
+    "trailId": "blyn-tower",
+    "trailName": "Blyn Tower from W Uncas Rd",
+    "score": 100
+  },
+  {
+    "gpxFile": "Bogachiel_River.gpx",
+    "trailId": "bogachiel",
+    "trailName": "Bogachiel River",
+    "score": 100
+  },
+  {
+    "gpxFile": "Borderline_Trail_to_Marmot_Loop_from_Deer_Park_Rd_.gpx",
+    "trailId": "borderline",
+    "trailName": "Borderline Trail to Marmot Loop from Deer Park Rd.",
+    "score": 100
+  },
+  {
+    "gpxFile": "Boulder_Creek__.gpx",
+    "trailId": "boulder",
+    "trailName": "Boulder Creek◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Burnt_Hill_from_Johnson_Creek.gpx",
+    "trailId": "burnt",
+    "trailName": "Burnt Hill from Johnson Creek",
+    "score": 100
+  },
+  {
+    "gpxFile": "Camp_Handy__.gpx",
+    "trailId": "camp",
+    "trailName": "Camp Handy◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Cascade_Rock__.gpx",
+    "trailId": "cascade",
+    "trailName": "Cascade Rock◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Cassidy_Creek__Bike_.gpx",
+    "trailId": "cassidy",
+    "trailName": "Cassidy Creek (Bike)",
+    "score": 100
+  },
+  {
+    "gpxFile": "Chetzemoka_Park_Historical_Walk.gpx",
+    "trailId": "chetzemoka",
+    "trailName": "Chetzemoka Park Historical Walk",
+    "score": 100
+  },
+  {
+    "gpxFile": "Deer_Hair_Rock_Elwha_Overlook__.gpx",
+    "trailId": "deer-hair",
+    "trailName": "Deer Hair Rock/Elwha Overlook◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Deer_Lake_to_Potholes__.gpx",
+    "trailId": "deer-lake",
+    "trailName": "Deer Lake to Potholes◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Dosewallips_Cascades.gpx",
+    "trailId": "dosewallips",
+    "trailName": "Dosewallips Cascades",
+    "score": 100
+  },
+  {
+    "gpxFile": "Dungeness_Levee_at_Schoolhouse.gpx",
+    "trailId": "dungeness-levee",
+    "trailName": "Dungeness Levee at Schoolhouse",
+    "score": 100
+  },
+  {
+    "gpxFile": "Elwha_Beach__Place_Road_.gpx",
+    "trailId": "elwha",
+    "trailName": "Elwha Beach (Place Road)",
+    "score": 100
+  },
+  {
+    "gpxFile": "Elwha_Fish_Hatchery_.gpx",
+    "trailId": "elwha-fish",
+    "trailName": "Elwha Fish Hatchery ",
+    "score": 100
+  },
+  {
+    "gpxFile": "Elwha_Pack_Trail__.gpx",
+    "trailId": "elwha-stock",
+    "trailName": "Elwha Pack Trail◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Fort_Flagler_Historical_State_Park.gpx",
+    "trailId": "fort-flagler",
+    "trailName": "Fort Flagler Historical State Park",
+    "score": 100
+  },
+  {
+    "gpxFile": "Gibbs_Lake_County_Park.gpx",
+    "trailId": "gibbs",
+    "trailName": "Gibbs Lake County Park",
+    "score": 100
+  },
+  {
+    "gpxFile": "Gold_Creek.gpx",
+    "trailId": "gold",
+    "trailName": "Gold Creek",
+    "score": 100
+  },
+  {
+    "gpxFile": "Griff_Creek__.gpx",
+    "trailId": "griff",
+    "trailName": "Griff Creek◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Hansville.gpx",
+    "trailId": "hansville",
+    "trailName": "Hansville",
+    "score": 100
+  },
+  {
+    "gpxFile": "Karpen_Road_State_Forest_Road.gpx",
+    "trailId": "karpen",
+    "trailName": "Karpen Road/State Forest Road",
+    "score": 100
+  },
+  {
+    "gpxFile": "Larry_Scott____Cape_George.gpx",
+    "trailId": "larry",
+    "trailName": "Larry Scott -- Cape George",
+    "score": 100
+  },
+  {
+    "gpxFile": "Little_Hump_Big_Hump_at_the_Duckabush.gpx",
+    "trailId": "little-humpbig",
+    "trailName": "Little Hump/Big Hump at the Duckabush",
+    "score": 100
+  },
+  {
+    "gpxFile": "Little_Hump_Murhut_Falls_Ranger_Hole.gpx",
+    "trailId": "little-humpmurhut",
+    "trailName": "Little Hump/Murhut Falls/Ranger Hole",
+    "score": 100
+  },
+  {
+    "gpxFile": "Little_River__.gpx",
+    "trailId": "little-river",
+    "trailName": "Little River◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Lover_s_Lane_Sol_Duc_Falls_Loop__.gpx",
+    "trailId": "lovers",
+    "trailName": "Lover's Lane/Sol Duc Falls Loop◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Lyre_River_Conservation_Area___DNR_Campground.gpx",
+    "trailId": "lyre",
+    "trailName": "Lyre River Conservation Area & DNR Campground",
+    "score": 100
+  },
+  {
+    "gpxFile": "Miller_Peninsula_from_ESB__Manzanita_Trail_.gpx",
+    "trailId": "miller-peninsula",
+    "trailName": "Miller Peninsula from ESB (Manzanita Trail)",
+    "score": 100
+  },
+  {
+    "gpxFile": "Miller_Peninsula_to_Discovery_Bay.gpx",
+    "trailId": "miller",
+    "trailName": "Miller Peninsula to Discovery Bay",
+    "score": 100
+  },
+  {
+    "gpxFile": "Miller_Peninsula_to_Thompson_Spit.gpx",
+    "trailId": "miller-peninsula-to",
+    "trailName": "Miller Peninsula to Thompson Spit",
+    "score": 100
+  },
+  {
+    "gpxFile": "Mink_Lake__.gpx",
+    "trailId": "mink",
+    "trailName": "Mink Lake◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Mt__Angeles_Rd__to_Foothills_Trails__E__.gpx",
+    "trailId": "mt-angeles",
+    "trailName": "Mt. Angeles Rd. to Foothills Trails (E.)",
+    "score": 100
+  },
+  {
+    "gpxFile": "Mt__Townsend__.gpx",
+    "trailId": "mt-townsend",
+    "trailName": "Mt. Townsend◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Mt__Walker.gpx",
+    "trailId": "mt-walker",
+    "trailName": "Mt. Walker",
+    "score": 100
+  },
+  {
+    "gpxFile": "Mt__Zion.gpx",
+    "trailId": "mt-zion",
+    "trailName": "Mt. Zion",
+    "score": 100
+  },
+  {
+    "gpxFile": "Ned_Hill_L_O__near_Slab_Camp_.gpx",
+    "trailId": "ned",
+    "trailName": "Ned Hill L/O (near Slab Camp)",
+    "score": 100
+  },
+  {
+    "gpxFile": "Newberry_Hill_Heritage_Park.gpx",
+    "trailId": "newberry",
+    "trailName": "Newberry Hill Heritage Park",
+    "score": 100
+  },
+  {
+    "gpxFile": "N__Fork_Sol_Duc__.gpx",
+    "trailId": "n",
+    "trailName": "N. Fork Sol Duc◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "N__Kitsap_Heritage_Park.gpx",
+    "trailId": "n-kitsap",
+    "trailName": "N. Kitsap Heritage Park",
+    "score": 100
+  },
+  {
+    "gpxFile": "OAT_Horse_to_living_room.gpx",
+    "trailName": "OAT - Horse Parking to Living Room",
+    "score": 100
+  },
+  {
+    "gpxFile": "Old_Lower_Gray_Wolf__.gpx",
+    "trailId": "oldlower",
+    "trailName": "Old/Lower Gray Wolf◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Ozette_Triangle__.gpx",
+    "trailId": "ozette",
+    "trailName": "Ozette Triangle◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Pat_s_Prairie.gpx",
+    "trailId": "pats",
+    "trailName": "Pat's Prairie",
+    "score": 100
+  },
+  {
+    "gpxFile": "Peabody_Creek.gpx",
+    "trailId": "peabody",
+    "trailName": "Peabody Creek",
+    "score": 100
+  },
+  {
+    "gpxFile": "Royal_Creek__.gpx",
+    "trailId": "royal",
+    "trailName": "Royal Creek◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Royal_Lake_Basin__.gpx",
+    "trailId": "royal-lakebasin",
+    "trailName": "Royal Lake/Basin◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Slab_Camp_to_Deer_Ridge__.gpx",
+    "trailId": "slab-camp",
+    "trailName": "Slab Camp to Deer Ridge◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Slab_Camp_to_Duncan_Flats__.gpx",
+    "trailId": "slab-camp-to",
+    "trailName": "Slab Camp to Duncan Flats◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Slab_Camp_to_Slide_Camp__.gpx",
+    "trailId": "slab-camp-to-slide",
+    "trailName": "Slab Camp to Slide Camp◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Sleepy_Hollow.gpx",
+    "trailId": "sleepy",
+    "trailName": "Sleepy Hollow",
+    "score": 100
+  },
+  {
+    "gpxFile": "Snider_Ridge.gpx",
+    "trailId": "snider",
+    "trailName": "Snider Ridge",
+    "score": 100
+  },
+  {
+    "gpxFile": "Spruce_R_R____West.gpx",
+    "trailId": "spruce-rr",
+    "trailName": "Spruce R.R. - West",
+    "score": 100
+  },
+  {
+    "gpxFile": "Steam_Donkey_Maple_Valley_w_othh.gpx",
+    "trailId": "steam",
+    "trailName": "Steam Donkey / Maple Valley Trails",
+    "score": 100
+  },
+  {
+    "gpxFile": "Storm_King__.gpx",
+    "trailId": "storm",
+    "trailName": "Storm King◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Teal_Lake.gpx",
+    "trailId": "teal",
+    "trailName": "Teal Lake",
+    "score": 100
+  },
+  {
+    "gpxFile": "Timberton_Loop_at_Port_Ludlow.gpx",
+    "trailId": "timberton",
+    "trailName": "Timberton Loop at Port Ludlow",
+    "score": 100
+  },
+  {
+    "gpxFile": "Tubal_Cain___Tull_Canyon___.gpx",
+    "trailId": "tubal",
+    "trailName": "Tubal Cain / Tull Canyon ◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Tunnel_Creek___Valhalla__.gpx",
+    "trailId": "tunnel",
+    "trailName": "Tunnel Creek / Valhalla◆︎",
+    "score": 100
+  },
+  {
+    "gpxFile": "Verne_Samuelson_County_Park_Trail___P_A_.gpx",
+    "trailId": "verne",
+    "trailName": "Verne Samuelson County Park Trail – P.A.",
+    "score": 100
+  },
+  {
+    "gpxFile": "Victoria_Canada.gpx",
+    "trailId": "victoriacanada",
+    "trailName": "Victoria/Canada",
+    "score": 100
+  },
+  {
+    "gpxFile": "Morning hike at North_Kitsap_Heritage_Park.gpx",
+    "trailId": "n-kitsap",
+    "trailName": "N. Kitsap Heritage Park",
+    "score": 97
+  },
+  {
+    "gpxFile": "Heather_park_halfway_rock_w_othh.gpx",
+    "trailId": "heather",
+    "trailName": "Heather Park / Pass◆︎",
+    "score": 85
+  },
+  {
+    "gpxFile": "Barnes_Creek__.gpx",
+    "trailId": "marymere",
+    "trailName": "Marymere Falls / Barnes Creek◆︎",
+    "score": 80
+  },
+  {
+    "gpxFile": "Heather_Park___Pass__.gpx",
+    "trailId": "heather",
+    "trailName": "Heather Park / Pass◆︎",
+    "score": 80
+  },
+  {
+    "gpxFile": "Mt__Angeles_Road.gpx",
+    "trailId": "mt",
+    "trailName": "Mt. Angeles Road",
+    "score": 80
+  },
+  {
+    "gpxFile": "Larry_Scott_Trail__Milo_Curry.gpx",
+    "trailId": "larry-scott",
+    "trailName": "Larry Scott Trail--Milo Curry",
+    "score": 76
+  },
+  {
+    "gpxFile": "Miller_8.gpx",
+    "trailId": "miller-1",
+    "trailName": "Miller Peninsula ",
+    "score": 70
+  },
+  {
+    "gpxFile": "OAT_M0_to_living_room.gpx",
+    "trailId": "oat---mile",
+    "trailName": "OAT - Mile 0 to Living Room",
+    "score": 70
+  },
+  {
+    "gpxFile": "Murhut_falls_w_othh.gpx",
+    "trailId": "little-humpmurhut",
+    "trailName": "Little Hump/Murhut Falls/Ranger Hole",
+    "score": 63
+  },
+  {
+    "gpxFile": "OAT_Eden_Valley_East.gpx",
+    "trailId": "oat-eden",
+    "trailName": "OAT-Eden Valley East",
+    "score": 62
+  },
+  {
+    "gpxFile": "OAT_Eden_Valley_West.gpx",
+    "trailId": "oat-eden-valley",
+    "trailName": "OAT-Eden Valley West",
+    "score": 62
+  },
+  {
+    "gpxFile": "Elwha_dam_east_w_othh.gpx",
+    "trailId": "lower",
+    "trailName": "Lower W. Elwha Dam Site",
+    "score": 50
+  },
+  {
+    "gpxFile": "Mount Angeles via Hurricane Ridge Trail.gpx",
+    "trailId": "hurricane-ridge",
+    "trailName": "Hurricane Ridge - Snowshoeing",
+    "score": 50
+  },
+  {
+    "gpxFile": "West_Elwha_Herrick Rd.gpx",
+    "trailId": "w",
+    "trailName": "W. Elwha/Herrick Rd. to Altair & Upper Dam Site◆︎",
+    "score": 48
+  },
+  {
+    "gpxFile": "Spruce_RR_East.gpx",
+    "trailId": "spruce",
+    "trailName": "Spruce RR-East",
+    "score": 40
+  },
+  {
+    "gpxFile": "Othh_Reservoir_Trails.gpx",
+    "trailId": "oat",
+    "trailName": "OAT - Adventure to Llama Trail",
+    "score": 25
+  }
+]

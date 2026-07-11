@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import TrailCard from './TrailCard';
+import { getDaysInMonth, createDate } from '../utils/dateUtils';
 
 export default function ScheduledCards({
   assignedHikes,
@@ -16,10 +17,10 @@ export default function ScheduledCards({
   tt,
 }) {
   const cards = useMemo(() => {
-    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+    const daysInMonth = getDaysInMonth(year, selectedMonth);
     const allDays = [];
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, selectedMonth, day);
+      const date = createDate(year, selectedMonth, day);
       if (date.getDay() === 3 || date.getDay() === 5) allDays.push(day);
     }
     return allDays
@@ -43,7 +44,7 @@ export default function ScheduledCards({
               <TrailCard trail={trail} hikeName={trail.fullName || trail.name} isActive={false} leader={leader} />
               <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
                 {day}
-                <span className="text-[8px]">{new Date(year, selectedMonth, day).getDay() === 3 ? 'W' : 'F'}</span>
+                <span className="text-[8px]">{createDate(year, selectedMonth, day).getDay() === 3 ? 'W' : 'F'}</span>
               </div>
               {earlyStart && (
                 <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start">

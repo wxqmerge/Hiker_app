@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageNav from '../components/PageNav';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { formatDateToISO } from '../utils/dateUtils';
 
 const APP_VERSION = __APP_VERSION;
 import { useTrailStore } from '../hooks/useTrailStore';
@@ -243,7 +244,7 @@ export default function TrailManager() {
     try {
       const schedule = await getSchedule();
       const now = new Date();
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const dateStr = formatDateToISO();
       const filename = `schedule_${dateStr}.json`;
       const json = JSON.stringify(schedule, null, 2);
       downloadBlob(json, filename, 'application/json');
@@ -309,7 +310,7 @@ export default function TrailManager() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const date = new Date().toISOString().slice(0, 10);
+      const date = formatDateToISO();
       a.download = `hiker-data-${date}.zip`;
       a.click();
       URL.revokeObjectURL(url);
@@ -349,7 +350,7 @@ export default function TrailManager() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const date = new Date().toISOString().slice(0, 10);
+    const date = formatDateToISO();
     a.download = `trails-gpx-${date}.zip`;
     a.click();
     URL.revokeObjectURL(url);
