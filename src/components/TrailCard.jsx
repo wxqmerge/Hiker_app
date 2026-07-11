@@ -1,9 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
-import { getFirstCoordinateFromGpx, openGoogleMapsTrailhead, downloadBlob } from '../utils/io';
-import { getGpx } from '../api/client';
 import { useToast } from '../hooks/useToast';
+import { useGpxActions } from '../hooks/useGpxActions';
 import { getTrailDetailsById, getScoredMonths } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
@@ -15,7 +14,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
-  const [gpxDownloading, setGpxDownloading] = useState(false);
+  const { handleGpxDownload, handleTrailhead } = useGpxActions(trail, showToast);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
 
@@ -201,21 +200,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
           )}
           {trail.hasGpx && (
             <button
-              onClick={async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (gpxDownloading) return;
-                setGpxDownloading(true);
-                try {
-                  const gpx = await getGpx(trail.id);
-                  if (gpx) {
-                    const safeName = (trail.fullName || trail.name || 'route').replace(/[^a-zA-Z0-9]/g, '_');
-                    downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
-                  }
-                } finally {
-                  setTimeout(() => setGpxDownloading(false), 1000);
-                }
-              }}
+              onClick={handleGpxDownload}
               className="flex items-center gap-1 text-green-600 hover:text-green-800"
               title={`Download GPX for ${trail.fullName || trail.name}`}
             >
@@ -227,18 +212,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
           )}
           {trail.hasGpx && (
             <button
-              onClick={async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const gpx = await getGpx(trail.id);
-                if (!gpx) return;
-                const coord = getFirstCoordinateFromGpx(gpx);
-                if (coord) {
-                  openGoogleMapsTrailhead(coord.lat, coord.lon);
-                } else {
-                  showToast('No GPS coordinates found in GPX file', 'error');
-                }
-              }}
+              onClick={handleTrailhead}
               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
               title={`Open trailhead for ${trail.fullName || trail.name} in Google Maps`}
             >
