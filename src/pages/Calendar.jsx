@@ -7,6 +7,7 @@ import { useToast } from '../hooks/useToast';
 import PageNav from '../components/PageNav';
 import TrailCard from '../components/TrailCard';
 import ScheduledCards from '../components/ScheduledCards';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { MONTH_NAMES, DAY_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { getGpx, updateSchedule } from '../api/client';
@@ -146,14 +147,7 @@ export default function Calendar() {
   }, [nextHike, showToast]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading schedule...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading schedule..." />;
   }
 
   return (

@@ -7,6 +7,7 @@ import { useTooltips } from '../hooks/useTooltips';
 import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
@@ -709,14 +710,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
   }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading trails...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading trails..." />;
   }
 
   if (!scheduleData) {

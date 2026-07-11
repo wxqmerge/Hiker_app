@@ -4,6 +4,7 @@ import { useFilters } from '../hooks/useFilters';
 import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailList from '../components/TrailList';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const APP_VERSION = __APP_VERSION;
 
@@ -13,14 +14,7 @@ export default function Home() {
   const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails, trailDetails);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading trails...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading trails..." />;
   }
 
   return (

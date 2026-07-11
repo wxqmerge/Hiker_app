@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageNav from '../components/PageNav';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const APP_VERSION = __APP_VERSION;
 import { useTrailStore } from '../hooks/useTrailStore';
@@ -379,11 +380,7 @@ export default function TrailManager() {
   }, [hasApiKey]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (

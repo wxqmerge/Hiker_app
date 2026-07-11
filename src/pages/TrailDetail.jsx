@@ -13,6 +13,7 @@ import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput, sanitizeFi
 import { uploadGpxFile } from '../api/client';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
+import LoadingSpinner from '../components/LoadingSpinner';
 import MonthlyScoreGrid, { ScoreBreakdownRow } from '../components/MonthlyScoreGrid.jsx';
 
 const SEASON_MAP = {
@@ -344,11 +345,7 @@ const getEditedValue = (field) => {
   const rideCost = trail?.range ? getRideCost(parseInt(trail.range, 10)) : null;
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   const hasEdits = Object.keys(editedFields).length > 0;
