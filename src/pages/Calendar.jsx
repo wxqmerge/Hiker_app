@@ -14,6 +14,7 @@ import { setSchedule } from '../hooks/useTrailStore';
 import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
 import { useScheduleData } from '../hooks/useScheduleData';
+import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 
 const APP_VERSION = __APP_VERSION;
 
@@ -141,87 +142,23 @@ export default function Calendar() {
     }
   }, [scheduleStore]);
 
-  const confirmSwap = () => {
-    if (!pendingSwap) return;
-    const { sourceDay, targetDay, targetEntry, trailId, hikeName, earlyStart, leader: swapLeader } = pendingSwap;
-    const monthName = MONTH_NAMES[selectedMonth];
-
-    applyScheduleChange(monthName, (current) => {
-      const next = { ...current };
-      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: swapLeader };
-      if (sourceDay !== null && sourceDay !== undefined) {
-        next[sourceDay] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start, leader: targetEntry.leader || '' };
-      }
-      return next;
-    });
-    setPendingSwap(null);
-  };
-
-  const cancelSwap = () => {
-    setPendingSwap(null);
-  };
-
-  const handleCardDrop = (targetDay) => {
-    if (!dragData || !hasApiKey) return;
-
-    const { hikeIndex, sourceDay, hikeName, trailId: dragTrailId, earlyStart: dragEarlyStart, leader: dragLeader } = dragData;
-    const trailId = dragTrailId || trailIndexToId[hikeIndex];
-
-    if (sourceDay === targetDay) {
-      setDragData(null);
-      return;
-    }
-
-    if (!trailId) {
-      setDragData(null);
-      return;
-    }
-
-    const monthName = MONTH_NAMES[selectedMonth];
-    const monthData = scheduleStore[monthName] || {};
-    const targetEntry = monthData[targetDay];
-
-    if (targetEntry && targetEntry.trail_id) {
-      const sourceTrail = findTrailById(trailId);
-      const targetTrail = findTrailById(targetEntry.trail_id);
-      const sourceTrailName = sourceTrail ? (sourceTrail.fullName || sourceTrail.name) : hikeName || trailId;
-      const targetTrailName = targetTrail ? (targetTrail.fullName || targetTrail.name) : targetEntry.hike || targetEntry.trail_id;
-      const sourceDayOfWeek = sourceDay !== null && sourceDay !== undefined ? new Date(year, selectedMonth, sourceDay).getDay() : null;
-      const targetDayOfWeek = new Date(year, selectedMonth, targetDay).getDay();
-      const sourceDayLabel = sourceDayOfWeek !== null ? `${DAY_NAMES[sourceDayOfWeek]} ${sourceDay}` : 'Available Hikes';
-      const targetDayLabel = `${DAY_NAMES[targetDayOfWeek]} ${targetDay}`;
-
-      setPendingSwap({
-        sourceTrailName,
-        targetTrailName,
-        sourceDayLabel,
-        targetDayLabel,
-        sourceDay,
-        targetDay,
-        sourceEntry: sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay] : null,
-        targetEntry,
-        trailId,
-        hikeName,
-        earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.early_start : false),
-        leader: dragLeader || (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.leader : ''),
-      });
-      setDragData(null);
-      return;
-    }
-
-    const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : ((sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay] : null)?.early_start || false);
-    const leader = dragLeader || (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.leader : '');
-
-    applyScheduleChange(monthName, (current) => {
-      const next = { ...current };
-      if (sourceDay !== null && sourceDay !== undefined) {
-        delete next[sourceDay];
-      }
-      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: leader };
-      return next;
-    });
-    setDragData(null);
-  };
+  const {
+    confirmSwap,
+    cancelSwap,
+    handleDropOnDate,
+  } = useScheduleDragDrop({
+    scheduleStore,
+    selectedMonth,
+    year,
+    dragData,
+    setDragData,
+    pendingSwap,
+    setPendingSwap,
+    findTrailById,
+    trailIndexToId,
+    updateScheduleFn: applyScheduleChange,
+    hasApiKey,
+  });
 
   const handleGpxDownload = useCallback(async () => {
     if (!nextHike || gpxDownloading) return;
@@ -427,7 +364,7 @@ export default function Calendar() {
                       e.preventDefault();
                       if (!dragData) return;
                       const targetDay = parseInt(scheduledCards[idx]?.key, 10);
-                      if (targetDay) handleCardDrop(targetDay);
+                      if (targetDay) handleDropOnDate(targetDay);
                     }}
                   >
                     {card}
