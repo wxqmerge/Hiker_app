@@ -207,53 +207,6 @@ export default function ScheduleBuilder() {
     return sorted;
   }, [hikeTrailMap, filters, debugMode, assignedHikes, trailDetails]);
 
-  const _scheduledCards = useMemo(() => {
-    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
-    const allDays = [];
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, selectedMonth, day);
-      if (date.getDay() === 3 || date.getDay() === 5) allDays.push(day);
-    }
-    return allDays
-      .filter(day => assignedHikes[day]?.trail_id)
-      .map(day => {
-         const { trail_id: trailId, hike: hikeName, early_start: earlyStart, leader } = assignedHikes[day];
-         const trail = findTrailById(trailId);
-         if (!trail) return null;
-         const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
-         return (
-           <div
-             key={day}
-             draggable
-             onDragStart={() => hikeIdx && handleDragStart(Number(hikeIdx[0]), day, hikeName, trailId, earlyStart, leader)}
-            onDragEnd={handleDragEnd}
-            className="cursor-grab active:cursor-grabbing"
-            title={tt('Drag to swap with another date')}
-            style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
-          >
-            <div className="relative">
-              <TrailCard trail={trail} hikeName={trail.fullName || trail.name} isActive={false} selectedMonths={filters.months} />
-              <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
-                {day}
-                <span className="text-[8px]">{new Date(year, selectedMonth, day).getDay() === 3 ? 'W' : 'F'}</span>
-              </div>
-              {earlyStart && (
-                <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start">
-                  ⏰
-                </div>
-              )}
-              {debugMode && hikeIdx && (
-                <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
-                  {hikeIdx[0]}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })
-      .filter(Boolean);
-  }, [assignedHikes, trailIndexToId, handleDragStart, handleDragEnd, debugMode, selectedMonth, findTrailById, year, dragData, filters.months, tt]);
-
   const {
     confirmSwap,
     cancelSwap,
