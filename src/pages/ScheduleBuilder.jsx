@@ -10,11 +10,11 @@ import TrailCard from '../components/TrailCard';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
-import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { downloadBlob, createFileInput } from '../utils/io';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails } from '../api/client';
 import { getHealthUrl } from '../utils/url.js';
 import { useTrailDetails } from '../hooks/useTrailDetails';
+import { useScheduleData } from '../hooks/useScheduleData';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
 
 const APP_VERSION = __APP_VERSION;
@@ -115,26 +115,20 @@ export default function ScheduleBuilder() {
     };
   }, [scheduleStore, saveScheduleToServer]);
 
-  const assignedHikes = useMemo(() => {
-    const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
-    const result = {};
-    Object.entries(raw).forEach(([day, val]) => {
-      let entry;
-      if (typeof val === 'string') {
-        entry = { trail_id: val, hike: null, early_start: false };
-      } else if (val && typeof val === 'object') {
-        entry = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null, early_start: !!val.early_start };
-      } else {
-        entry = { trail_id: null, hike: null, early_start: false };
-      }
-      entry.leader = val?.leader || '';
-      result[day] = entry;
-    });
-    return result;
-  }, [scheduleStore, selectedMonth]);
-
-  const [dragData, setDragData] = useState(null);
   const [pendingSwap, setPendingSwap] = useState(null);
+  const year = 2026;
+
+  const {
+    assignedHikes,
+    assignedCount,
+    wedFriDates,
+    findTrailById,
+    trailIndexToId,
+    dragData,
+    setDragData,
+    handleDragStart,
+    handleDragEnd,
+  } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [historyEntries, setHistoryEntries] = useState([]);
@@ -201,20 +195,6 @@ export default function ScheduleBuilder() {
     }
   }, [scheduleStore]);
 
-  const year = 2026;
-
-  const findTrailById = useCallback((trailId) => findTrailByIdUtil(trails, trailId), [trails]);
-
-  const trailIndexToId = useMemo(() => {
-    const map = {};
-    trails.forEach((t, idx) => {
-      map[idx + 1] = t.id;
-    });
-    return map;
-  }, [trails]);
-
-
-
   const filteredHikes = useMemo(() => {
     const filtered = filterTrails(hikeTrailMap, filters, trailDetails);
     const sorted = sortTrails(filtered, filters, 'name', trailDetails);
@@ -225,31 +205,6 @@ export default function ScheduleBuilder() {
     }
     return sorted;
   }, [hikeTrailMap, filters, debugMode, assignedHikes, trailDetails]);
-
-  const wedFriDates = useMemo(() => {
-    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
-    const dates = [];
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, selectedMonth, day);
-      const dayOfWeek = date.getDay();
-      if (dayOfWeek === 3 || dayOfWeek === 5) {
-        dates.push(day);
-      }
-    }
-    return dates;
-  }, [selectedMonth]);
-
-  const assignedCount = useMemo(() => {
-    return Object.values(assignedHikes).filter(v => v?.trail_id).length;
-  }, [assignedHikes]);
-
-  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader) => {
-    setDragData({ hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader });
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
-    setDragData(null);
-  }, []);
 
   const _scheduledCards = useMemo(() => {
     const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();

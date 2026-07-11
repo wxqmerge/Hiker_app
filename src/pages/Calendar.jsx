@@ -13,6 +13,7 @@ import { getRideCost } from '../utils/report';
 import { setSchedule } from '../hooks/useTrailStore';
 import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
+import { useScheduleData } from '../hooks/useScheduleData';
 
 const APP_VERSION = __APP_VERSION;
 
@@ -67,51 +68,22 @@ export default function Calendar() {
     }
   }, [loading, nextHike]);
   const hasApiKey = !!localStorage.getItem('hiker-api-key');
-  const [dragData, setDragData] = useState(null);
   const [pendingSwap, setPendingSwap] = useState(null);
   const [gpxDownloading, setGpxDownloading] = useState(false);
 
   useSchedulePolling({ setSchedule }, 5000);
 
-  const assignedHikes = useMemo(() => {
-    const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
-    const result = {};
-    Object.entries(raw).forEach(([day, val]) => {
-      let entry;
-      if (typeof val === 'string') {
-        entry = { trail_id: val, hike: null, early_start: false };
-      } else if (val && typeof val === 'object') {
-        entry = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null, early_start: !!val.early_start };
-      } else {
-        entry = { trail_id: null, hike: null, early_start: false };
-      }
-      entry.leader = val?.leader || '';
-      result[day] = entry;
-    });
-    return result;
-  }, [scheduleStore, selectedMonth]);
-
-  const assignedCount = useMemo(() => {
-    return Object.values(assignedHikes).filter(v => v?.trail_id).length;
-  }, [assignedHikes]);
-
-  const findTrailById = useCallback((trailId) => findTrailByIdUtil(trails, trailId), [trails]);
-
-  const trailIndexToId = useMemo(() => {
-    const map = {};
-    trails.forEach((t, idx) => {
-      map[idx + 1] = t.id;
-    });
-    return map;
-  }, [trails]);
-
-  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader) => {
-    setDragData({ hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader });
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
-    setDragData(null);
-  }, []);
+  const {
+    assignedHikes,
+    assignedCount,
+    wedFriDates,
+    findTrailById,
+    trailIndexToId,
+    dragData,
+    setDragData,
+    handleDragStart,
+    handleDragEnd,
+  } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
 
   const scheduledCards = useMemo(() => {
     const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
@@ -250,19 +222,6 @@ export default function Calendar() {
     });
     setDragData(null);
   };
-
-  const wedFriDates = useMemo(() => {
-    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
-    const dates = [];
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, selectedMonth, day);
-      const dayOfWeek = date.getDay();
-      if (dayOfWeek === 3 || dayOfWeek === 5) {
-        dates.push(day);
-      }
-    }
-    return dates;
-  }, [selectedMonth]);
 
   const handleGpxDownload = useCallback(async () => {
     if (!nextHike || gpxDownloading) return;
