@@ -359,6 +359,13 @@ if (isDev) {
         proxyRes.pipe(res);
       }
     );
+
+    proxyReq.on('error', (err) => {
+      console.error('[Proxy Error] Vite server unreachable:', err.message);
+      res.statusCode = 502;
+      res.end('Bad Gateway: Vite dev server is not responding.');
+    });
+
     req.pipe(proxyReq);
   });
 } else {

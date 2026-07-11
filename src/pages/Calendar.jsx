@@ -1,15 +1,15 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { useTrails } from '../hooks/useTrails';
 import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { useTooltips } from '../hooks/useTooltips';
 import { useToast } from '../hooks/useToast';
+import { useNextHike } from '../hooks/useNextHike';
 import PageNav from '../components/PageNav';
 import TrailCard from '../components/TrailCard';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
+import GPXHelp from '../components/GPXHelp';
 import { MONTH_NAMES, DAY_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
-import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { getGpx, updateSchedule } from '../api/client';
 import { getRideCost } from '../utils/report';
 import { setSchedule } from '../hooks/useTrailStore';
@@ -29,37 +29,7 @@ export default function Calendar() {
 
   const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
 
-  const nextHike = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    for (let m = 0; m < 12; m++) {
-      const monthData = scheduleStore[MONTH_NAMES[m]] || {};
-      const daysInMonth = new Date(year, m + 1, 0).getDate();
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, m, day);
-        const dow = date.getDay();
-        if ((dow === 3 || dow === 5) && date >= today) {
-          const entry = monthData[day];
-          if (entry?.trail_id) {
-            const trail = findTrailByIdUtil(trails, entry.trail_id);
-            if (trail) {
-              return {
-                day,
-                monthIndex: m,
-                date,
-                trail,
-                trailId: entry.trail_id,
-                hikeName: entry.hike || trail.fullName || trail.name,
-                leader: entry.leader || '',
-                earlyStart: !!entry.early_start,
-              };
-            }
-          }
-        }
-      }
-    }
-    return null;
-  }, [scheduleStore, trails]);
+  const nextHike = useNextHike({ trails, schedule: scheduleData, year });
 
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
   const hasSyncedInitialMonth = useRef(false);
@@ -212,14 +182,15 @@ export default function Calendar() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2.5 flex-shrink-0">
-                    {trail.hasGpx && (
-                      <>
-                        <button
-                          onClick={handleGpxDownload}
-                          disabled={gpxDownloading}
-                          className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors disabled:opacity-50"
-                          title={`Download GPX for ${nextHike.hikeName}`}
-                        >
+                     {trail.hasGpx && (
+                       <>
+                         <GPXHelp variant="dark" />
+                         <button
+                           onClick={handleGpxDownload}
+                           disabled={gpxDownloading}
+                           className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors disabled:opacity-50"
+                           title={`Download GPX for ${nextHike.hikeName}`}
+                         >
                           <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
