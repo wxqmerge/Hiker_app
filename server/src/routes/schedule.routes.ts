@@ -17,7 +17,10 @@ const PROJECT_ROOT = path.join(__dirname, '../../..');
 const router = Router();
 
 router.get('/group', (_req, res) => {
-  res.json({ name: process.env.SCHEDULE_NAME || 'default' });
+  res.json({ 
+    name: process.env.SCHEDULE_NAME || 'default',
+    hikeDays: process.env.HIKE_DAYS || '3,5'
+  });
 });
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 } });
@@ -42,6 +45,16 @@ async function findPythonCmd(): Promise<string> {
   }
   throw new Error('Python not found');
 }
+
+router.post('/reload', requireAdminKey, async (req, res) => {
+  try {
+    await loadData();
+    res.json({ success: true, message: 'Schedule and trail data reloaded from disk' });
+  } catch (error) {
+    console.error('[SCHEDULE] Error reloading data:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to reload data' } });
+  }
+});
 
 router.get('/', (req, res) => {
   const schedule = getSchedule();
