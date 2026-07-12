@@ -1,7 +1,7 @@
 {
   "name": "hiker-app",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +20,7 @@
     "@tailwindcss/postcss": "^4.2.1",
     "adm-zip": "^0.5.18",
     "archiver": "^8.0.0",
+    "dotenv": "^17.4.2",
     "jszip": "^3.10.1",
     "multer": "^2.2.0",
     "react": "^19.2.4",

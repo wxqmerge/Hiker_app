@@ -33,7 +33,7 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
   }, [scheduleStore, selectedMonth]);
 
   const assignedCount = useMemo(() => {
-    return Object.values(assignedHikes).flat().filter(v => v?.trail_id).length;
+    return Object.values(assignedHikes).flat().filter(v => v?.trail_id || v?.hike).length;
   }, [assignedHikes]);
 
   const hikeDates = useMemo(() => {

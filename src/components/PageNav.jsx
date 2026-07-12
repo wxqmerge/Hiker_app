@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { getGroupName } from '../utils/config';
 
 const links = [
   { to: '/', label: 'Calendar' },
@@ -8,6 +9,8 @@ const links = [
 ];
 
 export default function PageNav() {
+  const groupName = getGroupName();
+
   return (
     <nav className="flex items-baseline gap-2 mb-6">
       {links.map((link) => (
@@ -23,6 +26,11 @@ export default function PageNav() {
           {link.label}
         </NavLink>
       ))}
+      {groupName && (
+        <span className="text-2xl font-black text-green-800 ml-4 uppercase tracking-tight">
+          {groupName}
+        </span>
+      )}
     </nav>
   );
 }

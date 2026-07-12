@@ -11,14 +11,15 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
-import { downloadBlob, createFileInput } from '../utils/io';
-import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule } from '../api/client';
+import { downloadBlob, createFileInput, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
+import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule, getGpx } from '../api/client';
 import { getHealthUrl } from '../utils/url.js';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
-import { getDayLabel, getDayName, getHikeDaysLabel } from '../utils/config';
+import { getDayLabel, getDayName, getHikeDaysLabel, getHikeDays } from '../utils/config';
+import { getDaysInMonth, createDate } from '../utils/dateUtils';
 
 const APP_VERSION = __APP_VERSION;
 import { setSchedule } from '../hooks/useTrailStore';
@@ -139,9 +140,33 @@ export default function ScheduleBuilder() {
   const [historyEntries, setHistoryEntries] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [gpxDownloading, setGpxDownloading] = useState(null);
+
+  const handleGpxDownload = useCallback(async (trailId, trailName) => {
+    if (gpxDownloading) return;
+    setGpxDownloading(trailId);
+    try {
+      const gpx = await getGpx(trailId);
+      if (gpx) {
+        const safeName = (trailName || 'route').replace(/[^a-zA-Z0-9]/g, '_');
+        downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
+      }
+    } finally {
+      setTimeout(() => setGpxDownloading(null), 1000);
+    }
+  }, [gpxDownloading]);
+
+  const handleTrailhead = useCallback(async (trailId) => {
+    const gpx = await getGpx(trailId);
+    if (!gpx) return;
+    const coord = getFirstCoordinateFromGpx(gpx);
+    if (coord) {
+      openGoogleMapsTrailhead(coord.lat, coord.lon);
+    }
+  }, []);
 
   const hikeTrailMap = useMemo(() => {
-    const scheduleIds = Object.values(assignedHikes).map(v => v?.trail_id).filter(Boolean);
+    const scheduleIds = Object.values(assignedHikes).flat().map(v => v?.trail_id).filter(Boolean);
     const result = [];
     trails.forEach((t, idx) => {
       let isScheduled = false;
@@ -157,6 +182,31 @@ export default function ScheduleBuilder() {
     }
     return result;
   }, [trails, assignedHikes, debugMode]);
+
+  const monthSlotStats = useMemo(() => {
+    const hikeDays = getHikeDays();
+    const trailIdSet = new Set(trails.map(t => t.id));
+    const stats = {};
+    MONTH_NAMES.forEach((name, idx) => {
+      const daysInMonth = getDaysInMonth(year, idx);
+      let total = 0;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = createDate(year, idx, day);
+        const dayOfWeek = date.getDay();
+        hikeDays.forEach(configDay => {
+          if (configDay === dayOfWeek) total++;
+        });
+      }
+      let filled = 0;
+      const monthData = scheduleStore[name] || {};
+      Object.values(monthData).forEach(val => {
+        const entries = Array.isArray(val) ? val : (val ? [val] : []);
+        filled += entries.filter(e => e?.trail_id && trailIdSet.has(e.trail_id)).length;
+      });
+      stats[idx] = { total, filled };
+    });
+    return stats;
+  }, [scheduleStore, year, trails]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -818,27 +868,26 @@ const findTrailByHikeName = (hikeName, trailsList) => {
               </div>
             )}
           </div>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
-            title={tt('Select month to view/edit')}
-          >
-             {MONTH_NAMES.map((name, idx) => {
-                 const monthAbbr = name.substring(0, 3);
-                 const localCount = scheduleStore[name] ? Object.keys(scheduleStore[name]).length : 0;
-                 const serverCount = scheduleData[monthAbbr] ? Object.keys(scheduleData[monthAbbr]).length : 0;
-                 const count = Math.max(localCount, serverCount);
-                 return (
-                 <option key={idx} value={idx}>
-                   {name} ({count} hikes)
-                 </option>
-               );
-            })}
-          </select>
-            <p className="text-gray-600 text-sm ml-auto">
-              {assignedCount}/{hikeDates.length} dates filled
-            </p>
+           <select
+             value={selectedMonth}
+             onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
+             title={tt('Select month to view/edit')}
+           >
+              {MONTH_NAMES.map((name, idx) => {
+                  const { total, filled } = monthSlotStats[idx] || { total: 0, filled: 0 };
+                  const label = total > 0 ? `${filled}/${total}` : '0/0';
+                  const color = filled === 0 ? '#9ca3af' : filled === total ? '#15803d' : '#a16207';
+                  return (
+                  <option key={idx} value={idx} style={{ color }}>
+                    {name} ({label})
+                  </option>
+                );
+             })}
+           </select>
+             <p className="text-gray-600 text-sm ml-auto">
+               {monthSlotStats[selectedMonth]?.filled ?? assignedCount}/{monthSlotStats[selectedMonth]?.total ?? hikeDates.length} slots filled
+             </p>
 
         </div>
 
@@ -961,9 +1010,11 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                       const hikeName = entry.hike;
                       const earlyStart = entry.early_start;
                       const leader = entry.leader;
-                      const trail = findTrailById(trailId);
+                       const trail = findTrailById(trailId);
+                       const displayHikeName = trail ? trail.fullName || trail.name : hikeName;
+                       const hasMultipleSlots = hikeDates.filter(s => s.day === day).length > 1;
 
-                      return (
+                       return (
                         <div
                           key={`${day}-${slotIdx}`}
                           draggable={!!trailId}
@@ -977,97 +1028,138 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                             handleDropOnDate(day, slotIdx);
                           }}
                            onDoubleClick={() => trailId && hasApiKey && navigate(`/trail/${trailId}?edit=true`)}
-                           className={`border-2 rounded-lg p-3 transition-all ${
-                             trailId
-                               ? 'border-green-300 bg-green-50 cursor-pointer'
-                               : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
-                           }`}
+                            className={`border-2 rounded-lg p-3 transition-all ${
+                              trailId && trail
+                                ? 'border-green-300 bg-green-50 cursor-pointer'
+                                : trailId
+                                  ? 'border-amber-300 bg-amber-50 cursor-pointer'
+                                  : hikeName
+                                    ? 'border-yellow-300 bg-yellow-50'
+                                    : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
+                            }`}
                            style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
                           title={trailId ? tt('Drop another hike here to swap · Double-click to edit trail (requires API key)') : tt('Drop a hike here to schedule')}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                               <div className="text-center min-w-[48px]">
-                                   <div className={`text-xl font-bold ${
-                                    dayOfWeek === 3 ? 'text-blue-600' : dayOfWeek === 5 ? 'text-purple-600' : 'text-gray-600'
-                                  }`}>
-                                    {day}
-                                   </div>
-                                   <div className="text-xs text-gray-500">{getDayName(dayOfWeek)} {slotIdx > 0 ? `(${String.fromCharCode(65 + slotIdx)})` : (hikeDates.filter(s => s.day === day).length > 1 ? '(A)' : '')}</div>
+                           <div className="flex items-start gap-3">
+                             <div className="text-center flex-shrink-0">
+                                 <div className={`text-2xl font-bold ${
+                                  dayOfWeek === 3 ? 'text-blue-600' : dayOfWeek === 5 ? 'text-purple-600' : 'text-gray-600'
+                                 }`}>
+                                   {day}
                                  </div>
-                              <div className="w-px h-8 bg-gray-200"></div>
-                              {trailId && trail ? (
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-gray-900 truncate">
-                                    {trail ? trail.fullName || trail.name : hikeName}
-                                    {earlyStart && <span className="ml-1 text-orange-500" title="Early Start">⏰</span>}
-                                  </div>
-                                  <div className="text-xs text-gray-500 truncate">
-                                    (ID: {trailId})
-                                  </div>
-                                  <input
-                                        type="text"
-                                        placeholder="Leader / Shadow"
-                                        value={leader || ''}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          setScheduleStore(prev => {
-                                            const current = prev[MONTH_NAMES[selectedMonth]] || {};
-                                            const next = { ...current };
-                                            const entries = Array.isArray(current[day]) ? [...current[day]] : [current[day] || {}];
-                                            entries[slotIdx] = { ...entries[slotIdx], leader: value };
-                                            next[day] = entries;
-                                            return { ...prev, [MONTH_NAMES[selectedMonth]]: next };
-                                          });
-                                        }}
-                                       onBlur={(e) => {
-                                         const value = e.target.value;
-                                         const monthName = MONTH_NAMES[selectedMonth];
-                                         updateMonthSchedule(monthName, prev => {
-                                           const next = { ...prev };
-                                           const currentEntries = Array.isArray(next[day]) ? [...next[day]] : [next[day] || {}];
-                                           currentEntries[slotIdx] = { ...currentEntries[slotIdx], leader: value };
-                                           next[day] = currentEntries;
-                                           return next;
-                                         });
-                                       }}
-                                      className="mt-1 w-full text-xs border border-gray-300 rounded px-1.5 py-0.5 focus:ring-green-500 focus:border-green-500 truncate"
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                </div>
-                              ) : trailId ? (
-                               <div className="text-sm text-gray-400 italic">
-                                 Trail not found (ID: {trailId})
+                                 <div className="text-xs text-gray-500">{getDayName(dayOfWeek)}</div>
                                </div>
-                              ) : (
-                               <div className="text-sm text-gray-400 italic">
-                                 Drop hike here
-                               </div>
-                              )}
-                            </div>
+                              <div className="flex-1 min-w-0">
+                                {displayHikeName ? (
+                                  <>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {hasMultipleSlots && (
+                                        <span className="text-[10px] font-bold bg-gray-200 px-1.5 py-0.5 rounded text-gray-600 uppercase">
+                                          {String.fromCharCode(65 + slotIdx)}
+                                        </span>
+                                      )}
+                                      <span className="text-base font-semibold text-gray-900 truncate">
+                                        {displayHikeName}
+                                      </span>
+                                      {earlyStart && <span className="text-orange-500 text-sm" title="Early Start">⏰</span>}
+                                    </div>
+                                    {trailId && (
+                                      <div className="text-xs text-gray-500 truncate mt-0.5">
+                                        (ID: {trailId})
+                                      </div>
+                                    )}
+                                    {!trailId && hikeName && (
+                                      <div className="text-xs text-gray-400 italic mt-0.5">
+                                        No trail matched — drag one here
+                                      </div>
+                                    )}
+                                    <input
+                                          type="text"
+                                          placeholder="Leader / Shadow"
+                                          value={leader || ''}
+                                          onChange={(e) => {
+                                            const value = e.target.value;
+                                            setScheduleStore(prev => {
+                                              const current = prev[MONTH_NAMES[selectedMonth]] || {};
+                                              const next = { ...current };
+                                              const entries = Array.isArray(current[day]) ? [...current[day]] : [current[day] || {}];
+                                              entries[slotIdx] = { ...entries[slotIdx], leader: value };
+                                              next[day] = entries;
+                                              return { ...prev, [MONTH_NAMES[selectedMonth]]: next };
+                                            });
+                                          }}
+                                         onBlur={(e) => {
+                                           const value = e.target.value;
+                                           const monthName = MONTH_NAMES[selectedMonth];
+                                           updateMonthSchedule(monthName, prev => {
+                                             const next = { ...prev };
+                                             const currentEntries = Array.isArray(next[day]) ? [...next[day]] : [next[day] || {}];
+                                             currentEntries[slotIdx] = { ...currentEntries[slotIdx], leader: value };
+                                             next[day] = currentEntries;
+                                             return next;
+                                           });
+                                         }}
+                                        className="mt-1 w-full text-xs border border-gray-300 rounded px-1.5 py-0.5 focus:ring-green-500 focus:border-green-500 truncate"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                  </>
+                                ) : trailId ? (
+                                 <div className="text-sm text-amber-600 italic">
+                                   Trail not found (ID: {trailId})
+                                 </div>
+                                ) : (
+                                 <div className="text-sm text-gray-400 italic">
+                                   Drop hike here
+                                 </div>
+                                )}
+                              </div>
                           </div>
-                          {trailId && (
-                            <div className="flex items-center gap-1 ml-3">
-                              <label className="flex items-center gap-1 cursor-pointer" title={tt('Toggle early start (affects hike description)')}>
-                                <input
-                                  type="checkbox"
-                                   checked={!!earlyStart}
-                                   onChange={() => toggleEarlyStart(day, slotIdx)}
-                                   className="w-4 h-4 text-orange-500 rounded"
-                                />
-                                <span className="text-xs text-gray-500">ES</span>
-                              </label>
-                               <button
-                                 onClick={() => removeHike(day, slotIdx)}
-                                 className="text-red-400 hover:text-red-600 transition-colors"
-                                 title={tt('Remove hike from this date')}
-                               >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                               </div>
-                          )}
+                           {trailId && (
+                             <div className="flex items-center gap-1 ml-3">
+                               <label className="flex items-center gap-1 cursor-pointer" title={tt('Toggle early start (affects hike description)')}>
+                                 <input
+                                   type="checkbox"
+                                    checked={!!earlyStart}
+                                    onChange={() => toggleEarlyStart(day, slotIdx)}
+                                    className="w-4 h-4 text-orange-500 rounded"
+                                 />
+                                 <span className="text-xs text-gray-500">ES</span>
+                               </label>
+                               {trail?.hasGpx && (
+                                 <>
+                                   <button
+                                     onClick={() => handleGpxDownload(trailId, trail.fullName || trail.name)}
+                                     disabled={gpxDownloading !== null}
+                                     className="text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
+                                     title={tt('Download GPX file')}
+                                   >
+                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4-4V4" />
+                                     </svg>
+                                   </button>
+                                   <button
+                                     onClick={() => handleTrailhead(trailId)}
+                                     className="text-blue-600 hover:text-blue-800 transition-colors"
+                                     title={tt('Open trailhead in Google Maps')}
+                                   >
+                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                     </svg>
+                                   </button>
+                                 </>
+                               )}
+                                <button
+                                  onClick={() => removeHike(day, slotIdx)}
+                                  className="text-red-400 hover:text-red-600 transition-colors"
+                                  title={tt('Remove hike from this date')}
+                                >
+                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                 </svg>
+                               </button>
+                                </div>
+                           )}
                         </div>
                       );
                     })}

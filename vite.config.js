@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'))
@@ -17,11 +20,11 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: `http://localhost:${process.env.PORT || 3000}`,
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:3000',
+        target: `http://localhost:${process.env.PORT || 3000}`,
         changeOrigin: true,
       },
     },
