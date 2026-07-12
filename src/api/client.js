@@ -168,6 +168,13 @@ export async function ensureScheduleWritable() {
   }
 }
 
+export async function reloadSchedule() {
+  return request('/api/schedule/reload', {
+    method: 'POST',
+    apiKey: true,
+  });
+}
+
 export async function exportDataZip() {
   return request('/api/data/export-zip', { responseType: 'blob' });
 }

@@ -12,7 +12,7 @@ import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
 import { downloadBlob, createFileInput } from '../utils/io';
-import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails } from '../api/client';
+import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule } from '../api/client';
 import { getHealthUrl } from '../utils/url.js';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
@@ -258,6 +258,17 @@ export default function ScheduleBuilder() {
       closeHistory();
     } catch (err) {
       alert('Clear failed: ' + err.message);
+    }
+  };
+
+  const handleReload = async () => {
+    try {
+      await reloadSchedule();
+      alert('✓ Schedule and trail data reloaded from disk.');
+      // Force a refresh of the local state by triggering a load
+      await loadSchedule();
+    } catch (err) {
+      alert('Failed to reload: ' + err.message);
     }
   };
 
@@ -779,8 +790,23 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                   </svg>
                   Debug Mode {debugMode ? 'ON' : 'OFF'}
                 </button>
-        <button
-              onClick={clearSchedule}
+                <button
+                  onClick={handleReload}
+                  disabled={!hasApiKey}
+                  className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
+                    hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
+                  }`}
+                  title={tt('Force server to reload JSON data from disk')}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m0 0a8.003 8.003 0 0113.385-4.368l-.707.707" />
+                  </svg>
+                  Reload Server Data {!hasApiKey && '(need API key)'}
+                </button>
+                <button
+                  onClick={clearSchedule}
+
               className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-2"
               title={tt('Remove all schedule data (cannot be undone)')}
             >
