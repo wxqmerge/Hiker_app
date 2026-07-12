@@ -2,10 +2,11 @@ import { useState, useMemo, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { getDaysInMonth, createDate } from '../utils/dateUtils';
+import { getHikeDays } from '../utils/config';
 
 /**
  * Shared schedule data hook for ScheduleBuilder and Calendar pages.
- * Provides: assignedHikes, wedFriDates, trailIndexToId, handleDragStart/End,
+ * Provides: assignedHikes, hikeDates, trailIndexToId, handleDragStart/End,
  * findTrailById, assignedCount, dragData.
  */
 export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) {
@@ -15,33 +16,40 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
     const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
     const result = {};
     Object.entries(raw).forEach(([day, val]) => {
-      let entry;
-      if (typeof val === 'string') {
-        entry = { trail_id: val, hike: null, early_start: false };
-      } else if (val && typeof val === 'object') {
-        entry = { trail_id: typeof val.trail_id === 'string' ? val.trail_id : null, hike: val.hike || null, early_start: !!val.early_start };
-      } else {
-        entry = { trail_id: null, hike: null, early_start: false };
-      }
-      entry.leader = val?.leader || '';
-      result[day] = entry;
+      const entries = Array.isArray(val) ? val : (val ? [val] : []);
+      result[day] = entries.map(e => {
+        const entry = typeof e === 'string' 
+          ? { trail_id: e, hike: null, early_start: false, leader: '' }
+          : { 
+              trail_id: typeof e?.trail_id === 'string' ? e.trail_id : null, 
+              hike: e?.hike || null, 
+              early_start: !!e?.early_start, 
+              leader: e?.leader || '' 
+            };
+        return entry;
+      });
     });
     return result;
   }, [scheduleStore, selectedMonth]);
 
   const assignedCount = useMemo(() => {
-    return Object.values(assignedHikes).filter(v => v?.trail_id).length;
+    return Object.values(assignedHikes).flat().filter(v => v?.trail_id).length;
   }, [assignedHikes]);
 
-  const wedFriDates = useMemo(() => {
+  const hikeDates = useMemo(() => {
     const daysInMonth = getDaysInMonth(year, selectedMonth);
     const dates = [];
+    const hikeDays = getHikeDays();
     for (let day = 1; day <= daysInMonth; day++) {
       const date = createDate(year, selectedMonth, day);
       const dayOfWeek = date.getDay();
-      if (dayOfWeek === 3 || dayOfWeek === 5) {
-        dates.push(day);
-      }
+      
+      // Find all occurrences of this day of week in the config
+      hikeDays.forEach((configDay, index) => {
+        if (configDay === dayOfWeek) {
+          dates.push({ day, slot: index });
+        }
+      });
     }
     return dates;
   }, [selectedMonth, year]);
@@ -56,8 +64,8 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
     return map;
   }, [trails]);
 
-  const handleDragStart = useCallback((hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader) => {
-    setDragData({ hikeIndex, sourceDay, hikeName, trailId, earlyStart, leader });
+  const handleDragStart = useCallback((hikeIndex, sourceDay, sourceSlot, hikeName, trailId, earlyStart, leader) => {
+    setDragData({ hikeIndex, sourceDay, sourceSlot, hikeName, trailId, earlyStart, leader });
   }, []);
 
   const handleDragEnd = useCallback(() => {
@@ -67,7 +75,7 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
   return {
     assignedHikes,
     assignedCount,
-    wedFriDates,
+    hikeDates,
     findTrailById,
     trailIndexToId,
     dragData,

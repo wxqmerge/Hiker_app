@@ -12,7 +12,11 @@ export function serverScheduleToStore(serverData) {
       for (const entry of entries) {
         const day = String(entry.day);
         if (day === 'NaN' || day === 'null' || day === 'undefined') continue;
-        store[fullName][day] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start, leader: entry.leader || '' };
+        
+        if (!store[fullName][day]) store[fullName][day] = [];
+        
+        const slot = entry.slot !== undefined ? entry.slot : 0;
+        store[fullName][day][slot] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start, leader: entry.leader || '' };
       }
     } else if (entries && typeof entries === 'object') {
       Object.assign(store[fullName], entries);
@@ -28,15 +32,18 @@ export function storeToServerSchedule(store) {
     const abbr = MONTH_FULL_TO_ABBR[fullName];
     if (!abbr || !days || typeof days !== 'object') continue;
     serverData[abbr] = [];
-    for (const [day, entry] of Object.entries(days)) {
-      if (entry?.trail_id) {
-        const dayNum = parseInt(day, 10);
-        if (!isNaN(dayNum) && dayNum > 0) {
-          serverData[abbr].push({ day: dayNum, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
+    for (const [day, entries] of Object.entries(days)) {
+      const entryList = Array.isArray(entries) ? entries : [entries];
+      entryList.forEach((entry, slot) => {
+        if (entry?.trail_id) {
+          const dayNum = parseInt(day, 10);
+          if (!isNaN(dayNum) && dayNum > 0) {
+            serverData[abbr].push({ day: dayNum, slot, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
+          }
         }
-      }
+      });
     }
-    serverData[abbr].sort((a, b) => a.day - b.day);
+    serverData[abbr].sort((a, b) => a.day - b.day || a.slot - b.slot);
   }
   return serverData;
 }

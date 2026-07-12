@@ -191,41 +191,42 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
     }
   }
 
-  // schedule.json
-  {
-    const filePath = path.join(DATA_DIR, 'schedule.json');
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      const parsed = JSON.parse(content);
-      const issues: string[] = [];
-      if (!parsed || typeof parsed !== 'object') {
-        issues.push('root must be an object');
-      } else {
-        const keys = Object.keys(parsed);
-        if (keys.length === 0) {
-          issues.push('object is empty');
+    // schedule.json
+    {
+      const filePath = path.join(DATA_DIR, `schedule_${process.env.SCHEDULE_NAME || 'default'}.json`);
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        const parsed = JSON.parse(content);
+        const issues: string[] = [];
+        if (!parsed || typeof parsed !== 'object') {
+          issues.push('root must be an object');
         } else {
-          const invalidKeys = keys.filter(k => !MONTH_KEYS.has(k));
-          if (invalidKeys.length) issues.push(`invalid month keys: ${invalidKeys.join(', ')}`);
-          const nonArrayEntries = keys.filter(k => !Array.isArray(parsed[k]));
-          if (nonArrayEntries.length) issues.push(`month(s) with non-array values: ${nonArrayEntries.join(', ')}`);
-          let totalScheduled = 0;
-          for (const k of keys) {
-            const entries = parsed[k];
-            if (Array.isArray(entries)) {
-              totalScheduled += entries.filter((e: any) => e?.trail_id).length;
+          const keys = Object.keys(parsed);
+          if (keys.length === 0) {
+            issues.push('object is empty');
+          } else {
+            const invalidKeys = keys.filter(k => !MONTH_KEYS.has(k));
+            if (invalidKeys.length) issues.push(`invalid month keys: ${invalidKeys.join(', ')}`);
+            const nonArrayEntries = keys.filter(k => !Array.isArray(parsed[k]));
+            if (nonArrayEntries.length) issues.push(`month(s) with non-array values: ${nonArrayEntries.join(', ')}`);
+            let totalScheduled = 0;
+            for (const k of keys) {
+              const entries = parsed[k];
+              if (Array.isArray(entries)) {
+                totalScheduled += entries.filter((e: any) => e?.trail_id).length;
+              }
+            }
+            if (totalScheduled === 0) {
+              issues.push('no scheduled hikes found — schedule is empty');
             }
           }
-          if (totalScheduled === 0) {
-            issues.push('no scheduled hikes found — schedule is empty');
-          }
         }
+        addResult(`schedule_${process.env.SCHEDULE_NAME || 'default'}.json`, issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
+      } catch (err) {
+        addResult(`schedule_${process.env.SCHEDULE_NAME || 'default'}.json`, false, { error: (err as Error).message });
       }
-      addResult('schedule.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
-    } catch (err) {
-      addResult('schedule.json', false, { error: (err as Error).message });
     }
-  }
+
 
   // schedule_history/*.json
   try {

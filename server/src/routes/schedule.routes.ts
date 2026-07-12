@@ -15,6 +15,11 @@ const execFileAsync = promisify(execFile);
 const PROJECT_ROOT = path.join(__dirname, '../../..');
 
 const router = Router();
+
+router.get('/group', (_req, res) => {
+  res.json({ name: process.env.SCHEDULE_NAME || 'default' });
+});
+
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 } });
 
 const QUARTER_MONTHS: Record<string, string[]> = {

@@ -30,14 +30,22 @@ export function useScheduleDragDrop({
 }) {
   const confirmSwap = () => {
     if (!pendingSwap) return;
-    const { sourceDay, targetDay, targetEntry, trailId, hikeName, earlyStart, leader: swapLeader } = pendingSwap;
+    const { sourceDay, sourceSlot, targetDay, targetSlot, targetEntry, trailId, hikeName, earlyStart, leader: swapLeader } = pendingSwap;
     const monthName = MONTH_NAMES[selectedMonth];
 
     updateScheduleFn(monthName, prev => {
       const next = { ...prev };
-      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: swapLeader };
+      
+      // Update target slot
+      const targetEntries = Array.isArray(next[targetDay]) ? [...next[targetDay]] : [next[targetDay] || {}];
+      targetEntries[targetSlot] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: swapLeader };
+      next[targetDay] = targetEntries;
+
       if (sourceDay !== null && sourceDay !== undefined) {
-        next[sourceDay] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start, leader: targetEntry.leader || '' };
+        // Update source slot
+        const sourceEntries = Array.isArray(next[sourceDay]) ? [...next[sourceDay]] : [next[sourceDay] || {}];
+        sourceEntries[sourceSlot] = { trail_id: targetEntry.trail_id, hike: targetEntry.hike || null, early_start: targetEntry.early_start, leader: targetEntry.leader || '' };
+        next[sourceDay] = sourceEntries;
       }
       return next;
     });
@@ -48,14 +56,14 @@ export function useScheduleDragDrop({
     setPendingSwap(null);
   };
 
-  const handleDropOnDate = (targetDay) => {
+  const handleDropOnDate = (targetDay, targetSlot) => {
     if (!dragData) return;
     if (hasApiKey === false) return;
 
-    const { hikeIndex, sourceDay, hikeName, trailId: dragTrailId, earlyStart: dragEarlyStart, leader: dragLeader } = dragData;
+    const { hikeIndex, sourceDay, sourceSlot, hikeName, trailId: dragTrailId, earlyStart: dragEarlyStart, leader: dragLeader } = dragData;
     const trailId = dragTrailId || trailIndexToId[hikeIndex];
 
-    if (sourceDay === targetDay) {
+    if (sourceDay === targetDay && sourceSlot === targetSlot) {
       setDragData(null);
       return;
     }
@@ -67,9 +75,10 @@ export function useScheduleDragDrop({
 
     const monthName = MONTH_NAMES[selectedMonth];
     const monthData = scheduleStore[monthName] || {};
-    const targetEntry = monthData[targetDay];
+    const targetEntries = Array.isArray(monthData[targetDay]) ? monthData[targetDay] : (monthData[targetDay] ? [monthData[targetDay]] : []);
+    const targetEntry = targetEntries[targetSlot] || { trail_id: null };
 
-    // Check if target day already has a hike -- offer swap
+    // Check if target slot already has a hike -- offer swap
     if (targetEntry && targetEntry.trail_id) {
       const sourceTrail = findTrailById(trailId);
       const targetTrail = findTrailById(targetEntry.trail_id);
@@ -86,38 +95,43 @@ export function useScheduleDragDrop({
         sourceDayLabel,
         targetDayLabel,
         sourceDay,
+        sourceSlot,
         targetDay,
-        sourceEntry: sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay] : null,
+        targetSlot,
+        sourceEntry: sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot] : monthData[sourceDay]) : null,
         targetEntry,
         trailId,
         hikeName,
-        earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.early_start : false),
-        leader: dragLeader || (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.leader : ''),
+        earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot]?.early_start : monthData[sourceDay]?.early_start) : false),
+        leader: dragLeader || (sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot]?.leader : monthData[sourceDay]?.leader) : ''),
       });
       setDragData(null);
       return;
     }
 
-    // Normal drop on empty date
-    const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : ((sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay] : null)?.early_start || false);
-    const leader = dragLeader || (sourceDay !== null && sourceDay !== undefined ? monthData[sourceDay]?.leader : '');
+    // Normal drop on empty slot
+    const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : ((sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot] : monthData[sourceDay]) : null)?.early_start || false);
+    const leader = dragLeader || (sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot]?.leader : monthData[sourceDay]?.leader) : '');
 
     updateScheduleFn(monthName, prev => {
       const next = { ...prev };
       if (sourceDay !== null && sourceDay !== undefined) {
-        delete next[sourceDay];
+        const sourceEntries = Array.isArray(next[sourceDay]) ? [...next[sourceDay]] : [next[sourceDay] || {}];
+        sourceEntries[sourceSlot] = { trail_id: null, hike: null, early_start: false, leader: '' };
+        next[sourceDay] = sourceEntries;
       }
-      next[targetDay] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: leader };
+      const targetEntries = Array.isArray(next[targetDay]) ? [...next[targetDay]] : [next[targetDay] || {}];
+      targetEntries[targetSlot] = { trail_id: trailId, hike: hikeName || null, early_start: earlyStart, leader: leader };
+      next[targetDay] = targetEntries;
       return next;
     });
     setDragData(null);
   };
 
-  const handleDropOnAvailable = () => {
+  const handleDropOnAvailable = (sourceDay, sourceSlot) => {
     if (!dragData) return;
     if (hasApiKey === false) return;
 
-    const { sourceDay } = dragData;
     if (sourceDay === null || sourceDay === undefined) {
       setDragData(null);
       return;
@@ -125,17 +139,21 @@ export function useScheduleDragDrop({
 
     updateScheduleFn(MONTH_NAMES[selectedMonth], prev => {
       const next = { ...prev };
-      delete next[sourceDay];
+      const entries = Array.isArray(next[sourceDay]) ? [...next[sourceDay]] : [next[sourceDay] || {}];
+      entries[sourceSlot] = { trail_id: null, hike: null, early_start: false, leader: '' };
+      next[sourceDay] = entries;
       return next;
     });
     setDragData(null);
   };
 
-  const removeHike = (day) => {
+  const removeHike = (day, slotIdx) => {
     if (hasApiKey === false) return;
     updateScheduleFn(MONTH_NAMES[selectedMonth], prev => {
       const next = { ...prev };
-      delete next[day];
+      const entries = Array.isArray(next[day]) ? [...next[day]] : [next[day] || {}];
+      entries[slotIdx] = { trail_id: null, hike: null, early_start: false, leader: '' };
+      next[day] = entries;
       return next;
     });
   };

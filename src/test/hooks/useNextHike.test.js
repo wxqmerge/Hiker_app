@@ -27,65 +27,70 @@ import { useNextHike } from '../../hooks/useNextHike';
      vi.useRealTimers();
    });
  
-   it('finds the next hike on a Wednesday', () => {
-     // Set time to Tue Jan 6, 2026, 10:00 AM
-     const date = new Date(2026, 0, 6, 10, 0);
-     vi.setSystemTime(date);
+    it('finds the next hike on a Wednesday', () => {
+      // Set time to Tue Jan 6, 2026, 10:00 AM
+      const date = new Date(2026, 0, 6, 10, 0);
+      vi.setSystemTime(date);
+  
+      const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
+      
+      expect(result.current).toEqual([
+        {
+          day: 7,
+          monthIndex: 0,
+          date: expect.any(Date),
+          trail: mockTrails[0],
+          trailId: 'trail-1',
+          hikeName: 'Hike Jan 7',
+          leader: '',
+          earlyStart: false,
+        }
+      ]);
+    });
+
  
-     const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
-     
-     expect(result.current).toEqual({
-       day: 7,
-       monthIndex: 0,
-       date: expect.any(Date),
-       trail: mockTrails[0],
-       trailId: 'trail-1',
-       hikeName: 'Hike Jan 7',
-       leader: '',
-       earlyStart: false,
-     });
-   });
+    it('finds the next hike on a Friday if Wednesday passed', () => {
+      // Set time to Thu Jan 8, 2026, 10:00 AM
+      const date = new Date(2026, 0, 8, 10, 0);
+      vi.setSystemTime(date);
+  
+      const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
+      
+      expect(result.current).toEqual([
+        {
+          day: 9,
+          monthIndex: 0,
+          date: expect.any(Date),
+          trail: mockTrails[1],
+          trailId: 'trail-2',
+          hikeName: 'Hike Jan 9',
+          leader: '',
+          earlyStart: false,
+        }
+      ]);
+    });
  
-   it('finds the next hike on a Friday if Wednesday passed', () => {
-     // Set time to Thu Jan 8, 2026, 10:00 AM
-     const date = new Date(2026, 0, 8, 10, 0);
-     vi.setSystemTime(date);
+    it('skips to next day if current time is >= 12 PM', () => {
+      // Set time to Wed Jan 7, 2026, 1:00 PM (Hike is today, but should be skipped)
+      const date = new Date(2026, 0, 7, 13, 0);
+      vi.setSystemTime(date);
+  
+      const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
+      
+      // Should find Jan 9 (Fri)
+      expect(result.current?.[0]?.day).toBe(9);
+    });
  
-     const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
-     
-     expect(result.current).toEqual({
-       day: 9,
-       monthIndex: 0,
-       date: expect.any(Date),
-       trail: mockTrails[1],
-       trailId: 'trail-2',
-       hikeName: 'Hike Jan 9',
-       leader: '',
-       earlyStart: false,
-     });
-   });
- 
-   it('skips to next day if current time is >= 12 PM', () => {
-     // Set time to Wed Jan 7, 2026, 1:00 PM (Hike is today, but should be skipped)
-     const date = new Date(2026, 0, 7, 13, 0);
-     vi.setSystemTime(date);
- 
-     const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
-     
-     // Should find Jan 9 (Fri)
-     expect(result.current?.day).toBe(9);
-   });
- 
-   it('finds a hike in the next month if current month is empty/passed', () => {
-     // Set time to Jan 31, 2026, 10:00 AM
-     const date = new Date(2026, 0, 31, 10, 0);
-     vi.setSystemTime(date);
- 
-     const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
-     
-     expect(result.current?.day).toBe(4);
-     expect(result.current?.monthIndex).toBe(1); // Feb
-   });
+    it('finds a hike in the next month if current month is empty/passed', () => {
+      // Set time to Jan 31, 2026, 10:00 AM
+      const date = new Date(2026, 0, 31, 10, 0);
+      vi.setSystemTime(date);
+  
+      const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
+      
+      expect(result.current?.[0]?.day).toBe(4);
+      expect(result.current?.[0]?.monthIndex).toBe(1); // Feb
+    });
  
    it('returns null if no hikes are found in the year', () => {
      const emptySchedule = {};

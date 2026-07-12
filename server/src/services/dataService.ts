@@ -9,6 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DATA_DIR = path.join(__dirname, '../../../exported_data');
+export function getScheduleFile() {
+  return `schedule_${process.env.SCHEDULE_NAME || 'default'}.json`;
+}
+
 
 console.log(`[DATA] Loading from: ${DATA_DIR}`);
 
@@ -51,6 +55,7 @@ function normalizeEntry(entry: any): any {
   if (isNaN(day)) return null;
   return {
     day,
+    slot: entry.slot !== undefined ? (typeof entry.slot === 'string' ? parseInt(entry.slot, 10) : entry.slot) : 0,
     hike: String(entry.hike || ''),
     trail_id: String(entry.trail_id || ''),
     early_start: !!entry.early_start,
@@ -160,7 +165,7 @@ export async function loadData(): Promise<void> {
 
   trailDetails = await loadFile('trail_details.json', {});
   lookup = await loadFile('lookup.json', { difficulties: [], parkingLevels: {} });
-  schedule = normalizeSchedule(await loadFile('schedule.json', {}));
+  schedule = normalizeSchedule(await loadFile(getScheduleFile(), {}));
   gpxIndex = await loadFile('gpx_index.json', {});
 
   // Attach gpxFile to each trail
@@ -330,7 +335,7 @@ export async function restoreScheduleByTimestamp(timestamp: string): Promise<Sch
       const parsed = JSON.parse(content);
       if (parsed.timestamp === timestamp && parsed.schedule) {
         schedule = parsed.schedule;
-        await writeWithHealth(path.join(DATA_DIR, 'schedule.json'), schedule);
+        await writeWithHealth(path.join(DATA_DIR, getScheduleFile()), schedule);
         return schedule;
       }
     } catch (err) {
@@ -346,7 +351,7 @@ export async function updateSchedule(newSchedule: ScheduleData): Promise<void> {
     await saveScheduleHistory(schedule);
   }
   schedule = newSchedule;
-  await writeWithHealth(path.join(DATA_DIR, 'schedule.json'), schedule);
+  await writeWithHealth(path.join(DATA_DIR, getScheduleFile()), schedule);
 }
 
 export function getGpxIndex(): Record<string, string> {
@@ -359,7 +364,7 @@ export function getGpxFileName(trailId: string): string | undefined {
 
 export function getScheduleVersion(): string {
   try {
-    const content = fsSync.readFileSync(path.join(DATA_DIR, 'schedule.json'), 'utf-8');
+    const content = fsSync.readFileSync(path.join(DATA_DIR, getScheduleFile()), 'utf-8');
     return createHash('md5').update(content).digest('hex');
   } catch {
     return '';

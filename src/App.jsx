@@ -5,10 +5,11 @@ import TrailDetail from './pages/TrailDetail';
 import TrailManager from './pages/TrailManager';
 import ScheduleBuilder from './pages/ScheduleBuilder';
 import { useEffect } from 'react';
-import { ensureScheduleWritable } from './api/client.js';
+import { ensureScheduleWritable, request } from './api/client.js';
 import { getApiBase } from './utils/url.js';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
+import { getGroupName } from './utils/config';
 
 function ApiKeySync() {
   const { search } = useLocation();
@@ -26,7 +27,18 @@ function App() {
   const showToast = useToast();
 
   useEffect(() => {
+    request('/api/schedule/group').then(data => {
+      if (data?.name !== getGroupName()) {
+        showToast('Failed to read schedule because different group', 'error');
+      }
+    }).catch(() => {
+      showToast('Failed to connect to group server', 'error');
+    });
+  }, [showToast]);
+
+  useEffect(() => {
     const apiBase = getApiBase();
+
     if (apiBase) {
       const host = new URL(apiBase).hostname;
       const prefix = host.split('.')[0];
