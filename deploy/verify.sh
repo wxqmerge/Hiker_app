@@ -201,7 +201,15 @@ fi
 EXPORTED_DIR="$DIR/exported_data"
 if [ -d "$EXPORTED_DIR" ]; then
     pass "exported_data/ exists"
+
+    # Multi-group check: schedule.json should not exist (use schedule_{group}.json)
+    if [ -f "$EXPORTED_DIR/schedule.json" ]; then
+        fail "Legacy schedule.json found in exported_data/ — this will cause conflicts in multi-group setup"
+        echo "  Fix: sudo mv $EXPORTED_DIR/schedule.json $EXPORTED_DIR/schedule_backup.json"
+    fi
+
     DIR_PERMS=$(stat -c '%a' "$EXPORTED_DIR" 2>/dev/null || echo "000")
+
     DIR_OWNER=$(stat -c '%U' "$EXPORTED_DIR" 2>/dev/null || echo "unknown")
     echo "  Owner: $DIR_OWNER Permissions: $DIR_PERMS"
 
