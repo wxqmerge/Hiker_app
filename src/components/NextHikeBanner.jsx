@@ -9,8 +9,6 @@ import GPXHelp from './GPXHelp';
 export default function NextHikeBanner({ nextHikes }) {
   const [gpxDownloading, setGpxDownloading] = useState(false);
 
-  if (!nextHikes || nextHikes.length === 0) return null;
-
   const handleGpxDownload = useCallback(async (hike) => {
     if (gpxDownloading) return;
     setGpxDownloading(true);
@@ -34,13 +32,15 @@ export default function NextHikeBanner({ nextHikes }) {
     }
   }, []);
 
+  if (!nextHikes || nextHikes.length === 0) return null;
+
   return (
     <>
       {nextHikes.map((hike, idx) => {
         const trail = hike.trail;
         const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
         
-        const displayHikeName = hike.hikeName || hike.trail.fullName || hike.trail.name;
+        const displayHikeName = hike.trail.fullName || hike.trail.name;
 
         return (
           <div key={idx} className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>

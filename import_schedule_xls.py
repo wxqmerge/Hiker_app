@@ -188,7 +188,7 @@ def parse_xls(xls_path, trails_path):
         clean_hike = re.sub(r'\s*\(?Early Start\)?\s*', '', h['hike'], flags=re.IGNORECASE).strip()
         m = match_hike(clean_hike, trails)
         if m:
-            matched.append({**h, 'hike': clean_hike, 'trail_id': m['id'], 'early_start': early_start})
+            matched.append({**h, 'trail_id': m['id'], 'early_start': early_start})
         else:
             unmatched.append(h)
 
@@ -200,7 +200,6 @@ def parse_xls(xls_path, trails_path):
             schedule_by_month[full_month] = {}
         schedule_by_month[full_month][str(entry['day'])] = {
             'trail_id': entry['trail_id'],
-            'hike': entry['hike'] or None,
             'early_start': entry['early_start'],
             'leader': entry.get('leader', '') or ''
         }

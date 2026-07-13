@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { beforeEach } from 'vitest';
 import { resetFiltersStore } from '../hooks/useFilters';
 import { resetTrailStore } from '../hooks/useTrailStore';
+import { setGroupConfig } from '../utils/config';
 
 // Mock data
 const mockData = {
@@ -215,3 +216,6 @@ Object.defineProperty(window, 'ResizeObserver', {
 
 // Expose mock data for tests that need to modify it
 globalThis.__TEST_MOCK_DATA__ = mockData;
+
+// Configure default hike days (Wed=3, Fri=5) for tests
+setGroupConfig({ name: 'Test Group', hikeDays: '3,5' });

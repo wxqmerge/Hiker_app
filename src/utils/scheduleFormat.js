@@ -16,7 +16,7 @@ export function serverScheduleToStore(serverData) {
         if (!store[fullName][day]) store[fullName][day] = [];
         
         const slot = entry.slot !== undefined ? entry.slot : 0;
-        store[fullName][day][slot] = { trail_id: entry.trail_id || null, hike: entry.hike || null, early_start: !!entry.early_start, leader: entry.leader || '' };
+        store[fullName][day][slot] = { trail_id: entry.trail_id || null, early_start: !!entry.early_start, leader: entry.leader || '' };
       }
     } else if (entries && typeof entries === 'object') {
       Object.assign(store[fullName], entries);
@@ -38,7 +38,7 @@ export function storeToServerSchedule(store) {
         if (entry?.trail_id) {
           const dayNum = parseInt(day, 10);
           if (!isNaN(dayNum) && dayNum > 0) {
-            serverData[abbr].push({ day: dayNum, slot, hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
+            serverData[abbr].push({ day: dayNum, slot, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
           }
         }
       });

@@ -159,13 +159,13 @@ describe('sortTrails', () => {
   });
 
   it('handles schedule mode wrapper objects', () => {
-    const scheduleItems = mockTrails.map(t => ({ hike: t.name, trail: t }));
+    const scheduleItems = mockTrails.map(t => ({ trail: t }));
     const filters = { ...mockFilters, sortBy: 'name' };
-    const result = sortTrails(scheduleItems, filters, 'hike');
+    const result = sortTrails(scheduleItems, filters, 'name');
     // ◆ (U+25C6) sorts before ASCII in localeCompare
-    expect(result[0].hike).toBe('Wilderness Peak');
-    expect(result[1].hike).toBe('Easy Path');
-    expect(result[2].hike).toBe('Rainier');
-    expect(result[3].hike).toBe('Stevens');
+    expect(result[0].trail.fullName).toBe('◆ Wilderness Peak');
+    expect(result[1].trail.fullName).toBe('Easy Path Trail');
+    expect(result[2].trail.fullName).toBe('Mount Rainier');
+    expect(result[3].trail.fullName).toBe('Stevens Ridge');
   });
 });

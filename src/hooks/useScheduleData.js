@@ -19,10 +19,9 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
       const entries = Array.isArray(val) ? val : (val ? [val] : []);
       result[day] = entries.map(e => {
         const entry = typeof e === 'string' 
-          ? { trail_id: e, hike: null, early_start: false, leader: '' }
+          ? { trail_id: e, early_start: false, leader: '' }
           : { 
               trail_id: typeof e?.trail_id === 'string' ? e.trail_id : null, 
-              hike: e?.hike || null, 
               early_start: !!e?.early_start, 
               leader: e?.leader || '' 
             };
@@ -33,7 +32,7 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
   }, [scheduleStore, selectedMonth]);
 
   const assignedCount = useMemo(() => {
-    return Object.values(assignedHikes).flat().filter(v => v?.trail_id || v?.hike).length;
+    return Object.values(assignedHikes).flat().filter(v => v?.trail_id).length;
   }, [assignedHikes]);
 
   const hikeDates = useMemo(() => {
@@ -64,8 +63,8 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
     return map;
   }, [trails]);
 
-  const handleDragStart = useCallback((hikeIndex, sourceDay, sourceSlot, hikeName, trailId, earlyStart, leader) => {
-    setDragData({ hikeIndex, sourceDay, sourceSlot, hikeName, trailId, earlyStart, leader });
+  const handleDragStart = useCallback((hikeIndex, sourceDay, sourceSlot, trailId, earlyStart, leader) => {
+    setDragData({ hikeIndex, sourceDay, sourceSlot, trailId, earlyStart, leader });
   }, []);
 
   const handleDragEnd = useCallback(() => {

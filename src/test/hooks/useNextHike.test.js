@@ -41,7 +41,6 @@ import { useNextHike } from '../../hooks/useNextHike';
           date: expect.any(Date),
           trail: mockTrails[0],
           trailId: 'trail-1',
-          hikeName: 'Hike Jan 7',
           leader: '',
           earlyStart: false,
         }
@@ -63,7 +62,6 @@ import { useNextHike } from '../../hooks/useNextHike';
           date: expect.any(Date),
           trail: mockTrails[1],
           trailId: 'trail-2',
-          hikeName: 'Hike Jan 9',
           leader: '',
           earlyStart: false,
         }

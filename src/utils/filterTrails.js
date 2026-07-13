@@ -30,7 +30,6 @@ export function filterTrails(items, filters, trailDetails) {
     if (filters.search?.trim()) {
       const searchLower = filters.search.toLowerCase().replace(/[^a-z0-9]/g, '');
       const searchText = [
-        item.hike,
         t.name,
         t.fullName,
         t.notes,

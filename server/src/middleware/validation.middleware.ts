@@ -17,7 +17,6 @@ export const TRAIL_DETAIL_FIELDS = new Set([
 export const ScheduleEntrySchema = z.object({
   day: z.number().int().positive(),
   slot: z.number().int().nonnegative().default(0),
-  hike: z.string().default(''),
   trail_id: z.string().default(''),
   early_start: z.boolean().default(false),
   leader: z.string().default(''),

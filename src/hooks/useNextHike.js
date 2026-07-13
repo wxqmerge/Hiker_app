@@ -32,7 +32,6 @@ function findNextHikesInMonth(scheduleStore, trails, m, year) {
           date,
           trail,
           trailId: entry.trail_id,
-          hikeName: entry.hike || trail.fullName || trail.name,
           leader: entry.leader || '',
           earlyStart: !!entry.early_start,
         };

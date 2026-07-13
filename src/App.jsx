@@ -10,7 +10,7 @@ import { getApiBase } from './utils/url.js';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 import LoadingSpinner from './components/LoadingSpinner';
-import { setGroupConfig } from './utils/config';
+import { setGroupConfig, getGroupName } from './utils/config';
 
 function ApiKeySync() {
   const { search } = useLocation();
@@ -26,7 +26,7 @@ function ApiKeySync() {
 
 function App() {
   const showToast = useToast();
-  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+  const [isConfigLoaded, setIsConfigLoaded] = useState(!!getGroupName());
 
   useEffect(() => {
     request('/api/schedule/group').then(data => {

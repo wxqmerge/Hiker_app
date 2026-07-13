@@ -10,7 +10,7 @@ import { useTooltips } from '../hooks/useTooltips';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 
-export default function TrailCard({ trail, isActive = false, hikeName, selectedMonths, leader }) {
+export default function TrailCard({ trail, isActive = false, selectedMonths, leader }) {
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
@@ -29,7 +29,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
   const handleCopyName = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const name = hikeName || trail.fullName || trail.name;
+    const name = trail.fullName || trail.name;
     await copyToClipboard(name, setNameCopied, showToast);
   };
 
@@ -71,7 +71,7 @@ export default function TrailCard({ trail, isActive = false, hikeName, selectedM
        >
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-gray-900">{hikeName || trail.fullName || trail.name}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{trail.fullName || trail.name}</h3>
               <button
                 onClick={handleCopyName}
                 className="text-gray-400 hover:text-green-700 flex-shrink-0"

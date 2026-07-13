@@ -49,14 +49,13 @@ function normalizeSeasonal(seasonal: any): any {
   return seasonal;
 }
 
-// Normalize schedule entry: ensure day is number, hike/trail_id are strings
+// Normalize schedule entry: ensure day is number, trail_id is string
 function normalizeEntry(entry: any): any {
   const day = typeof entry.day === 'string' ? parseInt(entry.day, 10) : entry.day;
   if (isNaN(day)) return null;
   return {
     day,
     slot: entry.slot !== undefined ? (typeof entry.slot === 'string' ? parseInt(entry.slot, 10) : entry.slot) : 0,
-    hike: String(entry.hike || ''),
     trail_id: String(entry.trail_id || ''),
     early_start: !!entry.early_start,
     leader: String(entry.leader || ''),
