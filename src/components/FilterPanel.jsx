@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { useTooltips } from '../hooks/useTooltips';
 import DualRangeSlider from './DualRangeSlider';
 
 export default function FilterPanel({ filters, setFilters, lookup, resetFilters }) {
   const { title: tt } = useTooltips();
+  const [collapsed, setCollapsed] = useState(false);
   const difficulties = lookup?.difficulties || [];
   const months = lookup?.months || MONTH_NAMES;
 
@@ -43,8 +45,22 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
     (filters.gpx && filters.gpx !== 'all');
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3.5 mb-4">
-      <div className="flex flex-wrap items-center gap-2.5">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
+      <div className="px-3.5 py-2 flex items-center justify-between border-b border-gray-200">
+        <h3 className="text-sm font-semibold text-gray-800">Filters</h3>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+          title={tt(collapsed ? 'Show filters' : 'Hide filters')}
+        >
+          <svg className={`w-4 h-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+      </div>
+      {!collapsed && (
+        <div className="p-3.5">
+          <div className="flex flex-wrap items-center gap-2.5">
         {/* Search */}
         <input
           type="text"
@@ -255,7 +271,9 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
             ✕
           </button>
         )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
