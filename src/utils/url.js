@@ -10,7 +10,7 @@ export function getApiBase() {
   }
   const match = path.match(/^\/([\w]+-[\w-]+)/);
   if (match) {
-    return `https://${hostname}${match[0]}`;
+    return `https://${match[1]}.example.com`;
   }
   return '';
 }
@@ -26,7 +26,7 @@ export function getHealthUrl() {
   }
   const match = path.match(/^\/([\w]+-[\w-]+)/);
   if (match) {
-    return `https://${hostname}${match[0]}/health`;
+    return `https://${match[1]}.example.com/health`;
   }
   return '/health';
 }

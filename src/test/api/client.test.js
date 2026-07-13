@@ -175,21 +175,21 @@ describe('api/client', () => {
       Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
       Object.defineProperty(window.location, 'pathname', { value: '/sothh-dev', writable: true });
       const { getApiBase } = await import('../../api/client.js');
-      expect(getApiBase()).toBe('https://example.com/sothh-dev');
+      expect(getApiBase()).toBe('https://sothh-dev.example.com');
     });
 
     it('detects path-based with hyphenated subpath: example.com/sothh-dev-v2', async () => {
       Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
       Object.defineProperty(window.location, 'pathname', { value: '/sothh-dev-v2', writable: true });
       const { getApiBase } = await import('../../api/client.js');
-      expect(getApiBase()).toBe('https://example.com/sothh-dev-v2');
+      expect(getApiBase()).toBe('https://sothh-dev-v2.example.com');
     });
 
     it('detects path-based: example.com/sothh-app', async () => {
       Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
       Object.defineProperty(window.location, 'pathname', { value: '/sothh-app', writable: true });
       const { getApiBase } = await import('../../api/client.js');
-      expect(getApiBase()).toBe('https://example.com/sothh-app');
+      expect(getApiBase()).toBe('https://sothh-app.example.com');
     });
 
     it('returns empty string for non-matching path', async () => {
