@@ -194,7 +194,7 @@ describe('api/client', () => {
 
     it('returns empty string for non-matching path', async () => {
       Object.defineProperty(window.location, 'hostname', { value: 'example.com', writable: true });
-      Object.defineProperty(window.location, 'pathname', { value: '/other-page', writable: true });
+      Object.defineProperty(window.location, 'pathname', { value: '/trails', writable: true });
       const { getApiBase } = await import('../../api/client.js');
       expect(getApiBase()).toBe('');
     });
