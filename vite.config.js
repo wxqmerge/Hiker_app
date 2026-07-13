@@ -20,11 +20,11 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     proxy: {
       '/api': {
-        target: `http://localhost:${process.env.PORT || 3000}`,
+        target: `http://localhost:${process.env.PORT || 3000}`, // eslint-disable-line no-undef
         changeOrigin: true,
       },
       '/health': {
-        target: `http://localhost:${process.env.PORT || 3000}`,
+        target: `http://localhost:${process.env.PORT || 3000}`, // eslint-disable-line no-undef
         changeOrigin: true,
       },
     },

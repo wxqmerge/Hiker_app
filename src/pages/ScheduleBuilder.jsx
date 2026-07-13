@@ -18,7 +18,7 @@ import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
-import { getDayLabel, getDayName, getHikeDaysLabel, getHikeDays } from '../utils/config';
+import { getDayName, getHikeDaysLabel, getHikeDays } from '../utils/config';
 import { getDaysInMonth, createDate } from '../utils/dateUtils';
 
 const APP_VERSION = __APP_VERSION;
@@ -30,7 +30,6 @@ async function loadSchedule() {
   setSchedule(data);
 }
 
-const DEBUG_STORAGE_KEY = 'hiker-schedule-debug';
 let prevSearch = null;
 
 function debugLog(...args) {
@@ -417,7 +416,7 @@ export default function ScheduleBuilder() {
             const existingDays = new Set(serverData[abbr].map(e => e.day));
             for (const [day, entry] of Object.entries(entries)) {
               if (!existingDays.has(parseInt(day, 10)) && entry.trail_id) {
-                serverData[abbr].push({ day: parseInt(day, 10), hike: entry.hike || '', trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
+                serverData[abbr].push({ day: parseInt(day, 10), trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
               }
             }
             serverData[abbr].sort((a, b) => a.day - b.day);
@@ -492,7 +491,7 @@ export default function ScheduleBuilder() {
                   const trail = findTrailByHikeName(wedHike, trails);
                   if (trail) {
                     const hasEarlyStart = /\(early start\)/i.test(wedHike);
-                    schedule[currentMonth][wedDay] = { trail_id: trail.id, hike: wedHike, leader: wedLeader || '', early_start: hasEarlyStart };
+                    schedule[currentMonth][wedDay] = { trail_id: trail.id, leader: wedLeader || '', early_start: hasEarlyStart };
                     matchedCount++;
                   } else {
                     console.log('[TSV Import] Unmatched Wed:', wedHike);
@@ -516,7 +515,7 @@ export default function ScheduleBuilder() {
                     const trail = findTrailByHikeName(friHike, trails);
                     if (trail) {
                       const hasEarlyStart = /\(early start\)/i.test(friHike);
-                      schedule[currentMonth][friDay] = { trail_id: trail.id, hike: friHike, leader: friLeader || '', early_start: hasEarlyStart };
+                      schedule[currentMonth][friDay] = { trail_id: trail.id, leader: friLeader || '', early_start: hasEarlyStart };
                       matchedCount++;
                     } else {
                       console.log('[TSV Import] Unmatched Fri:', friHike);
@@ -606,11 +605,9 @@ const findTrailByHikeName = (hikeName, trailsList) => {
     return { q: '4', months: ['Oct', 'Nov', 'Dec'], label: '4th Quarter' };
   };
 
-  const getQuarterYear = () => year;
-
   const exportExcelSchedule = () => {
     const quarter = getQuarterForMonth(selectedMonth);
-    const qYear = getQuarterYear(selectedMonth);
+    const qYear = year;
 
     // Collect all Wed and Fri hikes for the quarter
     const wedHikes = [];
@@ -629,13 +626,13 @@ const findTrailByHikeName = (hikeName, trailsList) => {
         if (!entry || !entry.trail_id) continue;
 
         const trail = findTrailById(entry.trail_id);
-        let hikeName = trail ? trail.fullName || trail.name : entry.trail_id;
-        if (entry.early_start) hikeName += ' (Early Start)';
+        let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
+        if (entry.early_start) trailName += ' (Early Start)';
 
         if (dayOfWeek === 3) {
-          wedHikes.push({ month: monthAbbr, day, hike: hikeName, leader: entry.leader || '' });
+          wedHikes.push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
         } else if (dayOfWeek === 5) {
-          friHikes.push({ month: monthAbbr, day, hike: hikeName, leader: entry.leader || '' });
+          friHikes.push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
         }
       }
     }
@@ -679,7 +676,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
         if (i === 0) row.push(month);
         else row.push('');
         row.push(w ? String(w.day) : '');
-        row.push(w ? w.hike : '');
+        row.push(w ? w.trailName : '');
         row.push(w ? (w.leader || '') : '');
 
         // Spacer
@@ -689,7 +686,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
         if (i === 0) row.push(month);
         else row.push('');
         row.push(f ? String(f.day) : '');
-        row.push(f ? f.hike : '');
+        row.push(f ? f.trailName : '');
         row.push(f ? (f.leader || '') : '');
 
         rows.push(pad(row, cols));
@@ -707,8 +704,14 @@ const findTrailByHikeName = (hikeName, trailsList) => {
   const handleExport = () => {
     const month = MONTH_NAMES[selectedMonth];
     const title = `Over-the-Hill Hike Descriptions -- ${month}, ${year}`;
-
-    const entries = wedFriDates.map(day => {
+    const daysInMonth = getDaysInMonth(year, selectedMonth);
+    const hikeDays = getHikeDays();
+    const hikeDates = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = createDate(year, selectedMonth, day);
+      if (hikeDays.includes(date.getDay())) hikeDates.push(day);
+    }
+    const entries = hikeDates.map(day => {
       const { trail_id: trailId, early_start: earlyStart } = assignedHikes[day] || { trail_id: null, early_start: false };
       const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
       const dateStr = `${dayOfWeek}, ${month} ${day}`;
@@ -735,7 +738,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
          <div
            key={`${trail.id}-${item.hikeIndex}`}
            draggable
-           onDragStart={() => handleDragStart(item.hikeIndex, null, item.hike, trail.id, false, '')}
+            onDragStart={() => handleDragStart(item.hikeIndex, null, null, trail.id, false, '')}
            onDragEnd={handleDragEnd}
            className="cursor-grab active:cursor-grabbing"
            title={tt('Drag to schedule on a date')}
@@ -1005,20 +1008,19 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                       const slotIdx = slot.slot;
                       const dayOfWeek = new Date(year, selectedMonth, day).getDay();
 
-                      const entry = assignedHikes[day]?.[slotIdx] || { trail_id: null, hike: null, early_start: false, leader: '' };
-                      const trailId = entry.trail_id;
-                      const hikeName = entry.hike;
-                      const earlyStart = entry.early_start;
-                      const leader = entry.leader;
-                       const trail = findTrailById(trailId);
-                       const displayHikeName = trail ? trail.fullName || trail.name : hikeName;
+                        const entry = assignedHikes[day]?.[slotIdx] || { trail_id: null, early_start: false, leader: '' };
+                        const trailId = entry.trail_id;
+                        const earlyStart = entry.early_start;
+                        const leader = entry.leader;
+                         const trail = findTrailById(trailId);
+                         const displayHikeName = trail ? trail.fullName || trail.name : trailId;
                        const hasMultipleSlots = hikeDates.filter(s => s.day === day).length > 1;
 
                        return (
                         <div
                           key={`${day}-${slotIdx}`}
                           draggable={!!trailId}
-                          onDragStart={trailId ? () => handleDragStart(null, day, slotIdx, trailId ? (trail.fullName || trail.name) : hikeName, trailId, earlyStart, leader) : undefined}
+                          onDragStart={trailId ? () => handleDragStart(null, day, slotIdx, trailId, earlyStart, leader) : undefined}
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-green-50'); }}
                           onDragLeave={(e) => { e.currentTarget.classList.remove('bg-green-50'); }}
@@ -1028,15 +1030,13 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                             handleDropOnDate(day, slotIdx);
                           }}
                            onDoubleClick={() => trailId && hasApiKey && navigate(`/trail/${trailId}?edit=true`)}
-                            className={`border-2 rounded-lg p-3 transition-all ${
-                              trailId && trail
-                                ? 'border-green-300 bg-green-50 cursor-pointer'
-                                : trailId
-                                  ? 'border-amber-300 bg-amber-50 cursor-pointer'
-                                  : hikeName
-                                    ? 'border-yellow-300 bg-yellow-50'
-                                    : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
-                            }`}
+                             className={`border-2 rounded-lg p-3 transition-all ${
+                               trailId && trail
+                                 ? 'border-green-300 bg-green-50 cursor-pointer'
+                                 : trailId
+                                   ? 'border-amber-300 bg-amber-50 cursor-pointer'
+                                   : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
+                             }`}
                            style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
                           title={trailId ? tt('Drop another hike here to swap · Double-click to edit trail (requires API key)') : tt('Drop a hike here to schedule')}
                         >
@@ -1068,11 +1068,11 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                                         (ID: {trailId})
                                       </div>
                                     )}
-                                    {!trailId && hikeName && (
-                                      <div className="text-xs text-gray-400 italic mt-0.5">
-                                        No trail matched — drag one here
-                                      </div>
-                                    )}
+                                     {!trailId && (
+                                       <div className="text-xs text-gray-400 italic mt-0.5">
+                                         Unmatched trail_id — drag a trail here
+                                       </div>
+                                     )}
                                     <input
                                           type="text"
                                           placeholder="Leader / Shadow"

@@ -2,33 +2,54 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { useTooltips } from '../hooks/useTooltips';
-import { useToast } from '../hooks/useToast';
 import { useNextHike } from '../hooks/useNextHike';
 import PageNav from '../components/PageNav';
-import TrailCard from '../components/TrailCard';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
-import GPXHelp from '../components/GPXHelp';
 import NextHikeBanner from '../components/NextHikeBanner';
-import { MONTH_NAMES, DAY_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
-import { getGpx, updateSchedule } from '../api/client';
-import { getRideCost } from '../utils/report';
+import { MONTH_NAMES } from '../utils/constants';
+import { updateSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
-import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
+import { getHikeDays } from '../utils/config';
+import { getDaysInMonth, createDate } from '../utils/dateUtils';
 
 const APP_VERSION = __APP_VERSION;
 
 export default function Calendar() {
   const { trails, schedule: scheduleData, loading } = useTrails();
   const { title: tt } = useTooltips();
-  const showToast = useToast();
 
   const year = 2026;
 
   const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
+
+  const monthSlotStats = useMemo(() => {
+    const hikeDays = getHikeDays();
+    const trailIdSet = new Set(trails.map(t => t.id));
+    const stats = {};
+    MONTH_NAMES.forEach((name, idx) => {
+      const daysInMonth = getDaysInMonth(year, idx);
+      let total = 0;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = createDate(year, idx, day);
+        const dayOfWeek = date.getDay();
+        hikeDays.forEach(configDay => {
+          if (configDay === dayOfWeek) total++;
+        });
+      }
+      let filled = 0;
+      const monthData = scheduleStore[name] || {};
+      Object.values(monthData).forEach(val => {
+        const entries = Array.isArray(val) ? val : (val ? [val] : []);
+        filled += entries.filter(e => e?.trail_id && trailIdSet.has(e.trail_id)).length;
+      });
+      stats[idx] = { total, filled };
+    });
+    return stats;
+  }, [scheduleStore, year, trails]);
 
   const nextHikes = useNextHike({ trails, schedule: scheduleData, year });
 
@@ -43,7 +64,6 @@ export default function Calendar() {
   }, [loading, nextHikes]);
   const hasApiKey = !!localStorage.getItem('hiker-api-key');
   const [pendingSwap, setPendingSwap] = useState(null);
-  const [gpxDownloading, setGpxDownloading] = useState(false);
 
   useSchedulePolling({ setSchedule }, 5000);
 
@@ -77,7 +97,6 @@ export default function Calendar() {
   const {
     confirmSwap,
     cancelSwap,
-    handleDropOnDate,
   } = useScheduleDragDrop({
     scheduleStore,
     selectedMonth,
@@ -109,18 +128,19 @@ export default function Calendar() {
             title={tt('Select month to view')}
           >
             {MONTH_NAMES.map((name, idx) => {
-              const monthAbbr = name.substring(0, 3);
-              const count = scheduleData?.[monthAbbr] ? Object.keys(scheduleData[monthAbbr]).length : 0;
+              const { total, filled } = monthSlotStats[idx] || { total: 0, filled: 0 };
+              const label = total > 0 ? `${filled}/${total}` : '0/0';
+              const color = filled === 0 ? '#9ca3af' : filled === total ? '#15803d' : '#a16207';
               return (
-                <option key={idx} value={idx}>
-                  {name} ({count} hikes)
+                <option key={idx} value={idx} style={{ color }}>
+                  {name} ({label})
                 </option>
               );
             })}
           </select>
-           <p className="text-gray-600 text-sm ml-auto">
-             {assignedCount}/{hikeDates.length} dates filled
-           </p>
+            <p className="text-gray-600 text-sm ml-auto">
+              {monthSlotStats[selectedMonth]?.filled ?? assignedCount}/{monthSlotStats[selectedMonth]?.total ?? hikeDates.length} slots filled
+            </p>
 
         </div>
 
@@ -138,7 +158,6 @@ export default function Calendar() {
           dragData={dragData}
           handleDragStart={handleDragStart}
           handleDragEnd={handleDragEnd}
-          handleDropOnDate={handleDropOnDate}
           tt={tt}
         />
 

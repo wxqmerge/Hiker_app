@@ -34,9 +34,8 @@ import { getDaysInMonth, createDate, formatDateToISO } from '../../utils/dateUti
    });
  
    describe('formatDateToISO', () => {
-     it('formats a specific date to YYYY-MM-DD', () => {
-       const date = new Date(2026, 5, 15); // June 15
-       // Note: toISOString() uses UTC. For consistency in tests, we use a fixed UTC date.
+      it('formats a specific date to YYYY-MM-DD', () => {
+        // Note: toISOString() uses UTC. For consistency in tests, we use a fixed UTC date.
        const utcDate = new Date(Date.UTC(2026, 5, 15));
        expect(formatDateToISO(utcDate)).toBe('2026-06-15');
      });

@@ -151,14 +151,6 @@ export async function restoreSchedule(timestamp) {
   });
 }
 
-export async function getHealth() {
-  try {
-    return await request('/health');
-  } catch {
-    return null;
-  }
-}
-
 export async function ensureScheduleWritable() {
   try {
     return await request('/api/schedule/ensure-writable');

@@ -10,7 +10,6 @@ import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv, sanitizeFilename } from '../utils/io';
 import JSZip from 'jszip';
 import { getGpx } from '../api/client';
-import { MONTH_ABBR } from '../utils/constants';
 import { importTrailsFromXls, getSchedule, updateSchedule, request, exportDataZip, importDataZip } from '../api/client';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 
@@ -243,7 +242,6 @@ export default function TrailManager() {
   const exportScheduleJson = useCallback(async () => {
     try {
       const schedule = await getSchedule();
-      const now = new Date();
       const dateStr = formatDateToISO();
       const filename = `schedule_${dateStr}.json`;
       const json = JSON.stringify(schedule, null, 2);

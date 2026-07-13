@@ -39,12 +39,6 @@ export function openGoogleMapsTrailhead(lat, lon) {
   window.open(url, '_blank');
 }
 
-// Open Organic Maps with trailhead coordinate via URL scheme
-export function openOrganicMaps(lat, lon, name) {
-  const url = `omaps://?ll=${lat},${lon}&z=14&n=${encodeURIComponent(name || '')}&l=1`;
-  window.location.href = url;
-}
-
 // Open GPX file in associated app (mobile: Web Share, desktop: download with extension)
 export async function shareGpxFile(gpxContent, trailName) {
   const safeName = sanitizeFilename(trailName, 'route');
