@@ -4,9 +4,6 @@
 # Designed for use on a production Linux server with Nginx
 
 INSTANCES_DIR="./instances"
-NGINX_CONF_DIR="/etc/nginx/sites-available"
-NGINX_ENABLED_DIR="/etc/nginx/sites-enabled"
-TEMPLATE_FILE="./deploy/nginx/subdomain.conf.template"
 
 # Derive version name from current directory
 VERSION=$(basename "$(pwd)")
@@ -29,13 +26,11 @@ fi
 # Check required .env entries
 ERRORS=0
 if [ -f "server/.env" ]; then
-    for VAR in PORT DOMAIN; do
-        VAL=$(grep "^${VAR}=" server/.env 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
-        if [ -z "$VAL" ]; then
-            echo "Error: $VAR not set in server/.env"
-            ERRORS=$((ERRORS + 1))
-        fi
-    done
+    PORT=$(grep "^PORT=" server/.env 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+    if [ -z "$PORT" ]; then
+        echo "Error: PORT not set in server/.env"
+        ERRORS=$((ERRORS + 1))
+    fi
 else
     echo "Error: server/.env not found"
     exit 1
@@ -45,10 +40,6 @@ if [ $ERRORS -gt 0 ]; then
     echo "Fix the errors above and re-run."
     exit 1
 fi
-
-DOMAIN=$(grep '^DOMAIN=' server/.env | cut -d= -f2 | tr -d '[:space:]')
-PORT=$(grep '^PORT=' server/.env | cut -d= -f2 | tr -d '[:space:]')
-SUBDOMAIN="${VERSION}.${DOMAIN}"
 
 usage() {
     echo "Usage: $0 {add|remove|list}"
@@ -61,19 +52,12 @@ usage() {
 case "$1" in
     add)
 
-        echo "Creating instance: $VERSION on port $PORT ($SUBDOMAIN)"
+        echo "Creating instance: $VERSION on port $PORT"
 
         # 1. Create instance directory
         mkdir -p "$INSTANCES_DIR/$VERSION"
-        
-        # 2. Generate Nginx config
-        CONF_FILE="$NGINX_CONF_DIR/$SUBDOMAIN.conf"
-        sed "s/{{SUBDOMAIN}}/$SUBDOMAIN/g; s/{{PORT}}/$PORT/g" "$TEMPLATE_FILE" > "$CONF_FILE"
 
-        # 3. Enable Nginx config
-        ln -sf "$CONF_FILE" "$NGINX_ENABLED_DIR/"
-
-        # 4. Generate systemd service file
+        # 2. Generate systemd service file
         SVC_FILE="/etc/systemd/system/${VERSION}.service"
         if [ -f "$SVC_FILE" ]; then
             echo "  [WARN] Service file already exists: ${VERSION}.service"
@@ -102,10 +86,7 @@ EOF
             echo "  Created service file: ${VERSION}.service"
         fi
 
-        # 5. Reload Nginx
-        nginx -t && systemctl reload nginx
-
-        # 6. Enable and start the service
+        # 3. Enable and start the service
         systemctl daemon-reload
         systemctl enable "$VERSION"
         systemctl start "$VERSION"
@@ -113,20 +94,16 @@ EOF
 
         echo "------------------------------------------------------------"
         echo "SUCCESS: Instance $VERSION is configured."
-        echo "  Subdomain: $SUBDOMAIN"
+        echo "  Path:      /$VERSION/"
         echo "  Port:      $PORT"
         echo "Next Steps:"
-        echo "1. Secure the subdomain with SSL:"
-        echo "   sudo certbot --nginx -d $SUBDOMAIN"
-        echo "2. Check status:"
+        echo "1. Check status:"
         echo "   sudo systemctl status $VERSION"
         echo "   sudo journalctl -u $VERSION -f"
         echo "------------------------------------------------------------"
         ;;
 
     remove)
-        CONF_FILE="$NGINX_CONF_DIR/$SUBDOMAIN.conf"
-
         echo "Removing instance: $VERSION"
 
         # 1. Stop and disable service
@@ -134,14 +111,7 @@ EOF
         systemctl disable "$VERSION" 2>/dev/null
         rm -f "/etc/systemd/system/${VERSION}.service"
 
-        # 2. Remove Nginx config
-        rm -f "$NGINX_ENABLED_DIR/$SUBDOMAIN.conf"
-        rm -f "$CONF_FILE"
-
-        # 3. Reload Nginx
-        nginx -t && systemctl reload nginx
-
-        # 4. Remove instance directory
+        # 2. Remove instance directory
         rm -rf "$INSTANCES_DIR/$VERSION"
 
         echo "SUCCESS: Instance $VERSION removed."
