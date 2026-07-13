@@ -12,6 +12,7 @@ import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
 import { downloadBlob, createFileInput, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
+import { getGroupName } from '../utils/config';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule, getGpx } from '../api/client';
 import { getHealthUrl } from '../utils/url.js';
 import { useTrailDetails } from '../hooks/useTrailDetails';
@@ -698,7 +699,8 @@ const findTrailByHikeName = (hikeName, trailsList) => {
     rows.push(pad(['', '', 'Alternate Wednesday Hike', '', '', '', 'Alternate Friday Hike', '', ''], cols));
 
     const tsv = rows.map(r => r.join('\t')).join('\n');
-    downloadBlob(tsv, `${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
+    const prefix = getGroupName() || 'hiker';
+    downloadBlob(tsv, `${prefix}-${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
   };
 
   const handleExport = () => {

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import PageNav from '../components/PageNav';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDateToISO } from '../utils/dateUtils';
+import { getGroupName } from '../utils/config';
 
 const APP_VERSION = __APP_VERSION;
 import { useTrailStore } from '../hooks/useTrailStore';
@@ -243,7 +244,8 @@ export default function TrailManager() {
     try {
       const schedule = await getSchedule();
       const dateStr = formatDateToISO();
-      const filename = `schedule_${dateStr}.json`;
+      const prefix = getGroupName() || 'hiker';
+      const filename = `${prefix}-schedule-${dateStr}.json`;
       const json = JSON.stringify(schedule, null, 2);
       downloadBlob(json, filename, 'application/json');
     } catch (err) {
@@ -276,7 +278,8 @@ export default function TrailManager() {
   const exportAllDataJson = useCallback(async () => {
     try {
       const data = await exportJSON();
-      downloadBlob(JSON.stringify(data, null, 2), 'trail-data.json');
+      const prefix = getGroupName() || 'hiker';
+      downloadBlob(JSON.stringify(data, null, 2), `${prefix}-trail-data.json`);
     } catch (err) {
       alert('Export failed: ' + err.message);
     }
@@ -309,7 +312,8 @@ export default function TrailManager() {
       const a = document.createElement('a');
       a.href = url;
       const date = formatDateToISO();
-      a.download = `hiker-data-${date}.zip`;
+      const prefix = getGroupName() || 'hiker';
+      a.download = `${prefix}-data-${date}.zip`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
