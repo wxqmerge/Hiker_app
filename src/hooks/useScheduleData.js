@@ -18,12 +18,12 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
     Object.entries(raw).forEach(([day, val]) => {
       const entries = Array.isArray(val) ? val : (val ? [val] : []);
       result[day] = entries.map(e => {
-        const entry = typeof e === 'string' 
+        const entry = typeof e === 'string'
           ? { trail_id: e, early_start: false, leader: '' }
-          : { 
-              trail_id: typeof e?.trail_id === 'string' ? e.trail_id : null, 
-              early_start: !!e?.early_start, 
-              leader: e?.leader || '' 
+          : {
+              trail_id: typeof e?.trail_id === 'string' ? e.trail_id : null,
+              early_start: !!e?.early_start,
+              leader: e?.leader || '',
             };
         return entry;
       });
