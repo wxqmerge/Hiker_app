@@ -328,7 +328,8 @@ export default function ScheduleBuilder() {
       const local = storeToServerSchedule(scheduleStore);
 
       // Normalize both to abbreviations for comparison
-      const serverEntries = Object.entries(serverData).flatMap(([m, entries]) => {
+       const serverEntries = Object.entries(serverData).flatMap(([m, entries]) => {
+        if (m === '_etag' || m === '_status') return [];
         const abbr = MONTH_FULL_TO_ABBR[m] || m;
         if (Array.isArray(entries)) {
           return entries.map(e => `${abbr}:${e.day}:${e.trail_id}`);
