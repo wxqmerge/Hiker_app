@@ -627,17 +627,19 @@ const findTrailByHikeName = (hikeName, trailsList) => {
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(qYear, monthIndex, day);
         const dayOfWeek = date.getDay();
-        const entry = monthData[String(day)];
-        if (!entry || !entry.trail_id) continue;
+        const entries = Array.isArray(monthData[String(day)]) ? monthData[String(day)] : [monthData[String(day)]].filter(Boolean);
+        for (const entry of entries) {
+          if (!entry || !entry.trail_id) continue;
 
-        const trail = findTrailById(entry.trail_id);
-        let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
-        if (entry.early_start) trailName += ' (Early Start)';
+          const trail = findTrailById(entry.trail_id);
+          let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
+          if (entry.early_start) trailName += ' (Early Start)';
 
-        if (dayOfWeek === 3) {
-          wedHikes.push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
-        } else if (dayOfWeek === 5) {
-          friHikes.push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
+          if (dayOfWeek === 3) {
+            wedHikes.push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
+          } else if (dayOfWeek === 5) {
+            friHikes.push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
+          }
         }
       }
     }
@@ -703,7 +705,8 @@ const findTrailByHikeName = (hikeName, trailsList) => {
     rows.push(pad(['', '', 'Alternate Wednesday Hike', '', '', '', 'Alternate Friday Hike', '', ''], cols));
 
     const tsv = rows.map(r => r.join('\t')).join('\n');
-    downloadBlob(tsv, `${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
+    const prefix = getGroupName() || 'hiker';
+    downloadBlob(tsv, `${prefix}-${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
   };
 
   const handleExport = () => {
@@ -717,8 +720,11 @@ const findTrailByHikeName = (hikeName, trailsList) => {
       if (hikeDays.includes(date.getDay())) hikeDates.push(day);
     }
     const entries = hikeDates.map(day => {
-      const { trail_id: trailId, early_start: earlyStart } = assignedHikes[day] || { trail_id: null, early_start: false };
-      const dayOfWeek = DAY_NAMES[new Date(year, selectedMonth, day).getDay()];
+       const date = createDate(year, selectedMonth, day);
+       const slot = hikeDays.indexOf(date.getDay());
+       const entry = assignedHikes[day]?.[slot] || { trail_id: null, early_start: false };
+       const { trail_id: trailId, early_start: earlyStart } = entry;
+       const dayOfWeek = DAY_NAMES[date.getDay()];
       const dateStr = `${dayOfWeek}, ${month} ${day}`;
 
       if (!trailId) return { dateStr, trail: null, trailDetails: null, earlyStart: false };

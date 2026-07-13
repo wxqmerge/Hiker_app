@@ -40,7 +40,7 @@ export async function request(path, options = {}) {
     if (options.stripMetadata) {
       const { _etag: _, _status: __, ...rest } = data;
       data = rest;
-    } else {
+    } else if (!Array.isArray(data)) {
       data = {
         ...data,
         _etag: res.headers?.get('etag') || null,
