@@ -488,11 +488,11 @@ export default function ScheduleBuilder() {
                 }
 
               if (!isNaN(wedDay) && wedHike && currentMonth) {
-                  if (!schedule[currentMonth]) schedule[currentMonth] = {};
+                  if (!schedule[currentMonth]) schedule[currentMonth] = [];
                   const trail = findTrailByHikeName(wedHike, trails);
                   if (trail) {
                     const hasEarlyStart = /\(early start\)/i.test(wedHike);
-                    schedule[currentMonth][wedDay] = { trail_id: trail.id, leader: wedLeader || '', early_start: hasEarlyStart };
+                    schedule[currentMonth].push({ day: wedDay, slot: 0, trail_id: trail.id, leader: wedLeader || '', early_start: hasEarlyStart });
                     matchedCount++;
                   } else {
                     console.log('[TSV Import] Unmatched Wed:', wedHike);
@@ -512,11 +512,11 @@ export default function ScheduleBuilder() {
                   }
 
                 if (!isNaN(friDay) && friHike && currentMonth) {
-                    if (!schedule[currentMonth]) schedule[currentMonth] = {};
+                    if (!schedule[currentMonth]) schedule[currentMonth] = [];
                     const trail = findTrailByHikeName(friHike, trails);
                     if (trail) {
                       const hasEarlyStart = /\(early start\)/i.test(friHike);
-                      schedule[currentMonth][friDay] = { trail_id: trail.id, leader: friLeader || '', early_start: hasEarlyStart };
+                      schedule[currentMonth].push({ day: friDay, slot: 0, trail_id: trail.id, leader: friLeader || '', early_start: hasEarlyStart });
                       matchedCount++;
                     } else {
                       console.log('[TSV Import] Unmatched Fri:', friHike);
@@ -699,8 +699,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
     rows.push(pad(['', '', 'Alternate Wednesday Hike', '', '', '', 'Alternate Friday Hike', '', ''], cols));
 
     const tsv = rows.map(r => r.join('\t')).join('\n');
-    const prefix = getGroupName() || 'hiker';
-    downloadBlob(tsv, `${prefix}-${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
+    downloadBlob(tsv, `${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
   };
 
   const handleExport = () => {
