@@ -52,6 +52,25 @@ usage() {
 case "$1" in
     add)
 
+        # Check for port conflicts across all instances in /var/www/html/
+        if [ -d "/var/www/html" ]; then
+            CONFLICT=""
+            for envfile in /var/www/html/*/server/.env; do
+                [ -f "$envfile" ] || continue
+                OTHER_PORT=$(grep "^PORT=" "$envfile" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+                OTHER_DIR=$(basename "$(dirname "$(dirname "$envfile")")")
+                if [ "$OTHER_PORT" = "$PORT" ] && [ "$OTHER_DIR" != "$VERSION" ]; then
+                    CONFLICT="$OTHER_DIR"
+                    break
+                fi
+            done
+            if [ -n "$CONFLICT" ]; then
+                echo "Error: Port $PORT conflicts with instance '$CONFLICT' (/var/www/html/$CONFLICT/server/.env)"
+                echo "Fix the port in server/.env and re-run."
+                exit 1
+            fi
+        fi
+
         echo "Creating instance: $VERSION on port $PORT"
 
         # 1. Create instance directory
