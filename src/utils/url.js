@@ -8,7 +8,7 @@ export function getApiBase() {
   if (hostname.endsWith('.example.com') && hostname.split('.').length > 2) {
     return `https://${hostname}`;
   }
-  const match = path.match(/^\/([\w-]+-dev(?:-\w+)?)/);
+  const match = path.match(/^\/((?:sothh|ramblers)[\w-]*)/);
   if (match) {
     return `https://${hostname}${match[0]}`;
   }
@@ -24,7 +24,7 @@ export function getHealthUrl() {
   if (hostname.endsWith('.example.com')) {
     return `https://${hostname}/health`;
   }
-  const match = path.match(/^\/([\w-]+-dev(?:-\w+)?)/);
+  const match = path.match(/^\/((?:sothh|ramblers)[\w-]*)/);
   if (match) {
     return `https://${hostname}${match[0]}/health`;
   }
