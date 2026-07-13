@@ -904,16 +904,9 @@ const findTrailByHikeName = (hikeName, trailsList) => {
                {monthSlotStats[selectedMonth]?.filled ?? assignedCount}/{monthSlotStats[selectedMonth]?.total ?? hikeDates.length} slots filled
              </p>
 
-        </div>
+         </div>
 
-        <FilterPanel 
-          filters={filters}
-          setFilters={setFilters}
-          lookup={lookup}
-          resetFilters={() => setFilters({ ...DEFAULT_FILTERS })}
-        />
-
-        {/* Schedule History Panel */}
+         {/* Schedule History Panel */}
         {showHistory && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-4">
             <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
@@ -1007,6 +1000,12 @@ const findTrailByHikeName = (hikeName, trailsList) => {
 
           {/* Right Panel - Dates */}
           <div className="flex-[1]">
+            <FilterPanel
+              filters={filters}
+              setFilters={setFilters}
+              lookup={lookup}
+              resetFilters={() => setFilters({ ...DEFAULT_FILTERS })}
+            />
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                <h3 className="text-sm font-semibold text-gray-800">
