@@ -487,18 +487,20 @@ export default function ScheduleBuilder() {
                   if (wm) currentMonth = wm;
                 }
 
-              if (!isNaN(wedDay) && wedHike && currentMonth) {
-                  if (!schedule[currentMonth]) schedule[currentMonth] = [];
-                  const trail = findTrailByHikeName(wedHike, trails);
-                  if (trail) {
-                    const hasEarlyStart = /\(early start\)/i.test(wedHike);
-                    schedule[currentMonth].push({ day: wedDay, slot: 0, trail_id: trail.id, leader: wedLeader || '', early_start: hasEarlyStart });
-                    matchedCount++;
-                  } else {
-                    console.log('[TSV Import] Unmatched Wed:', wedHike);
-                    unmatchedCount++;
-                  }
-                }
+               if (!isNaN(wedDay) && wedHike && currentMonth) {
+                   if (!schedule[currentMonth]) schedule[currentMonth] = [];
+                   const trail = findTrailByHikeName(wedHike, trails);
+                   if (trail) {
+                     const hasEarlyStart = /\(early start\)/i.test(wedHike);
+                     const wedDate = createDate(year, MONTH_NAMES.indexOf(currentMonth), wedDay);
+                     const wedSlot = getHikeDays().indexOf(wedDate.getDay()) ?? 0;
+                     schedule[currentMonth].push({ day: wedDay, slot: wedSlot, trail_id: trail.id, leader: wedLeader || '', early_start: hasEarlyStart });
+                     matchedCount++;
+                   } else {
+                     console.log('[TSV Import] Unmatched Wed:', wedHike);
+                     unmatchedCount++;
+                   }
+                 }
 
                if (row.length >= 9) {
                  const rawFriMonth = row[5]?.trim();
@@ -511,18 +513,20 @@ export default function ScheduleBuilder() {
                     if (fm) currentMonth = fm;
                   }
 
-                if (!isNaN(friDay) && friHike && currentMonth) {
-                    if (!schedule[currentMonth]) schedule[currentMonth] = [];
-                    const trail = findTrailByHikeName(friHike, trails);
-                    if (trail) {
-                      const hasEarlyStart = /\(early start\)/i.test(friHike);
-                      schedule[currentMonth].push({ day: friDay, slot: 0, trail_id: trail.id, leader: friLeader || '', early_start: hasEarlyStart });
-                      matchedCount++;
-                    } else {
-                      console.log('[TSV Import] Unmatched Fri:', friHike);
-                      unmatchedCount++;
-                    }
-                  }
+                 if (!isNaN(friDay) && friHike && currentMonth) {
+                     if (!schedule[currentMonth]) schedule[currentMonth] = [];
+                     const trail = findTrailByHikeName(friHike, trails);
+                     if (trail) {
+                       const hasEarlyStart = /\(early start\)/i.test(friHike);
+                       const friDate = createDate(year, MONTH_NAMES.indexOf(currentMonth), friDay);
+                       const friSlot = getHikeDays().indexOf(friDate.getDay()) ?? 0;
+                       schedule[currentMonth].push({ day: friDay, slot: friSlot, trail_id: trail.id, leader: friLeader || '', early_start: hasEarlyStart });
+                       matchedCount++;
+                     } else {
+                       console.log('[TSV Import] Unmatched Fri:', friHike);
+                       unmatchedCount++;
+                     }
+                   }
                }
             }
 
