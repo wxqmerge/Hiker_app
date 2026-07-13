@@ -966,6 +966,12 @@ const findTrailByHikeName = (hikeName, trailsList) => {
         <div className="flex gap-6">
           {/* Left Panel - Available Hikes */}
           <div className="flex-[4]">
+            <FilterPanel
+              filters={filters}
+              setFilters={setFilters}
+              lookup={lookup}
+              resetFilters={() => setFilters({ ...DEFAULT_FILTERS })}
+            />
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-800">
@@ -1000,12 +1006,6 @@ const findTrailByHikeName = (hikeName, trailsList) => {
 
           {/* Right Panel - Dates */}
           <div className="flex-[1]">
-            <FilterPanel
-              filters={filters}
-              setFilters={setFilters}
-              lookup={lookup}
-              resetFilters={() => setFilters({ ...DEFAULT_FILTERS })}
-            />
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                <h3 className="text-sm font-semibold text-gray-800">
