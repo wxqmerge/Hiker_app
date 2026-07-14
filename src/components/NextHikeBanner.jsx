@@ -1,36 +1,11 @@
-import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getRideCost } from '../utils/report';
 import { getGpx } from '../api/client';
-import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
+import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openWeatherForTrail } from '../utils/io';
 import GPXHelp from './GPXHelp';
 
 export default function NextHikeBanner({ nextHikes }) {
-  const [gpxDownloading, setGpxDownloading] = useState(false);
-
-  const handleGpxDownload = useCallback(async (hike) => {
-    if (gpxDownloading) return;
-    setGpxDownloading(true);
-    try {
-      const gpx = await getGpx(hike.trailId);
-      if (gpx) {
-        const safeName = (hike.trail.fullName || hike.trail.name || 'route').replace(/[^a-zA-Z0-9]/g, '_');
-        downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
-      }
-    } finally {
-      setTimeout(() => setGpxDownloading(false), 1000);
-    }
-  }, [gpxDownloading]);
-
-  const handleTrailhead = useCallback(async (hike) => {
-    const gpx = await getGpx(hike.trailId);
-    if (!gpx) return;
-    const coord = getFirstCoordinateFromGpx(gpx);
-    if (coord) {
-      openGoogleMapsTrailhead(coord.lat, coord.lon);
-    }
-  }, []);
 
   if (!nextHikes || nextHikes.length === 0) return null;
 
@@ -39,7 +14,26 @@ export default function NextHikeBanner({ nextHikes }) {
       {nextHikes.map((hike, idx) => {
         const trail = hike.trail;
         const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
-        
+
+        const handleGpxDownload = async () => {
+          const gpx = await getGpx(hike.trailId);
+          if (gpx) {
+            const safeName = (trail.fullName || trail.name || 'route').replace(/[^a-zA-Z0-9]/g, '_');
+            downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
+          }
+        };
+
+        const handleTrailhead = async () => {
+          const gpx = await getGpx(hike.trailId);
+          if (!gpx) return;
+          const coord = getFirstCoordinateFromGpx(gpx);
+          if (coord) {
+            openGoogleMapsTrailhead(coord.lat, coord.lon);
+          }
+        };
+
+        const handleWeather = () => openWeatherForTrail(getGpx, hike.trailId);
+
         const displayHikeName = hike.trail.fullName || hike.trail.name;
 
         return (
@@ -85,9 +79,8 @@ export default function NextHikeBanner({ nextHikes }) {
                     {trail.hasGpx && (
                       <>
                         <button
-                          onClick={() => handleGpxDownload(hike)}
-                          disabled={gpxDownloading}
-                          className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors disabled:opacity-50"
+                          onClick={() => handleGpxDownload()}
+                          className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors"
                           title={`Download GPX for ${displayHikeName}`}
                         >
                           <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +89,7 @@ export default function NextHikeBanner({ nextHikes }) {
                           <span>GPX</span>
                         </button>
                         <button
-                          onClick={() => handleTrailhead(hike)}
+                          onClick={() => handleTrailhead()}
                           className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors"
                           title={`Open trailhead for ${displayHikeName} in Google Maps`}
                         >
@@ -105,6 +98,16 @@ export default function NextHikeBanner({ nextHikes }) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
                           <span>TH</span>
+                        </button>
+                        <button
+                          onClick={() => handleWeather()}
+                          className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors"
+                          title={`Open weather forecast for ${displayHikeName}`}
+                        >
+                          <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
+                          </svg>
+                          <span>W</span>
                         </button>
                       </>
                     )}

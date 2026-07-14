@@ -9,6 +9,8 @@ import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
+import { openWeatherForTrail } from '../utils/io';
+import { getGpx } from '../api/client';
 
 export default function TrailCard({ trail, isActive = false, selectedMonths, leader }) {
   const showToast = useToast();
@@ -210,19 +212,35 @@ export default function TrailCard({ trail, isActive = false, selectedMonths, lea
                <span className="truncate">GPX</span>
              </button>
            )}
-           {trail.hasGpx && (
-             <button
-               onClick={handleTrailhead}
-               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
-               title={`Open trailhead for ${trail.fullName || trail.name} in Google Maps`}
-             >
-               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-               </svg>
-               <span className="truncate">TH</span>
-             </button>
-           )}
+            {trail.hasGpx && (
+              <button
+                onClick={handleTrailhead}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
+                title={`Open trailhead for ${trail.fullName || trail.name} in Google Maps`}
+              >
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="truncate">TH</span>
+              </button>
+            )}
+            {trail.hasGpx && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openWeatherForTrail(getGpx, trail.id);
+                }}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
+                title={`Open weather forecast for ${trail.fullName || trail.name}`}
+              >
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
+                </svg>
+                <span className="truncate">W</span>
+              </button>
+            )}
         </div>
 
       {/* Pop score indicator */}

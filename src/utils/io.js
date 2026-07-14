@@ -39,6 +39,32 @@ export function openGoogleMapsTrailhead(lat, lon) {
   window.open(url, '_blank');
 }
 
+// Open Open-Meteo weather forecast for a coordinate
+export function openWeatherUrl(lat, lon) {
+  const url = `https://forecast.weather.gov/MapClick.php?lon=${lon}&lat=${lat}`;
+  window.open(url, '_blank');
+}
+
+// Fetch GPX for a trail, extract first coordinate, and open weather forecast page
+export async function openWeatherForTrail(getGpxFn, trailId) {
+  const gpx = await getGpxFn(trailId);
+  if (!gpx) return;
+  const coord = getFirstCoordinateFromGpx(gpx);
+  if (coord) {
+    openWeatherUrl(coord.lat, coord.lon);
+  }
+}
+
+// Fetch GPX for a trail, extract first coordinate, and open Google Maps trailhead
+export async function openTrailheadForTrail(getGpxFn, trailId) {
+  const gpx = await getGpxFn(trailId);
+  if (!gpx) return;
+  const coord = getFirstCoordinateFromGpx(gpx);
+  if (coord) {
+    openGoogleMapsTrailhead(coord.lat, coord.lon);
+  }
+}
+
 // Open GPX file in associated app (mobile: Web Share, desktop: download with extension)
 export async function shareGpxFile(gpxContent, trailName) {
   const safeName = sanitizeFilename(trailName, 'route');
