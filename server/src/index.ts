@@ -15,7 +15,7 @@ import { router as trailsRouter } from './routes/trails.routes.js';
 import { router as scheduleRouter } from './routes/schedule.routes.js';
 import { router as lookupRouter } from './routes/lookup.routes.js';
 import { router as dataRouter } from './routes/data.routes.js';
-import { getWriteHealth, serverVersion } from './services/dataService.js';
+import { getWriteHealth, serverVersion, waitForDataReady } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
 import { requireAdminKey } from './middleware/auth.middleware.js';
 
@@ -379,17 +379,20 @@ if (isDev) {
 const server = http.createServer(app);
 const isMainModule = process.argv[1] && (path.basename(process.argv[1]).endsWith('index.ts') || path.basename(process.argv[1]).endsWith('index.js'));
 if (isMainModule) {
-  server.listen(PORT, () => {
-    console.log(`\n========================================`);
-    console.log(`  HIKER TRAIL APP SERVER`);
-    console.log(`========================================\n`);
-    console.log(`✓ Server running on port ${PORT}`);
-    console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`✓ Build: ${buildFull}`);
-    console.log(`✓ CORS Origins: ${process.env.CORS_ORIGINS || '*'}`);
-    console.log(`✓ Admin API Key: ${process.env.ADMIN_API_KEY ? 'Enabled' : '⚠️  NOT SET'}`);
-    console.log(`========================================\n`);
-  });
+  (async () => {
+    await waitForDataReady();
+    server.listen(PORT, () => {
+      console.log(`\n========================================`);
+      console.log(`  HIKER TRAIL APP SERVER`);
+      console.log(`========================================\n`);
+      console.log(`✓ Server running on port ${PORT}`);
+      console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`✓ Build: ${buildFull}`);
+      console.log(`✓ CORS Origins: ${process.env.CORS_ORIGINS || '*'}`);
+      console.log(`✓ Admin API Key: ${process.env.ADMIN_API_KEY ? 'Enabled' : '⚠️  NOT SET'}`);
+      console.log(`========================================\n`);
+    });
+  })();
 
   const gracefulShutdown = (signal: string) => {
     console.log(`\n[SHUTDOWN] Received ${signal}, shutting down gracefully...`);

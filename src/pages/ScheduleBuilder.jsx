@@ -14,7 +14,6 @@ import { generateReportHtml } from '../utils/report';
 import { downloadBlob, createFileInput, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, fetchNwsForecastForDate } from '../utils/io';
 import { getGroupName } from '../utils/config';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule, getGpx } from '../api/client';
-import { getHealthUrl } from '../utils/url.js';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
@@ -76,14 +75,7 @@ export default function ScheduleBuilder() {
 
   useSchedulePolling({ setSchedule }, 5000);
 
-  useEffect(() => {
-    fetch(getHealthUrl())
-      .then(r => r.json())
-      .then(data => {
-        console.log('[ScheduleBuilder] Server health:', data.status, 'Build:', data.build?.full);
-      })
-      .catch(e => console.error('[ScheduleBuilder] Health check failed:', e));
-  }, []);
+
 
   // Save schedule to server (debounced 1s)
   const saveTimeoutRef = useRef(null);

@@ -384,6 +384,10 @@ export function serverVersion(): string {
   }
 }
 
-loadData().catch(err => {
+const _loadDataPromise = loadData().catch(err => {
   console.error('[DATA] Failed to load initial data:', err);
 });
+
+export async function waitForDataReady() {
+  await _loadDataPromise;
+}
