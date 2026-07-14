@@ -39,10 +39,62 @@ export function openGoogleMapsTrailhead(lat, lon) {
   window.open(url, '_blank');
 }
 
-// Open Open-Meteo weather forecast for a coordinate
+// Open NWS weather forecast page for a coordinate
 export function openWeatherUrl(lat, lon) {
   const url = `https://forecast.weather.gov/MapClick.php?lon=${lon}&lat=${lat}`;
   window.open(url, '_blank');
+}
+
+/**
+ * Fetch NWS forecast for a date from trailhead coordinates.
+ * Returns { temp, rain } or null.
+ *   temp  — high temperature in °F for the day period
+ *   rain  — probability of precipitation (0–100) for the day period
+ * Uses a module-level cache keyed by "lat,lon" so repeated calls for the
+ * same trailhead only hit the network once per session.
+ */
+const _nwsCache = new Map();
+
+export async function fetchNwsForecastForDate(lat, lon, targetDate) {
+  const cacheKey = `${lat},${lon}`;
+  let periods = _nwsCache.get(cacheKey);
+
+  if (!periods) {
+    try {
+      const ptRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
+        headers: { 'Accept': 'application/geo+json', 'User-Agent': 'Hiker-App' }
+      });
+      if (!ptRes.ok) return null;
+      const pt = await ptRes.json();
+      const gridId = pt.properties.gridId;
+      const gridX = pt.properties.gridX;
+      const gridY = pt.properties.gridY;
+      const fcRes = await fetch(
+        `https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}/forecast`,
+        { headers: { 'Accept': 'application/geo+json', 'User-Agent': 'Hiker-App' } }
+      );
+      if (!fcRes.ok) return null;
+      const fc = await fcRes.json();
+      periods = fc.properties.periods;
+      _nwsCache.set(cacheKey, periods);
+    } catch {
+      return null;
+    }
+  }
+
+  // Match the day period whose name contains the target day name
+  const dayName = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const dayPeriod = periods.find(p =>
+    p.name.includes(dayName) && p.isDaytime !== false
+  );
+  if (!dayPeriod) return null;
+
+  return {
+    temp: dayPeriod.temperature,
+    rain: dayPeriod.probabilityOfPrecipitation
+      ? dayPeriod.probabilityOfPrecipitation.value
+      : 0,
+  };
 }
 
 // Fetch GPX for a trail, extract first coordinate, and open weather forecast page

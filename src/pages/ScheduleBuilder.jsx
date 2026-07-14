@@ -742,21 +742,40 @@ const findTrailByHikeName = (hikeName, trailsList) => {
     window.open(url, '_blank');
   };
 
+  const nextHikeDate = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (now.getHours() >= 12) today.setDate(today.getDate() + 1);
+    const hikeDays = getHikeDays();
+    let earliest = null;
+    MONTH_NAMES.forEach((monthName, m) => {
+      const monthData = scheduleStore[monthName] || {};
+      Object.keys(monthData).forEach(dayStr => {
+        const day = parseInt(dayStr, 10);
+        const date = createDate(year, m, day);
+        if (date >= today && hikeDays.includes(date.getDay()) && (!earliest || date < earliest)) {
+          earliest = date;
+        }
+      });
+    });
+    return earliest;
+  }, [scheduleStore, year]);
+
   const hikeCards = useMemo(() => {
       return filteredHikes.reduce((cards, item) => {
         const trail = item.trail;
         if (!trail) return cards;
         cards.push(
          <div
-           key={`${trail.id}-${item.hikeIndex}`}
-           draggable
-            onDragStart={() => handleDragStart(item.hikeIndex, null, null, trail.id, false, '')}
-           onDragEnd={handleDragEnd}
-           className="cursor-grab active:cursor-grabbing"
-           title={tt('Drag to schedule on a date')}
-         >
-          <div className="relative">
-            <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} />
+            key={`${trail.id}-${item.hikeIndex}`}
+            draggable
+             onDragStart={() => handleDragStart(item.hikeIndex, null, null, trail.id, false, '')}
+            onDragEnd={handleDragEnd}
+            className="cursor-grab active:cursor-grabbing"
+            title={tt('Drag to schedule on a date')}
+          >
+           <div className="relative">
+             <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} nextHikeDate={nextHikeDate} />
             {debugMode && (
               <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                 {item.hikeIndex}
@@ -767,7 +786,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
       );
       return cards;
     }, []);
-  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt]);
+  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, nextHikeDate]);
 
   if (loading) {
     return <LoadingSpinner message="Loading trails..." />;

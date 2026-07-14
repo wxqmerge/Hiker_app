@@ -1,11 +1,29 @@
-import { Link } from 'react-router-dom';
+import { Link, useState, useEffect } from 'react';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getRideCost } from '../utils/report';
 import { getGpx } from '../api/client';
-import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openWeatherForTrail } from '../utils/io';
+import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openWeatherForTrail, fetchNwsForecastForDate } from '../utils/io';
 import GPXHelp from './GPXHelp';
 
 export default function NextHikeBanner({ nextHikes }) {
+  const [weatherMap, setWeatherMap] = useState({});
+
+  useEffect(() => {
+    if (!nextHikes || nextHikes.length === 0) return;
+    let cancelled = false;
+    const promises = nextHikes.map(async (hike, idx) => {
+      const gpx = await getGpx(hike.trailId).catch(() => null);
+      if (!gpx) return;
+      const coord = getFirstCoordinateFromGpx(gpx);
+      if (!coord) return;
+      const w = await fetchNwsForecastForDate(coord.lat, coord.lon, hike.date).catch(() => null);
+      if (w && !cancelled) {
+        setWeatherMap(prev => ({ ...prev, [idx]: w }));
+      }
+    });
+    Promise.allSettled(promises);
+    return () => { cancelled = true; };
+  }, [nextHikes]);
 
   if (!nextHikes || nextHikes.length === 0) return null;
 
@@ -14,6 +32,7 @@ export default function NextHikeBanner({ nextHikes }) {
       {nextHikes.map((hike, idx) => {
         const trail = hike.trail;
         const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
+        const weather = weatherMap[idx];
 
         const handleGpxDownload = async () => {
           const gpx = await getGpx(hike.trailId);
@@ -71,6 +90,14 @@ export default function NextHikeBanner({ nextHikes }) {
                         <>
                           <span className="text-green-300">•</span>
                           <span>Leader: <span className="font-medium text-white">{hike.leader}</span></span>
+                        </>
+                      )}
+                      {weather && (
+                        <>
+                          <span className="text-green-300">•</span>
+                          <span title={`${weather.temp}°F, ${weather.rain}% rain`} className={weather.rain >= 40 ? 'text-blue-200 font-medium' : ''}>
+                            {weather.temp}°F{weather.rain >= 1 && ` · ${weather.rain}%`}
+                          </span>
                         </>
                       )}
                     </div>
