@@ -27,7 +27,7 @@ import { useNextHike } from '../../hooks/useNextHike';
      vi.useRealTimers();
    });
  
-     it('finds the next 2 hike dates', () => {
+     it('finds the next 2 hikes', () => {
        // Set time to Tue Jan 6, 2026, 10:00 AM
        const date = new Date(2026, 0, 6, 10, 0);
        vi.setSystemTime(date);
