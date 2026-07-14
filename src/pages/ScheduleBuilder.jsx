@@ -11,7 +11,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
-import { downloadBlob, createFileInput, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
+import { downloadBlob, createFileInput, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, fetchNwsForecastForDate } from '../utils/io';
 import { getGroupName } from '../utils/config';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule, getGpx } from '../api/client';
 import { getHealthUrl } from '../utils/url.js';
@@ -141,6 +141,8 @@ export default function ScheduleBuilder() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [gpxDownloading, setGpxDownloading] = useState(null);
+  const [weatherMap, setWeatherMap] = useState({});
+  const [fetchingWeather, setFetchingWeather] = useState(false);
 
   const handleGpxDownload = useCallback(async (trailId, trailName) => {
     if (gpxDownloading) return;
@@ -320,6 +322,37 @@ export default function ScheduleBuilder() {
     } catch (err) {
       alert('Failed to reload: ' + err.message);
     }
+  };
+
+  const fetchWeatherForAll = async () => {
+    if (fetchingWeather) return;
+    setFetchingWeather(true);
+    setShowSettings(false);
+    const results = {};
+    let successCount = 0;
+    let failCount = 0;
+    for (const item of hikeTrailMap) {
+      const trail = item.trail;
+      if (!trail?.hasGpx) continue;
+      try {
+        const gpx = await getGpx(trail.id);
+        if (!gpx) { failCount++; continue; }
+        const coord = getFirstCoordinateFromGpx(gpx);
+        if (!coord) { failCount++; continue; }
+        const w = await fetchNwsForecastForDate(coord.lat, coord.lon, nextHikeDate);
+        if (w) {
+          results[trail.id] = w;
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+    setWeatherMap(results);
+    setFetchingWeather(false);
+    alert(`Weather fetched: ${successCount} success, ${failCount} failed/skipped`);
   };
 
   const verifyServerSchedule = async () => {
@@ -775,7 +808,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
             title={tt('Drag to schedule on a date')}
           >
            <div className="relative">
-             <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} nextHikeDate={nextHikeDate} />
+              <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} weather={weatherMap[trail.id]} />
             {debugMode && (
               <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                 {item.hikeIndex}
@@ -786,7 +819,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
       );
       return cards;
     }, []);
-  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, nextHikeDate]);
+  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, weatherMap]);
 
   if (loading) {
     return <LoadingSpinner message="Loading trails..." />;
@@ -819,8 +852,23 @@ const findTrailByHikeName = (hikeName, trailsList) => {
               </svg>
             </button>
             {showSettings && (
-               <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[160px] z-50">
-                <button
+                <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[160px] z-50">
+                 <button
+                    onClick={fetchWeatherForAll}
+                    disabled={fetchingWeather || !nextHikeDate}
+                    className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
+                      fetchingWeather || !nextHikeDate
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title={tt('Fetch NWS weather forecast for all unscheduled hikes')}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
+                    </svg>
+                    {fetchingWeather ? 'Fetching Weather…' : !nextHikeDate ? 'No Upcoming Hike Date' : 'Fetch Weather for All'}
+                  </button>
+                 <button
                     onClick={handleExport}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
                     title={tt('Export monthly hike descriptions as HTML in a new tab')}
