@@ -35,7 +35,7 @@ function AdminMenu({ hasApiKey, actions, tt }) {
         title={tt('Admin actions')}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.94 1.543-.826 3.31-2.37-2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
         Admin
@@ -46,7 +46,7 @@ function AdminMenu({ hasApiKey, actions, tt }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1 overflow-auto max-h-[80vh]">
+          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1 overflow-auto max-h-[80vh]">
             <div className="px-3 py-2 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Import Trails</p>
             </div>
@@ -58,57 +58,25 @@ function AdminMenu({ hasApiKey, actions, tt }) {
               Import Hike TSV
               {!hasApiKey && <span className="text-xs">locked</span>}
             </button>
-            <button onClick={() => { setOpen(false); actions.newTrail(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              New Trail
-            </button>
 
             <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Import/Export All</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Import All</p>
             </div>
-            <button onClick={() => { setOpen(false); actions.exportAllJson(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              Export All JSON
-            </button>
             <button onClick={() => { setOpen(false); actions.importAllJson(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
               Import All JSON
               {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-            <button onClick={() => { setOpen(false); actions.exportZip(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              Export ZIP
             </button>
             <button onClick={() => { setOpen(false); actions.importZip(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
               Import ZIP
               {!hasApiKey && <span className="text-xs">locked</span>}
             </button>
-            <button onClick={() => { setOpen(false); actions.exportGpxZip(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              Export GPX ZIP
-            </button>
 
             <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Schedule</p>
             </div>
-            <button onClick={() => { setOpen(false); actions.exportScheduleJson(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              Export Schedule JSON
-            </button>
             <button onClick={() => { setOpen(false); actions.importScheduleJson(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
               Import Schedule JSON
               {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-
-            <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Popularity Data</p>
-            </div>
-            <button onClick={() => { setOpen(false); actions.exportMonthlyTsv(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              Export Monthly Pop TSV
-            </button>
-            <button onClick={() => { setOpen(false); actions.importMonthlyTsv(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              Import Monthly Pop TSV
-            </button>
-
-            <div className="px-3 py-2 border-t border-gray-100 mt-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Database</p>
-            </div>
-            <button onClick={() => { setOpen(false); actions.validateDatabase(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              Validate Database
             </button>
           </div>
         </>
@@ -124,7 +92,7 @@ export default function TrailManager() {
   const [gpxFilter, setGpxFilter] = useState('all');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const [validationResults, setValidationResults] = useState(null);
-  const [, setValidating] = useState(false);
+  const [validating, setValidating] = useState(false);
   const getScheduleCount = (trailId) => {
     const trail = trails.find(t => t.id === trailId);
     if (!trail) return 0;
@@ -484,18 +452,10 @@ export default function TrailManager() {
   const adminActions = useMemo(() => ({
     importDatabase: handleImportDatabase,
     importHikeTsv: handleImportHikeTsv,
-    newTrail: handleNewTrail,
-    exportAllJson: exportAllDataJson,
     importAllJson: importAllDataJson,
-    exportZip: exportAllDataZip,
     importZip: importAllDataZip,
-    exportGpxZip,
-    exportScheduleJson,
     importScheduleJson,
-    exportMonthlyTsv,
-    importMonthlyTsv,
-    validateDatabase: handleValidateDatabase,
-  }), [handleImportDatabase, handleImportHikeTsv, handleNewTrail, exportAllDataJson, importAllDataJson, exportAllDataZip, importAllDataZip, exportGpxZip, exportScheduleJson, importScheduleJson, exportMonthlyTsv, importMonthlyTsv, handleValidateDatabase]);
+  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -511,6 +471,16 @@ export default function TrailManager() {
             <p className="text-gray-600 text-sm">
               {filteredTrails.length} of {trails.length} trails
             </p>
+            <div className="flex items-center gap-1 text-xs">
+              <button onClick={handleNewTrail} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Create a new trail')}>New Trail</button>
+              <button onClick={exportAllDataJson} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all trail data as JSON')}>Export JSON</button>
+              <button onClick={exportAllDataZip} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all data as ZIP')}>Export ZIP</button>
+              <button onClick={exportGpxZip} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all GPX files as ZIP')}>Export GPX ZIP</button>
+              <button onClick={exportScheduleJson} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export schedule as JSON')}>Export Schedule</button>
+              <button onClick={exportMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export monthly popularity as TSV')}>Export Monthly Pop</button>
+              <button onClick={importMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Import monthly popularity from TSV')}>Import Monthly Pop</button>
+              <button onClick={handleValidateDatabase} disabled={validating} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50" title={tt('Validate database JSON files')}>{validating ? 'Validating...' : 'Validate DB'}</button>
+            </div>
             <AdminMenu hasApiKey={hasApiKey} actions={adminActions} tt={tt} />
             <button
               onClick={() => navigate(-1)}
