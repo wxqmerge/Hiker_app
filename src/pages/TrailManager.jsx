@@ -471,16 +471,6 @@ export default function TrailManager() {
             <p className="text-gray-600 text-sm">
               {filteredTrails.length} of {trails.length} trails
             </p>
-            <div className="flex items-center gap-1 text-xs">
-              <button onClick={handleNewTrail} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Create a new trail')}>New Trail</button>
-              <button onClick={exportAllDataJson} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all trail data as JSON')}>Export JSON</button>
-              <button onClick={exportAllDataZip} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all data as ZIP')}>Export ZIP</button>
-              <button onClick={exportGpxZip} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all GPX files as ZIP')}>Export GPX ZIP</button>
-              <button onClick={exportScheduleJson} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export schedule as JSON')}>Export Schedule</button>
-              <button onClick={exportMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export monthly popularity as TSV')}>Export Monthly Pop</button>
-              <button onClick={importMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Import monthly popularity from TSV')}>Import Monthly Pop</button>
-              <button onClick={handleValidateDatabase} disabled={validating} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50" title={tt('Validate database JSON files')}>{validating ? 'Validating...' : 'Validate DB'}</button>
-            </div>
             <AdminMenu hasApiKey={hasApiKey} actions={adminActions} tt={tt} />
             <button
               onClick={() => navigate(-1)}
@@ -496,6 +486,16 @@ export default function TrailManager() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="w-full flex flex-wrap items-center gap-1 text-xs">
+            <button onClick={handleNewTrail} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Create a new trail')}>New Trail</button>
+            <button onClick={exportAllDataJson} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all trail data as JSON')}>Export JSON</button>
+            <button onClick={exportAllDataZip} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all data as ZIP')}>Export ZIP</button>
+            <button onClick={exportGpxZip} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all GPX files as ZIP')}>Export GPX ZIP</button>
+            <button onClick={exportScheduleJson} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export schedule as JSON')}>Export Schedule</button>
+            <button onClick={exportMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export monthly popularity as TSV')}>Export Monthly Pop</button>
+            <button onClick={importMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Import monthly popularity from TSV')}>Import Monthly Pop</button>
+            <button onClick={handleValidateDatabase} disabled={validating} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50" title={tt('Validate database JSON files')}>{validating ? 'Validating...' : 'Validate DB'}</button>
+          </div>
           <input
             type="text"
             placeholder="Search trails..."
