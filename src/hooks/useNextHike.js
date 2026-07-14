@@ -46,16 +46,50 @@ function findNextHikesInMonth(scheduleStore, trails, m, year) {
 /**
  * Compute the next upcoming hike(s) from schedule data.
  * Scans configured hike days chronologically starting from today.
+ * Returns hikes for up to `maxDays` upcoming hike dates (default 2).
  */
-export function useNextHike({ trails, schedule, year = 2026 }) {
+export function useNextHike({ trails, schedule, year = 2026, maxDays = 2 }) {
 
   const scheduleStore = useMemo(() => serverScheduleToStore(schedule), [schedule]);
 
   return useMemo(() => {
-    for (let m = 0; m < 12; m++) {
-      const result = findNextHikesInMonth(scheduleStore, trails, m, year);
-      if (result) return result;
+    let daysFound = 0;
+    const allHikes = [];
+    for (let m = 0; m < 12 && daysFound < maxDays; m++) {
+      const monthData = scheduleStore[MONTH_NAMES[m]] || {};
+      const daysInMonth = getDaysInMonth(year, m);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (now.getHours() >= 12) {
+        today.setDate(today.getDate() + 1);
+      }
+      const hikeDays = getHikeDays();
+      for (let day = 1; day <= daysInMonth && daysFound < maxDays; day++) {
+        const date = createDate(year, m, day);
+        const dow = date.getDay();
+        if (hikeDays.includes(dow) && date >= today) {
+          const entries = monthData[day] || [];
+          const entryList = Array.isArray(entries) ? entries : (entries ? [entries] : []);
+          const hikes = entryList.map(entry => {
+            const trail = findTrailByIdUtil(trails, entry.trail_id);
+            if (!trail) return null;
+            return {
+              day,
+              monthIndex: m,
+              date,
+              trail,
+              trailId: entry.trail_id,
+              leader: entry.leader || '',
+              earlyStart: !!entry.early_start,
+            };
+          }).filter(Boolean);
+          if (hikes.length > 0) {
+            allHikes.push(...hikes);
+            daysFound++;
+          }
+        }
+      }
     }
-    return null;
-  }, [scheduleStore, trails, year]);
+    return allHikes.length > 0 ? allHikes : null;
+  }, [scheduleStore, trails, year, maxDays]);
 }
