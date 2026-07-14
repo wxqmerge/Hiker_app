@@ -18,7 +18,7 @@ export default function TrailCard({ trail, isActive = false, selectedMonths, lea
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
   const { handleGpxDownload, handleTrailhead } = useGpxActions(trail, showToast);
-  const { weather } = useTrailWeather(trail?.id, nextHikeDate);
+  const { weather } = useTrailWeather(trail?.hasGpx ? trail.id : null, nextHikeDate);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
 
