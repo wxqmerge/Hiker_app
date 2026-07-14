@@ -107,9 +107,8 @@ function AdminMenu({ hasApiKey, actions, tt }) {
             <div className="px-3 py-2 border-t border-gray-100 mt-1">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Database</p>
             </div>
-            <button onClick={() => { setOpen(false); actions.validateDatabase(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
+            <button onClick={() => { setOpen(false); actions.validateDatabase(); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
               Validate Database
-              {!hasApiKey && <span className="text-xs">locked</span>}
             </button>
           </div>
         </>
@@ -141,20 +140,16 @@ export default function TrailManager() {
   const hasApiKey = apiKey.trim().length > 0;
 
   const handleValidateDatabase = useCallback(async () => {
-    if (!hasApiKey) {
-      alert('API key required for database validation.');
-      return;
-    }
     setValidating(true);
     try {
-      const res = await request('/api/validate', { apiKey: true });
+      const res = await request('/api/validate');
       setValidationResults(res);
     } catch (err) {
       setValidationResults({ valid: false, results: [{ file: '(request)', valid: false, error: err.message }] });
     } finally {
       setValidating(false);
     }
-  }, [hasApiKey]);
+  }, []);
 
   const handleSaveApiKey = () => {
     localStorage.setItem('hiker-api-key', apiKey);
