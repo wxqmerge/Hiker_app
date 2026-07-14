@@ -78,6 +78,14 @@ function AdminMenu({ hasApiKey, actions, tt }) {
               Import Schedule JSON
               {!hasApiKey && <span className="text-xs">locked</span>}
             </button>
+
+            <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Popularity Data</p>
+            </div>
+            <button onClick={() => { setOpen(false); actions.importMonthlyTsv(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
+              Import Monthly Pop TSV
+              {!hasApiKey && <span className="text-xs">locked</span>}
+            </button>
           </div>
         </>
       )}
@@ -269,6 +277,10 @@ export default function TrailManager() {
   }, [trails, trailDetails]);
 
   const importMonthlyTsv = useCallback(() => {
+    if (!hasApiKey) {
+      alert('API key required for monthly popularity import.');
+      return;
+    }
     createFileInput({
       accept: '.tsv,.txt,.csv',
       onFile: async (file) => {
@@ -305,7 +317,7 @@ export default function TrailManager() {
         alert(`Updated monthly popularity for ${updated} trail(s).`);
       },
     });
-  }, [trails, trailDetails, saveTrailDetail]);
+  }, [hasApiKey, trails, trailDetails, saveTrailDetail]);
 
   const exportScheduleJson = useCallback(async () => {
     try {
@@ -455,7 +467,8 @@ export default function TrailManager() {
     importAllJson: importAllDataJson,
     importZip: importAllDataZip,
     importScheduleJson,
-  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson]);
+    importMonthlyTsv,
+  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -493,7 +506,6 @@ export default function TrailManager() {
             <button onClick={exportGpxZip} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export all GPX files as ZIP')}>Export GPX ZIP</button>
             <button onClick={exportScheduleJson} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export schedule as JSON')}>Export Schedule</button>
             <button onClick={exportMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export monthly popularity as TSV')}>Export Monthly Pop</button>
-            <button onClick={importMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Import monthly popularity from TSV')}>Import Monthly Pop</button>
             <button onClick={handleValidateDatabase} disabled={validating} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50" title={tt('Validate database JSON files')}>{validating ? 'Validating...' : 'Validate DB'}</button>
           </div>
           <input
