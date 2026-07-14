@@ -5,6 +5,7 @@ param (
 
 $sourceFile = ".env_$Group"
 $targetFile = ".env"
+$serverTargetFile = "server\.env"
 
 if (-not (Test-Path -LiteralPath $sourceFile)) {
     Write-Error "Source file $sourceFile not found. Please create it first."
@@ -13,8 +14,9 @@ if (-not (Test-Path -LiteralPath $sourceFile)) {
 
 try {
     Copy-Item -LiteralPath $sourceFile -Destination $targetFile -Force
-    Write-Host "Successfully switched to $Group configuration ($sourceFile -> $targetFile)" -ForegroundColor Green
+    Copy-Item -LiteralPath $sourceFile -Destination $serverTargetFile -Force
+    Write-Host "Successfully switched to $Group configuration ($sourceFile -> $targetFile, $serverTargetFile)" -ForegroundColor Green
 } catch {
-    Write-Error ("Failed to copy {0} to {1}: {2}" -f $sourceFile, $targetFile, $_.Exception.Message)
+    Write-Error ("Failed to copy {0}: {1}" -f $sourceFile, $_.Exception.Message)
     exit 1
 }

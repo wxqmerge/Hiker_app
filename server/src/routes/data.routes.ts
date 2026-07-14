@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import AdmZip from 'adm-zip';
 import multer from 'multer';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
-import { loadData } from '../services/dataService.js';
+import { loadData, getScheduleFile } from '../services/dataService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,7 +18,7 @@ await fs.mkdir(TMP_DIR, { recursive: true });
 const router = Router();
 const upload = multer({ dest: TMP_DIR, limits: { fileSize: 200 * 1024 * 1024 } });
 
-const JSON_FILES = ['trails.json', 'trail_details.json', 'lookup.json', 'schedule.json', 'gpx_index.json'];
+const JSON_FILES = ['trails.json', 'trail_details.json', 'lookup.json', getScheduleFile(), 'gpx_index.json'];
 
 async function collectFiles(): Promise<Map<string, Buffer>> {
   const files = new Map();
