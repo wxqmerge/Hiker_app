@@ -62,3 +62,4 @@ exported_data
 # Temp upload directory
 tmp/
 /*.bat
+deploy/*.bat
