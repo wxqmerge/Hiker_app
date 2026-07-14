@@ -1,4 +1,5 @@
-import { Link, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getRideCost } from '../utils/report';
 import { getGpx } from '../api/client';
