@@ -169,14 +169,10 @@ export default function ScheduleBuilder() {
 
   const hikeTrailMap = useMemo(() => {
     const scheduleIds = Object.values(assignedHikes).flat().map(v => v?.trail_id).filter(Boolean);
+    const scheduledSet = new Set(scheduleIds.map(id => id.toLowerCase()));
     const result = [];
     trails.forEach((t, idx) => {
-      let isScheduled = false;
-      for (const sid of scheduleIds) {
-        if (sid === t.id) { isScheduled = true; break; }
-        if (sid.toLowerCase() === t.id.toLowerCase()) { isScheduled = true; break; }
-      }
-      if (isScheduled) return;
+      if (scheduledSet.has(t.id.toLowerCase())) return;
       result.push({ hike: t.fullName || t.name, trail: t, hikeIndex: idx + 1, trailId: t.id });
     });
     if (debugMode) {
@@ -331,24 +327,28 @@ export default function ScheduleBuilder() {
     const results = {};
     let successCount = 0;
     let failCount = 0;
-    for (const item of hikeTrailMap) {
-      const trail = item.trail;
-      if (!trail?.hasGpx) continue;
-      try {
-        const gpx = await getGpx(trail.id);
-        if (!gpx) { failCount++; continue; }
-        const coord = getFirstCoordinateFromGpx(gpx);
-        if (!coord) { failCount++; continue; }
-        const w = await fetchNwsForecastForDate(coord.lat, coord.lon, nextHikeDate);
-        if (w) {
-          results[trail.id] = w;
-          successCount++;
-        } else {
+    const concurrency = 5;
+    const items = hikeTrailMap.filter(item => item.trail?.hasGpx);
+    for (let i = 0; i < items.length; i += concurrency) {
+      const batch = items.slice(i, i + concurrency);
+      await Promise.allSettled(batch.map(async (item) => {
+        const trail = item.trail;
+        try {
+          const gpx = await getGpx(trail.id);
+          if (!gpx) { failCount++; return; }
+          const coord = getFirstCoordinateFromGpx(gpx);
+          if (!coord) { failCount++; return; }
+          const w = await fetchNwsForecastForDate(coord.lat, coord.lon, nextHikeDate);
+          if (w) {
+            results[trail.id] = w;
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch {
           failCount++;
         }
-      } catch {
-        failCount++;
-      }
+      }));
     }
     setWeatherMap(results);
     setFetchingWeather(false);
@@ -533,6 +533,17 @@ export default function ScheduleBuilder() {
             }
             console.log('[TSV Import] Column groups:', columnGroups);
 
+            // Pre-build normalized trail lookup for O(1) matching
+            const trailLookup = new Map();
+            const trailIdLookup = new Map();
+            const stopWords = new Set(['to', 'from', 'via', 'the', 'of', 'and', 'at', 'on', 'in', 'up', 'down', 'off', 'by', 'for', 'with']);
+            for (const trail of trails) {
+              const fullName = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+              trailLookup.set(fullName, trail);
+              const idSlug = trail.id.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+              trailIdLookup.set(idSlug, trail);
+            }
+
             const schedule = {};
             let unmatchedCount = 0;
             let matchedCount = 0;
@@ -555,7 +566,24 @@ export default function ScheduleBuilder() {
 
                 if (!isNaN(dayNum) && hikeName && currentMonth) {
                   if (!schedule[currentMonth]) schedule[currentMonth] = [];
-                  const trail = findTrailByHikeName(hikeName, trails);
+                  // Fast match using pre-built lookup
+                  const hikeNorm = hikeName.replace(/\s*\(?Early Start\)?\s*/gi, '').trim().toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+                  let trail = trailLookup.get(hikeNorm) || trailIdLookup.get(hikeNorm.replace(/[^a-z0-9\s]/g, ' ').trim());
+                  // Fallback: word-level matching
+                  if (!trail) {
+                    const hikeWords = hikeNorm.replace(/\//g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+                    let bestMatch = null, bestScore = 0;
+                    for (const [key, t] of trailLookup) {
+                      const trailWords = key.replace(/\//g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+                      const matchCount = hikeWords.filter(hw => trailWords.some(tw => tw.includes(hw) || hw.includes(tw))).length;
+                      const score = matchCount / hikeWords.length;
+                      if (score > bestScore && score >= 0.6) {
+                        bestScore = score;
+                        bestMatch = t;
+                      }
+                    }
+                    trail = bestMatch;
+                  }
                   if (trail) {
                     const hasEarlyStart = /\(early start\)/i.test(hikeName);
                     const hikeDate = createDate(year, MONTH_NAMES.indexOf(currentMonth), dayNum);
@@ -595,52 +623,7 @@ export default function ScheduleBuilder() {
         },
         onCleanup: () => setShowSettings(false),
       });
-    };
-
-const findTrailByHikeName = (hikeName, trailsList) => {
-        if (!hikeName || !trailsList?.length) return null;
-        const withoutEarlyStart = hikeName.replace(/\s*\(?Early Start\)?\s*/gi, '').trim();
-        const normalized = withoutEarlyStart.toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
-        console.log('[TSV Import] Trying to match:', hikeName, '→ normalized:', normalized);
-        for (const trail of trailsList) {
-          const trailFullName = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
-          if (trailFullName === normalized) {
-            console.log('[TSV Import] Exact match →', trail.fullName || trail.name);
-            return trail;
-          }
-          const trailIdSlug = trail.id.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
-          const hikeWords = normalized.split(/\s+/).filter(w => w.length > 2);
-          if (hikeWords.length === 0) continue;
-          const trailIdWords = trailIdSlug.split(/\s+/).filter(w => w.length > 2);
-          if (trailIdWords.length === 0) continue;
-          const matchCount = hikeWords.filter(hw => trailIdWords.some(tw => tw.includes(hw) || hw.includes(tw))).length;
-          if (matchCount / hikeWords.length >= 0.8) {
-            console.log('[TSV Import] ID match →', trail.fullName || trail.name);
-            return trail;
-          }
-        }
-        const stopWords = new Set(['to','from','via','the','of','and','at','on','in','up','down','off','by','for','with']);
-        const hikeSignificant = normalized.replace(/\//g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
-        if (hikeSignificant.length === 0) return null;
-        let bestMatch = null;
-        let bestScore = 0;
-        for (const trail of trailsList) {
-          const trailName = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\//g, ' ').split(/\s+/);
-          const trailSignificant = trailName.filter(w => w.length > 2 && !stopWords.has(w));
-          const matchCount = hikeSignificant.filter(hw => trailSignificant.some(tw => tw.includes(hw) || hw.includes(tw))).length;
-          const score = matchCount / hikeSignificant.length;
-          if (score > bestScore && score >= 0.6) {
-            bestScore = score;
-            bestMatch = trail;
-          }
-        }
-        if (bestMatch) {
-          console.log('[TSV Import] Partial match →', bestMatch.fullName || bestMatch.name, '(score:', bestScore.toFixed(2), ')');
-        } else {
-          console.log('[TSV Import] No match found for:', hikeName);
-        }
-        return bestMatch;
-      };
+     };
 
   const getQuarterForMonth = (monthIndex) => {
     // Calendar quarters: Q1=Jan/Feb/Mar, Q2=Apr/May/Jun, Q3=Jul/Aug/Sep, Q4=Oct/Nov/Dec
@@ -817,7 +800,7 @@ const findTrailByHikeName = (hikeName, trailsList) => {
     return earliest;
   }, [scheduleStore, year]);
 
-  const hikeCards = useMemo(() => {
+   const hikeCards = useMemo(() => {
       return filteredHikes.reduce((cards, item) => {
         const trail = item.trail;
         if (!trail) return cards;

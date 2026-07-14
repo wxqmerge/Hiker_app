@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import { createHash } from 'crypto';
 import {
   getTrails,
   getTrailById,
@@ -28,12 +29,18 @@ const gpxUpload = multer({ dest: GPX_UPLOAD_DIR, limits: { fileSize: 5 * 1024 * 
 
 const router = Router();
 
-router.get('/', (_req, res) => {
-  res.json({ trails: getTrails() });
+router.get('/', (req, res) => {
+  const data = { trails: getTrails() };
+  const etag = `"${createHash('md5').update(JSON.stringify(data)).digest('hex').substring(0, 16)}"`;
+  if (req.headers['if-none-match'] === etag) return res.status(304).end();
+  res.set('ETag', etag).set('Cache-Control', 'public, max-age=300').json(data);
 });
 
-router.get('/details', (_req, res) => {
-  res.json(getTrailDetails());
+router.get('/details', (req, res) => {
+  const data = getTrailDetails();
+  const etag = `"${createHash('md5').update(JSON.stringify(data)).digest('hex').substring(0, 16)}"`;
+  if (req.headers['if-none-match'] === etag) return res.status(304).end();
+  res.set('ETag', etag).set('Cache-Control', 'public, max-age=300').json(data);
 });
  
 router.put('/details/:id', requireAdminKey, async (req, res) => {

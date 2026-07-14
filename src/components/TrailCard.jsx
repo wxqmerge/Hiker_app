@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { useGpxActions } from '../hooks/useGpxActions';
@@ -12,7 +12,7 @@ import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 import { openWeatherForTrail } from '../utils/io';
 import { getGpx } from '../api/client';
 
-export default function TrailCard({ trail, isActive = false, selectedMonths, leader, weather }) {
+const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather }) {
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
@@ -289,4 +289,6 @@ export default function TrailCard({ trail, isActive = false, selectedMonths, lea
       </div>
     </div>
   );
-}
+});
+
+export default TrailCard;

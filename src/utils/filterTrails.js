@@ -24,11 +24,13 @@ function getTrailMonthlyScore(trail, trailDetails, idx) {
 
 // Core filter logic shared by browse and schedule modes
 export function filterTrails(items, filters, trailDetails) {
+  const searchLower = filters.search?.trim()
+    ? filters.search.toLowerCase().replace(/[^a-z0-9]/g, '')
+    : null;
   return items.filter(item => {
     const t = item.trail || item;
 
-    if (filters.search?.trim()) {
-      const searchLower = filters.search.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (searchLower) {
       const searchText = [
         t.name,
         t.fullName,
@@ -38,7 +40,7 @@ export function filterTrails(items, filters, trailDetails) {
           .filter(([, v]) => typeof v === 'number' && v > 0)
           .map(([k]) => k.toLowerCase())
       ].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]/g, '');
-      
+
       if (!searchText.includes(searchLower)) return false;
     }
 
@@ -101,11 +103,9 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
       const t = item.trail || item;
       const seasonal = t.seasonal || {};
       let details = null;
-      // Try to get details from trailDetails
       if (trailDetails) {
         const rawId = t.id || t.trail?.id;
         if (rawId) {
-          // Try exact match first, then fallback: "360-rd" -> "360"
           details = trailDetails[rawId];
           if (!details) {
             const segments = rawId.split('-');
@@ -116,7 +116,6 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
           }
         }
       }
-      // Always calculate from monthly array (don't use cached monthlyScore which may be stale)
       const monthly = details?.popularity?.monthly || t.monthly || null;
       if (monthly) {
         const { hasQuarterData } = getSeasonalInfo(seasonal);
@@ -127,12 +126,10 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
           return sum + calculateMonthlyScore(hikeCount, idx, [], hasQuarterData);
         }, 0);
       }
-      // Standard { Jan: 3, Feb: 2, ... } format
       const keyed = filters.months.length === 0
         ? MONTH_ABBR.reduce((sum, m) => sum + (seasonal[m] || 0), 0)
         : selectedMonthNames.reduce((sum, m) => sum + (seasonal[m] || 0), 0);
       if (keyed > 0) return keyed;
-      // { availableMonths: [1, 2, 3] } format
       if (Array.isArray(seasonal.availableMonths)) {
         return filters.months.length === 0
           ? MONTH_ABBR.reduce((sum, _, i) => sum + (seasonal.availableMonths.includes(i + 1) ? 1 : 0), 0)
@@ -140,7 +137,10 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
       }
       return 0;
     };
-    sorted.sort((a, b) => getPopularityScore(b) - getPopularityScore(a));
+    const scored = sorted.map(item => ({ item, score: getPopularityScore(item) }));
+    scored.sort((a, b) => b.score - a.score);
+    sorted.length = 0;
+    scored.forEach(s => sorted.push(s.item));
   } else if (filters.sortBy === 'elevation-up') {
     sorted.sort((a, b) => ((a.trail || a).elevationStart || 0) - ((b.trail || b).elevationStart || 0));
   } else if (filters.sortBy === 'elevation-down') {

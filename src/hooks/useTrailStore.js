@@ -9,8 +9,8 @@ let _schedule = null;
 let _scheduleVersion = null;
 let _subscribers = [];
 
-function notifySubscribers() {
-  _subscribers.forEach(fn => fn());
+function notifySubscribers(changed) {
+  _subscribers.forEach(fn => fn(changed));
 }
 
 function setState(trails, details, loading, lookup, schedule) {
@@ -19,12 +19,22 @@ function setState(trails, details, loading, lookup, schedule) {
   _loading = loading;
   _lookup = lookup;
   _schedule = schedule;
-  notifySubscribers();
+  notifySubscribers('all');
 }
 
 export function setSchedule(schedule) {
   _schedule = schedule;
-  notifySubscribers();
+  notifySubscribers('schedule');
+}
+
+function setTrails(trails) {
+  _trails = trails;
+  notifySubscribers('trails');
+}
+
+function setTrailDetails(details) {
+  _trailDetails = details;
+  notifySubscribers('details');
 }
 
 async function initSharedState() {
@@ -67,13 +77,19 @@ export function useTrailStore() {
   }));
 
   const subscribe = useCallback(() => {
-    const sub = () => {
-      if (mountedRef.current) setStateLocal({
-        trails: _trails,
-        trailDetails: _trailDetails,
-        loading: _loading,
-        lookup: _lookup,
-        schedule: _schedule,
+    const sub = (changed) => {
+      if (mountedRef.current) setStateLocal(prev => {
+        if (changed === 'schedule' && prev.schedule === _schedule) return prev;
+        if (changed === 'trails' && prev.trails === _trails) return prev;
+        if (changed === 'details' && prev.trailDetails === _trailDetails) return prev;
+        if (changed === 'all' && prev.trails === _trails && prev.trailDetails === _trailDetails && prev.lookup === _lookup && prev.schedule === _schedule) return prev;
+        return {
+          trails: _trails,
+          trailDetails: _trailDetails,
+          loading: _loading,
+          lookup: _lookup,
+          schedule: _schedule,
+        };
       });
     };
     _subscribers.push(sub);
@@ -97,7 +113,7 @@ export function useTrailStore() {
       } else {
         newTrails = [..._trails, trail].sort((a, b) => (a.fullName || a.name || '').localeCompare(b.fullName || b.name || ''));
       }
-      setState(newTrails, _trailDetails, false, _lookup, _schedule);
+      setTrails(newTrails);
       return trail;
     } catch (error) {
       console.error('[useTrailStore] saveTrail error:', error);
@@ -110,7 +126,7 @@ export function useTrailStore() {
       const existing = _trailDetails[trailId] || {};
       await api.updateTrailDetail(trailId, { ...existing, ...detail });
       const newDetails = { ..._trailDetails, [trailId]: { ...existing, ...detail } };
-      setState([..._trails], newDetails, false, _lookup, _schedule);
+      setTrailDetails(newDetails);
     } catch (error) {
       console.error('[useTrailStore] saveTrailDetail error:', error);
       throw error;
@@ -123,7 +139,9 @@ export function useTrailStore() {
       const newTrails = _trails.filter(t => t.id !== trailId);
       const newDetails = { ..._trailDetails };
       delete newDetails[trailId];
-      setState(newTrails, newDetails, false, _lookup, _schedule);
+      _trails = newTrails;
+      _trailDetails = newDetails;
+      notifySubscribers('trails');
     } catch (error) {
       console.error('[useTrailStore] deleteTrail error:', error);
       throw error;
