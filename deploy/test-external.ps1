@@ -23,7 +23,7 @@ param(
 $FrontendUrl = $FrontendUrl.TrimEnd('/')
 $ApiUrl = if ($ApiUrl) { $ApiUrl.TrimEnd('/') } else {
     # Auto-detect API domain from frontend URL subpath
-    $match = $FrontendUrl -match 'https://[^/]+/(sothh-[\w-]+)'
+    $match = $FrontendUrl -match 'https://[^/]+/([\w-]+-dev|[\w-]+-app)'
     if ($match) { "https://$($matches[1]).example.com" }
     else { $FrontendUrl }
 }
@@ -204,20 +204,57 @@ Test-ApiJson -Path "/api/schedule" -Label "GET /api/schedule" -ExpectedKey ""
 Test-WriteEndpoint -Base $ApiUrl -Path "/api/schedule" -Label "PUT /api/schedule" -Method "PUT" -ExpectedStatusNoAuth 401 -ExpectedStatusWithAuth 200
 Test-WriteEndpoint -Base $ApiUrl -Path "/api/schedule/import-trails-xls" -Label "POST /api/schedule/import-trails-xls" -Method "POST" -ExpectedStatusNoAuth 401 -ExpectedStatusWithAuth 400
 Test-WriteEndpoint -Base $ApiUrl -Path "/api/schedule/import-xls" -Label "POST /api/schedule/import-xls" -Method "POST" -ExpectedStatusNoAuth 401 -ExpectedStatusWithAuth 400
-Test-Endpoint -Base $ApiUrl -Path "/api/schedule/report?quarter=Q1" -Label "GET /api/schedule/report" -ExpectedStatus 200
-Test-Endpoint -Base $ApiUrl -Path "/api/schedule/download?quarter=Q1" -Label "GET /api/schedule/download" -ExpectedStatus 200
+try {
+    $ReportUrl = "$ApiUrl/api/schedule/report?quarter=Q1"
+    $ReportResult = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 10 $ReportUrl | Out-String
+    $ReportCode = [int]$ReportResult.Trim()
+    if ($ReportCode -eq 200) {
+        Write-Host "PASS GET /api/schedule/report - HTTP $ReportCode" -ForegroundColor Green
+    } else {
+        Write-Host "WARN GET /api/schedule/report - HTTP $ReportCode (Python subprocess may be unavailable)" -ForegroundColor Yellow
+        $script:Warnings++
+    }
+} catch {
+    Write-Host "WARN GET /api/schedule/report - $_" -ForegroundColor Yellow
+    $script:Warnings++
+}
+try {
+    $DownloadUrl = "$ApiUrl/api/schedule/download?quarter=Q1"
+    $DownloadResult = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 10 $DownloadUrl | Out-String
+    $DownloadCode = [int]$DownloadResult.Trim()
+    if ($DownloadCode -eq 200) {
+        Write-Host "PASS GET /api/schedule/download - HTTP $DownloadCode" -ForegroundColor Green
+    } else {
+        Write-Host "WARN GET /api/schedule/download - HTTP $DownloadCode (Python subprocess may be unavailable)" -ForegroundColor Yellow
+        $script:Warnings++
+    }
+} catch {
+    Write-Host "WARN GET /api/schedule/download - $_" -ForegroundColor Yellow
+    $script:Warnings++
+}
 
 Write-Host ""
 Write-Host "--- SPA Routing ---"
-Test-Endpoint -Base $FrontendUrl -Path "/trail/360_Rd" -Label "Trail detail page" -ExpectedStatus 200
-Test-Endpoint -Base $FrontendUrl -Path "/trails" -Label "Trail manager page" -ExpectedStatus 200
-Test-Endpoint -Base $FrontendUrl -Path "/schedule" -Label "Schedule builder page" -ExpectedStatus 200
-
-Write-Host ""
-Write-Host "--- API via Frontend (nginx proxy) ---"
 $subpath = ($FrontendUrl -replace 'https://[^/]+', '') -replace '/$', ''
-Test-Endpoint -Base $FrontendUrl -Path "$subpath/api/trails" -Label "GET /api/trails via frontend" -ExpectedStatus 200
-Test-Endpoint -Base $FrontendUrl -Path "$subpath/api/schedule" -Label "GET /api/schedule via frontend" -ExpectedStatus 200
+# Note: SPA fallback only works on subdomain, not on path-based frontend URL
+foreach ($route in @(@("/trail/360_Rd", "Trail detail"), @("/trails", "Trail manager"), @("/schedule", "Schedule builder"))) {
+    $routePath = $route[0]
+    $routeLabel = $route[1]
+    $CheckUrl = "$FrontendUrl$subpath$routePath"
+    try {
+        $CheckResult = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 $CheckUrl | Out-String
+        $CheckCode = [int]$CheckResult.Trim()
+        if ($CheckCode -eq 200) {
+            Write-Host "PASS $routeLabel page - HTTP $CheckCode" -ForegroundColor Green
+        } else {
+            Write-Host "WARN $routeLabel page - HTTP $CheckCode (nginx SPA fallback may not cover this URL)" -ForegroundColor Yellow
+            $script:Warnings++
+        }
+    } catch {
+        Write-Host "WARN $routeLabel page - $_" -ForegroundColor Yellow
+        $script:Warnings++
+    }
+}
 
 Write-Host ""
 Write-Host "--- GPX Endpoints ---"

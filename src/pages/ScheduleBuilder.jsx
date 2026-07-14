@@ -501,67 +501,73 @@ export default function ScheduleBuilder() {
               return;
             }
 
+            // Validate group name from title row
+            const titleRow = lines[0]?.slice().join('').trim() || '';
+            const fileGroupMatch = titleRow.match(/\(([^)]+)\)$/);
+            const fileGroup = fileGroupMatch ? fileGroupMatch[1] : null;
+            const currentGroup = getGroupName() || 'hiker';
+            if (fileGroup && fileGroup !== currentGroup) {
+              alert(`This schedule is for "${fileGroup}" but you're running "${currentGroup}". Import cancelled.`);
+              return;
+            }
+
+            // Parse header row to find column groups (each: DayName, Hike, Leader/Shadow, spacer)
+            // Old format: Month|Wed|Hike|Leader||Month|Fri|Hike|Leader
+            // New format: Month|Mon A|Hike|Leader||Mon B|Hike|Leader|
+            const headerRow = lines[headerIdx];
+            const columnGroups = [];
+            for (let c = 1; c < headerRow.length - 2; c += 4) {
+              let dayLabel = headerRow[c]?.trim();
+              let dayCol = c;
+              let hikeCol = c + 1;
+              // Old format: column at position c is "Month", actual day label is at c+1
+              if (dayLabel === 'Month') {
+                dayLabel = headerRow[c + 1]?.trim();
+                dayCol = c + 1;
+                hikeCol = c + 2;
+              }
+              const hikeHeader = headerRow[hikeCol]?.trim();
+              if (dayLabel && hikeHeader === 'Hike') {
+                columnGroups.push({ dayLabel, dayCol, hikeCol, leaderCol: hikeCol + 1 });
+              }
+            }
+            console.log('[TSV Import] Column groups:', columnGroups);
+
             const schedule = {};
-             let unmatchedCount = 0;
-             let matchedCount = 0;
-             let currentMonth = '';
+            let unmatchedCount = 0;
+            let matchedCount = 0;
+            let currentMonth = '';
 
             for (let i = headerIdx + 1; i < lines.length; i++) {
-               const row = lines[i];
-               console.log('[TSV Import] Row', i, 'length:', row.length, 'data:', row.slice(0, 10));
-               if (row.length < 5) continue;
+              const row = lines[i];
+              if (row.length < 3) continue;
 
-               const rawWedMonth = row[0]?.trim();
-               const wedDay = parseInt(row[1], 10);
-               const wedHike = row[2]?.trim();
-               const wedLeader = row[3]?.trim();
+              const rawMonth = row[0]?.trim();
+              if (rawMonth) {
+                const m = MONTH_ABBR_TO_FULL[rawMonth] || MONTH_NAMES.find(n => n.toLowerCase().startsWith(rawMonth.toLowerCase()));
+                if (m) currentMonth = m;
+              }
 
-              if (rawWedMonth) {
-                  const wm = MONTH_ABBR_TO_FULL[rawWedMonth] || MONTH_NAMES.find(n => n.toLowerCase().startsWith(rawWedMonth.toLowerCase()));
-                  if (wm) currentMonth = wm;
-                }
+              for (const cg of columnGroups) {
+                const dayNum = parseInt(row[cg.dayCol], 10);
+                const hikeName = row[cg.hikeCol]?.trim();
+                const leader = row[cg.leaderCol]?.trim();
 
-               if (!isNaN(wedDay) && wedHike && currentMonth) {
-                   if (!schedule[currentMonth]) schedule[currentMonth] = [];
-                   const trail = findTrailByHikeName(wedHike, trails);
-                   if (trail) {
-                     const hasEarlyStart = /\(early start\)/i.test(wedHike);
-                     const wedDate = createDate(year, MONTH_NAMES.indexOf(currentMonth), wedDay);
-                     const wedSlot = getHikeDays().indexOf(wedDate.getDay()) ?? 0;
-                     schedule[currentMonth].push({ day: wedDay, slot: wedSlot, trail_id: trail.id, leader: wedLeader || '', early_start: hasEarlyStart });
-                     matchedCount++;
-                   } else {
-                     console.log('[TSV Import] Unmatched Wed:', wedHike);
-                     unmatchedCount++;
-                   }
-                 }
-
-               if (row.length >= 9) {
-                 const rawFriMonth = row[5]?.trim();
-                 const friDay = parseInt(row[6], 10);
-                 const friHike = row[7]?.trim();
-                 const friLeader = row[8]?.trim();
-
-                 if (rawFriMonth) {
-                    const fm = MONTH_ABBR_TO_FULL[rawFriMonth] || MONTH_NAMES.find(n => n.toLowerCase().startsWith(rawFriMonth.toLowerCase()));
-                    if (fm) currentMonth = fm;
+                if (!isNaN(dayNum) && hikeName && currentMonth) {
+                  if (!schedule[currentMonth]) schedule[currentMonth] = [];
+                  const trail = findTrailByHikeName(hikeName, trails);
+                  if (trail) {
+                    const hasEarlyStart = /\(early start\)/i.test(hikeName);
+                    const hikeDate = createDate(year, MONTH_NAMES.indexOf(currentMonth), dayNum);
+                    const slot = getHikeDays().indexOf(hikeDate.getDay()) ?? 0;
+                    schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: hasEarlyStart });
+                    matchedCount++;
+                  } else {
+                    console.log('[TSV Import] Unmatched:', hikeName);
+                    unmatchedCount++;
                   }
-
-                 if (!isNaN(friDay) && friHike && currentMonth) {
-                     if (!schedule[currentMonth]) schedule[currentMonth] = [];
-                     const trail = findTrailByHikeName(friHike, trails);
-                     if (trail) {
-                       const hasEarlyStart = /\(early start\)/i.test(friHike);
-                       const friDate = createDate(year, MONTH_NAMES.indexOf(currentMonth), friDay);
-                       const friSlot = getHikeDays().indexOf(friDate.getDay()) ?? 0;
-                       schedule[currentMonth].push({ day: friDay, slot: friSlot, trail_id: trail.id, leader: friLeader || '', early_start: hasEarlyStart });
-                       matchedCount++;
-                     } else {
-                       console.log('[TSV Import] Unmatched Fri:', friHike);
-                       unmatchedCount++;
-                     }
-                   }
-               }
+                }
+              }
             }
 
             console.log('[TSV Import] Matched:', matchedCount, 'Unmatched:', unmatchedCount, 'Schedule:', JSON.stringify(schedule).substring(0, 200));
@@ -583,13 +589,13 @@ export default function ScheduleBuilder() {
              msg += `\n${unmatchedCount} hike(s) could not be matched to a trail.`;
            }
            alert(msg);
-         } catch (err) {
-           alert('Import error: ' + err.message);
-         }
-       },
-       onCleanup: () => setShowSettings(false),
-     });
-   };
+          } catch (err) {
+            alert('Import error: ' + err.message);
+          }
+        },
+        onCleanup: () => setShowSettings(false),
+      });
+    };
 
 const findTrailByHikeName = (hikeName, trailsList) => {
         if (!hikeName || !trailsList?.length) return null;
@@ -647,10 +653,18 @@ const findTrailByHikeName = (hikeName, trailsList) => {
   const exportExcelSchedule = () => {
     const quarter = getQuarterForMonth(selectedMonth);
     const qYear = year;
+    const hikeDays = getHikeDays();
+    const uniqueDays = [...new Set(hikeDays)].sort((a, b) => a - b);
+    const dayCounts = {};
+    hikeDays.forEach(d => dayCounts[d] = (dayCounts[d] || 0) + 1);
 
-    // Collect all Wed and Fri hikes for the quarter
-    const wedHikes = [];
-    const friHikes = [];
+    // Collect hikes by day of week and slot
+    const hikesByDay = {};
+    for (const dow of uniqueDays) {
+      for (let slot = 0; slot < (dayCounts[dow] || 1); slot++) {
+        hikesByDay[`${dow}-${slot}`] = [];
+      }
+    }
 
     for (const monthAbbr of quarter.months) {
       const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthAbbr);
@@ -662,84 +676,93 @@ const findTrailByHikeName = (hikeName, trailsList) => {
         const date = new Date(qYear, monthIndex, day);
         const dayOfWeek = date.getDay();
         const entries = Array.isArray(monthData[String(day)]) ? monthData[String(day)] : [monthData[String(day)]].filter(Boolean);
-        for (const entry of entries) {
-          if (!entry || !entry.trail_id) continue;
+        entries.forEach((entry, slot) => {
+          if (!entry || !entry.trail_id) return;
 
           const trail = findTrailById(entry.trail_id);
           let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
           if (entry.early_start) trailName += ' (Early Start)';
 
-          if (dayOfWeek === 3) {
-            wedHikes.push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
-          } else if (dayOfWeek === 5) {
-            friHikes.push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
+          const key = `${dayOfWeek}-${slot}`;
+          if (hikesByDay[key]) {
+            hikesByDay[key].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
           }
-        }
+        });
       }
     }
 
-    // Build TSV matching Excel layout
-    const cols = 10;
+    // Build column headers and day labels
+    const dayLabels = [];
+    for (const dow of uniqueDays) {
+      const name = getDayName(dow);
+      const count = dayCounts[dow] || 1;
+      for (let slot = 0; slot < count; slot++) {
+        dayLabels.push({ dow, slot, label: count > 1 ? `${name} ${String.fromCharCode(65 + slot)}` : name });
+      }
+    }
+
+    // Build TSV
     const pad = (arr, len) => {
       while (arr.length < len) arr.push('');
       return arr;
     };
 
+    const numCols = dayLabels.length * 4 + 1;
+    const prefix = getGroupName() || 'hiker';
     let rows = [];
 
     // Row 0: title
-    rows.push(pad(['', '', quarter.label + ' Hikes ' + qYear], cols));
-    rows.push(pad([], cols));
-    rows.push(pad([], cols));
+    rows.push(pad(['', '', quarter.label + ' Hikes ' + qYear + ' (' + prefix + ')'], numCols));
+    rows.push(pad([], numCols));
+    rows.push(pad([], numCols));
 
     // Row 3: headers
-    rows.push(pad(['Month', 'Wed', 'Hike', 'Leader / Shadow', '', 'Month', 'Fri', 'Hike', 'Leader / Shadow'], cols));
+    const headerRow = ['Month'];
+    for (const dl of dayLabels) {
+      headerRow.push(dl.label, 'Hike', 'Leader / Shadow', '');
+    }
+    rows.push(pad(headerRow, numCols));
 
-    // Interleave Wed/Fri rows by month
-    const wedByMonth = {};
-    const friByMonth = {};
-    for (const m of quarter.months) {
-      wedByMonth[m] = wedHikes.filter(h => h.month === m);
-      friByMonth[m] = friHikes.filter(h => h.month === m);
+    // Group hikes by month for each day label
+    const hikesByMonth = {};
+    for (const dl of dayLabels) {
+      const key = `${dl.dow}-${dl.slot}`;
+      hikesByMonth[key] = {};
+      for (const m of quarter.months) {
+        hikesByMonth[key][m] = (hikesByDay[key] || []).filter(h => h.month === m);
+      }
     }
 
     for (const month of quarter.months) {
-      const weds = wedByMonth[month];
-      const fris = friByMonth[month];
-      const maxRows = Math.max(weds.length, fris.length);
+      const allMonthHikes = dayLabels.map(dl => hikesByMonth[`${dl.dow}-${dl.slot}`][month] || []);
+      const maxRows = Math.max(...allMonthHikes.map(arr => arr.length), 1);
 
       for (let i = 0; i < maxRows; i++) {
-        const w = weds[i];
-        const f = fris[i];
         const row = [];
-
-        // Left side (Wed)
         if (i === 0) row.push(month);
         else row.push('');
-        row.push(w ? String(w.day) : '');
-        row.push(w ? w.trailName : '');
-        row.push(w ? (w.leader || '') : '');
 
-        // Spacer
-        row.push('');
+        for (let j = 0; j < allMonthHikes.length; j++) {
+          const h = allMonthHikes[j][i];
+          row.push(h ? String(h.day) : '');
+          row.push(h ? h.trailName : '');
+          row.push(h ? (h.leader || '') : '');
+          row.push('');
+        }
 
-        // Right side (Fri)
-        if (i === 0) row.push(month);
-        else row.push('');
-        row.push(f ? String(f.day) : '');
-        row.push(f ? f.trailName : '');
-        row.push(f ? (f.leader || '') : '');
-
-        rows.push(pad(row, cols));
+        rows.push(pad(row, numCols));
       }
     }
 
     // Alternate hikes section
-    rows.push(pad([], cols));
-    rows.push(pad(['', '', 'Alternate Wednesday Hike', '', '', '', 'Alternate Friday Hike', '', ''], cols));
+    rows.push(pad([], numCols));
+    const altRow = ['', ''];
+    for (const dl of dayLabels) {
+      altRow.push(`Alternate ${dl.label} Hike`, '', '', '');
+    }
+    rows.push(pad(altRow, numCols));
 
     const tsv = rows.map(r => r.join('\t')).join('\n');
-    const prefix = getGroupName() || 'hiker';
     downloadBlob(tsv, `${prefix}-${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
   };
 
