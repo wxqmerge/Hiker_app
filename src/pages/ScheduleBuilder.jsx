@@ -1157,17 +1157,14 @@ export default function ScheduleBuilder() {
                                            if (newLeader === null) return;
                                            const value = newLeader.trim();
                                            const monthName = MONTH_NAMES[selectedMonth];
-                                           // Use functional updater to get latest state
-                                           let newStore;
-                                           setScheduleStore(prev => {
-                                             const current = prev[monthName] || {};
-                                             const updated = { ...current };
-                                             const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
-                                             entries[slotIdx] = { ...entries[slotIdx], leader: value };
-                                             updated[day] = entries;
-                                             newStore = { ...prev, [monthName]: updated };
-                                             return newStore;
-                                           });
+                                           const current = scheduleStore[monthName] || {};
+                                           const updated = { ...current };
+                                           const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
+                                           entries[slotIdx] = { ...entries[slotIdx], leader: value };
+                                           updated[day] = entries;
+                                           const newStore = { ...scheduleStore, [monthName]: updated };
+                                           // Update local store
+                                           setScheduleStore(newStore);
                                            // Persist to API and global store
                                            const serverData = storeToServerSchedule(newStore);
                                            try {
