@@ -99,21 +99,20 @@ export default function Calendar() {
     if (newLeader === null) return;
     const trimmed = newLeader.trim();
     const monthName = MONTH_NAMES[selectedMonth];
-    const updater = (current) => {
-      const updated = { ...current };
-      const entries = updated[day];
-      if (!entries) return current;
-      if (Array.isArray(entries)) {
-        const newEntries = [...entries];
-        newEntries[slotIdx] = { ...newEntries[slotIdx], leader: trimmed };
-        updated[day] = newEntries;
-      } else {
-        updated[day] = { ...entries, leader: trimmed };
-      }
-      return updated;
-    };
-    await applyScheduleChange(monthName, updater);
-  }, [selectedMonth, applyScheduleChange]);
+    const current = scheduleStore[monthName] || {};
+    const updated = { ...current };
+    const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
+    entries[slotIdx] = { ...entries[slotIdx], leader: trimmed };
+    updated[day] = entries;
+    const newStore = { ...scheduleStore, [monthName]: updated };
+    const serverData = storeToServerSchedule(newStore);
+    try {
+      await updateSchedule(serverData);
+      setSchedule(serverData);
+    } catch (error) {
+      alert('Failed to save leader: ' + error.message);
+    }
+  }, [selectedMonth, scheduleStore]);
 
   const {
     confirmSwap,
