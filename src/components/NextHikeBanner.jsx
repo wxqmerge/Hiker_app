@@ -1,10 +1,39 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getRideCost } from '../utils/report';
 import { getGpx } from '../api/client';
 import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openWeatherForTrail, fetchNwsForecastForDate } from '../utils/io';
 import GPXHelp from './GPXHelp';
+
+function useHikeGpxActions(trailId, trailName) {
+  const [gpxDownloading, setGpxDownloading] = useState(false);
+
+  const handleGpxDownload = useCallback(async () => {
+    if (gpxDownloading) return;
+    setGpxDownloading(true);
+    try {
+      const gpx = await getGpx(trailId);
+      if (gpx) {
+        const safeName = (trailName || 'route').replace(/[^a-zA-Z0-9]/g, '_');
+        downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
+      }
+    } finally {
+      setTimeout(() => setGpxDownloading(false), 1000);
+    }
+  }, [trailId, trailName, gpxDownloading]);
+
+  const handleTrailhead = useCallback(async () => {
+    const gpx = await getGpx(trailId);
+    if (!gpx) return;
+    const coord = getFirstCoordinateFromGpx(gpx);
+    if (coord) {
+      openGoogleMapsTrailhead(coord.lat, coord.lon);
+    }
+  }, [trailId]);
+
+  return { gpxDownloading, handleGpxDownload, handleTrailhead };
+}
 
 export default function NextHikeBanner({ nextHikes }) {
   const [weatherMap, setWeatherMap] = useState({});
@@ -30,33 +59,23 @@ export default function NextHikeBanner({ nextHikes }) {
 
   return (
     <>
-      {nextHikes.map((hike, idx) => {
-        const trail = hike.trail;
-        const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
-        const weather = weatherMap[idx];
+      {nextHikes.map((hike, idx) => (
+        <NextHikeCard key={idx} hike={hike} idx={idx} weather={weatherMap[idx]} totalHikes={nextHikes.length} />
+      ))}
+    </>
+  );
+}
 
-        const handleGpxDownload = async () => {
-          const gpx = await getGpx(hike.trailId);
-          if (gpx) {
-            const safeName = (trail.fullName || trail.name || 'route').replace(/[^a-zA-Z0-9]/g, '_');
-            downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
-          }
-        };
+function NextHikeCard({ hike, idx, weather, totalHikes }) {
+  const trail = hike.trail;
+  const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
+  const { handleGpxDownload, handleTrailhead } = useHikeGpxActions(hike.trailId, trail.fullName || trail.name);
 
-        const handleTrailhead = async () => {
-          const gpx = await getGpx(hike.trailId);
-          if (!gpx) return;
-          const coord = getFirstCoordinateFromGpx(gpx);
-          if (coord) {
-            openGoogleMapsTrailhead(coord.lat, coord.lon);
-          }
-        };
+  const handleWeather = () => openWeatherForTrail(getGpx, hike.trailId);
 
-        const handleWeather = () => openWeatherForTrail(getGpx, hike.trailId);
+  const displayHikeName = hike.trail.fullName || hike.trail.name;
 
-        const displayHikeName = hike.trail.fullName || hike.trail.name;
-
-        return (
+  return (
           <div key={idx} className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>
             <div className="p-5 md:p-7">
               <div className="flex flex-col gap-4">
@@ -67,7 +86,7 @@ export default function NextHikeBanner({ nextHikes }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      {nextHikes.length > 1 && (
+                      {totalHikes > 1 && (
                         <span className="text-sm font-bold bg-white/30 px-2 py-0.5 rounded text-white uppercase">
                           Hike {String.fromCharCode(65 + idx)}
                         </span>
@@ -179,12 +198,9 @@ export default function NextHikeBanner({ nextHikes }) {
                     <div className="flex items-center justify-end gap-2">
                       <GPXHelp variant="dark" />
                     </div>
-                 </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </>
+                  </div>
+               </div>
+             </div>
+           </div>
   );
 }

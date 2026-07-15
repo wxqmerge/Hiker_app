@@ -15,6 +15,8 @@ import {
   getGpxFileName,
 } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
+import { withErrorTag } from '../middleware/error.middleware.js';
+import { validateGpxContent } from '../utils/gpxValidation.js';
 import {
   whitelistTrailFields,
   whitelistTrailDetailFields,
@@ -43,30 +45,20 @@ router.get('/details', (req, res) => {
   res.set('ETag', etag).set('Cache-Control', 'public, max-age=300').json(data);
 });
  
-router.put('/details/:id', requireAdminKey, async (req, res) => {
-  try {
-    const existing = getTrailDetailById(req.params.id);
-    const whitelisted = whitelistTrailDetailFields(req.body);
-    await updateTrailDetail(req.params.id, (existing ? { ...existing, ...whitelisted } : whitelisted) as any);
-    res.json({ success: true, detail: getTrailDetailById(req.params.id) });
-  } catch (error) {
-    console.error('[TRAILS] Error updating trail detail:', error);
-    res.status(500).json({ success: false, error: { message: 'Failed to update trail detail' } });
-  }
-});
- 
-router.put('/:id', requireAdminKey, async (req, res) => {
-    try {
-      const existing = getTrailById(req.params.id);
-      const whitelisted = whitelistTrailFields(req.body);
-      const trailData = existing ? { ...existing, ...whitelisted } : { ...whitelisted, id: req.params.id };
-      await updateTrail(trailData as any);
-    res.json({ success: true, trail: getTrailById(req.params.id) });
-  } catch (error) {
-    console.error('[TRAILS] Error updating trail:', error);
-    res.status(500).json({ success: false, error: { message: 'Failed to update trail' } });
-  }
-});
+router.put('/details/:id', requireAdminKey, withErrorTag('TRAILS')(async (req, res) => {
+  const existing = getTrailDetailById(req.params.id);
+  const whitelisted = whitelistTrailDetailFields(req.body);
+  await updateTrailDetail(req.params.id, (existing ? { ...existing, ...whitelisted } : whitelisted) as any);
+  res.json({ success: true, detail: getTrailDetailById(req.params.id) });
+}));
+
+router.put('/:id', requireAdminKey, withErrorTag('TRAILS')(async (req, res) => {
+  const existing = getTrailById(req.params.id);
+  const whitelisted = whitelistTrailFields(req.body);
+  const trailData = existing ? { ...existing, ...whitelisted } : { ...whitelisted, id: req.params.id };
+  await updateTrail(trailData as any);
+  res.json({ success: true, trail: getTrailById(req.params.id) });
+}));
 
 router.get('/gpx/:id', async (req, res) => {
   const gpxFile = getGpxFileName(req.params.id);
@@ -100,65 +92,48 @@ router.get('/gpx/:id', async (req, res) => {
   }
 });
 
-router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: { message: 'No GPX file uploaded' } });
-    }
-    const existing = getTrailById(req.params.id);
-    if (!existing) {
-      await fs.unlink(req.file.path).catch(() => {});
-      return res.status(404).json({ success: false, error: { message: 'Trail not found' } });
-    }
+router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('TRAILS')(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: { message: 'No GPX file uploaded' } });
+  }
+  const existing = getTrailById(req.params.id);
+  if (!existing) {
+    await fs.unlink(req.file.path).catch(() => {});
+    return res.status(404).json({ success: false, error: { message: 'Trail not found' } });
+  }
 
-    // Validate GPX file before saving
-    const content = await fs.readFile(req.file.path, 'utf-8');
+  // Validate GPX file before saving
+  const content = await fs.readFile(req.file.path, 'utf-8');
+  if (!validateGpxContent(content)) {
+    await fs.unlink(req.file.path).catch(() => {});
     if (content.length < 100) {
-      await fs.unlink(req.file.path).catch(() => {});
       return res.status(400).json({ success: false, error: { message: `GPX file too small (${content.length} bytes) - likely corrupted` } });
     }
-    // Check for valid XML structure
     if (!content.includes('<?xml') || !content.includes('<gpx')) {
-      await fs.unlink(req.file.path).catch(() => {});
       return res.status(400).json({ success: false, error: { message: 'Invalid GPX file - missing XML header or GPX root element' } });
     }
-    // Check for at least one coordinate point
-    const hasTrkpt = content.includes('<trkpt');
-    const hasWpt = content.includes('<wpt');
-    const hasRtept = content.includes('<rtept');
-    if (!hasTrkpt && !hasWpt && !hasRtept) {
-      await fs.unlink(req.file.path).catch(() => {});
-      return res.status(400).json({ success: false, error: { message: 'Invalid GPX file - no GPS coordinates found (needs trkpt, wpt, or rtept)' } });
-    }
-
-    // Save with trail name (sanitized), not the original filename
-    const safeName = (existing.fullName || existing.name || req.params.id).replace(/[^a-zA-Z0-9]/g, '_');
-    const gpxFileName = `${safeName}.gpx`;
-    const destPath = path.join(GPX_UPLOAD_DIR, gpxFileName);
-    await fs.rename(req.file.path, destPath);
-
-    // Update trail with gpxFile
-    const whitelisted = whitelistTrailFields(req.body);
-    await updateTrail((existing ? { ...existing, ...whitelisted, gpxFile: gpxFileName, hasGpx: true } : { ...whitelisted, id: req.params.id, gpxFile: gpxFileName, hasGpx: true }) as any);
-    res.json({ success: true, gpxFile: gpxFileName });
-  } catch (error) {
-    console.error('[TRAILS] Error uploading GPX:', error);
-    res.status(500).json({ success: false, error: { message: 'Failed to upload GPX file' } });
+    return res.status(400).json({ success: false, error: { message: 'Invalid GPX file - no GPS coordinates found (needs trkpt, wpt, or rtept)' } });
   }
-});
 
-router.delete('/:id', requireAdminKey, async (req, res) => {
-  try {
-    const existing = getTrailById(req.params.id);
-    if (!existing) {
-      return res.status(404).json({ success: false, error: { message: 'Trail not found' } });
-    }
-    await deleteTrail(req.params.id);
-    res.json({ success: true });
-  } catch (error) {
-    console.error('[TRAILS] Error deleting trail:', error);
-    res.status(500).json({ success: false, error: { message: 'Failed to delete trail' } });
+  // Save with trail name (sanitized), not the original filename
+  const safeName = (existing.fullName || existing.name || req.params.id).replace(/[^a-zA-Z0-9]/g, '_');
+  const gpxFileName = `${safeName}.gpx`;
+  const destPath = path.join(GPX_UPLOAD_DIR, gpxFileName);
+  await fs.rename(req.file.path, destPath);
+
+  // Update trail with gpxFile
+  const whitelisted = whitelistTrailFields(req.body);
+  await updateTrail((existing ? { ...existing, ...whitelisted, gpxFile: gpxFileName, hasGpx: true } : { ...whitelisted, id: req.params.id, gpxFile: gpxFileName, hasGpx: true }) as any);
+  res.json({ success: true, gpxFile: gpxFileName });
+}));
+
+router.delete('/:id', requireAdminKey, withErrorTag('TRAILS')(async (req, res) => {
+  const existing = getTrailById(req.params.id);
+  if (!existing) {
+    return res.status(404).json({ success: false, error: { message: 'Trail not found' } });
   }
-});
+  await deleteTrail(req.params.id);
+  res.json({ success: true });
+}));
 
 export { router };
