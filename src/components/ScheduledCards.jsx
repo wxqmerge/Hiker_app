@@ -14,6 +14,7 @@ export default function ScheduledCards({
   dragData,
   handleDragStart,
   handleDragEnd,
+  onLeaderChange,
   tt,
 }) {
   const cards = useMemo(() => {
@@ -45,7 +46,7 @@ export default function ScheduledCards({
                   style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
                 >
                   <div className="relative">
-                    <TrailCard trail={trail} isActive={false} leader={leader} />
+                    <TrailCard trail={trail} isActive={false} leader={leader} onLeaderChange={onLeaderChange ? () => onLeaderChange(day, idx, leader) : undefined} />
                     <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
                       {day}
                       <span className="text-[8px]">{getDayLabel(createDate(year, selectedMonth, day).getDay())}</span>
@@ -66,7 +67,7 @@ export default function ScheduledCards({
            });
        })
       .filter(Boolean);
-  }, [assignedHikes, trailIndexToId, handleDragStart, handleDragEnd, selectedMonth, findTrailById, year, dragData, tt, hasApiKey]);
+  }, [assignedHikes, trailIndexToId, handleDragStart, handleDragEnd, selectedMonth, findTrailById, year, dragData, tt, hasApiKey, onLeaderChange]);
 
 
   if (cards.length === 0) {

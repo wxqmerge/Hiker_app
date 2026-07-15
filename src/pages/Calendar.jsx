@@ -94,6 +94,27 @@ export default function Calendar() {
     }
   }, [scheduleStore]);
 
+  const handleLeaderChange = useCallback(async (day, slotIdx, currentLeader) => {
+    const newLeader = prompt('Enter new leader name:', currentLeader || '');
+    if (newLeader === null) return;
+    const trimmed = newLeader.trim();
+    const monthName = MONTH_NAMES[selectedMonth];
+    const updater = (current) => {
+      const updated = { ...current };
+      const entries = updated[day];
+      if (!entries) return current;
+      if (Array.isArray(entries)) {
+        const newEntries = [...entries];
+        newEntries[slotIdx] = { ...newEntries[slotIdx], leader: trimmed };
+        updated[day] = newEntries;
+      } else {
+        updated[day] = { ...entries, leader: trimmed };
+      }
+      return updated;
+    };
+    await applyScheduleChange(monthName, updater);
+  }, [selectedMonth, applyScheduleChange]);
+
   const {
     confirmSwap,
     cancelSwap,
@@ -158,6 +179,7 @@ export default function Calendar() {
           dragData={dragData}
           handleDragStart={handleDragStart}
           handleDragEnd={handleDragEnd}
+          onLeaderChange={hasApiKey ? handleLeaderChange : undefined}
           tt={tt}
         />
 

@@ -50,16 +50,20 @@ export function openWeatherUrl(lat, lon) {
  * Returns { temp, rain } or null.
  *   temp  — high temperature in °F for the day period
  *   rain  — probability of precipitation (0–100) for the day period
- * Uses a module-level cache keyed by "lat,lon" so repeated calls for the
- * same trailhead only hit the network once per session.
+ * Uses a module-level cache keyed by "lat,lon" with a 3-hour TTL so the
+ * forecast refreshes when NWS updates it.
  */
 const _nwsCache = new Map();
+const _nwsTTL = 3 * 60 * 60 * 1000; // 3 hours
 
 export async function fetchNwsForecastForDate(lat, lon, targetDate) {
   const cacheKey = `${lat},${lon}`;
-  let periods = _nwsCache.get(cacheKey);
+  let cached = _nwsCache.get(cacheKey);
 
-  if (!periods) {
+  let periods;
+  if (cached && Date.now() - cached.ts < _nwsTTL) {
+    periods = cached.periods;
+  } else {
     try {
       const ptRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
         headers: { 'Accept': 'application/geo+json', 'User-Agent': 'Hiker-App' }
@@ -76,17 +80,28 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
       if (!fcRes.ok) return null;
       const fc = await fcRes.json();
       periods = fc.properties.periods;
-      _nwsCache.set(cacheKey, periods);
+      _nwsCache.set(cacheKey, { periods, ts: Date.now() });
     } catch {
       return null;
     }
   }
 
-  // Match the day period whose name contains the target day name
+  // Match the period whose name matches the target day.
+  // NWS uses "Today"/"Tonight" for the current day, and weekday names for
+  // subsequent days (e.g. "Thursday", "Thursday Night").
+  // Prefer daytime; fall back to nighttime for same-day hikes where
+  // the daytime period has already passed.
+  const today = new Date();
+  const isSameDay = targetDate.toDateString() === today.toDateString();
   const dayName = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
-  const dayPeriod = periods.find(p =>
-    p.name.includes(dayName) && p.isDaytime !== false
-  );
+
+  const matchDay = (p) => {
+    if (isSameDay) return p.name.includes('Today') || p.name.includes('today');
+    return p.name.includes(dayName);
+  };
+
+  const dayPeriod = periods.find(p => matchDay(p) && p.isDaytime !== false)
+    || periods.find(p => matchDay(p));
   if (!dayPeriod) return null;
 
   return {

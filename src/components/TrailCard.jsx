@@ -12,7 +12,7 @@ import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 import { openWeatherForTrail } from '../utils/io';
 import { getGpx } from '../api/client';
 
-const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather }) {
+const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange }) {
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
@@ -139,15 +139,25 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
              </div>
            )}
            
-            {/* Leader or Seasonal Availability */}
-            {leader ? (
-              <div className="flex items-center gap-1 text-gray-700">
-                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span className="truncate" title={leader}>{leader}</span>
-              </div>
-            ) : (
+             {/* Leader or Seasonal Availability */}
+             {leader ? (
+               <div className="flex items-center gap-1 text-gray-700">
+                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                 </svg>
+                 {onLeaderChange ? (
+                   <button
+                     className="truncate text-blue-600 hover:text-blue-800 cursor-pointer"
+                     title="Click to change leader"
+                     onClick={() => onLeaderChange(leader)}
+                   >
+                     {leader}
+                   </button>
+                 ) : (
+                   <span className="truncate" title={leader}>{leader}</span>
+                 )}
+               </div>
+             ) : (
               <>
                 {scoreMonths.length > 0 && (
                   <div className="flex items-center gap-1 text-gray-700">
