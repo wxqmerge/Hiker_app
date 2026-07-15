@@ -51,13 +51,8 @@ export default function ScheduledCards({
                       {day}
                       <span className="text-[8px]">{getDayLabel(createDate(year, selectedMonth, day).getDay())}</span>
                     </div>
-                    {filteredEntries.length > 1 && (
-                      <div className="absolute top-2 left-2 bg-gray-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                        {String.fromCharCode(65 + idx)}
-                      </div>
-                    )}
-                    {earlyStart && (
-                      <div className={`absolute top-2 ${filteredEntries.length > 1 ? 'left-12' : 'left-2'} bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center`} title="Early Start">
+                     {earlyStart && (
+                       <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start">
                         ⏰
                       </div>
                     )}

@@ -60,13 +60,13 @@ export default function NextHikeBanner({ nextHikes }) {
   return (
     <>
       {nextHikes.map((hike, idx) => (
-        <NextHikeCard key={idx} hike={hike} idx={idx} weather={weatherMap[idx]} totalHikes={nextHikes.length} />
+        <NextHikeCard key={idx} hike={hike} idx={idx} weather={weatherMap[idx]} />
       ))}
     </>
   );
 }
 
-function NextHikeCard({ hike, idx, weather, totalHikes }) {
+function NextHikeCard({ hike, idx, weather }) {
   const trail = hike.trail;
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
   const { handleGpxDownload, handleTrailhead } = useHikeGpxActions(hike.trailId, trail.fullName || trail.name);
@@ -86,12 +86,7 @@ function NextHikeCard({ hike, idx, weather, totalHikes }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      {totalHikes > 1 && (
-                        <span className="text-sm font-bold bg-white/30 px-2 py-0.5 rounded text-white uppercase">
-                          Hike {String.fromCharCode(65 + idx)}
-                        </span>
-                      )}
-                      <Link
+                       <Link
                         to={`/trail/${hike.trailId}`}
                         className="text-2xl md:text-3xl font-bold text-white hover:text-green-100 transition-colors truncate"
                       >
