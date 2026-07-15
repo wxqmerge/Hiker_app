@@ -19,8 +19,10 @@ for dir in "$BASE"/*/; do
     FOUND=$((FOUND + 1))
     python3 -c "
 import json, sys
+name = '$name'
+trails_file = '$trails_file'
 try:
-    d = json.load(open('$trails_file'))
+    d = json.load(open(trails_file))
     trails = d.get('trails', [])
     gpx = sum(1 for t in trails if t.get('gpxFile'))
     links = sum(1 for t in trails if t.get('webLink'))
