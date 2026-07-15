@@ -1149,39 +1149,43 @@ export default function ScheduleBuilder() {
                                          Unmatched trail_id — drag a trail here
                                        </div>
                                      )}
-                                      <button
-                                        type="button"
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          const newLeader = prompt('Enter leader name:', leader || '');
-                                          if (newLeader === null) return;
-                                          const value = newLeader.trim();
-                                          const monthName = MONTH_NAMES[selectedMonth];
-                                          const current = scheduleStore[monthName] || {};
-                                          const updated = { ...current };
-                                          const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
-                                          entries[slotIdx] = { ...entries[slotIdx], leader: value };
-                                          updated[day] = entries;
-                                          // Update local store
-                                          setScheduleStore(prev => ({ ...prev, [monthName]: updated }));
-                                          // Persist to API and global store
-                                          const serverData = storeToServerSchedule({ ...scheduleStore, [monthName]: updated });
-                                          try {
-                                            await updateSchedule(serverData);
-                                            setSchedule(serverData);
-                                          } catch (err) {
-                                            alert('Failed to save leader: ' + err.message);
-                                          }
-                                        }}
-                                        className={`mt-1 w-full text-xs border rounded px-1.5 py-0.5 text-left truncate transition-colors ${
-                                          leader
-                                            ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
-                                            : 'border-gray-300 text-gray-400 hover:bg-gray-50 cursor-pointer'
-                                       }`}
-                                       title="Click to set leader"
-                                     >
-                                       {leader || 'Set Leader'}
-                                     </button>
+                                       <button
+                                         type="button"
+                                         onClick={async (e) => {
+                                           e.stopPropagation();
+                                           const newLeader = prompt('Enter leader name:', leader || '');
+                                           if (newLeader === null) return;
+                                           const value = newLeader.trim();
+                                           const monthName = MONTH_NAMES[selectedMonth];
+                                           // Use functional updater to get latest state
+                                           let newStore;
+                                           setScheduleStore(prev => {
+                                             const current = prev[monthName] || {};
+                                             const updated = { ...current };
+                                             const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
+                                             entries[slotIdx] = { ...entries[slotIdx], leader: value };
+                                             updated[day] = entries;
+                                             newStore = { ...prev, [monthName]: updated };
+                                             return newStore;
+                                           });
+                                           // Persist to API and global store
+                                           const serverData = storeToServerSchedule(newStore);
+                                           try {
+                                             await updateSchedule(serverData);
+                                             setSchedule(serverData);
+                                           } catch (err) {
+                                             alert('Failed to save leader: ' + err.message);
+                                           }
+                                         }}
+                                         className={`mt-1 w-full text-xs border rounded px-1.5 py-0.5 text-left truncate transition-colors ${
+                                           leader
+                                             ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
+                                             : 'border-gray-300 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                                        }`}
+                                        title="Click to set leader"
+                                      >
+                                        {leader || 'Set Leader'}
+                                      </button>
                                   </>
                                 ) : trailId ? (
                                  <div className="text-sm text-amber-600 italic">
