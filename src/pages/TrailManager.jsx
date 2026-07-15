@@ -483,6 +483,12 @@ export default function TrailManager() {
             <span className="text-xs text-gray-400">v{APP_VERSION}</span>
             <p className="text-gray-600 text-sm">
               {filteredTrails.length} of {trails.length} trails
+              {trails.filter(t => t.hasGpx).length > 0 && (
+                <span className="text-gray-400"> · {trails.filter(t => t.hasGpx).length} GPX</span>
+              )}
+              {trails.filter(t => t.webLink).length > 0 && (
+                <span className="text-gray-400"> · {trails.filter(t => t.webLink).length} links</span>
+              )}
             </p>
             <AdminMenu hasApiKey={hasApiKey} actions={adminActions} tt={tt} />
             <button
