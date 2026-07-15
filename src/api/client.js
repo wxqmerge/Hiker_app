@@ -57,11 +57,23 @@ export async function getTrails() {
   return data.trails || [];
 }
 
+const gpxCache = new Map();
+
+export function clearGpxCache() {
+  gpxCache.clear();
+}
+
 export async function getGpx(trailId) {
+  if (gpxCache.has(trailId)) return gpxCache.get(trailId);
   try {
-    return await request(`/api/trails/gpx/${trailId}`, { responseType: 'text' });
+    const result = await request(`/api/trails/gpx/${trailId}`, { responseType: 'text' });
+    gpxCache.set(trailId, result);
+    return result;
   } catch (err) {
-    if (err.message.includes('HTTP 404')) return null;
+    if (err.message.includes('HTTP 404')) {
+      gpxCache.set(trailId, null);
+      return null;
+    }
     throw err;
   }
 }
@@ -69,11 +81,13 @@ export async function getGpx(trailId) {
 export async function uploadGpxFile(trailId, file) {
   const formData = new FormData();
   formData.append('gpx', file);
-  return request(`/api/trails/gpx/${trailId}`, {
+  const result = await request(`/api/trails/gpx/${trailId}`, {
     method: 'POST',
     body: formData,
     apiKey: true,
   });
+  gpxCache.delete(trailId);
+  return result;
 }
 
 export async function updateTrail(trail) {

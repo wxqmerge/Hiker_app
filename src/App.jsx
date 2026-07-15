@@ -1,15 +1,22 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Calendar from './pages/Calendar';
-import Home from './pages/Home';
-import TrailDetail from './pages/TrailDetail';
-import TrailManager from './pages/TrailManager';
-import ScheduleBuilder from './pages/ScheduleBuilder';
-import { useEffect, useState } from 'react';
+import LoadingSpinner from './components/LoadingSpinner';
+import { useEffect, useState, lazy, Suspense } from 'react';
+
+const Home = lazy(() => import('./pages/Home'));
+const TrailDetail = lazy(() => import('./pages/TrailDetail'));
+const TrailManager = lazy(() => import('./pages/TrailManager'));
+const ScheduleBuilder = lazy(() => import('./pages/ScheduleBuilder'));
+
+const PageLazy = ({ children }) => (
+  <Suspense fallback={<LoadingSpinner />}>
+    {children}
+  </Suspense>
+);
 import { ensureScheduleWritable, request } from './api/client.js';
 import { getApiBase } from './utils/url.js';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
-import LoadingSpinner from './components/LoadingSpinner';
 import { setGroupConfig, getGroupName } from './utils/config';
 
 function ApiKeySync() {
@@ -77,10 +84,10 @@ function App() {
       <ApiKeySync />
       <Routes>
         <Route path="/" element={<Calendar />} />
-        <Route path="/browse" element={<Home />} />
-        <Route path="/trail/:id" element={<TrailDetail />} />
-        <Route path="/trails" element={<TrailManager />} />
-        <Route path="/schedule" element={<ScheduleBuilder />} />
+        <Route path="/browse" element={<PageLazy><Home /></PageLazy>} />
+        <Route path="/trail/:id" element={<PageLazy><TrailDetail /></PageLazy>} />
+        <Route path="/trails" element={<PageLazy><TrailManager /></PageLazy>} />
+        <Route path="/schedule" element={<PageLazy><ScheduleBuilder /></PageLazy>} />
       </Routes>
       <ToastContainer />
     </BrowserRouter>
