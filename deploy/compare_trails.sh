@@ -3,6 +3,7 @@
 # Run from any hiker app directory on the server
 
 BASE="/var/www/html"
+FOUND=0
 
 echo "Hiker Trail Comparison"
 echo "========================================"
@@ -15,12 +16,23 @@ for dir in "$BASE"/*/; do
     [ -f "$trails_file" ] || continue
 
     name=$(basename "$dir")
+    FOUND=$((FOUND + 1))
     python3 -c "
-import json
-d = json.load(open('$trails_file'))
-trails = d.get('trails', [])
-gpx = sum(1 for t in trails if t.get('gpxFile'))
-links = sum(1 for t in trails if t.get('webLink'))
-print(f'{name:<20} {len(trails):>8} {gpx:>8} {links:>8}')
-" 2>/dev/null
+import json, sys
+try:
+    d = json.load(open('$trails_file'))
+    trails = d.get('trails', [])
+    gpx = sum(1 for t in trails if t.get('gpxFile'))
+    links = sum(1 for t in trails if t.get('webLink'))
+    print(f'{name:<20} {len(trails):>8} {gpx:>8} {links:>8}')
+except Exception as e:
+    print(f'{name:<20} ERROR: {e}', file=sys.stderr)
+"
 done
+
+if [ "$FOUND" -eq 0 ]; then
+    echo ""
+    echo "No instances found with exported_data/trails.json under $BASE"
+    echo "Directories found:"
+    ls "$BASE"/ 2>/dev/null
+fi
