@@ -507,6 +507,19 @@ export default function ScheduleBuilder() {
             }
             console.log('[TSV Import] Column groups:', columnGroups);
 
+            // Map each column group to its slot: for same dow, order determines slot (A=0, B=1)
+            const dowGroupIndex = {};
+            for (const cg of columnGroups) {
+              const dowMatch = DAY_NAMES.find(name => cg.dayLabel.startsWith(name));
+              if (dowMatch) {
+                const dow = DAY_NAMES.indexOf(dowMatch);
+                if (!dowGroupIndex[dow]) dowGroupIndex[dow] = 0;
+                cg.slot = dowGroupIndex[dow]++;
+              } else {
+                cg.slot = 0;
+              }
+            }
+
             // Pre-build normalized trail lookup for O(1) matching
             const trailLookup = new Map();
             const trailIdLookup = new Map();
@@ -561,7 +574,7 @@ export default function ScheduleBuilder() {
                   if (trail) {
                     const hasEarlyStart = /\(early start\)/i.test(hikeName);
                     const hikeDate = createDate(year, MONTH_NAMES.indexOf(currentMonth), dayNum);
-                    const slot = getHikeDays().indexOf(hikeDate.getDay()) ?? 0;
+                    const slot = cg.slot ?? getHikeDays().indexOf(hikeDate.getDay()) ?? 0;
                     schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: hasEarlyStart });
                     matchedCount++;
                   } else {
