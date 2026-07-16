@@ -28,7 +28,7 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
         return entry;
       });
     });
-    console.log('[useScheduleData] assignedHikes recomputed for', MONTH_NAMES[selectedMonth], 'day 17:', result[17]);
+    console.log('[useScheduleData] assignedHikes recomputed for', MONTH_NAMES[selectedMonth], 'day 17 leader:', result[17]?.[0]?.leader);
     return result;
   }, [scheduleStore, selectedMonth]);
 

@@ -125,10 +125,10 @@ export default function Calendar() {
     updated[day] = entries;
     const newStore = { ...store, [monthName]: updated };
     const serverData = storeToServerSchedule(newStore);
-    console.log('[Calendar] Server data for month:', monthAbbr, serverData[monthAbbr]);
+    console.log('[Calendar] Server data for month:', monthAbbr, serverData[monthAbbr]?.find(e => e.day == day));
     try {
       const result = await updateSchedule(serverData);
-      console.log('[Calendar] PUT result:', result);
+      console.log('[Calendar] PUT result:', result, 'server response day 17:', result[monthAbbr]?.find(e => e.day == day));
       setSchedule(serverData);
     } catch (error) {
       console.error('[Calendar] Failed to save leader:', error);
