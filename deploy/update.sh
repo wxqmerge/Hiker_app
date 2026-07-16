@@ -254,6 +254,9 @@ chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
 chmod 775 "$DIR/exported_data" 2>/dev/null || true
 chmod 775 "$DIR/exported_data/schedule_history" 2>/dev/null || true
 find "$DIR/exported_data" -type f -exec chmod 664 {} + 2>/dev/null || true
+# Ensure tmp/ exists and is writable (required for multer uploads)
+mkdir -p "$DIR/tmp"
+chmod 777 "$DIR/tmp"
 echo "  Done."
 
 # 8. Fix systemd service file
