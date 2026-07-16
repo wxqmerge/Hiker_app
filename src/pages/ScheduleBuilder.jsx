@@ -4,10 +4,14 @@ import { useTrails } from '../hooks/useTrails';
 import { useFilters } from '../hooks/useFilters';
 import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { useTooltips } from '../hooks/useTooltips';
+import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
+import { useApiKey } from '../hooks/useApiKey';
 import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
 import TrailCard from '../components/TrailCard';
 import LoadingSpinner from '../components/LoadingSpinner';
+import SwapConfirmationModal from '../components/SwapConfirmationModal';
+import MonthSelector from '../components/MonthSelector';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
@@ -18,6 +22,7 @@ import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
+import { updateLeader } from '../utils/scheduleActions';
 import { getDayName, getHikeDaysLabel, getHikeDays } from '../utils/config';
 import { getDaysInMonth, createDate } from '../utils/dateUtils';
 
@@ -60,7 +65,7 @@ export default function ScheduleBuilder() {
     return nextMonth;
   });
   const [isSaving, setIsSaving] = useState(false); // eslint-disable-line no-unused-vars
-  const hasApiKey = !!localStorage.getItem('hiker-api-key');
+  const hasApiKey = useApiKey();
   const [scheduleStore, setScheduleStore] = useState(() => {
     return {};
   });
@@ -173,30 +178,7 @@ export default function ScheduleBuilder() {
     return result;
   }, [trails, assignedHikes, debugMode]);
 
-  const monthSlotStats = useMemo(() => {
-    const hikeDays = getHikeDays();
-    const trailIdSet = new Set(trails.map(t => t.id));
-    const stats = {};
-    MONTH_NAMES.forEach((name, idx) => {
-      const daysInMonth = getDaysInMonth(year, idx);
-      let total = 0;
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = createDate(year, idx, day);
-        const dayOfWeek = date.getDay();
-        hikeDays.forEach(configDay => {
-          if (configDay === dayOfWeek) total++;
-        });
-      }
-      let filled = 0;
-      const monthData = scheduleStore[name] || {};
-      Object.values(monthData).forEach(val => {
-        const entries = Array.isArray(val) ? val : (val ? [val] : []);
-        filled += entries.filter(e => e?.trail_id && trailIdSet.has(e.trail_id)).length;
-      });
-      stats[idx] = { total, filled };
-    });
-    return stats;
-  }, [scheduleStore, year, trails]);
+  const monthSlotStats = useMonthSlotStats({ trails, scheduleStore, year });
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -948,26 +930,14 @@ export default function ScheduleBuilder() {
               </div>
             )}
           </div>
-           <select
-             value={selectedMonth}
-             onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
-             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500"
-             title={tt('Select month to view/edit')}
-           >
-              {MONTH_NAMES.map((name, idx) => {
-                  const { total, filled } = monthSlotStats[idx] || { total: 0, filled: 0 };
-                  const label = total > 0 ? `${filled}/${total}` : '0/0';
-                  const color = filled === 0 ? '#9ca3af' : filled === total ? '#15803d' : '#a16207';
-                  return (
-                  <option key={idx} value={idx} style={{ color }}>
-                    {name} ({label})
-                  </option>
-                );
-             })}
-           </select>
-             <p className="text-gray-600 text-sm ml-auto">
-               {monthSlotStats[selectedMonth]?.filled ?? assignedCount}/{monthSlotStats[selectedMonth]?.total ?? hikeDates.length} slots filled
-             </p>
+           <MonthSelector
+              selectedMonth={selectedMonth}
+              onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+              monthSlotStats={monthSlotStats}
+              assignedCount={assignedCount}
+              hikeDates={hikeDates}
+              title={tt('Select month to view/edit')}
+            />
 
          </div>
 
@@ -1149,38 +1119,19 @@ export default function ScheduleBuilder() {
                                          Unmatched trail_id — drag a trail here
                                        </div>
                                      )}
-                                       <button
-                                         type="button"
-                                         onClick={async (e) => {
-                                           e.stopPropagation();
-                                           const newLeader = prompt('Enter leader name:', leader || '');
-                                           if (newLeader === null) return;
-                                           const value = newLeader.trim();
-                                           const monthName = MONTH_NAMES[selectedMonth];
-                                           const current = scheduleStore[monthName] || {};
-                                           const updated = { ...current };
-                                           const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
-                                           entries[slotIdx] = { ...entries[slotIdx], leader: value };
-                                           updated[day] = entries;
-                                           const newStore = { ...scheduleStore, [monthName]: updated };
-                                           // Update local store
-                                           setScheduleStore(newStore);
-                                           // Persist to API and global store
-                                           const serverData = storeToServerSchedule(newStore);
-                                           try {
-                                             await updateSchedule(serverData);
-                                             setSchedule(serverData);
-                                           } catch (err) {
-                                             alert('Failed to save leader: ' + err.message);
-                                           }
-                                         }}
-                                         className={`mt-1 w-full text-xs border rounded px-1.5 py-0.5 text-left truncate transition-colors ${
-                                           leader
-                                             ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
-                                             : 'border-gray-300 text-gray-400 hover:bg-gray-50 cursor-pointer'
-                                        }`}
-                                        title="Click to set leader"
-                                      >
+                                        <button
+                                          type="button"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            await updateLeader(scheduleStore, selectedMonth, day, slotIdx, leader);
+                                          }}
+                                          className={`mt-1 w-full text-xs border rounded px-1.5 py-0.5 text-left truncate transition-colors ${
+                                            leader
+                                              ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
+                                              : 'border-gray-300 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                                         }`}
+                                         title="Click to set leader"
+                                       >
                                         {leader || 'Set Leader'}
                                       </button>
                                   </>
@@ -1249,37 +1200,11 @@ export default function ScheduleBuilder() {
             </div>
           </div>
         </div>
-       {pendingSwap && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={cancelSwap}>
-            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm mx-auto" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Swap Hikes?</h3>
-              <div className="space-y-3 text-sm text-gray-700">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">1</div>
-                  <span><strong>{pendingSwap.sourceTrailName}</strong> moves to {pendingSwap.targetDayLabel}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">2</div>
-                  <span><strong>{pendingSwap.targetTrailName}</strong> moves to {pendingSwap.sourceDayLabel}</span>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6 justify-end">
-                <button
-                  onClick={cancelSwap}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmSwap}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                >
-                  Swap
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+       <SwapConfirmationModal
+           pendingSwap={pendingSwap}
+           onConfirm={confirmSwap}
+           onCancel={cancelSwap}
+         />
       </main>
     </div>
   );

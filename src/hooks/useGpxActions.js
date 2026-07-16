@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import { getGpx } from '../api/client';
 import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../utils/io';
 
-export function useGpxActions(trail, showToast) {
+export function useGpxActions(options, showToast) {
+  const { trail, trailId, trailName } = typeof options === 'object' && options?.id ? { trail: options } : { trail: null, trailId: options, trailName };
   const [gpxDownloading, setGpxDownloading] = useState(false);
 
   const handleGpxDownload = useCallback(async (e) => {
@@ -10,26 +11,28 @@ export function useGpxActions(trail, showToast) {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (!trail || gpxDownloading) return;
+    const id = trail?.id || trailId;
+    if (!id || gpxDownloading) return;
     setGpxDownloading(true);
     try {
-      const gpx = await getGpx(trail.id);
+      const gpx = await getGpx(id);
       if (gpx) {
-        const safeName = (trail.fullName || trail.name || 'route').replace(/[^a-zA-Z0-9]/g, '_');
+        const safeName = (trail?.fullName || trail?.name || trailName || 'route').replace(/[^a-zA-Z0-9]/g, '_');
         downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
       }
     } finally {
       setTimeout(() => setGpxDownloading(false), 1000);
     }
-  }, [trail, gpxDownloading]);
+  }, [trail, trailId, trailName, gpxDownloading]);
 
   const handleTrailhead = useCallback(async (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (!trail) return;
-    const gpx = await getGpx(trail.id);
+    const id = trail?.id || trailId;
+    if (!id) return;
+    const gpx = await getGpx(id);
     if (!gpx) return;
     const coord = getFirstCoordinateFromGpx(gpx);
     if (coord) {
@@ -37,7 +40,7 @@ export function useGpxActions(trail, showToast) {
     } else if (showToast) {
       showToast('No GPS coordinates found in GPX file', 'error');
     }
-  }, [trail, showToast]);
+  }, [trail, trailId, showToast]);
 
   return {
     gpxDownloading,

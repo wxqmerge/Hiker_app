@@ -1,39 +1,11 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getRideCost } from '../utils/report';
 import { getGpx } from '../api/client';
-import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, openWeatherForTrail, fetchNwsForecastForDate } from '../utils/io';
+import { getFirstCoordinateFromGpx, openWeatherForTrail, fetchNwsForecastForDate } from '../utils/io';
+import { useGpxActions } from '../hooks/useGpxActions';
 import GPXHelp from './GPXHelp';
-
-function useHikeGpxActions(trailId, trailName) {
-  const [gpxDownloading, setGpxDownloading] = useState(false);
-
-  const handleGpxDownload = useCallback(async () => {
-    if (gpxDownloading) return;
-    setGpxDownloading(true);
-    try {
-      const gpx = await getGpx(trailId);
-      if (gpx) {
-        const safeName = (trailName || 'route').replace(/[^a-zA-Z0-9]/g, '_');
-        downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
-      }
-    } finally {
-      setTimeout(() => setGpxDownloading(false), 1000);
-    }
-  }, [trailId, trailName, gpxDownloading]);
-
-  const handleTrailhead = useCallback(async () => {
-    const gpx = await getGpx(trailId);
-    if (!gpx) return;
-    const coord = getFirstCoordinateFromGpx(gpx);
-    if (coord) {
-      openGoogleMapsTrailhead(coord.lat, coord.lon);
-    }
-  }, [trailId]);
-
-  return { gpxDownloading, handleGpxDownload, handleTrailhead };
-}
 
 export default function NextHikeBanner({ nextHikes }) {
   const [weatherMap, setWeatherMap] = useState({});
@@ -69,7 +41,7 @@ export default function NextHikeBanner({ nextHikes }) {
 function NextHikeCard({ hike, idx, weather }) {
   const trail = hike.trail;
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
-  const { handleGpxDownload, handleTrailhead } = useHikeGpxActions(hike.trailId, trail.fullName || trail.name);
+  const { handleGpxDownload, handleTrailhead } = useGpxActions(trail);
 
   const handleWeather = () => openWeatherForTrail(getGpx, hike.trailId);
 
