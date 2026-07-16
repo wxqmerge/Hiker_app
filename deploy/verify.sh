@@ -162,21 +162,83 @@ fi
 
 if [ -f "server/.env" ]; then
     pass "server/.env exists"
-    if grep -q '^ADMIN_API_KEY=' server/.env; then
-        ADMIN_KEY=$(grep '^ADMIN_API_KEY=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
-        if [ -n "$ADMIN_KEY" ]; then
-            pass "ADMIN_API_KEY is set"
+
+    # Check all required settings read by the server
+    check_env_var() {
+        local varname="$1"
+        local required="$2"
+        local default_val="$3"
+        if grep -q "^${varname}=" server/.env; then
+            local val=$(grep "^${varname}=" server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+            if [ -n "$val" ]; then
+                pass "$varname is set ($val)"
+            elif [ "$required" = false ]; then
+                pass "$varname is empty (using default: $default_val)"
+            else
+                fail "$varname is set but empty in server/.env"
+                NEED_ENV=true
+            fi
+        elif [ "$required" = false ]; then
+            pass "$varname not set (using default: $default_val)"
         else
-            fail "ADMIN_API_KEY is empty"
+            fail "$varname not found in server/.env"
             NEED_ENV=true
         fi
-    else
-        fail "ADMIN_API_KEY not found in server/.env"
-        NEED_ENV=true
+    }
+
+    check_env_var "PORT" false "3000"
+    check_env_var "ADMIN_API_KEY" true "(none - required)"
+    check_env_var "SCHEDULE_NAME" false "default"
+    check_env_var "HIKE_DAYS" false "3,5"
+    check_env_var "NODE_ENV" false "development"
+    check_env_var "CORS_ORIGINS" false "* (any origin)"
+
+    # Validate HIKE_DAYS format: comma-separated numbers 0-6
+    if grep -q '^HIKE_DAYS=' server/.env; then
+        HIKE_VAL=$(grep '^HIKE_DAYS=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+        if [ -n "$HIKE_VAL" ]; then
+            if echo "$HIKE_VAL" | grep -qE '^[0-6](,[0-6])*$'; then
+                pass "HIKE_DAYS format valid ($HIKE_VAL)"
+            else
+                fail "HIKE_DAYS invalid format: '$HIKE_VAL' (expected comma-separated 0-6, e.g. 3,5)"
+                NEED_ENV=true
+            fi
+        fi
+    fi
+
+    # Validate SCHEDULE_NAME matches a schedule file
+    if grep -q '^SCHEDULE_NAME=' server/.env; then
+        SCHED_VAL=$(grep '^SCHEDULE_NAME=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+        if [ -n "$SCHED_VAL" ]; then
+            if [ -f "exported_data/schedule_${SCHED_VAL}.json" ]; then
+                pass "Schedule file exists for group '$SCHED_VAL'"
+            else
+                warn "No schedule file for group '$SCHED_VAL' (expected exported_data/schedule_${SCHED_VAL}.json)"
+            fi
+        fi
     fi
 else
     fail "server/.env missing — copy server/.env.example to server/.env"
     NEED_ENV=true
+fi
+
+# 5b. Client .env (Vite build-time vars)
+echo ""
+echo "--- Client .env ---"
+if [ -f ".env" ]; then
+    pass ".env exists"
+    if grep -q '^VITE_API_BASE=' .env; then
+        VITE_API=$(grep '^VITE_API_BASE=' .env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+        if [ -n "$VITE_API" ]; then
+            pass "VITE_API_BASE is set ($VITE_API)"
+        else
+            warn "VITE_API_BASE is empty (auto-detect will be used)"
+        fi
+    else
+        warn "VITE_API_BASE not set (auto-detect will be used)"
+    fi
+else
+    warn ".env missing (client env vars not available)"
 fi
 
 # Check if server is actually responding locally
