@@ -24,7 +24,11 @@ export default function Calendar() {
 
   const year = 2026;
 
-  const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
+  const scheduleStore = useMemo(() => {
+    const result = serverScheduleToStore(scheduleData);
+    console.log('[Calendar] scheduleStore memo recomputed, months:', Object.keys(result));
+    return result;
+  }, [scheduleData]);
 
   const monthSlotStats = useMemo(() => {
     const hikeDays = getHikeDays();

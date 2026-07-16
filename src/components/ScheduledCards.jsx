@@ -18,6 +18,7 @@ export default function ScheduledCards({
   tt,
 }) {
   const cards = useMemo(() => {
+    console.log('[ScheduledCards] cards memo recomputes, assignedHikes keys:', Object.keys(assignedHikes));
     const daysInMonth = getDaysInMonth(year, selectedMonth);
     const allDays = [];
     const hikeDays = getHikeDays();
