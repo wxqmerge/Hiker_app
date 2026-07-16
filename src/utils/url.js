@@ -15,22 +15,6 @@ export function getApiBase() {
   return '';
 }
 
-export function getHealthUrl() {
-  const apiBase = getApiBase();
-  if (apiBase) return `${apiBase}/health`;
-  if (typeof window === 'undefined') return '/health';
-  const hostname = window.location.hostname;
-  const path = window.location.pathname;
-  if (hostname.endsWith('.example.com')) {
-    return `https://${hostname}/health`;
-  }
-  const match = path.match(/^\/([\w]+-[\w-]+)/);
-  if (match) {
-    return `https://${match[1]}.example.com/health`;
-  }
-  return '/health';
-}
-
 export function getGoogleAllTrailsSearchUrl(trailName) {
   if (!trailName) return '';
   const query = encodeURIComponent(`alltrails.com+washington+${trailName}`);

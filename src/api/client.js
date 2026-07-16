@@ -59,10 +59,6 @@ export async function getTrails() {
 
 const gpxCache = new Map();
 
-export function clearGpxCache() {
-  gpxCache.clear();
-}
-
 export async function getGpx(trailId) {
   if (gpxCache.has(trailId)) return gpxCache.get(trailId);
   try {

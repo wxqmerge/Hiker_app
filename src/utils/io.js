@@ -122,16 +122,6 @@ export async function openWeatherForTrail(getGpxFn, trailId) {
   }
 }
 
-// Fetch GPX for a trail, extract first coordinate, and open Google Maps trailhead
-export async function openTrailheadForTrail(getGpxFn, trailId) {
-  const gpx = await getGpxFn(trailId);
-  if (!gpx) return;
-  const coord = getFirstCoordinateFromGpx(gpx);
-  if (coord) {
-    openGoogleMapsTrailhead(coord.lat, coord.lon);
-  }
-}
-
 // Open GPX file in associated app (mobile: Web Share, desktop: download with extension)
 export async function shareGpxFile(gpxContent, trailName) {
   const safeName = sanitizeFilename(trailName, 'route');
