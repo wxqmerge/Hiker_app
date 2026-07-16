@@ -120,9 +120,14 @@ export default function Calendar() {
     });
     const current = store[monthName] || {};
     const updated = { ...current };
-    const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
-    entries[slotIdx] = { ...entries[slotIdx], leader: trimmed };
-    updated[day] = entries;
+    const existing = updated[day];
+    if (Array.isArray(existing)) {
+      const updatedEntry = { ...existing[slotIdx], leader: trimmed };
+      updated[day] = [...existing];
+      updated[day][slotIdx] = updatedEntry;
+    } else {
+      updated[day] = [{ ...existing, leader: trimmed }];
+    }
     const newStore = { ...store, [monthName]: updated };
     const serverData = storeToServerSchedule(newStore);
     console.log('[Calendar] Server data for month:', monthAbbr, serverData[monthAbbr]?.find(e => e.day == day));

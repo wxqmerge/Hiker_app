@@ -26,28 +26,28 @@ export default function ScheduledCards({
       const date = createDate(year, selectedMonth, day);
       if (hikeDays.includes(date.getDay())) allDays.push(day);
     }
-    return allDays
-       .flatMap(day => {
-         const entries = assignedHikes[day] || [];
-          const filteredEntries = entries.filter(entry => entry?.trail_id);
-          return filteredEntries
-            .map((entry, idx) => {
-              const { trail_id: trailId, early_start: earlyStart, leader } = entry;
-              const trail = findTrailById(trailId);
-              if (!trail) return null;
-              const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
-               return (
-                 <div
-                   key={`${day}-${idx}`}
-                   draggable={hasApiKey}
-                    onDragStart={() => hikeIdx && hasApiKey && handleDragStart(Number(hikeIdx[0]), day, idx, trailId, earlyStart, leader)}
-                  onDragEnd={handleDragEnd}
-                  className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
-                  title={hasApiKey ? tt('Drag to swap with another date') : undefined}
-                  style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
-                >
-                  <div className="relative">
-                    <TrailCard trail={trail} isActive={false} leader={leader} onLeaderChange={onLeaderChange ? () => onLeaderChange(day, idx, leader) : undefined} />
+        return allDays
+        .flatMap(day => {
+          const entries = assignedHikes[day] || [];
+           return entries
+             .map((entry, idx) => {
+               if (!entry?.trail_id) return null;
+               const { trail_id: trailId, early_start: earlyStart, leader } = entry;
+               const trail = findTrailById(trailId);
+               if (!trail) return null;
+               const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
+                return (
+                  <div
+                    key={`${day}-${idx}`}
+                    draggable={hasApiKey}
+                     onDragStart={() => hikeIdx && hasApiKey && handleDragStart(Number(hikeIdx[0]), day, idx, trailId, earlyStart, leader)}
+                   onDragEnd={handleDragEnd}
+                   className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
+                   title={hasApiKey ? tt('Drag to swap with another date') : undefined}
+                   style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
+                 >
+                   <div className="relative">
+                     <TrailCard trail={trail} isActive={false} leader={leader} onLeaderChange={onLeaderChange ? () => onLeaderChange(day, idx, leader) : undefined} />
                     <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
                       {day}
                       <span className="text-[8px]">{getDayLabel(createDate(year, selectedMonth, day).getDay())}</span>
