@@ -507,14 +507,24 @@ export default function ScheduleBuilder() {
             }
             console.log('[TSV Import] Column groups:', columnGroups);
 
-            // Map each column group to its slot: for same dow, order determines slot (A=0, B=1)
-            const dowGroupIndex = {};
+            // Map each column group to its slot using configured hike days order
+            const hikeDaysConfig = getHikeDays();
+            const dowOccurrence = {};
             for (const cg of columnGroups) {
               const dowMatch = DAY_NAMES.find(name => cg.dayLabel.startsWith(name));
               if (dowMatch) {
                 const dow = DAY_NAMES.indexOf(dowMatch);
-                if (!dowGroupIndex[dow]) dowGroupIndex[dow] = 0;
-                cg.slot = dowGroupIndex[dow]++;
+                if (!dowOccurrence[dow]) dowOccurrence[dow] = 0;
+                const occ = dowOccurrence[dow]++;
+                // Find the occ-th occurrence of this dow in configured hike days
+                let count = 0, foundSlot = 0;
+                for (let s = 0; s < hikeDaysConfig.length; s++) {
+                  if (hikeDaysConfig[s] === dow) {
+                    if (count === occ) { foundSlot = s; break; }
+                    count++;
+                  }
+                }
+                cg.slot = foundSlot;
               } else {
                 cg.slot = 0;
               }
@@ -631,8 +641,8 @@ export default function ScheduleBuilder() {
     const qYear = year;
     const hikeDays = getHikeDays();
 
-    // Collect all hikes from schedule, keyed by dow only (slot reassigned later)
-    const hikesByDow = {};
+    // Collect all hikes from schedule, preserving original slot
+    const hikesByDay = {};
     const maxEntriesPerDow = {};
 
     for (const monthAbbr of quarter.months) {
@@ -648,15 +658,17 @@ export default function ScheduleBuilder() {
         const validEntries = entries.filter(e => e && e.trail_id);
 
         if (validEntries.length > 0) {
-          if (!hikesByDow[dayOfWeek]) hikesByDow[dayOfWeek] = [];
+          if (!maxEntriesPerDow[dayOfWeek]) maxEntriesPerDow[dayOfWeek] = 0;
+          maxEntriesPerDow[dayOfWeek] = Math.max(maxEntriesPerDow[dayOfWeek], validEntries.length);
           validEntries.forEach(entry => {
+            const slot = entry.slot ?? 0;
+            const key = `${dayOfWeek}-${slot}`;
+            if (!hikesByDay[key]) hikesByDay[key] = [];
             const trail = findTrailById(entry.trail_id);
             let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
             if (entry.early_start) trailName += ' (Early Start)';
-            hikesByDow[dayOfWeek].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
+            hikesByDay[key].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
           });
-          if (!maxEntriesPerDow[dayOfWeek]) maxEntriesPerDow[dayOfWeek] = 0;
-          maxEntriesPerDow[dayOfWeek] = Math.max(maxEntriesPerDow[dayOfWeek], validEntries.length);
         }
       }
     }
@@ -670,27 +682,10 @@ export default function ScheduleBuilder() {
     }
     const uniqueDays = Object.keys(dayCounts).map(Number).sort((a, b) => a - b);
 
-    // Reassign hikes into dow-slot buckets (slot = index within each date's entries)
-    const hikesByDay = {};
+    // Ensure all day+slot combinations exist
     for (const dow of uniqueDays) {
-      const count = dayCounts[dow] || 1;
-      for (let slot = 0; slot < count; slot++) {
-        hikesByDay[`${dow}-${slot}`] = [];
-      }
-    }
-    // Group by month, then by dow, distributing into slots
-    for (const dow of uniqueDays) {
-      const count = dayCounts[dow] || 1;
-      const monthHikes = {};
-      for (const m of quarter.months) {
-        monthHikes[m] = hikesByDow[dow].filter(h => h.month === m);
-      }
-      for (const m of quarter.months) {
-        const hikes = monthHikes[m] || [];
-        for (let i = 0; i < hikes.length; i++) {
-          const slot = i % count;
-          hikesByDay[`${dow}-${slot}`].push(hikes[i]);
-        }
+      for (let slot = 0; slot < (dayCounts[dow] || 1); slot++) {
+        if (!hikesByDay[`${dow}-${slot}`]) hikesByDay[`${dow}-${slot}`] = [];
       }
     }
 
