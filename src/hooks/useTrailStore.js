@@ -23,7 +23,9 @@ function setState(trails, details, loading, lookup, schedule) {
 }
 
 export function setSchedule(schedule) {
+  const prev = _schedule;
   _schedule = schedule;
+  console.log('[useTrailStore] setSchedule called, same ref?', prev === schedule);
   notifySubscribers('schedule');
 }
 
@@ -83,10 +85,15 @@ export function useTrailStore() {
   const subscribe = useCallback(() => {
     const sub = (changed) => {
       if (mountedRef.current) setStateLocal(prev => {
-        if (changed === 'schedule' && prev.schedule === _schedule) return prev;
-        if (changed === 'trails' && prev.trails === _trails) return prev;
-        if (changed === 'details' && prev.trailDetails === _trailDetails) return prev;
-        if (changed === 'all' && prev.trails === _trails && prev.trailDetails === _trailDetails && prev.lookup === _lookup && prev.schedule === _schedule) return prev;
+        const shouldSkip = (changed === 'schedule' && prev.schedule === _schedule)
+          || (changed === 'trails' && prev.trails === _trails)
+          || (changed === 'details' && prev.trailDetails === _trailDetails)
+          || (changed === 'all' && prev.trails === _trails && prev.trailDetails === _trailDetails && prev.lookup === _lookup && prev.schedule === _schedule);
+        if (shouldSkip) {
+          console.log('[useTrailStore] subscriber SKIPPED update, changed:', changed);
+          return prev;
+        }
+        console.log('[useTrailStore] subscriber APPLIED update, changed:', changed);
         return {
           trails: _trails,
           trailDetails: _trailDetails,
