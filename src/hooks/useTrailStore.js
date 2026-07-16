@@ -27,6 +27,10 @@ export function setSchedule(schedule) {
   notifySubscribers('schedule');
 }
 
+export function getSchedule() {
+  return _schedule;
+}
+
 function setTrails(trails) {
   _trails = trails;
   notifySubscribers('trails');

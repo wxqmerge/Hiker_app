@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
 import { MONTH_NAMES } from '../utils/constants';
 import { updateSchedule } from '../api/client';
-import { setSchedule } from '../hooks/useTrailStore';
+import { setSchedule, getSchedule } from '../hooks/useTrailStore';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
@@ -99,12 +99,15 @@ export default function Calendar() {
     if (newLeader === null) return;
     const trimmed = newLeader.trim();
     const monthName = MONTH_NAMES[selectedMonth];
-    const current = scheduleStore[monthName] || {};
+    // Read latest schedule from global store to avoid stale closure
+    const latestServer = getSchedule();
+    const store = serverScheduleToStore(latestServer);
+    const current = store[monthName] || {};
     const updated = { ...current };
     const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
     entries[slotIdx] = { ...entries[slotIdx], leader: trimmed };
     updated[day] = entries;
-    const newStore = { ...scheduleStore, [monthName]: updated };
+    const newStore = { ...store, [monthName]: updated };
     const serverData = storeToServerSchedule(newStore);
     try {
       await updateSchedule(serverData);
@@ -112,7 +115,7 @@ export default function Calendar() {
     } catch (error) {
       alert('Failed to save leader: ' + error.message);
     }
-  }, [selectedMonth, scheduleStore]);
+  }, [selectedMonth]);
 
   const {
     confirmSwap,
