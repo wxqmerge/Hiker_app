@@ -507,25 +507,16 @@ export default function ScheduleBuilder() {
             }
             console.log('[TSV Import] Column groups:', columnGroups);
 
-            // Map each column group to its slot using configured hike days order
-            const hikeDaysConfig = getHikeDays();
+            // Map each column group to its slot: slot = occurrence within same day-of-week
+            // sothh [3,5]: Wed→slot 0, Fri→slot 0 (different days, each has 1 hike)
+            // ramblers [1,1]: Mon A→slot 0, Mon B→slot 1 (same day, 2 hikes)
             const dowOccurrence = {};
             for (const cg of columnGroups) {
-              // Column label is abbreviated ("Wed", "Mon A"), DAY_NAMES has full names
               const dowMatch = DAY_NAMES.find(name => name.startsWith(cg.dayLabel.split(' ')[0]));
               if (dowMatch) {
                 const dow = DAY_NAMES.indexOf(dowMatch);
                 if (!dowOccurrence[dow]) dowOccurrence[dow] = 0;
-                const occ = dowOccurrence[dow]++;
-                // Find the occ-th occurrence of this dow in configured hike days
-                let count = 0, foundSlot = 0;
-                for (let s = 0; s < hikeDaysConfig.length; s++) {
-                  if (hikeDaysConfig[s] === dow) {
-                    if (count === occ) { foundSlot = s; break; }
-                    count++;
-                  }
-                }
-                cg.slot = foundSlot;
+                cg.slot = dowOccurrence[dow]++;
               } else {
                 cg.slot = 0;
               }
