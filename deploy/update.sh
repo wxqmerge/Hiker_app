@@ -47,6 +47,7 @@ SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
 DIR="$(pwd)"
 DEPLOY_USER="$(whoami)"
 DEPLOY_GROUP="$(id -gn "$DEPLOY_USER" 2>/dev/null || echo "$DEPLOY_USER")"
+SHARED_GROUP="hikers"
 
 # Dependency cooldown configuration
 LAST_PACKAGE_UPDATE_FILE="$DIR/.last-package-update"
@@ -251,12 +252,16 @@ find "$DIR" -type f -not -path "*/node_modules/*" -exec chmod 644 {} +
 find "$DIR/node_modules/.bin" -type f -exec chmod 755 {} + 2>/dev/null || true
 chmod 600 "$DIR/server/.env" 2>/dev/null || true
 chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
+
+# exported_data/ and tmp/ — group-writable so server process can write
 chmod 775 "$DIR/exported_data" 2>/dev/null || true
 chmod 775 "$DIR/exported_data/schedule_history" 2>/dev/null || true
 find "$DIR/exported_data" -type f -exec chmod 664 {} + 2>/dev/null || true
-# Ensure tmp/ exists and is writable (required for multer uploads)
+sudo chgrp -R "$SHARED_GROUP" "$DIR/exported_data" 2>/dev/null || true
+
 mkdir -p "$DIR/tmp"
-chmod 777 "$DIR/tmp"
+chmod 775 "$DIR/tmp"
+sudo chgrp "$SHARED_GROUP" "$DIR/tmp" 2>/dev/null || true
 echo "  Done."
 
 # 8. Fix systemd service file
@@ -299,7 +304,7 @@ else
     echo "  WARNING: $SERVICE_FILE not found — creating from template"
     TEMPLATE="$DEPLOY_DIR/hiker-app.service"
     if [ -f "$TEMPLATE" ]; then
-        sed "s|/var/www/html/hiker-app|$DIR|g; s|User=hiker|User=$DEPLOY_USER|g; s|Group=hiker|Group=$DEPLOY_GROUP|g" "$TEMPLATE" | sudo tee "$SERVICE_FILE" > /dev/null
+        sed "s|/var/www/html/hiker-app|$DIR|g; s|User=hiker|User=$DEPLOY_USER|g; s|Group=hiker|Group=$SHARED_GROUP|g" "$TEMPLATE" | sudo tee "$SERVICE_FILE" > /dev/null
         echo "  Created $SERVICE_FILE"
     else
         echo "  ERROR: Template $TEMPLATE not found"
