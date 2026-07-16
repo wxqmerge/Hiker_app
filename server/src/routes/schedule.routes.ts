@@ -61,12 +61,27 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
   if (!result.success) {
     return res.status(400).json({ success: false, error: { message: 'Invalid schedule data', details: result.error.issues } });
   }
-  const entryCount = result.data ? Object.values(result.data).reduce((n: number, entries: any) => n + entries.length, 0) : 0;
+  // Normalize month keys: full names and case-insensitive → abbreviated
+  const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const normalizeKey = (k: string): string => {
+    const lower = k.toLowerCase();
+    const fullIdx = MONTH_FULL.findIndex(m => m.toLowerCase() === lower);
+    if (fullIdx >= 0) return MONTH_ABBR[fullIdx];
+    const abbrIdx = MONTH_ABBR.findIndex(m => m.toLowerCase() === lower);
+    if (abbrIdx >= 0) return MONTH_ABBR[abbrIdx];
+    return k;
+  };
+  const normalized: Record<string, any[]> = {};
+  for (const [key, entries] of Object.entries(result.data)) {
+    normalized[normalizeKey(key)] = entries;
+  }
+  const entryCount = Object.values(normalized).reduce((n: number, entries: any) => n + entries.length, 0);
   console.log('[SCHEDULE] PUT schedule -', entryCount, 'entries');
   const oldSchedule = getSchedule();
   const oldCount = Object.values(oldSchedule).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
   console.log('[SCHEDULE] Previous:', oldCount, 'entries');
-  await updateSchedule(result.data);
+  await updateSchedule(normalized as typeof result.data);
   const newVersion = getScheduleVersion();
   console.log('[SCHEDULE] Save complete, new version:', newVersion.substring(0, 8));
   res.json({ success: true, etag: newVersion });

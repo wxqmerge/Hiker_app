@@ -592,7 +592,13 @@ export default function ScheduleBuilder() {
               return;
             }
 
-            const result = await updateSchedule(schedule);
+            // Convert full month names to abbreviated keys for the server
+            const normalized = {};
+            for (const [month, entries] of Object.entries(schedule)) {
+              const abbr = MONTH_FULL_TO_ABBR[month] || month;
+              normalized[abbr] = entries;
+            }
+            const result = await updateSchedule(normalized);
            if (!result.success) {
              alert('Import failed: ' + (result.error?.message || 'Unknown error'));
              return;
