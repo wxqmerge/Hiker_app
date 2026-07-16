@@ -7,7 +7,7 @@ import PageNav from '../components/PageNav';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
-import { MONTH_NAMES, MONTH_FULL_TO_ABBR } from '../utils/constants';
+import { MONTH_NAMES } from '../utils/constants';
 import { updateSchedule, getSchedule as fetchSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
@@ -24,11 +24,7 @@ export default function Calendar() {
 
   const year = 2026;
 
-  const scheduleStore = useMemo(() => {
-    const result = serverScheduleToStore(scheduleData);
-    console.log('[Calendar] scheduleStore memo recomputed, months:', Object.keys(result));
-    return result;
-  }, [scheduleData]);
+  const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
 
   const monthSlotStats = useMemo(() => {
     const hikeDays = getHikeDays();
@@ -103,7 +99,6 @@ export default function Calendar() {
     if (newLeader === null) return;
     const trimmed = newLeader.trim();
     const monthName = MONTH_NAMES[selectedMonth];
-    // Fetch latest schedule from server to avoid stale closure
     let latestServer;
     try {
       latestServer = await fetchSchedule();
@@ -111,13 +106,6 @@ export default function Calendar() {
       latestServer = scheduleData || {};
     }
     const store = serverScheduleToStore(latestServer);
-    const monthAbbr = MONTH_FULL_TO_ABBR[monthName];
-    console.log('[Calendar] Leader change debug:', {
-      day, slotIdx, leader: trimmed, monthName, monthAbbr,
-      storeMonths: Object.keys(store),
-      monthData: store[monthName],
-      dayEntries: store[monthName]?.[day],
-    });
     const current = store[monthName] || {};
     const updated = { ...current };
     const existing = updated[day];
@@ -130,10 +118,8 @@ export default function Calendar() {
     }
     const newStore = { ...store, [monthName]: updated };
     const serverData = storeToServerSchedule(newStore);
-    console.log('[Calendar] Server data for month:', monthAbbr, serverData[monthAbbr]?.find(e => e.day == day));
     try {
-      const result = await updateSchedule(serverData);
-      console.log('[Calendar] PUT result:', result, 'server response day 17:', result[monthAbbr]?.find(e => e.day == day));
+      await updateSchedule(serverData);
       setSchedule(serverData);
     } catch (error) {
       console.error('[Calendar] Failed to save leader:', error);

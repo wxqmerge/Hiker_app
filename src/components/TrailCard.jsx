@@ -13,7 +13,6 @@ import { openWeatherForTrail } from '../utils/io';
 import { getGpx } from '../api/client';
 
 const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange }) {
-  console.log('[TrailCard] render, trail:', trail?.id, 'leader:', leader);
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
