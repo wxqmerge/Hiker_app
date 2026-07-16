@@ -511,14 +511,37 @@ export default function ScheduleBuilder() {
             // sothh [3,5]: Wed→slot 0, Fri→slot 0 (different days, each has 1 hike)
             // ramblers [1,1]: Mon A→slot 0, Mon B→slot 1 (same day, 2 hikes)
             const dowOccurrence = {};
+            const unmatchedDayLabels = [];
             for (const cg of columnGroups) {
-              const dowMatch = DAY_NAMES.find(name => name.startsWith(cg.dayLabel.split(' ')[0]));
+              const dowMatch = DAY_NAMES.find(name => cg.dayLabel.split(' ')[0].startsWith(name));
               if (dowMatch) {
                 const dow = DAY_NAMES.indexOf(dowMatch);
                 if (!dowOccurrence[dow]) dowOccurrence[dow] = 0;
                 cg.slot = dowOccurrence[dow]++;
               } else {
+                unmatchedDayLabels.push(cg.dayLabel);
                 cg.slot = 0;
+              }
+            }
+
+            // Detect slot collisions: multiple columns mapping to same dow+slot
+            const slotKeys = columnGroups.map(cg => `${cg.dayLabel}:${cg.slot}`);
+            const slotCollisions = slotKeys.filter((k, i) => slotKeys.indexOf(k) !== i);
+
+            if (unmatchedDayLabels.length > 0 || slotCollisions.length > 0) {
+              let warnMsg = '⚠ Import warning — data may be lost:\n\n';
+              if (unmatchedDayLabels.length > 0) {
+                warnMsg += `Unrecognized day labels: ${unmatchedDayLabels.join(', ')}\n`;
+                warnMsg += 'These columns will default to slot 0 and may collide.\n';
+              }
+              if (slotCollisions.length > 0) {
+                const uniqueCollisions = [...new Set(slotCollisions)];
+                warnMsg += `Slot collisions: ${uniqueCollisions.join(', ')}\n`;
+                warnMsg += 'Multiple columns share the same day+slot — only one hike will survive per date.\n';
+              }
+              warnMsg += '\nDo you want to proceed anyway?';
+              if (!confirm(warnMsg)) {
+                return;
               }
             }
 
