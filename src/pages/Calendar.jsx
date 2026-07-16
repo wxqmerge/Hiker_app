@@ -7,7 +7,7 @@ import PageNav from '../components/PageNav';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
-import { MONTH_NAMES } from '../utils/constants';
+import { MONTH_NAMES, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { updateSchedule, getSchedule as fetchSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
@@ -107,6 +107,13 @@ export default function Calendar() {
       latestServer = scheduleData || {};
     }
     const store = serverScheduleToStore(latestServer);
+    const monthAbbr = MONTH_FULL_TO_ABBR[monthName];
+    console.log('[Calendar] Leader change debug:', {
+      day, slotIdx, leader: trimmed, monthName, monthAbbr,
+      storeMonths: Object.keys(store),
+      monthData: store[monthName],
+      dayEntries: store[monthName]?.[day],
+    });
     const current = store[monthName] || {};
     const updated = { ...current };
     const entries = Array.isArray(updated[day]) ? [...updated[day]] : [updated[day] || {}];
@@ -114,9 +121,10 @@ export default function Calendar() {
     updated[day] = entries;
     const newStore = { ...store, [monthName]: updated };
     const serverData = storeToServerSchedule(newStore);
-    console.log('[Calendar] Leader change:', { day, slotIdx, leader: trimmed });
+    console.log('[Calendar] Server data for month:', monthAbbr, serverData[monthAbbr]);
     try {
-      await updateSchedule(serverData);
+      const result = await updateSchedule(serverData);
+      console.log('[Calendar] PUT result:', result);
       setSchedule(serverData);
     } catch (error) {
       console.error('[Calendar] Failed to save leader:', error);
