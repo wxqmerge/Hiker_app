@@ -612,8 +612,8 @@ export default function ScheduleBuilder() {
     const qYear = year;
     const hikeDays = getHikeDays();
 
-    // Collect all hikes from schedule to discover actual days/slots
-    const hikesByDay = {};
+    // Collect all hikes from schedule, keyed by dow only (slot reassigned later)
+    const hikesByDow = {};
     const maxEntriesPerDow = {};
 
     for (const monthAbbr of quarter.months) {
@@ -625,24 +625,19 @@ export default function ScheduleBuilder() {
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(qYear, monthIndex, day);
         const dayOfWeek = date.getDay();
-        const entries = Array.isArray(monthData[String(day)]) ? monthData[String(day)] : [monthData[String(day)]].filter(Boolean);
-        entries.forEach((entry, slot) => {
-          if (!entry || !entry.trail_id) return;
+        const entries = Array.isArray(monthData[String(day)]) ? monthData[String(day)] : [monthData[String(day)]];
+        const validEntries = entries.filter(e => e && e.trail_id);
 
-          const key = `${dayOfWeek}-${slot}`;
-          if (!hikesByDay[key]) hikesByDay[key] = [];
-
-          const trail = findTrailById(entry.trail_id);
-          let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
-          if (entry.early_start) trailName += ' (Early Start)';
-
-          hikesByDay[key].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
-        });
-        // Track max entries per day-of-week across all dates
-        const validEntries = entries.filter(e => e && e.trail_id).length;
-        if (validEntries > 0) {
+        if (validEntries.length > 0) {
+          if (!hikesByDow[dayOfWeek]) hikesByDow[dayOfWeek] = [];
+          validEntries.forEach(entry => {
+            const trail = findTrailById(entry.trail_id);
+            let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
+            if (entry.early_start) trailName += ' (Early Start)';
+            hikesByDow[dayOfWeek].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
+          });
           if (!maxEntriesPerDow[dayOfWeek]) maxEntriesPerDow[dayOfWeek] = 0;
-          maxEntriesPerDow[dayOfWeek] = Math.max(maxEntriesPerDow[dayOfWeek], validEntries);
+          maxEntriesPerDow[dayOfWeek] = Math.max(maxEntriesPerDow[dayOfWeek], validEntries.length);
         }
       }
     }
@@ -656,10 +651,27 @@ export default function ScheduleBuilder() {
     }
     const uniqueDays = Object.keys(dayCounts).map(Number).sort((a, b) => a - b);
 
-    // Ensure all day+slot combinations exist
+    // Reassign hikes into dow-slot buckets (slot = index within each date's entries)
+    const hikesByDay = {};
     for (const dow of uniqueDays) {
-      for (let slot = 0; slot < (dayCounts[dow] || 1); slot++) {
-        if (!hikesByDay[`${dow}-${slot}`]) hikesByDay[`${dow}-${slot}`] = [];
+      const count = dayCounts[dow] || 1;
+      for (let slot = 0; slot < count; slot++) {
+        hikesByDay[`${dow}-${slot}`] = [];
+      }
+    }
+    // Group by month, then by dow, distributing into slots
+    for (const dow of uniqueDays) {
+      const count = dayCounts[dow] || 1;
+      const monthHikes = {};
+      for (const m of quarter.months) {
+        monthHikes[m] = hikesByDow[dow].filter(h => h.month === m);
+      }
+      for (const m of quarter.months) {
+        const hikes = monthHikes[m] || [];
+        for (let i = 0; i < hikes.length; i++) {
+          const slot = i % count;
+          hikesByDay[`${dow}-${slot}`].push(hikes[i]);
+        }
       }
     }
 
