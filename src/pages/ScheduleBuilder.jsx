@@ -511,7 +511,8 @@ export default function ScheduleBuilder() {
             const hikeDaysConfig = getHikeDays();
             const dowOccurrence = {};
             for (const cg of columnGroups) {
-              const dowMatch = DAY_NAMES.find(name => cg.dayLabel.startsWith(name));
+              // Column label is abbreviated ("Wed", "Mon A"), DAY_NAMES has full names
+              const dowMatch = DAY_NAMES.find(name => name.startsWith(cg.dayLabel.split(' ')[0]));
               if (dowMatch) {
                 const dow = DAY_NAMES.indexOf(dowMatch);
                 if (!dowOccurrence[dow]) dowOccurrence[dow] = 0;
