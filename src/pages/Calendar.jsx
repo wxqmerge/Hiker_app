@@ -8,7 +8,7 @@ import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
 import { MONTH_NAMES } from '../utils/constants';
-import { updateSchedule } from '../api/client';
+import { updateSchedule, getSchedule as fetchSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
 import { useScheduleData } from '../hooks/useScheduleData';
@@ -99,8 +99,13 @@ export default function Calendar() {
     if (newLeader === null) return;
     const trimmed = newLeader.trim();
     const monthName = MONTH_NAMES[selectedMonth];
-    // Use scheduleData from useTrails() - it's the server-format schedule
-    const latestServer = scheduleData || {};
+    // Fetch latest schedule from server to avoid stale closure
+    let latestServer;
+    try {
+      latestServer = await fetchSchedule();
+    } catch {
+      latestServer = scheduleData || {};
+    }
     const store = serverScheduleToStore(latestServer);
     const current = store[monthName] || {};
     const updated = { ...current };
@@ -109,7 +114,7 @@ export default function Calendar() {
     updated[day] = entries;
     const newStore = { ...store, [monthName]: updated };
     const serverData = storeToServerSchedule(newStore);
-    console.log('[Calendar] Leader change:', { day, slotIdx, leader: trimmed, serverData });
+    console.log('[Calendar] Leader change:', { day, slotIdx, leader: trimmed });
     try {
       await updateSchedule(serverData);
       setSchedule(serverData);
