@@ -61,6 +61,25 @@ warn() { echo -e "${YELLOW}⚠${NC} $1"; WARNINGS=$((WARNINGS + 1)); }
 echo "=== Verifying $DIR ==="
 echo ""
 
+# Deployment summary
+echo "--- Deployment Info ---"
+echo "  Service: $SERVICE"
+echo "  Domain:  $DOMAIN"
+echo "  Frontend URL: $FRONTEND_URL"
+if [ -f "server/.env" ]; then
+    SCHED_NAME=$(grep '^SCHEDULE_NAME=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    HIKE_DAYS=$(grep '^HIKE_DAYS=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    NODE_ENV_VAL=$(grep '^NODE_ENV=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    echo "  Schedule Group: ${SCHED_NAME:-default}"
+    echo "  Hike Days:      ${HIKE_DAYS:-3,5}"
+    echo "  Node Env:       ${NODE_ENV_VAL:-development}"
+else
+    echo "  Schedule Group: default"
+    echo "  Hike Days:      3,5"
+    echo "  Node Env:       development"
+fi
+echo ""
+
 # 1. Git
 echo "--- Git ---"
 if git diff --quiet 2>/dev/null; then
