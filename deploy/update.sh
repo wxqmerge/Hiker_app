@@ -47,7 +47,7 @@ SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
 DIR="$(pwd)"
 DEPLOY_USER="$(whoami)"
 DEPLOY_GROUP="$(id -gn "$DEPLOY_USER" 2>/dev/null || echo "$DEPLOY_USER")"
-SHARED_GROUP="hikers"
+SHARED_GROUP="www-data"
 
 # Dependency cooldown configuration
 LAST_PACKAGE_UPDATE_FILE="$DIR/.last-package-update"
