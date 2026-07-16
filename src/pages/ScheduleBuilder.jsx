@@ -661,8 +661,8 @@ export default function ScheduleBuilder() {
         if (validEntries.length > 0) {
           if (!maxEntriesPerDow[dayOfWeek]) maxEntriesPerDow[dayOfWeek] = 0;
           maxEntriesPerDow[dayOfWeek] = Math.max(maxEntriesPerDow[dayOfWeek], validEntries.length);
-          validEntries.forEach(entry => {
-            const slot = entry.slot ?? 0;
+          entries.forEach((entry, slot) => {
+            if (!entry || !entry.trail_id) return;
             const key = `${dayOfWeek}-${slot}`;
             if (!hikesByDay[key]) hikesByDay[key] = [];
             const trail = findTrailById(entry.trail_id);
