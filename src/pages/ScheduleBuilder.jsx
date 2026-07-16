@@ -611,17 +611,10 @@ export default function ScheduleBuilder() {
     const quarter = getQuarterForMonth(selectedMonth);
     const qYear = year;
     const hikeDays = getHikeDays();
-    const uniqueDays = [...new Set(hikeDays)].sort((a, b) => a - b);
-    const dayCounts = {};
-    hikeDays.forEach(d => dayCounts[d] = (dayCounts[d] || 0) + 1);
 
-    // Collect hikes by day of week and slot
+    // Collect all hikes from schedule first to discover actual days/slots
     const hikesByDay = {};
-    for (const dow of uniqueDays) {
-      for (let slot = 0; slot < (dayCounts[dow] || 1); slot++) {
-        hikesByDay[`${dow}-${slot}`] = [];
-      }
-    }
+    const actualDaySlots = {};
 
     for (const monthAbbr of quarter.months) {
       const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthAbbr);
@@ -636,15 +629,35 @@ export default function ScheduleBuilder() {
         entries.forEach((entry, slot) => {
           if (!entry || !entry.trail_id) return;
 
+          const key = `${dayOfWeek}-${slot}`;
+          if (!hikesByDay[key]) hikesByDay[key] = [];
+          if (!actualDaySlots[dayOfWeek]) actualDaySlots[dayOfWeek] = 0;
+          actualDaySlots[dayOfWeek] = Math.max(actualDaySlots[dayOfWeek], slot + 1);
+
           const trail = findTrailById(entry.trail_id);
           let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
           if (entry.early_start) trailName += ' (Early Start)';
 
-          const key = `${dayOfWeek}-${slot}`;
-          if (hikesByDay[key]) {
-            hikesByDay[key].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
-          }
+          hikesByDay[key].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
         });
+      }
+    }
+
+    // Merge configured hike days with actual days found in schedule
+    const configuredDayCounts = {};
+    hikeDays.forEach(d => configuredDayCounts[d] = (configuredDayCounts[d] || 0) + 1);
+
+    const dayCounts = { ...configuredDayCounts };
+    for (const [dow, count] of Object.entries(actualDaySlots)) {
+      const d = parseInt(dow, 10);
+      dayCounts[d] = Math.max(dayCounts[d] || 0, count);
+    }
+    const uniqueDays = Object.keys(dayCounts).map(Number).sort((a, b) => a - b);
+
+    // Ensure all day+slot combinations exist
+    for (const dow of uniqueDays) {
+      for (let slot = 0; slot < (dayCounts[dow] || 1); slot++) {
+        if (!hikesByDay[`${dow}-${slot}`]) hikesByDay[`${dow}-${slot}`] = [];
       }
     }
 
