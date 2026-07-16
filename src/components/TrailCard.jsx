@@ -145,12 +145,13 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                  </svg>
-                 {onLeaderChange ? (
-                   <button
-                     className="truncate text-blue-600 hover:text-blue-800 cursor-pointer"
-                     title="Click to change leader"
-                     onClick={() => onLeaderChange(leader)}
-                   >
+                  {onLeaderChange ? (
+                    <button
+                      type="button"
+                      className="truncate text-blue-600 hover:text-blue-800 cursor-pointer"
+                      title="Click to change leader"
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onLeaderChange(leader); }}
+                    >
                      {leader}
                    </button>
                  ) : (
