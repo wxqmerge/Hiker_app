@@ -573,11 +573,10 @@ export default function ScheduleBuilder() {
                     }
                     trail = bestMatch;
                   }
-                  if (trail) {
-                    const hasEarlyStart = /\(early start\)/i.test(hikeName);
-                    const hikeDate = createDate(year, MONTH_NAMES.indexOf(currentMonth), dayNum);
-                    const slot = cg.slot ?? getHikeDays().indexOf(hikeDate.getDay()) ?? 0;
-                    schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: hasEarlyStart });
+                   if (trail) {
+                     const hasEarlyStart = /\(early start\)/i.test(hikeName);
+                     const slot = cg.slot ?? 0;
+                     schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: hasEarlyStart });
                     matchedCount++;
                   } else {
                     console.log('[TSV Import] Unmatched:', hikeName);
@@ -766,20 +765,22 @@ export default function ScheduleBuilder() {
       const date = createDate(year, selectedMonth, day);
       if (hikeDays.includes(date.getDay())) hikeDates.push(day);
     }
-    const entries = hikeDates.map(day => {
-       const date = createDate(year, selectedMonth, day);
-       const slot = hikeDays.indexOf(date.getDay());
-       const entry = assignedHikes[day]?.[slot] || { trail_id: null, early_start: false };
-       const { trail_id: trailId, early_start: earlyStart } = entry;
-       const dayOfWeek = DAY_NAMES[date.getDay()];
-      const dateStr = `${dayOfWeek}, ${month} ${day}`;
-
-      if (!trailId) return { dateStr, trail: null, trailDetails: null, earlyStart: false };
-
-      const trail = findTrailById(trailId);
-      if (!trail) return { dateStr, trail: null, trailDetails: null, earlyStart: false };
-
-      return { dateStr, trail, trailDetails: trailDetails, earlyStart };
+    const hikesPerDowExport = {};
+    hikeDays.forEach(d => { hikesPerDowExport[d] = (hikesPerDowExport[d] || 0) + 1; });
+    const entries = hikeDates.flatMap(day => {
+        const date = createDate(year, selectedMonth, day);
+        const dowNum = date.getDay();
+        const hikesForThisDow = (hikesPerDowExport[dowNum] || 1);
+        return Array.from({ length: hikesForThisDow }, (_, slot) => {
+            const entry = assignedHikes[day]?.[slot] || { trail_id: null, early_start: false };
+            const { trail_id: trailId, early_start: earlyStart } = entry;
+            const dayOfWeek = DAY_NAMES[dowNum];
+           const dateStr = `${dayOfWeek}, ${month} ${day}`;
+           if (!trailId) return { dateStr, trail: null, trailDetails: null, earlyStart: false };
+           const trail = findTrailById(trailId);
+           if (!trail) return { dateStr, trail: null, trailDetails: null, earlyStart: false };
+           return { dateStr, trail, trailDetails: trailDetails, earlyStart };
+        });
     });
 
     const html = generateReportHtml(entries, title);

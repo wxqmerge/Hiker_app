@@ -81,9 +81,9 @@ describe('useScheduleData', () => {
       const { result } = renderScheduleHook({});
       const dates = result.current.hikeDates;
       expect(dates.length).toBeGreaterThan(0);
-      // July 2026: Wed=1, Fri=3, Wed=8, Fri=10, etc.
+      // July 2026: Wed=1(slot 0), Fri=3(slot 0), Wed=8(slot 1), Fri=10(slot 1), etc.
       expect(dates[0]).toEqual({ day: 1, slot: 0 });
-      expect(dates[1]).toEqual({ day: 3, slot: 1 });
+      expect(dates[1]).toEqual({ day: 3, slot: 0 });
     });
   });
 });

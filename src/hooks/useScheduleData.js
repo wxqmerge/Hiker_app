@@ -35,20 +35,20 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
     return Object.values(assignedHikes).flat().filter(v => v?.trail_id).length;
   }, [assignedHikes]);
 
-  const hikeDates = useMemo(() => {
+    const hikeDates = useMemo(() => {
     const daysInMonth = getDaysInMonth(year, selectedMonth);
     const dates = [];
     const hikeDays = getHikeDays();
+    // Count how many hikes per date for each dow (from config)
+    const hikesPerDow = {};
+    hikeDays.forEach(d => { hikesPerDow[d] = (hikesPerDow[d] || 0) + 1; });
     for (let day = 1; day <= daysInMonth; day++) {
       const date = createDate(year, selectedMonth, day);
       const dayOfWeek = date.getDay();
-      
-      // Find all occurrences of this day of week in the config
-      hikeDays.forEach((configDay, index) => {
-        if (configDay === dayOfWeek) {
-          dates.push({ day, slot: index });
-        }
-      });
+      const hikesForThisDow = hikesPerDow[dayOfWeek] || 0;
+      for (let s = 0; s < hikesForThisDow; s++) {
+        dates.push({ day, slot: s });
+      }
     }
     return dates;
   }, [selectedMonth, year]);
