@@ -255,6 +255,8 @@ chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
 # exported_data/ and tmp/ — group-writable so server process can write
 chmod 775 "$DIR/exported_data" 2>/dev/null || true
 chmod 775 "$DIR/exported_data/schedule_history" 2>/dev/null || true
+mkdir -p "$DIR/exported_data/gpx"
+chmod 775 "$DIR/exported_data/gpx"
 find "$DIR/exported_data" -type f -exec chmod 664 {} + 2>/dev/null || true
 
 mkdir -p "$DIR/tmp"
