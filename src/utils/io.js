@@ -40,7 +40,7 @@ export function openGoogleMapsTrailhead(lat, lon) {
 }
 
 // Open NWS weather forecast page for a coordinate
-export function openWeatherUrl(lat, lon) {
+function openWeatherUrl(lat, lon) {
   const url = `https://forecast.weather.gov/MapClick.php?lon=${lon}&lat=${lat}`;
   window.open(url, '_blank');
 }

@@ -24,38 +24,6 @@ export const ScheduleEntrySchema = z.object({
 
 export const ScheduleSchema = z.record(z.string(), z.array(ScheduleEntrySchema));
 
-// --- Trail update schema ---
-export const TrailUpdateSchema = z.object({
-  name: z.string().optional(),
-  fullName: z.string().optional(),
-  distance: z.number().optional(),
-  distanceExtended: z.number().optional(),
-  elevationStart: z.number().optional(),
-  elevationMax: z.number().optional(),
-  difficulty: z.string().optional(),
-  parking: z.string().optional(),
-  range: z.string().optional(),
-  notes: z.string().optional(),
-  altNames: z.array(z.string()).optional(),
-  difficultyOrder: z.number().optional(),
-  seasonal: z.record(z.string(), z.unknown()).optional(),
-  webLink: z.string().url().optional().or(z.literal('')),
-  gpxData: z.string().optional(),
-  hasGpx: z.boolean().optional(),
-});
-
-// --- Trail detail update schema ---
-export const TrailDetailUpdateSchema = z.object({
-  fullDescription: z.string().optional(),
-  pros: z.string().optional(),
-  others: z.string().optional(),
-  leaders: z.array(z.string()).optional(),
-  popularity: z.object({
-    monthly: z.array(z.number()).optional(),
-    monthlyScore: z.array(z.number()).optional(),
-  }).optional(),
-});
-
 // --- Restore timestamp schema ---
 export const RestoreTimestampSchema = z.object({
   timestamp: z.string(),
