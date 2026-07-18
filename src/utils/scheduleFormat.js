@@ -1,4 +1,5 @@
 import { MONTH_NAMES, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from './constants';
+import { ensureArray } from './array';
 
 // Convert server schedule format to client store format
 export function serverScheduleToStore(serverData) {
@@ -33,7 +34,7 @@ export function storeToServerSchedule(store) {
     if (!abbr || !days || typeof days !== 'object') continue;
     serverData[abbr] = [];
     for (const [day, entries] of Object.entries(days)) {
-      const entryList = Array.isArray(entries) ? entries : [entries];
+      const entryList = ensureArray(entries);
       entryList.forEach((entry, slot) => {
         if (entry?.trail_id) {
           const dayNum = parseInt(day, 10);

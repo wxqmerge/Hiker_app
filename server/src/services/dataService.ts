@@ -1,16 +1,12 @@
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env' });
-dotenv.config({ path: '../.env' });
-
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { createHash } from 'crypto';
 import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsData } from '@shared/types/index.js';
+import { getCurrentDir } from '../utils/path.js';
+import { MONTH_ABBR, isMonthAbbr, fullToAbbr } from '../utils/monthUtils.js';
+import { generateEtag } from '../utils/etag.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = getCurrentDir(import.meta.url);
 
 const DATA_DIR = path.join(__dirname, '../../../exported_data');
 export function getScheduleFile() {
@@ -20,18 +16,7 @@ export function getScheduleFile() {
 
 console.log(`[DATA] Loading from: ${DATA_DIR}`);
 
-const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const FULL_TO_ABBR: Record<string, string> = Object.fromEntries(MONTH_FULL.map((f, i) => [f, MONTH_ABBR[i]]));
 const ABBR_SET = new Set(MONTH_ABBR);
-
-function isMonthAbbr(key: string): boolean {
-  return ABBR_SET.has(key);
-}
-
-function fullToAbbr(key: string): string | null {
-  return FULL_TO_ABBR[key] || null;
-}
 
 // Normalize seasonal data: handle { availableMonths: [3,4,5] } → { Mar: 1, Apr: 1, May: 1 }
 function normalizeSeasonal(seasonal: any): any {
@@ -369,7 +354,7 @@ export function getGpxFileName(trailId: string): string | undefined {
 export function getScheduleVersion(): string {
   try {
     const content = fsSync.readFileSync(path.join(DATA_DIR, getScheduleFile()), 'utf-8');
-    return createHash('md5').update(content).digest('hex');
+    return generateEtag(content, 32);
   } catch {
     return '';
   }

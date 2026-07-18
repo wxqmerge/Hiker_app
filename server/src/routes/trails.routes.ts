@@ -1,9 +1,7 @@
 import { Router } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import multer from 'multer';
-import { createHash } from 'crypto';
 import {
   getTrails,
   getTrailById,
@@ -21,9 +19,10 @@ import {
   whitelistTrailFields,
   whitelistTrailDetailFields,
 } from '../middleware/validation.middleware.js';
+import { sendWithEtag } from '../utils/etag.js';
+import { getCurrentDir } from '../utils/path.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = getCurrentDir(import.meta.url);
 const GPX_DIR = path.join(__dirname, '../../../GPX');
 const GPX_UPLOAD_DIR = path.join(__dirname, '../../../exported_data/gpx');
 
@@ -32,17 +31,11 @@ const gpxUpload = multer({ dest: GPX_UPLOAD_DIR, limits: { fileSize: 5 * 1024 * 
 const router = Router();
 
 router.get('/', (req, res) => {
-  const data = { trails: getTrails() };
-  const etag = `"${createHash('md5').update(JSON.stringify(data)).digest('hex').substring(0, 16)}"`;
-  if (req.headers['if-none-match'] === etag) return res.status(304).end();
-  res.set('ETag', etag).set('Cache-Control', 'public, max-age=300').json(data);
+  sendWithEtag(req, res, { trails: getTrails() });
 });
 
 router.get('/details', (req, res) => {
-  const data = getTrailDetails();
-  const etag = `"${createHash('md5').update(JSON.stringify(data)).digest('hex').substring(0, 16)}"`;
-  if (req.headers['if-none-match'] === etag) return res.status(304).end();
-  res.set('ETag', etag).set('Cache-Control', 'public, max-age=300').json(data);
+  sendWithEtag(req, res, getTrailDetails());
 });
  
 router.put('/details/:id', requireAdminKey, withErrorTag('TRAILS')(async (req, res) => {

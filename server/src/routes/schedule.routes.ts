@@ -7,10 +7,10 @@ import { withErrorTag } from '../middleware/error.middleware.js';
 import { validateXlsBuffer, runPythonScript, findPythonCmd } from '../utils/xlsImport.js';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { getCurrentDir } from '../utils/path.js';
+import { MONTH_ABBR, normalizeMonthKey } from '../utils/monthUtils.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = getCurrentDir(import.meta.url);
 const PROJECT_ROOT = path.join(__dirname, '../../..');
 
 const router = Router();
@@ -62,19 +62,9 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
     return res.status(400).json({ success: false, error: { message: 'Invalid schedule data', details: result.error.issues } });
   }
   // Normalize month keys: full names and case-insensitive → abbreviated
-  const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const normalizeKey = (k: string): string => {
-    const lower = k.toLowerCase();
-    const fullIdx = MONTH_FULL.findIndex(m => m.toLowerCase() === lower);
-    if (fullIdx >= 0) return MONTH_ABBR[fullIdx];
-    const abbrIdx = MONTH_ABBR.findIndex(m => m.toLowerCase() === lower);
-    if (abbrIdx >= 0) return MONTH_ABBR[abbrIdx];
-    return k;
-  };
   const normalized: Record<string, any[]> = {};
   for (const [key, entries] of Object.entries(result.data)) {
-    normalized[normalizeKey(key)] = entries;
+    normalized[normalizeMonthKey(key)] = entries;
   }
   const entryCount = Object.values(normalized).reduce((n: number, entries: any) => n + entries.length, 0);
   console.log('[SCHEDULE] PUT schedule -', entryCount, 'entries');

@@ -8,7 +8,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import http from 'http';
 
 import { router as trailsRouter } from './routes/trails.routes.js';
@@ -18,9 +17,9 @@ import { router as dataRouter } from './routes/data.routes.js';
 import { getWriteHealth, serverVersion, waitForDataReady } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
 import { requireAdminKey } from './middleware/auth.middleware.js';
+import { getCurrentDir } from './utils/path.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = getCurrentDir(import.meta.url);
 const isDev = process.env.NODE_ENV !== 'production';
 
 const { hash: buildHash, ts: buildTs, full: buildFull } = buildVersion();

@@ -1,16 +1,15 @@
 import { Router } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import AdmZip from 'adm-zip';
 import multer from 'multer';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
 import { validateGpxContent } from '../utils/gpxValidation.js';
 import { loadData, getScheduleFile } from '../services/dataService.js';
+import { getCurrentDir } from '../utils/path.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = getCurrentDir(import.meta.url);
 const DATA_DIR = path.join(__dirname, '../../../exported_data');
 const TMP_DIR = path.join(__dirname, '../../../tmp');
 

@@ -1,18 +1,12 @@
 import { MONTH_ABBR } from './constants';
 import { getSeasonalInfo, calculateMonthlyScore } from './score.js';
+import { getTrailDetailsById } from './data';
 
 function getTrailMonthlyScore(trail, trailDetails, idx) {
   const rawId = trail?.id || trail?.trail?.id;
   if (!rawId || !trailDetails) return null;
-  // Try exact match first, then fallback: "360-rd" -> "360"
-  let details = trailDetails[rawId];
-  if (!details) {
-    const segments = rawId.split('-');
-    if (segments.length > 1) {
-      const baseId = segments.slice(0, -1).join('-');
-      details = trailDetails[baseId];
-    }
-  }
+  const resolved = getTrailDetailsById(trailDetails, rawId);
+  const details = resolved ? resolved[rawId] : null;
   if (details?.popularity?.monthlyScore) {
     return details.popularity.monthlyScore[idx];
   }
@@ -102,20 +96,9 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
     const getPopularityScore = (item) => {
       const t = item.trail || item;
       const seasonal = t.seasonal || {};
-      let details = null;
-      if (trailDetails) {
-        const rawId = t.id || t.trail?.id;
-        if (rawId) {
-          details = trailDetails[rawId];
-          if (!details) {
-            const segments = rawId.split('-');
-            if (segments.length > 1) {
-              const baseId = segments.slice(0, -1).join('-');
-              details = trailDetails[baseId];
-            }
-          }
-        }
-      }
+      const rawId = t.id || t.trail?.id;
+      const resolved = rawId && trailDetails ? getTrailDetailsById(trailDetails, rawId) : null;
+      const details = resolved ? resolved[rawId] : null;
       const monthly = details?.popularity?.monthly || t.monthly || null;
       if (monthly) {
         const { hasQuarterData } = getSeasonalInfo(seasonal);

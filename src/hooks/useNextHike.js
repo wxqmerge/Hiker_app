@@ -4,6 +4,7 @@ import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
 import { getDaysInMonth, createDate } from '../utils/dateUtils';
 import { getHikeDays } from '../utils/config';
+import { ensureArray } from '../utils/array';
 
 /**
  * Compute the next upcoming hike(s) from schedule data.
@@ -31,7 +32,7 @@ export function useNextHike({ trails, schedule, year = 2026, maxHikes = 2 }) {
         const dow = date.getDay();
         if (hikeDays.includes(dow) && date >= today) {
           const entries = monthData[day] || [];
-          const entryList = Array.isArray(entries) ? entries : (entries ? [entries] : []);
+          const entryList = ensureArray(entries);
           for (const entry of entryList) {
             if (allHikes.length >= maxHikes) break;
             if (!entry) continue;
