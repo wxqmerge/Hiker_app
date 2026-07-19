@@ -6,7 +6,7 @@ const FULL_TO_ABBR: Record<string, string> = Object.fromEntries(MONTH_FULL.map((
 const ABBR_SET = new Set(MONTH_ABBR);
 
 export function isMonthAbbr(key: string): boolean {
-  return ABBR_SET.has(key);
+  return ABBR_SET.has(key as (typeof MONTH_ABBR)[number]);
 }
 
 export function fullToAbbr(key: string): string | null {

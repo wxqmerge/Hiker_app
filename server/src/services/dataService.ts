@@ -22,7 +22,7 @@ const ABBR_SET = new Set(MONTH_ABBR);
 function normalizeSeasonal(seasonal: any): any {
   if (!seasonal || typeof seasonal !== 'object') return {};
   // Already has month-keyed numbers — pass through
-  if (Object.keys(seasonal).some(k => ABBR_SET.has(k))) return seasonal;
+  if (Object.keys(seasonal).some(k => ABBR_SET.has(k as (typeof MONTH_ABBR)[number]))) return seasonal;
   // Has availableMonths array — convert to month-keyed format
   if (Array.isArray(seasonal.availableMonths)) {
     const result: any = {};
