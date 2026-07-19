@@ -202,6 +202,14 @@ export async function updateTrail(trail: Trail & { gpxData?: string }): Promise<
     updatedTrail.hasGpx = true;
   } else if (gpxData === '') {
     // Explicitly removing GPX
+    const oldGpxFile = gpxIndex[trail.id];
+    if (oldGpxFile) {
+      try {
+        await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile));
+      } catch {
+        // File may not exist
+      }
+    }
     delete gpxIndex[trail.id];
     updatedTrail.hasGpx = false;
   }
@@ -211,6 +219,15 @@ export async function updateTrail(trail: Trail & { gpxData?: string }): Promise<
     gpxIndex[trail.id] = updatedTrail.gpxFile;
     updatedTrail.hasGpx = true;
   } else if (updatedTrail.gpxFile === '') {
+    // Delete the actual GPX file on disk
+    const oldGpxFile = gpxIndex[trail.id];
+    if (oldGpxFile) {
+      try {
+        await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile));
+      } catch {
+        // File may not exist
+      }
+    }
     delete gpxIndex[trail.id];
     updatedTrail.hasGpx = false;
   }

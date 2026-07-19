@@ -452,7 +452,9 @@ export default function TrailManager() {
       if (!confirm('Import all data from ZIP? This will overwrite matching JSON files on the server. ' + Object.keys(JSON.parse(JSON.stringify({ trails: 1, details: 2, schedule: 3, lookup: 4, gpx: 5 }))).length + ' files will be checked.')) return;
       try {
         const result = await importDataZip(file);
-        alert(`Data imported successfully! ${result.imported} file(s) written.`);
+        let msg = `Data imported successfully! ${result.imported} file(s) written.`;
+        if (result.reconciled > 0) msg += ` ${result.reconciled} GPX index entry/entries removed (trail IDs not on this instance).`;
+        alert(msg);
         window.location.reload();
       } catch (err) {
         alert('Import failed: ' + err.message);

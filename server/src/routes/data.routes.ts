@@ -6,11 +6,12 @@ import multer from 'multer';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
 import { validateGpxContent } from '../utils/gpxValidation.js';
-import { loadData, getScheduleFile } from '../services/dataService.js';
+import { loadData, getScheduleFile, getTrails, getGpxIndex } from '../services/dataService.js';
 import { getCurrentDir } from '../utils/path.js';
 
 const __dirname = getCurrentDir(import.meta.url);
 const DATA_DIR = path.join(__dirname, '../../../exported_data');
+const GPX_UPLOAD_DIR = path.join(DATA_DIR, 'gpx');
 const TMP_DIR = path.join(__dirname, '../../../tmp');
 
 // Ensure tmp directory exists
@@ -80,6 +81,22 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   const zipPath = req.file.path;
   const zip = new AdmZip(zipPath);
   const entries = zip.getEntries();
+
+  // Validate: if ZIP contains a schedule file, it must match this instance's SCHEDULE_NAME
+  const expectedScheduleName = process.env.SCHEDULE_NAME || 'default';
+  for (const entry of entries) {
+    if (entry.isDirectory) continue;
+    const name = entry.entryName.replace(/^\.\//, '');
+    const scheduleMatch = name.match(/^schedule_(.+)\.json$/);
+    if (scheduleMatch) {
+      const zipScheduleName = scheduleMatch[1];
+      if (zipScheduleName !== expectedScheduleName) {
+        await fs.unlink(zipPath).catch(() => {});
+        return res.status(400).json({ success: false, error: { message: `ZIP is for instance '${zipScheduleName}' but this instance is '${expectedScheduleName}'. Cannot import.` } });
+      }
+    }
+  }
+
   let imported = 0;
 
   for (const entry of entries) {
@@ -128,7 +145,30 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   // Reload in-memory data from disk
   await loadData();
 
-  res.json({ success: true, imported });
+  // Reconcile gpx_index: remove entries for trail IDs that don't exist, delete orphaned files
+  const trailIds = new Set(getTrails().map(t => t.id));
+  const gpxIndex = getGpxIndex();
+  let reconciled = 0;
+  for (const [trailId, gpxFile] of Object.entries(gpxIndex)) {
+    if (!trailIds.has(trailId)) {
+      reconciled++;
+      try {
+        await fs.unlink(path.join(GPX_UPLOAD_DIR, gpxFile));
+      } catch {
+        // File may not exist
+      }
+    }
+  }
+  // Rewrite gpx_index with only valid entries
+  const validGpxIndex: Record<string, string> = {};
+  for (const [trailId, gpxFile] of Object.entries(gpxIndex)) {
+    if (trailIds.has(trailId)) {
+      validGpxIndex[trailId] = gpxFile;
+    }
+  }
+  await fs.writeFile(path.join(DATA_DIR, 'gpx_index.json'), JSON.stringify(validGpxIndex, null, 2));
+
+  res.json({ success: true, imported, reconciled });
 }));
 
 export { router };
