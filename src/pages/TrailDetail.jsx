@@ -9,7 +9,7 @@ import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
-import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal } from '../utils/data';
+import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName } from '../utils/data';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput, sanitizeFilename } from '../utils/io';
 import { uploadGpxFile } from '../api/client';
@@ -239,7 +239,10 @@ const getEditedValue = (field) => {
     }
 
     const updatedTrail = { ...trail };
-    if (editedFields.fullName !== undefined) updatedTrail.fullName = editedFields.fullName;
+    if (editedFields.fullName !== undefined) {
+      updatedTrail.fullName = editedFields.fullName;
+      updatedTrail.name = editedFields.fullName.split('/')[0].trim();
+    }
     if (editedFields.distance !== undefined) updatedTrail.distance = editedFields.distance;
     if (editedFields.distanceExtended !== undefined) updatedTrail.distanceExtended = editedFields.distanceExtended;
     if (editedFields.elevationStart !== undefined) updatedTrail.elevationStart = editedFields.elevationStart;
@@ -320,7 +323,7 @@ const getEditedValue = (field) => {
       leaders: getEditedValue('leaders') || [],
     };
     const tsv = exportTrailTsv(tsvTrail, tsvDetail);
-    const safeName = sanitizeFilename(trail.name, 'trail');
+    const safeName = sanitizeFilename(getTrailName(trail), 'trail');
     downloadBlob(tsv, `${safeName}.tsv`, 'text/tab-separated-values');
   };
 
@@ -658,7 +661,7 @@ const getEditedValue = (field) => {
                <div className="flex items-center gap-3">
                  <GPXHelp variant="light" />
                  <button
-                   onClick={() => shareGpxFile(trail.gpxFile, trail.name)}
+                    onClick={() => shareGpxFile(trail.gpxFile, getTrailName(trail))}
                    className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
                    title="Share GPX to Organic Maps (mobile) or download (desktop)"
                  >
@@ -732,7 +735,7 @@ const getEditedValue = (field) => {
                   </div>
                 </div>
               ) : (
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit {trail.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit {getTrailName(trail)}</h2>
               )}
 
               <div className="mb-6">
@@ -1032,12 +1035,15 @@ const getEditedValue = (field) => {
                             createFileInput({
                               accept: '.gpx',
                               onFile: async (file) => {
+                                console.log('[TrailDetail] Uploading GPX:', file.name, 'for trail:', trail.id);
                                 try {
                                   const result = await uploadGpxFile(trail.id, file);
+                                  console.log('[TrailDetail] GPX upload result:', result);
                                   updateField('gpxFile', result.gpxFile);
                                   updateField('hasGpx', true);
                                   showToast('GPX uploaded successfully');
                                 } catch (err) {
+                                  console.error('[TrailDetail] GPX upload error:', err);
                                   showToast(err.message, 'error');
                                 }
                               }

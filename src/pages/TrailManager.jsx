@@ -142,7 +142,7 @@ export default function TrailManager() {
   }, [trails, search, gpxFilter]);
 
   const handleDelete = async (trail) => {
-    if (confirm(`Delete trail "${trail.name}"?`)) {
+    if (confirm(`Delete trail "${trail.fullName || trail.name}"?`)) {
       try {
         await deleteTrail(trail.id);
       } catch (err) {

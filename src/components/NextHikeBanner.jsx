@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getRideCost } from '../utils/report';
 import { getGpx } from '../api/client';
@@ -13,17 +13,32 @@ export default function NextHikeBanner({ nextHikes }) {
   useEffect(() => {
     if (!nextHikes || nextHikes.length === 0) return;
     let cancelled = false;
-    const promises = nextHikes.map(async (hike, idx) => {
-      const gpx = await getGpx(hike.trailId).catch(() => null);
-      if (!gpx) return;
-      const coord = getFirstCoordinateFromGpx(gpx);
-      if (!coord) return;
-      const w = await fetchNwsForecastForDate(coord.lat, coord.lon, hike.date).catch(() => null);
-      if (w && !cancelled) {
-        setWeatherMap(prev => ({ ...prev, [idx]: w }));
-      }
-    });
-    Promise.allSettled(promises);
+    (async () => {
+      const gpxResults = await Promise.allSettled(
+        nextHikes.map(hike => getGpx(hike.trailId).catch(() => null))
+      );
+      const weatherPromises = [];
+      gpxResults.forEach((result, idx) => {
+        const gpx = result.status === 'fulfilled' ? result.value : null;
+        if (!gpx) return;
+        const coord = getFirstCoordinateFromGpx(gpx);
+        if (!coord) return;
+        weatherPromises.push(
+          fetchNwsForecastForDate(coord.lat, coord.lon, nextHikes[idx].date)
+            .then(w => ({ idx, w }))
+            .catch(() => null)
+        );
+      });
+      const weatherResults = await Promise.allSettled(weatherPromises);
+      if (cancelled) return;
+      const map = {};
+      weatherResults.forEach(r => {
+        if (r.status === 'fulfilled' && r.value) {
+          map[r.value.idx] = r.value.w;
+        }
+      });
+      setWeatherMap(map);
+    })();
     return () => { cancelled = true; };
   }, [nextHikes]);
 
@@ -32,7 +47,7 @@ export default function NextHikeBanner({ nextHikes }) {
   return (
     <>
       {nextHikes.map((hike, idx) => (
-        <NextHikeCard key={idx} hike={hike} idx={idx} weather={weatherMap[idx]} />
+        <NextHikeCard key={`${hike.trailId}-${hike.monthIndex}-${hike.day}`} hike={hike} idx={idx} weather={weatherMap[idx]} />
       ))}
     </>
   );
@@ -43,12 +58,12 @@ function NextHikeCard({ hike, idx, weather }) {
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
   const { handleGpxDownload, handleTrailhead } = useGpxActions(trail);
 
-  const handleWeather = () => openWeatherForTrail(getGpx, hike.trailId);
+  const handleWeather = useCallback(() => openWeatherForTrail(getGpx, hike.trailId), [hike.trailId]);
 
   const displayHikeName = hike.trail.fullName || hike.trail.name;
 
   return (
-          <div key={idx} className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>
+          <div className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>
             <div className="p-5 md:p-7">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">

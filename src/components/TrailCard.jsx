@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, memo } from 'react';
+import { useState, memo, useMemo, useCallback } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { useGpxActions } from '../hooks/useGpxActions';
@@ -20,44 +20,50 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
 
-  const handleCopy = async (e) => {
+  const handleLeaderClick = useCallback((e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onLeaderChange) onLeaderChange();
+  }, [onLeaderChange]);
+
+  const handleCopy = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
     
     const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
     await copyToClipboard(genReport(trail, detailsForTrail), setCopied, showToast);
-  };
+  }, [trail, trailDetails, showToast]);
 
-  const handleCopyName = async (e) => {
+  const handleCopyName = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
     const name = trail.fullName || trail.name;
     await copyToClipboard(name, setNameCopied, showToast);
-  };
+  }, [trail]);
 
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
   const seasonal = trail.seasonal || {};
   const bestSeason = seasonal.bestSeason || '';
   const scoreMonths = getScoredMonths(seasonal);
   const availableMonthsStr = scoreMonths.length > 0 ? scoreMonths.join(', ') : 'Year-round';
-  const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-  const monthly = detailsForTrail?.[trail.id]?.popularity?.monthly || [];
-  const trailSeasonal = trail?.seasonal || {};
-  const { hasQuarterData } = getSeasonalInfo(trailSeasonal);
-  const availableMonths = Object.entries(seasonal)
-    .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
-    .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
-  const popScore = monthly.length > 0
-    ? (() => {
-        const allScores = monthly.map((hikeCount, idx) =>
-          calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
-        );
-        if (selectedMonths && selectedMonths.length > 0) {
-          return selectedMonths.reduce((sum, mIdx) => sum + (allScores[mIdx] || 0), 0);
-        }
-        return allScores.reduce((sum, s) => sum + s, 0);
-      })()
-    : null;
+
+  const popScore = useMemo(() => {
+    const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
+    const monthly = detailsForTrail?.[trail.id]?.popularity?.monthly || [];
+    if (monthly.length === 0) return null;
+    const trailSeasonal = trail?.seasonal || {};
+    const { hasQuarterData } = getSeasonalInfo(trailSeasonal);
+    const availableMonths = Object.entries(trail.seasonal || {})
+      .filter(([k, v]) => typeof v === 'number' && v > 0 && MONTH_ABBR.indexOf(k) !== -1)
+      .map(([k]) => MONTH_ABBR.indexOf(k) + 1);
+    const allScores = monthly.map((hikeCount, idx) =>
+      calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
+    );
+    if (selectedMonths && selectedMonths.length > 0) {
+      return selectedMonths.reduce((sum, mIdx) => sum + (allScores[mIdx] || 0), 0);
+    }
+    return allScores.reduce((sum, s) => sum + s, 0);
+  }, [trail, trailDetails, selectedMonths]);
   const hasPopScore = popScore != null && popScore > 0;
 
   return (
@@ -139,26 +145,15 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
              </div>
            )}
            
-             {/* Leader or Seasonal Availability */}
-             {leader ? (
-               <div className="flex items-center gap-1 text-gray-700">
-                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                 </svg>
-                  {onLeaderChange ? (
-                    <button
-                      type="button"
-                      className="truncate text-blue-600 hover:text-blue-800 cursor-pointer"
-                      title="Click to change leader"
-                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onLeaderChange(leader); }}
-                    >
-                     {leader}
-                   </button>
-                 ) : (
-                   <span className="truncate" title={leader}>{leader}</span>
-                 )}
-               </div>
-             ) : (
+              {/* Leader or Seasonal Availability */}
+              {leader ? (
+                <div className="flex items-center gap-1 text-gray-700">
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="truncate" title={leader}>{leader}</span>
+                </div>
+              ) : (
               <>
                 {scoreMonths.length > 0 && (
                   <div className="flex items-center gap-1 text-gray-700">
@@ -180,9 +175,26 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
               </>
             )}
          </div>
-       </Link>
+        </Link>
 
-        {/* Web Link / Search / GPX - outside Link to avoid nested anchors */}
+        {/* Leader change button - outside Link to prevent navigation interference */}
+        {leader && onLeaderChange && (
+          <div className="px-4 py-1">
+            <button
+              type="button"
+              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
+              title="Click to change leader"
+              onClick={handleLeaderClick}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>Leader: {leader}</span>
+            </button>
+          </div>
+        )}
+
+         {/* Web Link / Search / GPX - outside Link to avoid nested anchors */}
         <div className="px-4 pb-2 flex items-center gap-2">
          {trail.webLink ? (
            <a

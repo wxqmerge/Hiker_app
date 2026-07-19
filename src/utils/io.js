@@ -163,11 +163,19 @@ export function createFileInput({ accept, onFile, onCleanup }) {
   input.type = 'file';
   input.accept = accept;
   input.style.display = 'none';
-  input.onchange = () => {
-    if (!input.files?.[0]) return;
-    onFile(input.files[0]);
+  input.onchange = async () => {
+    if (!input.files?.[0]) {
+      document.body.removeChild(input);
+      onCleanup?.();
+      return;
+    }
     document.body.removeChild(input);
     onCleanup?.();
+    try {
+      await onFile(input.files[0]);
+    } catch (err) {
+      console.error('[createFileInput] Unhandled error:', err);
+    }
   };
   document.body.appendChild(input);
   input.click();
@@ -179,12 +187,12 @@ export function createImportFileInput(onImport, onError) {
     accept: '.json',
     onFile: (file) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const imported = JSON.parse(e.target.result);
-          onImport(imported);
-        } catch {
-          onError?.('Error importing file: Invalid JSON format');
+          await onImport(imported);
+        } catch (err) {
+          onError?.(err.message || 'Error importing file: Invalid JSON format');
         }
       };
       reader.readAsText(file);

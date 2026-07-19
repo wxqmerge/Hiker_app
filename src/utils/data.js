@@ -2,6 +2,16 @@
 import { MONTH_ABBR } from './constants';
 
 /**
+ * Get the canonical display name for a trail.
+ * Returns `fullName` if set, otherwise falls back to `name`.
+ * @param {Object} trail - Trail object
+ * @returns {string} - Display name
+ */
+export function getTrailName(trail) {
+  return trail?.fullName || trail?.name || '';
+}
+
+/**
  * Find a trail by ID with fallback matching strategies:
  * 1. Exact match
  * 2. Case-insensitive match

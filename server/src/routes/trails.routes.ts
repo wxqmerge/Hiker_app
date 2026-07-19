@@ -96,7 +96,12 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
   }
 
   // Validate GPX file before saving
-  const content = await fs.readFile(req.file.path, 'utf-8');
+  let content;
+  try {
+    content = await fs.readFile(req.file.path, 'utf-8');
+  } catch (err) {
+    return res.status(500).json({ success: false, error: { message: `Could not read uploaded GPX file: ${(err as Error).message}` } });
+  }
   if (!validateGpxContent(content)) {
     await fs.unlink(req.file.path).catch(() => {});
     if (content.length < 100) {
@@ -108,11 +113,20 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
     return res.status(400).json({ success: false, error: { message: 'Invalid GPX file - no GPS coordinates found (needs trkpt, wpt, or rtept)' } });
   }
 
+  // Ensure upload directory exists
+  await fs.mkdir(GPX_UPLOAD_DIR, { recursive: true });
+
   // Save with trail name (sanitized), not the original filename
   const safeName = (existing.fullName || existing.name || req.params.id).replace(/[^a-zA-Z0-9]/g, '_');
   const gpxFileName = `${safeName}.gpx`;
   const destPath = path.join(GPX_UPLOAD_DIR, gpxFileName);
-  await fs.rename(req.file.path, destPath);
+  try {
+    await fs.copyFile(req.file.path, destPath);
+    await fs.unlink(req.file.path);
+  } catch (err) {
+    await fs.unlink(req.file.path).catch(() => {});
+    return res.status(500).json({ success: false, error: { message: `Could not save GPX file: ${(err as Error).message}` } });
+  }
 
   // Update trail with gpxFile
   const whitelisted = whitelistTrailFields(req.body);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { useTooltips } from '../hooks/useTooltips';
 import DualRangeSlider from './DualRangeSlider';
@@ -9,31 +9,31 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
   const difficulties = lookup?.difficulties || [];
   const months = lookup?.months || MONTH_NAMES;
 
-  const toggleDifficulty = (difficulty) => {
+  const toggleDifficulty = useCallback((difficulty) => {
     setFilters(prev => ({
       ...prev,
       difficulties: prev.difficulties.includes(difficulty)
         ? prev.difficulties.filter(d => d !== difficulty)
         : [...prev.difficulties, difficulty]
     }));
-  };
+  }, [setFilters]);
 
-  const toggleMonth = (monthIndex) => {
+  const toggleMonth = useCallback((monthIndex) => {
     setFilters(prev => ({
       ...prev,
       months: prev.months.includes(monthIndex)
         ? prev.months.filter(m => m !== monthIndex)
         : [...prev.months, monthIndex]
     }));
-  };
+  }, [setFilters]);
 
-  const setSortBy = (sortBy) => {
+  const setSortBy = useCallback((sortBy) => {
     setFilters(prev => ({ ...prev, sortBy }));
-  };
+  }, [setFilters]);
 
-  const toggleWilderness = () => {
+  const toggleWilderness = useCallback(() => {
     setFilters(prev => ({ ...prev, wilderness: !prev.wilderness }));
-  };
+  }, [setFilters]);
 
   const hasActiveFilters =
     filters.search ||

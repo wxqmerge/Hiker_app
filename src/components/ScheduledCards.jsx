@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import TrailCard from './TrailCard';
 import { getDaysInMonth, createDate } from '../utils/dateUtils';
@@ -35,34 +35,29 @@ export default function ScheduledCards({
                const trail = findTrailById(trailId);
                if (!trail) return null;
                const hikeIdx = Object.entries(trailIndexToId).find(([, id]) => id === trailId);
-                return (
-                  <div
-                    key={`${day}-${idx}`}
-                    draggable={hasApiKey}
-                     onDragStart={() => hikeIdx && hasApiKey && handleDragStart(Number(hikeIdx[0]), day, idx, trailId, earlyStart, leader)}
-                   onDragEnd={handleDragEnd}
-                   className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
-                   title={hasApiKey ? tt('Drag to swap with another date') : undefined}
-                   style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
-                 >
-                   <div className="relative">
-                     <TrailCard trail={trail} isActive={false} leader={leader} onLeaderChange={onLeaderChange ? () => onLeaderChange(day, idx, leader) : undefined} />
-                    <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
-                      {day}
-                      <span className="text-[8px]">{getDayLabel(createDate(year, selectedMonth, day).getDay())}</span>
-                    </div>
-                     {earlyStart && (
-                       <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start">
-                        ⏰
-                      </div>
-                    )}
-                  </div>
-                </div>
-             );
-           });
-       })
-      .filter(Boolean);
-  }, [assignedHikes, trailIndexToId, handleDragStart, handleDragEnd, selectedMonth, findTrailById, year, dragData, tt, hasApiKey, onLeaderChange]);
+                return {
+                  day,
+                  idx,
+                  hikeIdx: hikeIdx ? Number(hikeIdx[0]) : null,
+                  trail,
+                  trailId,
+                  earlyStart,
+                  leader,
+                };
+             });
+        })
+       .filter(Boolean);
+  }, [assignedHikes, trailIndexToId, selectedMonth, findTrailById, year]);
+
+  const memoizedDragStart = useCallback((item) => {
+    if (!item.hikeIdx || !hasApiKey) return;
+    handleDragStart(item.hikeIdx, item.day, item.idx, item.trailId, item.earlyStart, item.leader);
+  }, [handleDragStart, hasApiKey]);
+
+  const memoizedLeaderChange = useCallback((item) => {
+    if (!onLeaderChange) return;
+    onLeaderChange(item.day, item.idx, item.leader);
+  }, [onLeaderChange]);
 
 
   if (cards.length === 0) {
@@ -96,13 +91,30 @@ export default function ScheduledCards({
             if (!dragData) return;
           }}
         >
-           {cards.map((card, idx) => (
+           {cards.map((item) => (
              <div
-               key={idx}
+               key={`${item.day}-${item.idx}`}
+               draggable={hasApiKey}
+               onDragStart={() => memoizedDragStart(item)}
+               onDragEnd={handleDragEnd}
                onDragOver={(e) => e.preventDefault()}
+               className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
+               title={hasApiKey ? tt('Drag to swap with another date') : undefined}
+               style={{ opacity: dragData?.sourceDay === item.day ? 0.4 : 1 }}
              >
-               {card}
-             </div>
+               <div className="relative">
+                 <TrailCard trail={item.trail} isActive={false} leader={item.leader} onLeaderChange={() => memoizedLeaderChange(item)} />
+                <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
+                  {item.day}
+                  <span className="text-[8px]">{getDayLabel(createDate(year, selectedMonth, item.day).getDay())}</span>
+                </div>
+                 {item.earlyStart && (
+                   <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start">
+                    ⏰
+                  </div>
+                )}
+              </div>
+            </div>
            ))}
         </div>
       </div>

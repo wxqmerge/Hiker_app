@@ -15,9 +15,9 @@ export default function TrailList({ trails, selectedMonths }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {trails.map((trail, index) => (
+      {trails.map((trail) => (
         <TrailCard 
-          key={`${trail.id}-${index}`} 
+          key={trail.id} 
           trail={trail}
           selectedMonths={selectedMonths}
         />

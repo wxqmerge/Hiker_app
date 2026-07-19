@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { MONTH_ABBR } from '../utils/constants';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import MonthGrid from './MonthGrid';
@@ -13,16 +14,23 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
   if (!monthly || monthly.length === 0) return null;
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
 
+  const scores = useMemo(() => {
+    const availSet = new Set(availableMonths);
+    return monthly.map((hikeCount, idx) => {
+      const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
+      const quarterBase = hasQuarterData ? 1 : 0;
+      const monthBase = availSet.has(idx + 1) ? 1 : 0;
+      const scheduleBase = Math.min(9, hikeCount * 2);
+      return { hikeCount, score, quarterBase, monthBase, scheduleBase };
+    });
+  }, [monthly, availableMonths, hasQuarterData]);
+
   return (
     <MonthGrid
       months={MONTH_ABBR}
       className="flex gap-1.5 flex-wrap"
       renderMonth={(month, idx) => {
-        const hikeCount = monthly[idx] || 0;
-        const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
-        const quarterBase = hasQuarterData ? 1 : 0;
-        const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-        const scheduleBase = Math.min(9, hikeCount * 2);
+        const { hikeCount, score, quarterBase, monthBase, scheduleBase } = scores[idx];
         const intensity = Math.min(score / 9, 1);
         const bg = score > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
         const text = score > 0 ? 'text-green-800' : 'text-gray-400';
@@ -55,16 +63,21 @@ export function ScoreBreakdownRow({ monthly, availableMonths = [], seasonal }) {
   if (!monthly || monthly.length === 0) return null;
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
 
+  const scores = useMemo(() => {
+    return monthly.map((hikeCount, idx) => {
+      const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
+      const quarterBase = hasQuarterData ? 1 : 0;
+      const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
+      const scheduleBase = Math.min(9, hikeCount * 2);
+      return { score, quarterBase, monthBase, scheduleBase };
+    });
+  }, [monthly, availableMonths, hasQuarterData]);
+
   return (
     <MonthGrid
       months={MONTH_ABBR}
       renderMonth={(month, idx) => {
-        const hikeCount = monthly[idx] || 0;
-        const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
-        const quarterBase = hasQuarterData ? 1 : 0;
-        const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-        const scheduleBase = Math.min(9, hikeCount * 2);
-
+        const { score, quarterBase, monthBase, scheduleBase } = scores[idx];
         return (
           <div key={idx} className="flex flex-col items-center min-w-[40px]">
             <span className="text-[9px] text-gray-400 leading-tight">
