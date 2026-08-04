@@ -123,6 +123,7 @@ const getEditedValue = (field) => {
       );
     }
     if (field === 'gpxData') return (editedFields.gpxData ?? trail.gpxData) || '';
+    if (field === 'tideStationId') return editedFields.tideStationId ?? trail.tideStationId;
 
     return null;
   };
@@ -209,6 +210,7 @@ const getEditedValue = (field) => {
         },
         altNames: editedFields.altNames || [],
         webLink: editedFields.webLink || '',
+        tideStationId: String(editedFields.tideStationId || '').trim(),
         gpxFile: editedFields.gpxFile || '',
         hasGpx: !!editedFields.gpxFile,
         difficultyOrder: (trail.difficultyOrder ?? 99),
@@ -253,6 +255,7 @@ const getEditedValue = (field) => {
     if (editedFields.notes !== undefined) updatedTrail.notes = editedFields.notes;
    if (editedFields.altNames !== undefined) updatedTrail.altNames = editedFields.altNames;
     if (editedFields.webLink !== undefined) updatedTrail.webLink = editedFields.webLink;
+    if (editedFields.tideStationId !== undefined) updatedTrail.tideStationId = String(editedFields.tideStationId).trim();
     if (editedFields.gpxData !== undefined) {
       if (editedFields.gpxData === '') delete updatedTrail.gpxData;
       else updatedTrail.gpxData = editedFields.gpxData;
@@ -655,6 +658,23 @@ const getEditedValue = (field) => {
             </div>
           )}
 
+          {getEditedValue('tideStationId') && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Tide Station</h3>
+              <a
+                href={`https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${getEditedValue('tideStationId')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
+                </svg>
+                <span>NOAA Station {getEditedValue('tideStationId')}</span>
+              </a>
+            </div>
+          )}
+
           {trail.gpxFile && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">GPX Track</h3>
@@ -1015,6 +1035,21 @@ const getEditedValue = (field) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                       placeholder="https://example.com/trail"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">NOAA Tide Station ID</label>
+                    <input
+                      type="text"
+                      value={getEditedValue('tideStationId') || ''}
+                      onChange={(e) => updateField('tideStationId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                      placeholder="e.g. 9447130"
+                    />
+                    {(() => {
+                      const val = String(getEditedValue('tideStationId') || '').trim();
+                      if (val && !/^\d{7}$/.test(val)) return <p className="text-xs text-amber-600 mt-1">Expected 7 digits (e.g. 9447130)</p>;
+                      return null;
+                    })()}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">GPX Track</label>

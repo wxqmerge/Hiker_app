@@ -11,8 +11,8 @@ echo ""
 
 # 1. Trail data
 echo "--- Trails ---"
-printf "%-20s %8s %8s %8s %8s\n" "Instance" "Trails" "GPX" "Links" "Details"
-printf "%-20s %8s %8s %8s %8s\n" "--------------------" "--------" "--------" "--------" "--------"
+printf "%-20s %8s %8s %8s %8s %8s\n" "Instance" "Trails" "GPX" "Links" "Tides" "Details"
+printf "%-20s %8s %8s %8s %8s %8s\n" "--------------------" "--------" "--------" "--------" "--------" "--------"
 
 for dir in "$BASE"/*/; do
     [ -d "$dir" ] || continue
@@ -32,13 +32,14 @@ try:
     trails = d.get('trails', [])
     gpx = sum(1 for t in trails if t.get('gpxFile'))
     links = sum(1 for t in trails if t.get('webLink'))
+    tides = sum(1 for t in trails if t.get('tideStationId'))
     details = 0
     try:
         dd = json.load(open(details_file))
         details = len(dd)
     except:
         pass
-    print(f'{name:<20} {len(trails):>8} {gpx:>8} {links:>8} {details:>8}')
+    print(f'{name:<20} {len(trails):>8} {gpx:>8} {links:>8} {tides:>8} {details:>8}')
 except Exception as e:
     print(f'{name:<20} ERROR: {e}', file=sys.stderr)
 "

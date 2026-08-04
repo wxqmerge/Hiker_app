@@ -140,6 +140,20 @@ function NextHikeCard({ hike, idx, weather }) {
                         </button>
                       </>
                     )}
+                    {trail.tideStationId && (
+                      <a
+                        href={`https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${trail.tideStationId}&bdate=${hike.date.getFullYear()}${String(hike.date.getMonth() + 1).padStart(2, '0')}${String(hike.date.getDate()).padStart(2, '0')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors"
+                        title={`NOAA Tide Station ${trail.tideStationId}`}
+                      >
+                        <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
+                        </svg>
+                        <span>T</span>
+                      </a>
+                    )}
                   </div>
                 </div>
                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-white/20">

@@ -82,18 +82,24 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   const zip = new AdmZip(zipPath);
   const entries = zip.getEntries();
 
-  // Validate: if ZIP contains a schedule file, it must match this instance's SCHEDULE_NAME
+  // Collect schedule files from ZIP and check for conflicts
   const expectedScheduleName = process.env.SCHEDULE_NAME || 'default';
+  const zipScheduleEntries = new Map();
   for (const entry of entries) {
     if (entry.isDirectory) continue;
     const name = entry.entryName.replace(/^\.\//, '');
     const scheduleMatch = name.match(/^schedule_(.+)\.json$/);
     if (scheduleMatch) {
-      const zipScheduleName = scheduleMatch[1];
-      if (zipScheduleName !== expectedScheduleName) {
-        await fs.unlink(zipPath).catch(() => {});
-        return res.status(400).json({ success: false, error: { message: `ZIP is for instance '${zipScheduleName}' but this instance is '${expectedScheduleName}'. Cannot import.` } });
-      }
+      zipScheduleEntries.set(name, scheduleMatch[1]);
+    }
+  }
+  // Determine which schedule files to skip (name mismatch)
+  const skipScheduleFiles = new Set();
+  let skippedScheduleNames: string[] = [];
+  for (const [name, zipScheduleName] of zipScheduleEntries) {
+    if (zipScheduleName !== expectedScheduleName) {
+      skipScheduleFiles.add(name);
+      skippedScheduleNames.push(`'${zipScheduleName}'`);
     }
   }
 
@@ -102,6 +108,13 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   for (const entry of entries) {
     if (entry.isDirectory) continue;
     const name = entry.entryName.replace(/^\.\//, '');
+
+    // Skip schedule files that don't match this instance
+    if (skipScheduleFiles.has(name)) {
+      console.warn(`[DATA] Skipping schedule file for different instance: ${name}`);
+      continue;
+    }
+
     const target = path.join(DATA_DIR, name);
 
     // Security: only allow .json and .gpx files within exported_data
@@ -168,7 +181,11 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   }
   await fs.writeFile(path.join(DATA_DIR, 'gpx_index.json'), JSON.stringify(validGpxIndex, null, 2));
 
-  res.json({ success: true, imported, reconciled });
+  const result: any = { success: true, imported, reconciled };
+  if (skippedScheduleNames.length > 0) {
+    result.skippedSchedules = skippedScheduleNames;
+  }
+  res.json(result);
 }));
 
 export { router };

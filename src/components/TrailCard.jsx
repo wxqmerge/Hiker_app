@@ -12,7 +12,7 @@ import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
 import { openWeatherForTrail } from '../utils/io';
 import { getGpx } from '../api/client';
 
-const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange }) {
+const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange, hikeDate }) {
   const showToast = useToast();
   const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
@@ -194,35 +194,50 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
           </div>
         )}
 
-         {/* Web Link / Search / GPX - outside Link to avoid nested anchors */}
-        <div className="px-4 pb-2 flex items-center gap-2">
-         {trail.webLink ? (
-           <a
-             href={trail.webLink}
-             target="_blank"
-             rel="noopener noreferrer"
-             className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-             title={trail.webLink}
-           >
-             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-             </svg>
-             <span className="truncate">Link</span>
-           </a>
-         ) : (
-            <a
-              href={getGoogleAllTrailsSearchUrl(trail.fullName || trail.name)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-              title={`Search for ${trail.fullName || trail.name} on AllTrails in Washington`}
-            >
+         {/* Web Link / Tide / Search / GPX - outside Link to avoid nested anchors */}
+         <div className="px-4 pb-2 flex items-center gap-2">
+           {trail.webLink && (
+             <a
+               href={trail.webLink}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+               title={trail.webLink}
+             >
+               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+               </svg>
+               <span className="truncate">Web</span>
+             </a>
+           )}
+           {trail.tideStationId && (
+             <a
+               href={`https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${trail.tideStationId}${hikeDate ? `&bdate=${hikeDate.getFullYear()}${String(hikeDate.getMonth() + 1).padStart(2, '0')}${String(hikeDate.getDate()).padStart(2, '0')}` : ''}`}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
+               title={`NOAA Tide Station ${trail.tideStationId}`}
+             >
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
               </svg>
-              <span className="truncate">Search</span>
+              <span className="truncate">Tide</span>
             </a>
-          )}
+           )}
+           {!trail.webLink && !trail.tideStationId && (
+             <a
+               href={getGoogleAllTrailsSearchUrl(trail.fullName || trail.name)}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+               title={`Search for ${trail.fullName || trail.name} on AllTrails in Washington`}
+             >
+               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+               </svg>
+               <span className="truncate">Search</span>
+             </a>
+           )}
            {trail.hasGpx && (
              <button
                onClick={handleGpxDownload}

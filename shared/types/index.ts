@@ -34,6 +34,7 @@ export interface Trail {
   availableMonths?: string[];
   isWilderness?: boolean;
   webLink?: string;
+  tideStationId?: string;
   hasGpx?: boolean;
   gpxFile?: string;
 }

@@ -1,0 +1,86 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
+import { useMonthSlotStats } from '../../hooks/useMonthSlotStats';
+
+vi.mock('../../utils/config', () => ({
+  getHikeDays: vi.fn(() => [1]),
+}));
+
+vi.mock('../../utils/dateUtils', () => ({
+  getDaysInMonth: vi.fn((year, month) => {
+    const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return days[month];
+  }),
+  createDate: vi.fn((year, month, day) => {
+    return new Date(year, month, day);
+  }),
+}));
+
+describe('useMonthSlotStats', () => {
+  const trails = [
+    { id: 'trail-1', name: 'Trail One' },
+    { id: 'trail-2', name: 'Trail Two' },
+  ];
+
+  const scheduleStore = {
+    Jan: {},
+    Feb: {},
+  };
+
+  const props = {
+    trails,
+    scheduleStore,
+    year: 2024,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns stats for all months', () => {
+    const { result } = renderHook(() => useMonthSlotStats(props));
+    expect(result.current).toHaveProperty(0);
+    expect(result.current).toHaveProperty(1);
+  });
+
+  it('calculates total slots for January', () => {
+    const { result } = renderHook(() => useMonthSlotStats(props));
+    // Jan 2024 has 31 days, Mon = day 1, so 4 Mondays (1, 8, 15, 22, 29) = 5
+    expect(result.current[0].total).toBe(5);
+  });
+
+  it('calculates total slots for February', () => {
+    const { result } = renderHook(() => useMonthSlotStats(props));
+    // Feb 2024 (leap year) has 29 days, Mon = day 1, so 5 Mondays (5, 12, 19, 26) = 4
+    expect(result.current[1].total).toBe(4);
+  });
+
+  it('counts filled slots', () => {
+    const scheduleWithHikes = {
+      January: { 1: [{ trail_id: 'trail-1' }] },
+      February: {},
+    };
+    const { result } = renderHook(() => useMonthSlotStats({ ...props, scheduleStore: scheduleWithHikes }));
+    expect(result.current[0].filled).toBe(1);
+  });
+
+  it('ignores unknown trail IDs', () => {
+    const scheduleWithHikes = {
+      Jan: { 1: [{ trail_id: 'unknown' }] },
+      Feb: {},
+    };
+    const { result } = renderHook(() => useMonthSlotStats({ ...props, scheduleStore: scheduleWithHikes }));
+    expect(result.current[0].filled).toBe(0);
+  });
+
+  it('handles empty schedule', () => {
+    const { result } = renderHook(() => useMonthSlotStats(props));
+    expect(result.current[0].filled).toBe(0);
+  });
+
+  it('returns object with total and filled', () => {
+    const { result } = renderHook(() => useMonthSlotStats(props));
+    expect(result.current[0]).toHaveProperty('total');
+    expect(result.current[0]).toHaveProperty('filled');
+  });
+});

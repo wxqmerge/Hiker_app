@@ -453,6 +453,7 @@ export default function TrailManager() {
       try {
         const result = await importDataZip(file);
         let msg = `Data imported successfully! ${result.imported} file(s) written.`;
+        if (result.skippedSchedules?.length > 0) msg += ` Skipped schedule files: ${result.skippedSchedules.join(', ')} (wrong instance).`;
         if (result.reconciled > 0) msg += ` ${result.reconciled} GPX index entry/entries removed (trail IDs not on this instance).`;
         alert(msg);
         window.location.reload();
@@ -490,6 +491,9 @@ export default function TrailManager() {
               )}
               {trails.filter(t => t.webLink).length > 0 && (
                 <span className="text-gray-400"> · {trails.filter(t => t.webLink).length} links</span>
+              )}
+              {trails.filter(t => t.tideStationId).length > 0 && (
+                <span className="text-gray-400"> · {trails.filter(t => t.tideStationId).length} tides</span>
               )}
             </p>
             <AdminMenu hasApiKey={hasApiKey} actions={adminActions} tt={tt} />
