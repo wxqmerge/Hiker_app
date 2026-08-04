@@ -8,6 +8,7 @@ import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
 import { useApiKey } from '../hooks/useApiKey';
 import PageNav from '../components/PageNav';
 import FilterPanel from '../components/FilterPanel';
+import { getTrailName } from '../utils/data';
 import TrailCard from '../components/TrailCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
@@ -170,7 +171,7 @@ export default function ScheduleBuilder() {
     const result = [];
     trails.forEach((t, idx) => {
       if (scheduledSet.has(t.id.toLowerCase())) return;
-      result.push({ hike: t.fullName || t.name, trail: t, hikeIndex: idx + 1, trailId: t.id });
+      result.push({ hike: getTrailName(t), trail: t, hikeIndex: idx + 1, trailId: t.id });
     });
     if (debugMode) {
       debugLog('trails =', trails.length, '| hikeTrailMap =', result.length);
@@ -550,7 +551,7 @@ export default function ScheduleBuilder() {
             const trailIdLookup = new Map();
             const stopWords = new Set(['to', 'from', 'via', 'the', 'of', 'and', 'at', 'on', 'in', 'up', 'down', 'off', 'by', 'for', 'with']);
             for (const trail of trails) {
-              const fullName = (trail.fullName || trail.name || '').toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+              const fullName = getTrailName(trail).toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
               trailLookup.set(fullName, trail);
               const idSlug = trail.id.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
               trailIdLookup.set(idSlug, trail);
@@ -679,7 +680,7 @@ export default function ScheduleBuilder() {
             const key = `${dayOfWeek}-${slot}`;
             if (!hikesByDay[key]) hikesByDay[key] = [];
             const trail = findTrailById(entry.trail_id);
-            let trailName = trail ? trail.fullName || trail.name : entry.trail_id;
+            let trailName = trail ? getTrailName(trail) : entry.trail_id;
             if (entry.early_start) trailName += ' (Early Start)';
             hikesByDay[key].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
           });
@@ -1116,7 +1117,7 @@ export default function ScheduleBuilder() {
                         const earlyStart = entry.early_start;
                         const leader = entry.leader;
                          const trail = findTrailById(trailId);
-                         const displayHikeName = trail ? trail.fullName || trail.name : trailId;
+                         const displayHikeName = trail ? getTrailName(trail) : trailId;
                        const hasMultipleSlots = hikeDates.filter(s => s.day === day).length > 1;
 
                        return (
@@ -1217,7 +1218,7 @@ export default function ScheduleBuilder() {
                                {trail?.hasGpx && (
                                  <>
                                    <button
-                                     onClick={() => handleGpxDownload(trailId, trail.fullName || trail.name)}
+                                      onClick={() => handleGpxDownload(trailId, getTrailName(trail))}
                                      disabled={gpxDownloading !== null}
                                      className="text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
                                      title={tt('Download GPX file')}

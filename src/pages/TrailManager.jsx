@@ -4,6 +4,7 @@ import PageNav from '../components/PageNav';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDateToISO } from '../utils/dateUtils';
 import { getGroupName } from '../utils/config';
+import { getTrailName } from '../utils/data';
 
 const APP_VERSION = __APP_VERSION;
 import { useTrailStore } from '../hooks/useTrailStore';
@@ -142,7 +143,7 @@ export default function TrailManager() {
   }, [trails, search, gpxFilter]);
 
   const handleDelete = async (trail) => {
-    if (confirm(`Delete trail "${trail.fullName || trail.name}"?`)) {
+    if (confirm(`Delete trail "${getTrailName(trail)}"?`)) {
       try {
         await deleteTrail(trail.id);
       } catch (err) {
@@ -266,7 +267,7 @@ export default function TrailManager() {
     const rows = [header];
     for (const trail of trails) {
       const monthly = trailDetails?.[trail.id]?.popularity?.monthly || [];
-      const row = [trail.id, trail.fullName || trail.name];
+      const row = [trail.id, getTrailName(trail)];
       for (let m = 0; m < 12; m++) {
         row.push(String(monthly[m] || 0));
       }
@@ -413,7 +414,7 @@ export default function TrailManager() {
       try {
         const gpx = await getGpx(trail.id);
         if (gpx) {
-          const safeName = sanitizeFilename(trail.fullName || trail.name, trail.id);
+          const safeName = sanitizeFilename(getTrailName(trail), trail.id);
           zip.file(`${safeName}.gpx`, gpx);
           downloaded++;
         } else {
@@ -594,7 +595,7 @@ export default function TrailManager() {
                     <td className="px-2 py-3 text-right text-sm text-gray-400">{index + 1}</td>
                     <td className="px-4 py-3">
                       <Link to={`/trail/${trail.id}`} className="text-green-700 hover:text-green-900 font-medium">
-                        {trail.fullName || trail.name}
+                        {getTrailName(trail)}
                       </Link>
                       <span className="ml-2 text-xs text-gray-400">{trail.id}</span>
                     </td>

@@ -1,6 +1,6 @@
 import { MONTH_ABBR } from './constants';
 import { getSeasonalInfo, calculateMonthlyScore } from './score.js';
-import { getTrailDetailsById } from './data';
+import { getTrailDetailsById, getTrailName } from './data';
 
 function getTrailMonthlyScore(trail, trailDetails, idx) {
   const rawId = trail?.id || trail?.trail?.id;
@@ -66,7 +66,7 @@ export function filterTrails(items, filters, trailDetails) {
     }
 
     if (filters.wilderness) {
-      const name = t.fullName || t.name || '';
+      const name = getTrailName(t);
       if (!name.includes('\u25C6')) return false;
     }
 
@@ -87,7 +87,7 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
     sorted.sort((a, b) => {
       const ta = a.trail || a;
       const tb = b.trail || b;
-      return (ta.fullName || a[nameKey] || '').localeCompare(tb.fullName || b[nameKey] || '');
+      return getTrailName(ta).localeCompare(getTrailName(tb));
     });
   } else if (filters.sortBy === 'popularity') {
     const selectedMonthNames = filters.months.length > 0
@@ -136,10 +136,10 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
     sorted.sort((a, b) => {
       const ta = a.trail || a;
       const tb = b.trail || b;
-      const aWild = (ta.fullName || ta.name || '').includes('\u25C6') ? 1 : 0;
-      const bWild = (tb.fullName || tb.name || '').includes('\u25C6') ? 1 : 0;
+      const aWild = getTrailName(ta).includes('\u25C6') ? 1 : 0;
+      const bWild = getTrailName(tb).includes('\u25C6') ? 1 : 0;
       if (aWild !== bWild) return aWild - bWild;
-      return (ta.fullName || ta.name || '').localeCompare(tb.fullName || tb.name || '');
+      return getTrailName(ta).localeCompare(getTrailName(tb));
     });
   }
   

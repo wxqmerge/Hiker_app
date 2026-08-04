@@ -95,10 +95,16 @@ export async function updateTrail(trail) {
 }
 
 export async function deleteTrail(id) {
-  return request(`/api/trails/${id}`, {
+  const result = await request(`/api/trails/${id}`, {
     method: 'DELETE',
     apiKey: true,
   });
+  gpxCache.delete(id);
+  return result;
+}
+
+export function clearGpxCache() {
+  gpxCache.clear();
 }
 
 export async function getTrailDetails() {

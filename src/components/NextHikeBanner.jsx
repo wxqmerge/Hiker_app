@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getRideCost } from '../utils/report';
 import { getGpx } from '../api/client';
+import { getTrailName } from '../utils/data';
 import { getFirstCoordinateFromGpx, openWeatherForTrail, fetchNwsForecastForDate } from '../utils/io';
 import { useGpxActions } from '../hooks/useGpxActions';
 import GPXHelp from './GPXHelp';
@@ -60,7 +61,7 @@ function NextHikeCard({ hike, idx, weather }) {
 
   const handleWeather = useCallback(() => openWeatherForTrail(getGpx, hike.trailId), [hike.trailId]);
 
-  const displayHikeName = hike.trail.fullName || hike.trail.name;
+  const displayHikeName = getTrailName(hike.trail);
 
   return (
           <div className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>

@@ -1,8 +1,9 @@
 import { getRideCost } from './report';
+import { getTrailName } from './data';
  
  // Build structured trail line parts from a trail object
 export function buildTrailLineParts(trail) {
-  let name = trail.fullName || trail.name;
+  let name = getTrailName(trail);
   name = name.replace(/^◆\uFE0E?\s*/, '').replace(/◆\uFE0E?$/, '').replace(/◆+$/, '').trim();
  
   const difficulty = `[${trail.difficulty}]`;

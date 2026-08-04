@@ -1,3 +1,5 @@
+import { getTrailName } from './data';
+
 // Sanitize a string for use as a filename
 export function sanitizeFilename(name, fallback = 'file') {
   return (name || fallback).replace(/[^a-zA-Z0-9]/g, '_');
@@ -230,7 +232,7 @@ export function exportTrailTsv(trail, detail) {
 
   // Row 0: Trail Name
   grid.push([...r()]);
-  grid[0][0] = trail.fullName || trail.name || '';
+  grid[0][0] = getTrailName(trail);
 
   // Row 1: empty
   grid.push([...r()]);

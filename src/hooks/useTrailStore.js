@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import * as api from '../api/client.js';
+import { getTrailName } from '../utils/data';
 
 let _trails = [];
 let _trailDetails = {};
@@ -65,7 +66,7 @@ async function initSharedState() {
     setState(trails, details, false, lookup, schedule);
   } catch (error) {
     console.error('[useTrailStore] Failed to load data:', error);
-    setState([], {}, false, null, null);
+    setState([], {}, true, null, null);
   }
 }
 
@@ -135,7 +136,7 @@ export function useTrailStore() {
       if (idx >= 0) {
         newTrails = _trails.map(t => t.id === trail.id ? trail : t);
       } else {
-        newTrails = [..._trails, trail].sort((a, b) => (a.fullName || a.name || '').localeCompare(b.fullName || b.name || ''));
+        newTrails = [..._trails, trail].sort((a, b) => getTrailName(a).localeCompare(getTrailName(b)));
       }
       setTrails(newTrails);
       return trail;
@@ -167,7 +168,7 @@ export function useTrailStore() {
       _trailsVer++;
       _trailDetails = newDetails;
       _detailsVer++;
-      notifySubscribers('trails');
+      notifySubscribers('all');
     } catch (error) {
       console.error('[useTrailStore] deleteTrail error:', error);
       throw error;

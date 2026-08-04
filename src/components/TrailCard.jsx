@@ -3,6 +3,7 @@ import { useState, memo, useMemo, useCallback } from 'react';
 import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { useGpxActions } from '../hooks/useGpxActions';
+import { getTrailName } from '../utils/data';
 import { getTrailDetailsById, getScoredMonths } from '../utils/data';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
@@ -37,9 +38,9 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
   const handleCopyName = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const name = trail.fullName || trail.name;
+    const name = getTrailName(trail);
     await copyToClipboard(name, setNameCopied, showToast);
-  }, [trail]);
+  }, [trail, showToast]);
 
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
   const seasonal = trail.seasonal || {};
@@ -79,7 +80,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
        >
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-gray-900">{trail.fullName || trail.name}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{getTrailName(trail)}</h3>
               <button
                 onClick={handleCopyName}
                 className="text-gray-400 hover:text-green-700 flex-shrink-0"
@@ -226,11 +227,11 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
            )}
            {!trail.webLink && !trail.tideStationId && (
              <a
-               href={getGoogleAllTrailsSearchUrl(trail.fullName || trail.name)}
+                href={getGoogleAllTrailsSearchUrl(getTrailName(trail))}
                target="_blank"
                rel="noopener noreferrer"
                className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-               title={`Search for ${trail.fullName || trail.name} on AllTrails in Washington`}
+                title={`Search for ${getTrailName(trail)} on AllTrails in Washington`}
              >
                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -242,7 +243,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
              <button
                onClick={handleGpxDownload}
                className="flex items-center gap-1 text-green-600 hover:text-green-800"
-               title={`Download GPX for ${trail.fullName || trail.name}`}
+                title={`Download GPX for ${getTrailName(trail)}`}
              >
                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -254,7 +255,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
               <button
                 onClick={handleTrailhead}
                 className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
-                title={`Open trailhead for ${trail.fullName || trail.name} in Google Maps`}
+                 title={`Open trailhead for ${getTrailName(trail)} in Google Maps`}
               >
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -272,7 +273,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                       openWeatherForTrail(getGpx, trail.id);
                     }}
                     className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
-                    title={`Open weather forecast for ${trail.fullName || trail.name}`}
+                     title={`Open weather forecast for ${getTrailName(trail)}`}
                   >
                     <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />

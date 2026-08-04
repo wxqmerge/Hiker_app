@@ -10,6 +10,7 @@ vi.mock('../../utils/io', () => ({
   downloadBlob: vi.fn(),
   getFirstCoordinateFromGpx: vi.fn(() => ({ lat: 40.0, lon: -74.0 })),
   openGoogleMapsTrailhead: vi.fn(),
+  sanitizeFilename: vi.fn(s => String(s).replace(/[^a-zA-Z0-9_-]/g, '_')),
 }));
 
 import { getGpx } from '../../api/client';

@@ -19,8 +19,13 @@ export function serverScheduleToStore(serverData) {
         const slot = entry.slot !== undefined ? entry.slot : 0;
         store[fullName][day][slot] = { trail_id: entry.trail_id || null, early_start: !!entry.early_start, leader: entry.leader || '' };
       }
-    } else if (entries && typeof entries === 'object') {
-      Object.assign(store[fullName], entries);
+    } else if (entries && typeof entries === 'object' && !Array.isArray(entries)) {
+      for (const [key, val] of Object.entries(entries)) {
+        const dayNum = parseInt(key, 10);
+        if (!isNaN(dayNum) && dayNum > 0 && dayNum <= 31) {
+          store[fullName][key] = val;
+        }
+      }
     }
   }
   return store;

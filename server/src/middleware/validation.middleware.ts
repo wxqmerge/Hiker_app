@@ -29,24 +29,23 @@ export const RestoreTimestampSchema = z.object({
   timestamp: z.string(),
 });
 
-// --- Helper: whitelist req.body fields for trail updates ---
-export function whitelistTrailFields(body: Record<string, unknown>): Record<string, unknown> {
+// --- Helper: whitelist req.body fields ---
+function whitelistFields(body: Record<string, unknown>, allowed: Set<string>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const key of Object.keys(body)) {
-    if (TRAIL_FIELDS.has(key)) {
+    if (allowed.has(key)) {
       result[key] = body[key];
     }
   }
   return result;
 }
 
+// --- Helper: whitelist req.body fields for trail updates ---
+export function whitelistTrailFields(body: Record<string, unknown>): Record<string, unknown> {
+  return whitelistFields(body, TRAIL_FIELDS);
+}
+
 // --- Helper: whitelist req.body fields for trail detail updates ---
 export function whitelistTrailDetailFields(body: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const key of Object.keys(body)) {
-    if (TRAIL_DETAIL_FIELDS.has(key)) {
-      result[key] = body[key];
-    }
-  }
-  return result;
+  return whitelistFields(body, TRAIL_DETAIL_FIELDS);
 }

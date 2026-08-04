@@ -36,7 +36,7 @@ export function findTrailById(trails, trailId) {
   const slugWords = lower.split('-').filter(Boolean);
   if (slugWords.length > 1) {
     return trails.find(t => {
-      const name = ((t.fullName || t.name) || '').toLowerCase();
+      const name = getTrailName(t).toLowerCase();
       return slugWords.every(w => name.includes(w));
     }) || null;
   }

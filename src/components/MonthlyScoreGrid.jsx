@@ -11,10 +11,10 @@ import MonthGrid from './MonthGrid';
 // @param {boolean} props.showBreakdown - Show quarterBase+monthBase+scheduleBase=score
 // @param {string} props.titlePrefix - Prefix for title attribute
 export default function MonthlyScoreGrid({ monthly, availableMonths = [], seasonal, showBreakdown = false, titlePrefix = '' }) {
-  if (!monthly || monthly.length === 0) return null;
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
 
   const scores = useMemo(() => {
+    if (!monthly || monthly.length === 0) return [];
     const availSet = new Set(availableMonths);
     return monthly.map((hikeCount, idx) => {
       const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
@@ -24,6 +24,8 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
       return { hikeCount, score, quarterBase, monthBase, scheduleBase };
     });
   }, [monthly, availableMonths, hasQuarterData]);
+
+  if (!monthly || monthly.length === 0) return null;
 
   return (
     <MonthGrid
@@ -60,10 +62,10 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
 // @param {number[]} props.availableMonths - 1-based month indices
 // @param {Object} props.seasonal - Trail seasonal data
 export function ScoreBreakdownRow({ monthly, availableMonths = [], seasonal }) {
-  if (!monthly || monthly.length === 0) return null;
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
 
   const scores = useMemo(() => {
+    if (!monthly || monthly.length === 0) return [];
     return monthly.map((hikeCount, idx) => {
       const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
       const quarterBase = hasQuarterData ? 1 : 0;
@@ -72,6 +74,8 @@ export function ScoreBreakdownRow({ monthly, availableMonths = [], seasonal }) {
       return { score, quarterBase, monthBase, scheduleBase };
     });
   }, [monthly, availableMonths, hasQuarterData]);
+
+  if (!monthly || monthly.length === 0) return null;
 
   return (
     <MonthGrid

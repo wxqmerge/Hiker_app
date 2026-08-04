@@ -2,7 +2,6 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useMemo } from 'react';
 import GPXHelp from '../components/GPXHelp';
 import MonthGrid from '../components/MonthGrid';
-
 const APP_VERSION = __APP_VERSION;
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
@@ -91,7 +90,10 @@ export default function TrailDetail() {
     return match || season;
   };
 
-const getEditedValue = (field) => {
+  const trailSeasonal = trail?.seasonal || {};
+  const { hasQuarterData } = getSeasonalInfo(trailSeasonal);
+
+  const getEditedValue = (field) => {
     const details = trailDetailsResult?.[id];
     const pop = details?.popularity || {};
 
@@ -128,9 +130,6 @@ const getEditedValue = (field) => {
     return null;
   };
 
-  const trailSeasonal = trail?.seasonal || {};
-  const { hasQuarterData } = getSeasonalInfo(trailSeasonal);
-
   const startEditMode = () => {
     setEditedFields({});
     setIsEditMode(true);
@@ -147,7 +146,7 @@ const getEditedValue = (field) => {
     setDuplicateId(newId);
     setEditedFields({
       id: newId,
-      fullName: trail.fullName || trail.name,
+      fullName: getTrailName(trail),
       name: trail.name,
       distance: trail.distance,
       distanceExtended: trail.distanceExtended,
@@ -178,7 +177,7 @@ const getEditedValue = (field) => {
   const saveEdits = async () => {
     if (isDuplicate) {
       const newName = editedFields.fullName || '';
-      const originalName = trail.fullName || trail.name;
+      const originalName = getTrailName(trail);
       const newId = editedFields.id || duplicateId;
       if (!newName || newName === originalName) {
         showToast('Please change the trail name before saving.', 'error');
@@ -303,8 +302,8 @@ const getEditedValue = (field) => {
   const exportTrailAsTsv = () => {
     const tsvTrail = {
       id: trail.id,
-      name: getEditedValue('fullName') || trail.fullName || trail.name,
-      fullName: getEditedValue('fullName') || trail.fullName || trail.name,
+      name: getEditedValue('fullName') || getTrailName(trail),
+      fullName: getEditedValue('fullName') || getTrailName(trail),
       distance: getEditedValue('distance'),
       distanceExtended: getEditedValue('distanceExtended'),
       elevationStart: getEditedValue('elevationStart'),
@@ -386,7 +385,7 @@ const getEditedValue = (field) => {
             </div>
 
             <div className="text-center flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{trail.fullName || trail.name}</p>
+              <p className="text-sm font-medium text-gray-800 truncate">{getTrailName(trail)}</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -486,7 +485,7 @@ const getEditedValue = (field) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-green-800 text-white p-6">
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-bold">{getEditedValue('fullName') || trail.fullName || trail.name}</h1>
+              <h1 className="text-3xl font-bold">{getEditedValue('fullName') || getTrailName(trail)}</h1>
               {hasEdits && (
                 <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded">
                   EDITED
@@ -644,11 +643,11 @@ const getEditedValue = (field) => {
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Web Link</h3>
               <a
-                href={getGoogleAllTrailsSearchUrl(trail.fullName || trail.name)}
+                href={getGoogleAllTrailsSearchUrl(getTrailName(trail))}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline"
-                title={`Search for ${trail.fullName || trail.name} on AllTrails in Washington`}
+                title={`Search for ${getTrailName(trail)} on AllTrails in Washington`}
               >
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -738,7 +737,7 @@ const getEditedValue = (field) => {
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">Duplicate Trail</h2>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                     <p className="text-sm text-yellow-700">
-                      This is a copy of <strong>{trail.fullName || trail.name}</strong>. Change the name below before saving.
+                      This is a copy of <strong>{getTrailName(trail)}</strong>. Change the name below before saving.
                     </p>
                     <div className="mt-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Trail ID</label>
@@ -1111,9 +1110,9 @@ const getEditedValue = (field) => {
                 </button>
                 <button
                   onClick={saveEdits}
-                  disabled={isDuplicate && ((editedFields.fullName || '') === (trail.fullName || trail.name))}
+                  disabled={isDuplicate && ((editedFields.fullName || '') === getTrailName(trail))}
                   className={`px-4 py-2 text-white rounded-lg transition-colors ${
-                    isDuplicate && (editedFields.fullName || '') === (trail.fullName || trail.name)
+                    isDuplicate && (editedFields.fullName || '') === getTrailName(trail)
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-green-600 hover:bg-green-700'
                   }`}

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ScheduledCards from '../../components/ScheduledCards';
+import { getTrailName } from '../../utils/data';
 
 vi.mock('../../utils/dateUtils', () => ({
   getDaysInMonth: vi.fn((year, month) => {
@@ -21,7 +22,7 @@ vi.mock('../../components/TrailCard', () => ({
   default: function MockTrailCard({ trail, leader }) {
     return (
       <div data-testid="trail-card">
-        <span>{trail.fullName || trail.name}</span>
+        <span>{getTrailName(trail)}</span>
         {leader && <span data-testid="leader">{leader}</span>}
       </div>
     );
