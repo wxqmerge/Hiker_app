@@ -598,6 +598,11 @@ export default function TrailManager() {
                         {getTrailName(trail)}
                       </Link>
                       <span className="ml-2 text-xs text-gray-400">{trail.id}</span>
+                      {trail.tideStationId && (
+                        <span className="ml-1.5 text-xs text-blue-500" title={`NOAA Station ${trail.tideStationId}`}>
+                          🌊
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {trail.distance != null ? `${trail.distance} mi` : 'N/A'}
