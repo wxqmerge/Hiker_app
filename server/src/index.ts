@@ -104,6 +104,36 @@ app.use('/api/schedule', scheduleRouter);
 app.use('/api/lookup', lookupRouter);
 app.use('/api/data', dataRouter);
 
+app.post('/api/cleanup/orphaned-details', requireAdminKey, async (_req, res) => {
+  const fs = await import('fs/promises');
+  const path = (await import('path')).default;
+  const __filename = (await import('url')).fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const DATA_DIR = path.join(__dirname, '../../exported_data');
+
+  const trailsPath = path.join(DATA_DIR, 'trails.json');
+  const detailsPath = path.join(DATA_DIR, 'trail_details.json');
+
+  const trailsData = JSON.parse(await fs.readFile(trailsPath, 'utf-8'));
+  const trailIds = new Set((trailsData.trails || []).map((t: any) => t.id));
+
+  const details = JSON.parse(await fs.readFile(detailsPath, 'utf-8'));
+  const orphaned: string[] = [];
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(details)) {
+    if (trailIds.has(key)) {
+      cleaned[key] = value;
+    } else {
+      orphaned.push(key);
+    }
+  }
+  if (orphaned.length > 0) {
+    await fs.writeFile(detailsPath, JSON.stringify(cleaned, null, 2) + '\n', 'utf-8');
+  }
+
+  res.json({ removed: orphaned.length, orphaned });
+});
+
 app.get('/api/validate', async (_req, res) => {
   const fs = await import('fs/promises');
   const path = (await import('path')).default;
@@ -117,6 +147,8 @@ app.get('/api/validate', async (_req, res) => {
   function addResult(file: string, valid: boolean, opts?: { error?: string; recordCount?: number; issues?: string[] }) {
     results.push({ file, valid, ...opts });
   }
+
+  let trails: any[] = [];
 
   // trails.json
   {
@@ -139,6 +171,7 @@ app.get('/api/validate', async (_req, res) => {
         const nonStrings = parsed.trails.filter((t: any) => typeof t.id !== 'string' || !t.id);
         if (nonStrings.length) issues.push(`${nonStrings.length} trail(s) with invalid/missing "id"`);
       }
+      if (Array.isArray(parsed?.trails)) trails = parsed.trails;
       addResult('trails.json', issues.length === 0, { recordCount: Array.isArray(parsed?.trails) ? parsed.trails.length : 0, issues: issues.length ? issues : undefined });
     } catch (err) {
       addResult('trails.json', false, { error: (err as Error).message });
@@ -163,6 +196,12 @@ app.get('/api/validate', async (_req, res) => {
           if (!sample || typeof sample !== 'object' || Array.isArray(sample)) {
             issues.push(`values must be objects, got ${Array.isArray(sample) ? 'array' : typeof sample}`);
           }
+        }
+        // Check for orphaned detail entries (no matching trail)
+        const trailIds = new Set(Array.isArray(trails) ? trails.map((t: any) => t.id) : []);
+        const orphaned = keys.filter(k => !trailIds.has(k));
+        if (orphaned.length > 0) {
+          issues.push(`${orphaned.length} orphaned detail(s): ${orphaned.join(', ')}`);
         }
       }
       addResult('trail_details.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });

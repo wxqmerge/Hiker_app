@@ -36,7 +36,8 @@ try:
     details = 0
     try:
         dd = json.load(open(details_file))
-        details = len(dd)
+        trail_ids = {t['id'] for t in trails}
+        details = sum(1 for tid in dd if tid in trail_ids)
     except:
         pass
     print(f'{name:<20} {len(trails):>8} {gpx:>8} {links:>8} {tides:>8} {details:>8}')

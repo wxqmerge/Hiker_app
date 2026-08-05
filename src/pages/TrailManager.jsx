@@ -87,6 +87,18 @@ function AdminMenu({ hasApiKey, actions, tt }) {
               Import Monthly Pop TSV
               {!hasApiKey && <span className="text-xs">locked</span>}
             </button>
+
+            <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Maintenance</p>
+            </div>
+            <button onClick={() => { setOpen(false); actions.cleanupOrphanedDetails(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
+              Cleanup Orphaned Details
+              {!hasApiKey && <span className="text-xs">locked</span>}
+            </button>
+            <button onClick={() => { setOpen(false); actions.validateData(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
+              Validate Data
+              {!hasApiKey && <span className="text-xs">locked</span>}
+            </button>
           </div>
         </>
       )}
@@ -465,6 +477,44 @@ export default function TrailManager() {
     input.click();
   }, [hasApiKey]);
 
+  const cleanupOrphanedDetails = useCallback(async () => {
+    if (!hasApiKey) {
+      alert('API key required.');
+      return;
+    }
+    if (!confirm('Remove trail detail entries that no longer have a matching trail?')) return;
+    try {
+      const res = await request('/api/cleanup/orphaned-details', { method: 'POST', apiKey: true });
+      if (res.removed > 0) {
+        alert(`Removed ${res.removed} orphaned detail(s): ${res.orphaned.join(', ')}`);
+        window.location.reload();
+      } else {
+        alert('No orphaned details found.');
+      }
+    } catch (err) {
+      alert('Cleanup failed: ' + err.message);
+    }
+  }, [hasApiKey]);
+
+  const validateData = useCallback(async () => {
+    if (!hasApiKey) {
+      alert('API key required.');
+      return;
+    }
+    try {
+      const res = await request('/api/validate');
+      const issues = res.results.filter(r => !r.valid);
+      if (issues.length > 0) {
+        const msg = issues.map(i => `${i.file}: ${i.issues?.join('; ') || i.error}`).join('\n');
+        alert(`Validation found ${issues.length} issue(s):\n\n${msg}`);
+      } else {
+        alert('All data files are valid.');
+      }
+    } catch (err) {
+      alert('Validation failed: ' + err.message);
+    }
+  }, [hasApiKey]);
+
   const adminActions = useMemo(() => ({
     importDatabase: handleImportDatabase,
     importHikeTsv: handleImportHikeTsv,
@@ -472,7 +522,9 @@ export default function TrailManager() {
     importZip: importAllDataZip,
     importScheduleJson,
     importMonthlyTsv,
-  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv]);
+    cleanupOrphanedDetails,
+    validateData,
+  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData]);
 
   if (loading) {
     return <LoadingSpinner />;
