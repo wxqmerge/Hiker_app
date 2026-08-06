@@ -7,17 +7,11 @@ import { getTrailName } from '../utils/data';
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useEffect } from 'react';
+import { NAV_LINKS } from '../utils/constants';
 import MonthSelector from './MonthSelector';
 import ScheduleSettingsDropdown from './ScheduleSettingsDropdown';
 
 const APP_VERSION = __APP_VERSION;
-
-const LINKS = [
-  { to: '/', label: 'Calendar' },
-  { to: '/browse', label: 'Browse Trails' },
-  { to: '/trails', label: 'Trail Manager' },
-  { to: '/schedule', label: 'Schedule Builder' },
-];
 
 function PageContextSetter() {
   const { pathname } = useLocation();
@@ -64,7 +58,7 @@ function HeaderContent() {
           <div className="container mx-auto px-4 py-2">
             <div className="flex items-center justify-between">
               <nav className="flex items-baseline gap-2 flex-shrink-0">
-                {LINKS.map((link) => (
+                {NAV_LINKS.map((link) => (
                   <NavLink
                     key={link.to}
                     to={link.to}

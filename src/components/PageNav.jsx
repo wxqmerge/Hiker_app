@@ -1,19 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import { getGroupName } from '../utils/config';
-
-const links = [
-  { to: '/', label: 'Calendar' },
-  { to: '/browse', label: 'Browse Trails' },
-  { to: '/trails', label: 'Trail Manager' },
-  { to: '/schedule', label: 'Schedule Builder' },
-];
+import { NAV_LINKS } from '../utils/constants';
 
 export default function PageNav() {
   const groupName = getGroupName();
 
   return (
     <nav className="flex items-baseline gap-2 mb-6">
-      {links.map((link) => (
+      {NAV_LINKS.map((link) => (
         <NavLink
           key={link.to}
           to={link.to}

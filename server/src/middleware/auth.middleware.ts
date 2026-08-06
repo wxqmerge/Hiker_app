@@ -9,6 +9,14 @@ function getAdminKey() {
   return process.env.ADMIN_API_KEY || '';
 }
 
+function sendAuthError(res: Response, req: Request, status: number, message: string): void {
+  console.warn(`[ADMIN_AUTH] ${status} - ${message} | IP: ${req.ip} | Path: ${req.path}`);
+  res.status(status).json({
+    success: false,
+    error: { message },
+  });
+}
+
 export function requireAdminKey(
   req: Request,
   res: Response,
@@ -17,22 +25,14 @@ export function requireAdminKey(
   const adminKey = getAdminKey();
 
   if (!adminKey) {
-    console.warn(`[ADMIN_AUTH] 403 - ADMIN_API_KEY not configured | IP: ${req.ip} | Path: ${req.path}`);
-    res.status(403).json({
-      success: false,
-      error: { message: 'Admin API key not configured on server' },
-    });
+    sendAuthError(res, req, 403, 'ADMIN_API_KEY not configured');
     return;
   }
 
   const apiKey = req.headers['x-api-key'] as string;
 
   if (!apiKey) {
-    console.warn(`[ADMIN_AUTH] 401 - Missing API key | IP: ${req.ip} | Path: ${req.path}`);
-    res.status(401).json({
-      success: false,
-      error: { message: 'Admin API key required' },
-    });
+    sendAuthError(res, req, 401, 'Missing API key');
     return;
   }
 
@@ -48,27 +48,15 @@ export function requireAdminKey(
       providedBuffer.copy(paddedProvided);
 
       if (!crypto.timingSafeEqual(paddedKey, paddedProvided)) {
-        console.warn(`[ADMIN_AUTH] 401 - Invalid API key | IP: ${req.ip} | Path: ${req.path}`);
-        res.status(401).json({
-          success: false,
-          error: { message: 'Invalid admin API key' },
-        });
+        sendAuthError(res, req, 401, 'Invalid API key');
         return;
       }
     } else if (!crypto.timingSafeEqual(keyBuffer, providedBuffer)) {
-      console.warn(`[ADMIN_AUTH] 401 - Invalid API key | IP: ${req.ip} | Path: ${req.path}`);
-      res.status(401).json({
-        success: false,
-        error: { message: 'Invalid admin API key' },
-      });
+      sendAuthError(res, req, 401, 'Invalid API key');
       return;
     }
   } catch (error) {
-    console.warn(`[ADMIN_AUTH] 401 - Key validation error | IP: ${req.ip} | Path: ${req.path}`);
-    res.status(401).json({
-      success: false,
-      error: { message: 'Invalid admin API key' },
-    });
+    sendAuthError(res, req, 401, 'Key validation error');
     return;
   }
 

@@ -26,6 +26,11 @@ describe('filterTrails', () => {
     expect(result).toHaveLength(4);
   });
 
+  it('returns all trails with default filters', () => {
+    const filtered = filterTrails(mockTrails, DEFAULT_FILTERS);
+    expect(filtered).toHaveLength(4);
+  });
+
   it('filters by search text in fullName', () => {
     const filters = { ...mockFilters, search: 'Rainier' };
     const result = filterTrails(mockTrails, filters);
@@ -47,16 +52,23 @@ describe('filterTrails', () => {
     expect(result[0].id).toBe('trail-2');
   });
 
+  it('filters by search text case insensitive', () => {
+    const filters = { ...mockFilters, search: 'rainier' };
+    const result = filterTrails(mockTrails, filters);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('trail-1');
+  });
+
   it('filters by distance range', () => {
     const filters = { ...mockFilters, distance: { min: 3, max: 10 } };
     const result = filterTrails(mockTrails, filters);
-    expect(result).toHaveLength(2); // trail-1 (5.5) and trail-4 (8.0)
+    expect(result).toHaveLength(2);
   });
 
   it('filters by elevation range', () => {
     const filters = { ...mockFilters, elevation: { min: 1000, max: 3000 } };
     const result = filterTrails(mockTrails, filters);
-    expect(result).toHaveLength(1); // trail-1 (2000)
+    expect(result).toHaveLength(1);
   });
 
   it('filters by difficulty', () => {
@@ -73,9 +85,37 @@ describe('filterTrails', () => {
   });
 
   it('filters by month availability', () => {
-    const filters = { ...mockFilters, months: [0] }; // January
+    const filters = { ...mockFilters, months: [0] };
     const result = filterTrails(mockTrails, filters);
-    expect(result).toHaveLength(1); // trail-1 has Jan: 3
+    expect(result).toHaveLength(1);
+  });
+
+  it('filters by multiple months', () => {
+    const filters = { ...mockFilters, months: [0, 5] };
+    const result = filterTrails(mockTrails, filters);
+    expect(result.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('filters by GPX only', () => {
+    const trailsWithGpx = mockTrails.map(t => ({ ...t, hasGpx: t.id === 'trail-1' }));
+    const filters = { ...mockFilters, gpx: 'gpx' };
+    const result = filterTrails(trailsWithGpx, filters);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('trail-1');
+  });
+
+  it('filters by no GPX', () => {
+    const trailsWithGpx = mockTrails.map(t => ({ ...t, hasGpx: t.id === 'trail-1' }));
+    const filters = { ...mockFilters, gpx: 'noGpx' };
+    const result = filterTrails(trailsWithGpx, filters);
+    expect(result).toHaveLength(3);
+  });
+
+  it('does not filter GPX when gpx is all', () => {
+    const trailsWithGpx = mockTrails.map(t => ({ ...t, hasGpx: t.id === 'trail-1' }));
+    const filters = { ...mockFilters, gpx: 'all' };
+    const result = filterTrails(trailsWithGpx, filters);
+    expect(result).toHaveLength(4);
   });
 
   it('filters by wilderness marker', () => {
@@ -92,6 +132,11 @@ describe('filterTrails', () => {
     expect(result[0].id).toBe('trail-4');
   });
 
+  it('handles empty trails', () => {
+    const result = filterTrails([], DEFAULT_FILTERS);
+    expect(result).toHaveLength(0);
+  });
+
   it('handles schedule mode wrapper objects', () => {
     const scheduleItems = mockTrails.map(t => ({ hike: t.name, trail: t }));
     const filters = { ...mockFilters, search: 'Rainier' };
@@ -104,7 +149,6 @@ describe('filterTrails', () => {
 describe('sortTrails', () => {
   it('sorts by name ascending', () => {
     const result = sortTrails(mockTrails, mockFilters);
-    // ◆ (U+25C6) sorts before ASCII in localeCompare
     expect(result[0].fullName).toBe('◆ Wilderness Peak');
     expect(result[1].fullName).toBe('Easy Path Trail');
     expect(result[2].fullName).toBe('Mount Rainier');
@@ -140,29 +184,38 @@ describe('sortTrails', () => {
   });
 
   it('sorts by popularity based on selected months', () => {
-    const filters = { ...mockFilters, sortBy: 'popularity', months: [0] }; // January
+    const filters = { ...mockFilters, sortBy: 'popularity', months: [0] };
     const result = sortTrails(mockTrails, filters);
-    expect(result[0].id).toBe('trail-1'); // trail-1 has Jan: 3
+    expect(result[0].id).toBe('trail-1');
   });
 
   it('sorts by popularity across all months when no months selected', () => {
     const filters = { ...mockFilters, sortBy: 'popularity' };
     const result = sortTrails(mockTrails, filters);
-    // trail-1 and trail-2 both have total score 6, trail-3 has 0
-    expect(result[2].id).toBe('trail-3'); // trail-3 has no seasonal data, should be last
+    expect(result[2].id).toBe('trail-3');
   });
 
   it('sorts not-wilderness putting wilderness trails last', () => {
     const filters = { ...mockFilters, sortBy: 'not-wilderness' };
     const result = sortTrails(mockTrails, filters);
-    expect(result[3].id).toBe('trail-4'); // wilderness trail should be last
+    expect(result[3].id).toBe('trail-4');
+  });
+
+  it('returns sorted copy without mutating original', () => {
+    const original = [...mockTrails];
+    sortTrails(mockTrails, mockFilters);
+    expect(mockTrails).toEqual(original);
+  });
+
+  it('handles empty trails', () => {
+    const result = sortTrails([], DEFAULT_FILTERS);
+    expect(result).toHaveLength(0);
   });
 
   it('handles schedule mode wrapper objects', () => {
     const scheduleItems = mockTrails.map(t => ({ trail: t }));
     const filters = { ...mockFilters, sortBy: 'name' };
     const result = sortTrails(scheduleItems, filters, 'name');
-    // ◆ (U+25C6) sorts before ASCII in localeCompare
     expect(result[0].trail.fullName).toBe('◆ Wilderness Peak');
     expect(result[1].trail.fullName).toBe('Easy Path Trail');
     expect(result[2].trail.fullName).toBe('Mount Rainier');

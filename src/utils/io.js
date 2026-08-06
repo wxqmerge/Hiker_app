@@ -156,7 +156,7 @@ export function downloadBlob(data, filename, type = 'application/json') {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // Create a hidden file input, trigger it, and call onFile with the selected file

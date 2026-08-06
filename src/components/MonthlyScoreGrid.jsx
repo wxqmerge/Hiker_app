@@ -3,6 +3,19 @@ import { MONTH_ABBR } from '../utils/constants';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import MonthGrid from './MonthGrid';
 
+export function computeScoreBreakdown(monthly, availableMonths, seasonal) {
+  if (!monthly || monthly.length === 0) return [];
+  const { hasQuarterData } = getSeasonalInfo(seasonal || {});
+  const availSet = new Set(availableMonths);
+  return monthly.map((hikeCount, idx) => {
+    const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
+    const quarterBase = hasQuarterData ? 1 : 0;
+    const monthBase = availSet.has(idx + 1) ? 1 : 0;
+    const scheduleBase = Math.min(9, hikeCount * 2);
+    return { hikeCount, score, quarterBase, monthBase, scheduleBase };
+  });
+}
+
 // Render a grid of monthly score badges
 // @param {Object} props
 // @param {number[]} props.monthly - Array of 12 hike counts
@@ -13,17 +26,7 @@ import MonthGrid from './MonthGrid';
 export default function MonthlyScoreGrid({ monthly, availableMonths = [], seasonal, showBreakdown = false, titlePrefix = '' }) {
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
 
-  const scores = useMemo(() => {
-    if (!monthly || monthly.length === 0) return [];
-    const availSet = new Set(availableMonths);
-    return monthly.map((hikeCount, idx) => {
-      const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
-      const quarterBase = hasQuarterData ? 1 : 0;
-      const monthBase = availSet.has(idx + 1) ? 1 : 0;
-      const scheduleBase = Math.min(9, hikeCount * 2);
-      return { hikeCount, score, quarterBase, monthBase, scheduleBase };
-    });
-  }, [monthly, availableMonths, hasQuarterData]);
+  const scores = useMemo(() => computeScoreBreakdown(monthly, availableMonths, seasonal), [monthly, availableMonths, hasQuarterData]);
 
   if (!monthly || monthly.length === 0) return null;
 
@@ -64,16 +67,7 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
 export function ScoreBreakdownRow({ monthly, availableMonths = [], seasonal }) {
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
 
-  const scores = useMemo(() => {
-    if (!monthly || monthly.length === 0) return [];
-    return monthly.map((hikeCount, idx) => {
-      const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
-      const quarterBase = hasQuarterData ? 1 : 0;
-      const monthBase = availableMonths.includes(idx + 1) ? 1 : 0;
-      const scheduleBase = Math.min(9, hikeCount * 2);
-      return { score, quarterBase, monthBase, scheduleBase };
-    });
-  }, [monthly, availableMonths, hasQuarterData]);
+  const scores = useMemo(() => computeScoreBreakdown(monthly, availableMonths, seasonal), [monthly, availableMonths, hasQuarterData]);
 
   if (!monthly || monthly.length === 0) return null;
 

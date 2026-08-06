@@ -23,6 +23,7 @@ export async function request(path, options = {}) {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
     const errMsg = error.error?.message || `HTTP ${res.status}`;
+    console.error(`[API] ${options.method || 'GET'} ${path} failed: ${res.status} ${errMsg}`);
     if (options.throwOnError !== false) {
       throw new Error(errMsg);
     }
@@ -101,10 +102,6 @@ export async function deleteTrail(id) {
   });
   gpxCache.delete(id);
   return result;
-}
-
-export function clearGpxCache() {
-  gpxCache.clear();
 }
 
 export async function getTrailDetails() {

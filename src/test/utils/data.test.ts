@@ -1,5 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { getTrailDetailsById, findTrailById, findTrailIndexById } from '../../utils/data';
+import { getTrailName, findTrailById, findTrailIndexById, getScoredMonths, getAvailableMonthsFromSeasonal, getTrailDetailsById } from '../../utils/data';
+
+describe('getTrailName', () => {
+  it('returns fullName when available', () => {
+    expect(getTrailName({ name: 'Short', fullName: 'Full Name' })).toBe('Full Name');
+  });
+
+  it('falls back to name', () => {
+    expect(getTrailName({ name: 'Short' })).toBe('Short');
+  });
+
+  it('returns empty string for null trail', () => {
+    expect(getTrailName(null)).toBe('');
+  });
+});
 
 describe('getTrailDetailsById', () => {
   const mockDetails = {
@@ -33,8 +47,13 @@ describe('getTrailDetailsById', () => {
     expect(result).toBeNull();
   });
 
- it('returns null for empty details', () => {
+  it('returns null for empty details', () => {
     const result = getTrailDetailsById({}, 'trail-1');
+    expect(result).toBeNull();
+  });
+
+  it('returns null for empty trailId', () => {
+    const result = getTrailDetailsById(mockDetails, '');
     expect(result).toBeNull();
   });
 });
@@ -87,6 +106,10 @@ describe('findTrailById', () => {
     expect(findTrailById([], 'trail-1')).toBeNull();
   });
 
+  it('returns null for empty trailId', () => {
+    expect(findTrailById(mockTrails, '')).toBeNull();
+  });
+
   it('only matches full slug words, not partial', () => {
     expect(findTrailById(mockTrails, 'mount')).toBeNull();
     expect(findTrailById(mockTrails, 'rain')).toBeNull();
@@ -126,5 +149,59 @@ describe('findTrailIndexById', () => {
 
   it('returns -1 for empty array', () => {
     expect(findTrailIndexById([], 'trail-1')).toBe(-1);
+  });
+});
+
+describe('getScoredMonths', () => {
+  it('returns scored months as abbreviations', () => {
+    const seasonal = { Jan: 3, Mar: 2, Jun: 1 };
+    const result = getScoredMonths(seasonal);
+    expect(result).toEqual(['Jan', 'Mar', 'Jun']);
+  });
+
+  it('returns scored months as 1-based indices', () => {
+    const seasonal = { Jan: 3, Mar: 2, Jun: 1 };
+    const result = getScoredMonths(seasonal, { asIndices: true });
+    expect(result).toEqual([1, 3, 6]);
+  });
+
+  it('filters out zero and negative scores', () => {
+    const seasonal = { Jan: 3, Feb: 0, Mar: -1, Jun: 1 };
+    const result = getScoredMonths(seasonal);
+    expect(result).toEqual(['Jan', 'Jun']);
+  });
+
+  it('filters out non-month keys', () => {
+    const seasonal = { Jan: 3, Q1: 2, Jun: 1 };
+    const result = getScoredMonths(seasonal);
+    expect(result).toEqual(['Jan', 'Jun']);
+  });
+
+  it('returns empty array for null seasonal', () => {
+    expect(getScoredMonths(null)).toEqual([]);
+  });
+
+  it('sorts by month order', () => {
+    const seasonal = { Jun: 1, Jan: 3, Mar: 2 };
+    const result = getScoredMonths(seasonal);
+    expect(result).toEqual(['Jan', 'Mar', 'Jun']);
+  });
+
+  it('does not sort when sort is false', () => {
+    const seasonal = { Jun: 1, Jan: 3, Mar: 2 };
+    const result = getScoredMonths(seasonal, { sort: false });
+    expect(result.length).toBe(3);
+  });
+});
+
+describe('getAvailableMonthsFromSeasonal', () => {
+  it('returns 1-based month indices', () => {
+    const seasonal = { Jan: 3, Mar: 2 };
+    const result = getAvailableMonthsFromSeasonal(seasonal);
+    expect(result).toEqual([1, 3]);
+  });
+
+  it('returns empty array for null seasonal', () => {
+    expect(getAvailableMonthsFromSeasonal(null)).toEqual([]);
   });
 });

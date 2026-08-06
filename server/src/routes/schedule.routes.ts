@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { getSchedule, updateSchedule, getTrails, loadData, getScheduleHistory, restoreScheduleByTimestamp, clearScheduleHistory, getScheduleVersion } from '../services/dataService.js';
+import { getSchedule, updateSchedule, loadData, getScheduleHistory, restoreScheduleByTimestamp, getScheduleVersion } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { ScheduleEntrySchema, ScheduleSchema, RestoreTimestampSchema } from '../middleware/validation.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
-import { validateXlsBuffer, runPythonScript, findPythonCmd } from '../utils/xlsImport.js';
+import { validateXlsBuffer, findPythonCmd, runPythonScript, processXlsImport } from '../utils/xlsImport.js';
 import fs from 'fs';
 import path from 'path';
 import { getCurrentDir } from '../utils/path.js';
@@ -106,53 +106,17 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
 
     const trailsPath = path.join(PROJECT_ROOT, 'exported_data/trails.json');
 
-    let pythonCmd: string;
     try {
-      pythonCmd = await findPythonCmd();
-    } catch {
-      fs.unlinkSync(tmpPath);
-      return res.status(500).json({
-        success: false,
-        error: { message: 'Python not found. Install Python 3 with pandas to import schedule data.' }
-      });
-    }
-
-    try {
-      const { stdout, stderr } = await runPythonScript(pythonCmd, path.join(PROJECT_ROOT, 'import_schedule_xls.py'), [
+      const result = await processXlsImport(
         tmpPath,
+        path.join(PROJECT_ROOT, 'import_schedule_xls.py'),
         trailsPath
-      ]);
-
-      fs.unlinkSync(tmpPath);
-
-      if (stderr) {
-        console.warn('[SCHEDULE] Python warnings:', stderr);
-      }
-
-      let result;
-      try {
-        result = JSON.parse(stdout);
-      } catch {
-        return res.status(500).json({
-          success: false,
-          error: { message: 'Failed to parse Python output. Check logs for details.' }
-        });
-      }
-
-      if (result.error) {
-        return res.status(400).json({ success: false, error: { message: result.error } });
-      }
-
-      if (!result.success || result.matched === 0) {
-        return res.status(400).json({ success: false, error: { message: 'No valid hike data found in Excel file' } });
-      }
-
+      );
       res.json(result);
-    } catch (pyError: any) {
-      fs.unlinkSync(tmpPath);
-      const stderr = pyError.stderr || '';
-      console.error('[SCHEDULE] Python script failed:', stderr || pyError.message);
-      if (stderr.includes('No module named')) {
+    } catch (pyError) {
+      const err = pyError as Error & { stderr?: string };
+      console.error('[SCHEDULE] Python script failed:', err.stderr || err.message);
+      if (err.stderr?.includes('No module named')) {
         return res.status(500).json({
           success: false,
           error: { message: 'Python dependency missing. Contact administrator.' }

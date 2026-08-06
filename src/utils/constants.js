@@ -35,3 +35,10 @@ export const DIFFICULTY_COLORS = {
   'Mod to Diff': 'bg-orange-200 text-orange-900',
   'Difficult': 'bg-red-200 text-red-900'
 };
+
+export const NAV_LINKS = [
+  { to: '/', label: 'Calendar' },
+  { to: '/browse', label: 'Browse Trails' },
+  { to: '/trails', label: 'Trail Manager' },
+  { to: '/schedule', label: 'Schedule Builder' },
+];

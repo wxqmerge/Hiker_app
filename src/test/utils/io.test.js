@@ -1,17 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { downloadBlob, createImportFileInput } from '../../utils/io';
 
 describe('io.js', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.useFakeTimers();
     URL.createObjectURL = vi.fn(() => 'blob:http://test.com/mock');
     URL.revokeObjectURL = vi.fn();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe('downloadBlob', () => {
-    it('creates a blob and triggers download', () => {
+    it('creates a blob and triggers download', async () => {
       downloadBlob('test data', 'test.txt', 'text/plain');
       expect(URL.createObjectURL).toHaveBeenCalled();
+      vi.advanceTimersByTime(1100);
+      await vi.runOnlyPendingTimersAsync();
       expect(URL.revokeObjectURL).toHaveBeenCalled();
     });
 
@@ -36,8 +43,10 @@ describe('io.js', () => {
       expect(URL.createObjectURL).toHaveBeenCalled();
     });
 
-    it('revokes object URL after download', () => {
+    it('revokes object URL after download', async () => {
       downloadBlob('data', 'file.txt');
+      vi.advanceTimersByTime(1100);
+      await vi.runOnlyPendingTimersAsync();
       expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://test.com/mock');
     });
   });

@@ -102,11 +102,11 @@ export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
       const monthly = details?.popularity?.monthly || t.monthly || null;
       if (monthly) {
         const { hasQuarterData } = getSeasonalInfo(seasonal);
-        const scores = filters.months.length === 0
-          ? monthly
-          : monthly.filter((_, i) => filters.months.includes(i));
-        return scores.reduce((sum, hikeCount, idx) => {
-          return sum + calculateMonthlyScore(hikeCount, idx, [], hasQuarterData);
+        const scoredMonths = filters.months.length === 0
+          ? monthly.map((hikeCount, i) => ({ hikeCount, i }))
+          : monthly.map((hikeCount, i) => ({ hikeCount, i })).filter(({ i }) => filters.months.includes(i));
+        return scoredMonths.reduce((sum, { hikeCount, i }) => {
+          return sum + calculateMonthlyScore(hikeCount, i, MONTH_ABBR.map((_, j) => j + 1), hasQuarterData);
         }, 0);
       }
       const keyed = filters.months.length === 0

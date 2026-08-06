@@ -188,49 +188,45 @@ export function getSchedule(): ScheduleData {
   return { ...schedule };
 }
 
+async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: string, gpxFileRemoved?: boolean): Promise<boolean> {
+  if (gpxData) {
+    await fs.mkdir(GPX_UPLOAD_DIR, { recursive: true });
+    const gpxFilePath = path.join(GPX_UPLOAD_DIR, `${trailId}.gpx`);
+    await fs.writeFile(gpxFilePath, gpxData, 'utf-8');
+    gpxIndex[trailId] = `${trailId}.gpx`;
+    return true;
+  }
+  if (gpxFile) {
+    gpxIndex[trailId] = gpxFile;
+    return true;
+  }
+  if (gpxFileRemoved || gpxData === '') {
+    const oldGpxFile = gpxIndex[trailId];
+    if (oldGpxFile) {
+      try {
+        await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile));
+      } catch {
+        // File may not exist
+      }
+    }
+    delete gpxIndex[trailId];
+    return false;
+  }
+  return !!gpxIndex[trailId];
+}
+
 export async function updateTrail(trail: Trail & { gpxData?: string }): Promise<void> {
   const trailIdx = trails.findIndex(t => t.id === trail.id);
   const { gpxData, ...trailWithoutGpx } = trail;
   const updatedTrail: Trail = { ...trailWithoutGpx };
 
-  // Handle GPX data: save to file, set hasGpx, strip gpxData from trail object
-  if (gpxData) {
-    await fs.mkdir(GPX_UPLOAD_DIR, { recursive: true });
-    const gpxFilePath = path.join(GPX_UPLOAD_DIR, `${trail.id}.gpx`);
-    await fs.writeFile(gpxFilePath, gpxData, 'utf-8');
-    gpxIndex[trail.id] = `${trail.id}.gpx`;
-    updatedTrail.hasGpx = true;
-  } else if (gpxData === '') {
-    // Explicitly removing GPX
-    const oldGpxFile = gpxIndex[trail.id];
-    if (oldGpxFile) {
-      try {
-        await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile));
-      } catch {
-        // File may not exist
-      }
-    }
-    delete gpxIndex[trail.id];
-    updatedTrail.hasGpx = false;
-  }
-
-  // Handle GPX file upload: update gpxIndex when gpxFile is set
-  if (updatedTrail.gpxFile) {
-    gpxIndex[trail.id] = updatedTrail.gpxFile;
-    updatedTrail.hasGpx = true;
-  } else if (updatedTrail.gpxFile === '') {
-    // Delete the actual GPX file on disk
-    const oldGpxFile = gpxIndex[trail.id];
-    if (oldGpxFile) {
-      try {
-        await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile));
-      } catch {
-        // File may not exist
-      }
-    }
-    delete gpxIndex[trail.id];
-    updatedTrail.hasGpx = false;
-  }
+  const hasGpx = await updateGpxForTrail(
+    trail.id,
+    gpxData,
+    updatedTrail.gpxFile || undefined,
+    updatedTrail.gpxFile === ''
+  );
+  updatedTrail.hasGpx = hasGpx;
 
   if (trailIdx >= 0) {
     trails[trailIdx] = updatedTrail;
