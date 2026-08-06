@@ -9,6 +9,10 @@ export function setGroupConfig(config) {
   groupConfig = { ...groupConfig, ...config };
 }
 
+export function resetConfig() {
+  groupConfig = { name: null, hikeDays: null };
+}
+
 /**
  * Get the configured group name for the client.
  * @returns {string|null}
@@ -32,9 +36,8 @@ export function getHikeDays() {
  * @returns {string} Label like "Wed/Fri Dates" or "Monday A/Monday B".
  */
 export function getHikeDaysLabel() {
-  const daysStr = groupConfig.hikeDays;
-  if (!daysStr) return 'Loading...';
-  const days = daysStr.split(',').map(d => parseInt(d.trim(), 10)).filter(d => !isNaN(d) && d >= 0 && d <= 6);
+  if (!groupConfig.hikeDays) return 'Loading...';
+  const days = getHikeDays();
   
   if (days.length === 0) return 'No Hike Days';
 

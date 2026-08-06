@@ -124,6 +124,26 @@ export async function openWeatherForTrail(getGpxFn, trailId) {
   }
 }
 
+/**
+ * Fetch weather forecast for a trail on a given date.
+ * Gets GPX → extracts first coordinate → fetches NWS forecast.
+ * @param {Function} getGpxFn - Function(trailId) => Promise<gpxContent>
+ * @param {string} trailId
+ * @param {Date} targetDate
+ * @returns {{temp: number, rain: number}|null}
+ */
+export async function fetchWeatherForTrail(getGpxFn, trailId, targetDate) {
+  try {
+    const gpx = await getGpxFn(trailId);
+    if (!gpx) return null;
+    const coord = getFirstCoordinateFromGpx(gpx);
+    if (!coord) return null;
+    return await fetchNwsForecastForDate(coord.lat, coord.lon, targetDate);
+  } catch {
+    return null;
+  }
+}
+
 // Open GPX file in associated app (mobile: Web Share, desktop: download with extension)
 export async function shareGpxFile(gpxContent, trailName) {
   const safeName = sanitizeFilename(trailName, 'route');

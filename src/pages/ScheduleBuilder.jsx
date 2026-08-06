@@ -4,7 +4,6 @@ import { useTrails } from '../hooks/useTrails';
 import { useFilters } from '../hooks/useFilters';
 import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { useTooltips } from '../hooks/useTooltips';
-import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
 import { useApiKey } from '../hooks/useApiKey';
 
 import FilterPanel from '../components/FilterPanel';
@@ -17,7 +16,7 @@ import SwapConfirmationModal from '../components/SwapConfirmationModal';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
-import { downloadBlob, createFileInput, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, fetchNwsForecastForDate } from '../utils/io';
+import { downloadBlob, createFileInput, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, fetchWeatherForTrail } from '../utils/io';
 import { getGroupName } from '../utils/config';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule, getGpx } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
@@ -26,7 +25,7 @@ import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
 import { updateLeader } from '../utils/scheduleActions';
 import { getDayName, getHikeDaysLabel, getHikeDays } from '../utils/config';
-import { getDaysInMonth, createDate } from '../utils/dateUtils';
+import { createDate, getTodayHikeRef, getHikeDaysForMonth } from '../utils/dateUtils';
 
 import { setSchedule } from '../hooks/useTrailStore';
 
@@ -119,7 +118,6 @@ export default function ScheduleBuilder() {
 
   const {
     assignedHikes,
-    assignedCount,
     hikeDates,
     findTrailById,
     trailIndexToId,
@@ -177,8 +175,6 @@ export default function ScheduleBuilder() {
     return result;
   }, [trails, assignedHikes, debugMode]);
 
-  const monthSlotStats = useMonthSlotStats({ trails, scheduleStore, year });
-
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (showSettings && !e.target.closest('.relative')) {
@@ -199,7 +195,7 @@ export default function ScheduleBuilder() {
 
   const filteredHikes = useMemo(() => {
     const filtered = filterTrails(hikeTrailMap, filters, trailDetails);
-    const sorted = sortTrails(filtered, filters, 'name', trailDetails);
+    const sorted = sortTrails(filtered, filters, trailDetails);
     if (debugMode) {
       const search = filters.search;
       const assigned = Object.values(assignedHikes).filter(Boolean);
@@ -294,9 +290,7 @@ export default function ScheduleBuilder() {
   }, []);
 
   const nextHikeDate = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (now.getHours() >= 12) today.setDate(today.getDate() + 1);
+    const today = getTodayHikeRef();
     const hikeDays = getHikeDays();
     let earliest = null;
     MONTH_NAMES.forEach((monthName, m) => {
@@ -325,19 +319,11 @@ export default function ScheduleBuilder() {
       const batch = items.slice(i, i + concurrency);
       await Promise.allSettled(batch.map(async (item) => {
         const trail = item.trail;
-        try {
-          const gpx = await getGpx(trail.id);
-          if (!gpx) { failCount++; return; }
-          const coord = getFirstCoordinateFromGpx(gpx);
-          if (!coord) { failCount++; return; }
-          const w = await fetchNwsForecastForDate(coord.lat, coord.lon, nextHikeDate);
-          if (w) {
-            results[trail.id] = w;
-            successCount++;
-          } else {
-            failCount++;
-          }
-        } catch {
+        const w = await fetchWeatherForTrail(getGpx, trail.id, nextHikeDate);
+        if (w) {
+          results[trail.id] = w;
+          successCount++;
+        } else {
           failCount++;
         }
       }));
@@ -658,7 +644,7 @@ export default function ScheduleBuilder() {
         },
         onCleanup: () => setShowSettings(false),
       });
-    }, [trails, scheduleStore, setScheduleStore]);
+    }, [trails]);
 
   const getQuarterForMonth = (monthIndex) => {
     // Calendar quarters: Q1=Jan/Feb/Mar, Q2=Apr/May/Jun, Q3=Jul/Aug/Sep, Q4=Oct/Nov/Dec
@@ -799,13 +785,8 @@ export default function ScheduleBuilder() {
   const handleExport = useCallback(() => {
     const month = MONTH_NAMES[selectedMonth];
     const title = `Over-the-Hill Hike Descriptions -- ${month}, ${year}`;
-    const daysInMonth = getDaysInMonth(year, selectedMonth);
     const hikeDays = getHikeDays();
-    const hikeDates = [];
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = createDate(year, selectedMonth, day);
-      if (hikeDays.includes(date.getDay())) hikeDates.push(day);
-    }
+    const hikeDates = getHikeDaysForMonth(year, selectedMonth, hikeDays);
     const hikesPerDowExport = {};
     hikeDays.forEach(d => { hikesPerDowExport[d] = (hikesPerDowExport[d] || 0) + 1; });
     const entries = hikeDates.flatMap(day => {

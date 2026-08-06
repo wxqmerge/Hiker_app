@@ -8,9 +8,13 @@ export function getApiBase() {
   if (hostname.endsWith('.example.com') && hostname.split('.').length > 2) {
     return `https://${hostname}`;
   }
-  const match = path.match(/^\/([\w]+-[\w-]+)/);
+  const match = path.match(/^\/([\w-]+)-dev(\/|$)/);
   if (match) {
-    return `https://${match[1]}.example.com`;
+    return `https://${match[1]}-dev.example.com`;
+  }
+  const pathMatch = path.match(/^\/([\w]+-[\w-]+)(\/|$)/);
+  if (pathMatch) {
+    return `https://${pathMatch[1]}.example.com`;
   }
   return '';
 }

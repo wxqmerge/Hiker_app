@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getTrailName } from '../utils/data';
-import { getFirstCoordinateFromGpx, openWeatherForTrail, fetchNwsForecastForDate } from '../utils/io';
+import { openWeatherForTrail, fetchWeatherForTrail } from '../utils/io';
 import { getGpx } from '../api/client';
 import { useGpxActions } from '../hooks/useGpxActions';
 import TrailStats from './shared/TrailStats';
@@ -16,21 +16,11 @@ export default function NextHikeBanner({ nextHikes }) {
     if (!nextHikes || nextHikes.length === 0) return;
     let cancelled = false;
     (async () => {
-      const gpxResults = await Promise.allSettled(
-        nextHikes.map(hike => getGpx(hike.trailId).catch(() => null))
+      const weatherPromises = nextHikes.map((hike, idx) =>
+        fetchWeatherForTrail(getGpx, hike.trailId, hike.date)
+          .then(w => ({ idx, w }))
+          .catch(() => null)
       );
-      const weatherPromises = [];
-      gpxResults.forEach((result, idx) => {
-        const gpx = result.status === 'fulfilled' ? result.value : null;
-        if (!gpx) return;
-        const coord = getFirstCoordinateFromGpx(gpx);
-        if (!coord) return;
-        weatherPromises.push(
-          fetchNwsForecastForDate(coord.lat, coord.lon, nextHikes[idx].date)
-            .then(w => ({ idx, w }))
-            .catch(() => null)
-        );
-      });
       const weatherResults = await Promise.allSettled(weatherPromises);
       if (cancelled) return;
       const map = {};
@@ -117,17 +107,18 @@ function NextHikeCard({ hike, idx, weather }) {
                     />
                   </div>
                 </div>
-                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-white/20">
-                    <TrailStats
-                      trail={trail}
-                      itemClassName="flex items-center gap-2 text-green-50"
-                      iconSize="w-5 h-5"
-                      rideFormat="range"
-                    />
-                    <div className="flex items-center justify-end gap-2">
-                      <GPXHelp variant="dark" />
-                    </div>
-                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-white/20">
+                     <TrailStats
+                       trail={trail}
+                       itemClassName="flex items-center gap-2 text-green-50"
+                       iconSize="w-5 h-5"
+                       rideFormat="range"
+                       inline
+                     />
+                     <div className="flex items-center justify-end gap-2">
+                       <GPXHelp variant="dark" />
+                     </div>
+                   </div>
                </div>
              </div>
            </div>

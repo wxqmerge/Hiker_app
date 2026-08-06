@@ -3,11 +3,12 @@
 
 import { getRideCost } from '../../utils/report';
 
-export default function TrailStats({ trail, className = '', itemClassName = '', iconSize = 'w-3.5 h-3.5', rideFormat = 'range' }) {
+export default function TrailStats({ trail, className = '', itemClassName = '', iconSize = 'w-3.5 h-3.5', rideFormat = 'range', inline = false }) {
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
 
+  const wrapperClass = inline ? `${className} contents` : className;
   return (
-    <div className={className}>
+    <div className={wrapperClass}>
       {/* Distance */}
       <div className={itemClassName}>
         <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

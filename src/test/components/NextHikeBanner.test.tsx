@@ -14,6 +14,7 @@ vi.mock('../../utils/io', () => ({
   getFirstCoordinateFromGpx: vi.fn(() => null),
   openWeatherForTrail: vi.fn(),
   fetchNwsForecastForDate: vi.fn(() => Promise.resolve(null)),
+  fetchWeatherForTrail: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock('../../hooks/useGpxActions', () => ({

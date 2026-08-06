@@ -6,7 +6,7 @@ import { getGoogleAllTrailsSearchUrl } from '../../utils/url.js';
 import { openWeatherForTrail } from '../../utils/io';
 import { getGpx } from '../../api/client';
 
-export default function TrailActionButtons({ trail, hikeDate, weather, className = '', buttonClassName = '', iconSize = 'w-3.5 h-3.5', onGpxDownload, onTrailhead, onWeather }) {
+export default function TrailActionButtons({ trail, hikeDate, buttonClassName = '', iconSize = 'w-3.5 h-3.5', onGpxDownload, onTrailhead, onWeather }) {
   const trailName = getTrailName(trail);
 
   const handleWeatherClick = (e) => {

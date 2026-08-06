@@ -84,6 +84,10 @@ export function resetTrailStore() {
   _scheduleVer++;
   _scheduleVersion = null;
   _subscribers = [];
+  _trailsVer = 0;
+  _detailsVer = 0;
+  _scheduleVer = 0;
+  _lookupVer = 0;
   initSharedState();
 }
 

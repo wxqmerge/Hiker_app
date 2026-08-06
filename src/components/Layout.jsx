@@ -1,7 +1,7 @@
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import { usePageContext } from '../contexts/PageContext';
 import { useMonthContext } from '../contexts/MonthContext';
-import { ScheduleSettingsProvider, useScheduleSettings } from '../contexts/ScheduleSettingsContext';
+import { ScheduleSettingsProvider } from '../contexts/ScheduleSettingsContext';
 import { getGroupName } from '../utils/config';
 import { getTrailName } from '../utils/data';
 import { useTrails } from '../hooks/useTrails';
@@ -48,7 +48,6 @@ function HeaderContent() {
   const groupName = getGroupName();
   const showMonth = pathname === '/' || pathname === '/schedule';
   const isSchedule = pathname === '/schedule';
-  const settings = useScheduleSettings();
 
   return (
     <>

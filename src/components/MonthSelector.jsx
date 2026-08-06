@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
 import { useTrails } from '../hooks/useTrails';
@@ -6,7 +7,7 @@ import { serverScheduleToStore } from '../utils/scheduleFormat';
 export default function MonthSelector({ selectedMonth, onChange, title }) {
   const { trails, schedule: scheduleData, loading } = useTrails();
   const year = 2026;
-  const scheduleStore = serverScheduleToStore(scheduleData);
+  const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
   const monthSlotStats = useMonthSlotStats({ trails, scheduleStore, year });
 
   return (

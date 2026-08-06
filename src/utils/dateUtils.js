@@ -29,3 +29,56 @@ export function createDate(year, month, day) {
 export function formatDateToISO(date = new Date()) {
   return date.toISOString().slice(0, 10);
 }
+
+/**
+ * Get today's date at midnight, advancing to tomorrow if past noon.
+ * Used for "next hike" calculations so afternoon users see tomorrow's hike.
+ * @param {Date} [now] - Current time (defaults to new Date()).
+ * @returns {Date}
+ */
+export function getTodayHikeRef(now = new Date()) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (now.getHours() >= 12) today.setDate(today.getDate() + 1);
+  return today;
+}
+
+/**
+ * Get all days in a month that are hike days (based on config).
+ * @param {number} year
+ * @param {number} month - 0-indexed
+ * @param {number[]} hikeDays - Array of day-of-week numbers (0-6).
+ * @returns {number[]} Array of day numbers (1-based).
+ */
+export function getHikeDaysForMonth(year, month, hikeDays) {
+  const daysInMonth = getDaysInMonth(year, month);
+  const hikeDates = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = createDate(year, month, day);
+    if (hikeDays.includes(date.getDay())) hikeDates.push(day);
+  }
+  return hikeDates;
+}
+
+/**
+ * Get hike dates with slot info for a month.
+ * Returns [{ day, slot }] accounting for multiple hikes per dow.
+ * @param {number} year
+ * @param {number} month - 0-indexed
+ * @param {number[]} hikeDays - Array of day-of-week numbers (0-6).
+ * @returns {{day: number, slot: number}[]}
+ */
+export function getHikeSlotsForMonth(year, month, hikeDays) {
+  const daysInMonth = getDaysInMonth(year, month);
+  const dates = [];
+  const hikesPerDow = {};
+  hikeDays.forEach(d => { hikesPerDow[d] = (hikesPerDow[d] || 0) + 1; });
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = createDate(year, month, day);
+    const dayOfWeek = date.getDay();
+    const hikesForThisDow = hikesPerDow[dayOfWeek] || 0;
+    for (let s = 0; s < hikesForThisDow; s++) {
+      dates.push({ day, slot: s });
+    }
+  }
+  return dates;
+}

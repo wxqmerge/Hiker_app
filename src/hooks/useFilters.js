@@ -60,7 +60,7 @@ export function useFilters(trails, trailDetails) {
   const { filters, setFilters, resetFilters } = useFiltersStore();
 
   const filteredTrails = useMemo(() => filterTrails(trails, filters, trailDetails), [trails, filters, trailDetails]);
-  const sortedTrails = useMemo(() => sortTrails(filteredTrails, filters, 'name', trailDetails), [filteredTrails, filters, trailDetails]);
+  const sortedTrails = useMemo(() => sortTrails(filteredTrails, filters, trailDetails), [filteredTrails, filters, trailDetails]);
 
   return { filters, setFilters, sortedTrails, resetFilters };
 }

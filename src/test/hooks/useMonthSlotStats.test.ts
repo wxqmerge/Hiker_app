@@ -14,6 +14,14 @@ vi.mock('../../utils/dateUtils', () => ({
   createDate: vi.fn((year, month, day) => {
     return new Date(year, month, day);
   }),
+  getHikeDaysForMonth: vi.fn((year, month, hikeDays) => {
+    const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const result = [];
+    for (let day = 1; day <= days[month]; day++) {
+      if (hikeDays.includes(new Date(year, month, day).getDay())) result.push(day);
+    }
+    return result;
+  }),
 }));
 
 describe('useMonthSlotStats', () => {

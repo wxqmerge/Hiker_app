@@ -215,7 +215,7 @@ describe('sortTrails', () => {
   it('handles schedule mode wrapper objects', () => {
     const scheduleItems = mockTrails.map(t => ({ trail: t }));
     const filters = { ...mockFilters, sortBy: 'name' };
-    const result = sortTrails(scheduleItems, filters, 'name');
+    const result = sortTrails(scheduleItems, filters);
     expect(result[0].trail.fullName).toBe('◆ Wilderness Peak');
     expect(result[1].trail.fullName).toBe('Easy Path Trail');
     expect(result[2].trail.fullName).toBe('Mount Rainier');

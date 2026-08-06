@@ -7,6 +7,7 @@ export async function updateLeader(scheduleStore, selectedMonth, day, slotIdx, c
   const newLeader = prompt('Enter new leader name:', currentLeader || '');
   if (newLeader === null) return false;
   const trimmed = newLeader.trim();
+  if (!trimmed.length) return false;
   const monthName = MONTH_NAMES[selectedMonth];
 
   let latestServer;

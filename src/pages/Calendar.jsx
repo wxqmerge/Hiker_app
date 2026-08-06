@@ -3,7 +3,6 @@ import { useTrails } from '../hooks/useTrails';
 import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { useTooltips } from '../hooks/useTooltips';
 import { useNextHike } from '../hooks/useNextHike';
-import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
 import { useApiKey } from '../hooks/useApiKey';
 import { useMonthContext } from '../contexts/MonthContext';
 import ScheduledCards from '../components/ScheduledCards';
@@ -26,8 +25,6 @@ export default function Calendar() {
 
   const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
 
-  const monthSlotStats = useMonthSlotStats({ trails, scheduleStore, year });
-
   const nextHikes = useNextHike({ trails, schedule: scheduleData, year });
 
   const { selectedMonth, setSelectedMonth } = useMonthContext();
@@ -38,17 +35,14 @@ export default function Calendar() {
   useEffect(() => {
     if (!hasSyncedInitialMonth.current && nextHikes && nextHikes.length > 0 && !loading) {
       hasSyncedInitialMonth.current = true;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedMonth(nextHikes[0].monthIndex);
     }
-  }, [loading, nextHikes]);
+  }, [loading, nextHikes, setSelectedMonth]);
 
   useSchedulePolling({ setSchedule }, 5000);
 
   const {
     assignedHikes,
-    assignedCount,
-    hikeDates,
     findTrailById,
     trailIndexToId,
     dragData,

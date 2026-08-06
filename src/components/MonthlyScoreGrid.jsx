@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useMemo } from 'react';
 import { MONTH_ABBR } from '../utils/constants';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
@@ -24,9 +25,7 @@ export function computeScoreBreakdown(monthly, availableMonths, seasonal) {
 // @param {boolean} props.showBreakdown - Show quarterBase+monthBase+scheduleBase=score
 // @param {string} props.titlePrefix - Prefix for title attribute
 export default function MonthlyScoreGrid({ monthly, availableMonths = [], seasonal, showBreakdown = false, titlePrefix = '' }) {
-  const { hasQuarterData } = getSeasonalInfo(seasonal || {});
-
-  const scores = useMemo(() => computeScoreBreakdown(monthly, availableMonths, seasonal), [monthly, availableMonths, hasQuarterData]);
+  const scores = useMemo(() => computeScoreBreakdown(monthly, availableMonths, seasonal), [monthly, availableMonths, seasonal]);
 
   if (!monthly || monthly.length === 0) return null;
 
@@ -65,9 +64,7 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
 // @param {number[]} props.availableMonths - 1-based month indices
 // @param {Object} props.seasonal - Trail seasonal data
 export function ScoreBreakdownRow({ monthly, availableMonths = [], seasonal }) {
-  const { hasQuarterData } = getSeasonalInfo(seasonal || {});
-
-  const scores = useMemo(() => computeScoreBreakdown(monthly, availableMonths, seasonal), [monthly, availableMonths, hasQuarterData]);
+  const scores = useMemo(() => computeScoreBreakdown(monthly, availableMonths, seasonal), [monthly, availableMonths, seasonal]);
 
   if (!monthly || monthly.length === 0) return null;
 

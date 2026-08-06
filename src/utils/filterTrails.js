@@ -80,7 +80,7 @@ export function filterTrails(items, filters, trailDetails) {
 }
 
 // Sort logic shared by browse and schedule modes
-export function sortTrails(items, filters, nameKey = 'name', trailDetails) {
+export function sortTrails(items, filters, trailDetails) {
   const sorted = [...items];
   
   if (filters.sortBy === 'name') {

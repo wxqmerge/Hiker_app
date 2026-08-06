@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import TrailCard from './TrailCard';
-import { getDaysInMonth, createDate } from '../utils/dateUtils';
+import { createDate, getHikeDaysForMonth } from '../utils/dateUtils';
 import { getHikeDays, getDayLabel } from '../utils/config';
 
 export default function ScheduledCards({
@@ -18,13 +18,8 @@ export default function ScheduledCards({
   tt,
 }) {
   const cards = useMemo(() => {
-    const daysInMonth = getDaysInMonth(year, selectedMonth);
-    const allDays = [];
     const hikeDays = getHikeDays();
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = createDate(year, selectedMonth, day);
-      if (hikeDays.includes(date.getDay())) allDays.push(day);
-    }
+    const allDays = getHikeDaysForMonth(year, selectedMonth, hikeDays);
         return allDays
         .flatMap(day => {
           const entries = assignedHikes[day] || [];

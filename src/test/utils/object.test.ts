@@ -58,14 +58,14 @@ describe('deepEqual', () => {
 
   it('handles mixed types', () => {
     expect(deepEqual(1, '1')).toBe(false);
-    expect(deepEqual({}, [])).toBe(true);
-    expect(deepEqual([], {})).toBe(true);
+    expect(deepEqual({}, [])).toBe(false);
+    expect(deepEqual([], {})).toBe(false);
   });
 
   it('handles empty objects and arrays', () => {
     expect(deepEqual({}, {})).toBe(true);
     expect(deepEqual([], [])).toBe(true);
-    expect(deepEqual({}, [])).toBe(true);
+    expect(deepEqual({}, [])).toBe(false);
   });
 
   it('handles complex nested structures', () => {

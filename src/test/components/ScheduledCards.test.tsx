@@ -3,15 +3,38 @@ import { render, screen } from '@testing-library/react';
 import ScheduledCards from '../../components/ScheduledCards';
 import { getTrailName } from '../../utils/data';
 
-vi.mock('../../utils/dateUtils', () => ({
-  getDaysInMonth: vi.fn((year, month) => {
-    const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    return days[month];
-  }),
-  createDate: vi.fn((year, month, day) => {
-    return new Date(year, month, day);
-  }),
-}));
+vi.mock('../../utils/dateUtils', () => {
+  const daysInMonthMap = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return {
+    getDaysInMonth: vi.fn((year, month) => daysInMonthMap[month]),
+    createDate: vi.fn((year, month, day) => new Date(year, month, day)),
+    getHikeDaysForMonth: vi.fn((year, month, hikeDays) => {
+      const daysInMonth = daysInMonthMap[month];
+      const result = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        if (hikeDays.includes(date.getDay())) result.push(day);
+      }
+      return result;
+    }),
+    getHikeSlotsForMonth: vi.fn((year, month, hikeDays) => {
+      const daysInMonth = daysInMonthMap[month];
+      const result = [];
+      const hikesPerDow = {};
+      hikeDays.forEach(d => { hikesPerDow[d] = (hikesPerDow[d] || 0) + 1; });
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const hikesForThisDow = hikesPerDow[date.getDay()] || 0;
+        for (let s = 0; s < hikesForThisDow; s++) {
+          result.push({ day, slot: s });
+        }
+      }
+      return result;
+    }),
+    getTodayHikeRef: vi.fn(() => new Date()),
+    formatDateToISO: vi.fn((date) => date.toISOString().slice(0, 10)),
+  };
+});
 
 vi.mock('../../utils/config', () => ({
   getHikeDays: vi.fn(() => [1]),

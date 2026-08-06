@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import { beforeEach } from 'vitest';
 import { resetFiltersStore } from '../hooks/useFilters';
 import { resetTrailStore } from '../hooks/useTrailStore';
-import { setGroupConfig } from '../utils/config';
+import { setGroupConfig, resetConfig } from '../utils/config';
 
 // Mock data
 const mockData = {
@@ -169,6 +169,12 @@ beforeEach(() => {
 // Reset shared trail store between tests
 beforeEach(() => {
   resetTrailStore();
+});
+
+// Reset shared config between tests
+beforeEach(() => {
+  resetConfig();
+  setGroupConfig({ name: 'Test Group', hikeDays: '3,5' });
 });
 
 // Mock window.location

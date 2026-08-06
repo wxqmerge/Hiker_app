@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
-import { getDaysInMonth, createDate } from '../utils/dateUtils';
+import { getDaysInMonth, createDate, getTodayHikeRef } from '../utils/dateUtils';
 import { getHikeDays } from '../utils/config';
 import { ensureArray } from '../utils/array';
 
@@ -17,11 +17,7 @@ export function useNextHike({ trails, schedule, year = 2026, maxHikes = 2 }) {
 
   return useMemo(() => {
     const allHikes = [];
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (now.getHours() >= 12) {
-      today.setDate(today.getDate() + 1);
-    }
+    const today = getTodayHikeRef();
     const hikeDays = getHikeDays();
 
     for (let m = 0; m < 12 && allHikes.length < maxHikes; m++) {
