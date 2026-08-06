@@ -3,7 +3,7 @@ import { MONTH_NAMES } from '../utils/constants';
 import { useTooltips } from '../hooks/useTooltips';
 import DualRangeSlider from './DualRangeSlider';
 
-export default function FilterPanel({ filters, setFilters, lookup, resetFilters }) {
+export default function FilterPanel({ filters, setFilters, lookup, resetFilters, totalCount, filteredCount }) {
   const { title: tt } = useTooltips();
   const [collapsed, setCollapsed] = useState(false);
   const difficulties = lookup?.difficulties || [];
@@ -47,7 +47,9 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
       <div className="px-3.5 py-2 flex items-center justify-between border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-800">Filters</h3>
+        <h3 className="text-sm font-semibold text-gray-800">
+          Filters{filteredCount != null ? ` · ${filteredCount} of ${totalCount} trails` : ''}
+        </h3>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="text-gray-400 hover:text-gray-600 transition-colors"

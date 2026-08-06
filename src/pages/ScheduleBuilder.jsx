@@ -6,13 +6,14 @@ import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { useTooltips } from '../hooks/useTooltips';
 import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
 import { useApiKey } from '../hooks/useApiKey';
-import PageNav from '../components/PageNav';
+
 import FilterPanel from '../components/FilterPanel';
+import { useMonthContext } from '../contexts/MonthContext';
+import { useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { getTrailName } from '../utils/data';
 import TrailCard from '../components/TrailCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
-import MonthSelector from '../components/MonthSelector';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
@@ -27,7 +28,6 @@ import { updateLeader } from '../utils/scheduleActions';
 import { getDayName, getHikeDaysLabel, getHikeDays } from '../utils/config';
 import { getDaysInMonth, createDate } from '../utils/dateUtils';
 
-const APP_VERSION = __APP_VERSION;
 import { setSchedule } from '../hooks/useTrailStore';
 
 
@@ -60,11 +60,7 @@ export default function ScheduleBuilder() {
   const navigate = useNavigate();
   const { filters, setFilters } = useFilters(trails, trailDetails);
   const { title: tt } = useTooltips();
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    const nextMonth = (now.getMonth() + 1) % 12;
-    return nextMonth;
-  });
+  const { selectedMonth, setSelectedMonth } = useMonthContext();
   const [isSaving, setIsSaving] = useState(false); // eslint-disable-line no-unused-vars
   const hasApiKey = useApiKey();
   const [scheduleStore, setScheduleStore] = useState(() => {
@@ -141,6 +137,8 @@ export default function ScheduleBuilder() {
   const [gpxDownloading, setGpxDownloading] = useState(null);
   const [weatherMap, setWeatherMap] = useState({});
   const [fetchingWeather, setFetchingWeather] = useState(false);
+
+
 
   const handleGpxDownload = useCallback(async (trailId, trailName) => {
     if (gpxDownloading) return;
@@ -229,14 +227,14 @@ export default function ScheduleBuilder() {
     updateScheduleFn: updateMonthSchedule,
   });
 
-  const clearSchedule = () => {
+  const clearSchedule = useCallback(() => {
     if (confirm('Clear all schedule data?')) {
       setScheduleStore({});
       setShowSettings(false);
     }
-  };
+  }, []);
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setLoadingHistory(true);
     try {
       const entries = await getScheduleHistory();
@@ -247,13 +245,13 @@ export default function ScheduleBuilder() {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, []);
 
-  const openHistory = () => {
+  const openHistory = useCallback(() => {
     setShowHistory(true);
     setShowSettings(false);
     loadHistory();
-  };
+  }, [loadHistory]);
 
   const closeHistory = () => {
     setShowHistory(false);
@@ -284,7 +282,7 @@ export default function ScheduleBuilder() {
     }
   };
 
-  const handleReload = async () => {
+  const handleReload = useCallback(async () => {
     try {
       await reloadSchedule();
       alert('✓ Schedule and trail data reloaded from disk.');
@@ -293,9 +291,28 @@ export default function ScheduleBuilder() {
     } catch (err) {
       alert('Failed to reload: ' + err.message);
     }
-  };
+  }, []);
 
-  const fetchWeatherForAll = async () => {
+  const nextHikeDate = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (now.getHours() >= 12) today.setDate(today.getDate() + 1);
+    const hikeDays = getHikeDays();
+    let earliest = null;
+    MONTH_NAMES.forEach((monthName, m) => {
+      const monthData = scheduleStore[monthName] || {};
+      Object.keys(monthData).forEach(dayStr => {
+        const day = parseInt(dayStr, 10);
+        const date = createDate(year, m, day);
+        if (date >= today && hikeDays.includes(date.getDay()) && (!earliest || date < earliest)) {
+          earliest = date;
+        }
+      });
+    });
+    return earliest;
+  }, [scheduleStore, year]);
+
+  const fetchWeatherForAll = useCallback(async () => {
     if (fetchingWeather) return;
     setFetchingWeather(true);
     setShowSettings(false);
@@ -328,9 +345,9 @@ export default function ScheduleBuilder() {
     setWeatherMap(results);
     setFetchingWeather(false);
     alert(`Weather fetched: ${successCount} success, ${failCount} failed/skipped`);
-  };
+  }, [fetchingWeather, hikeTrailMap, nextHikeDate]);
 
-  const verifyServerSchedule = async () => {
+  const verifyServerSchedule = useCallback(async () => {
     try {
       const [serverData, serverTrails] = await Promise.all([getSchedule(), getTrails()]);
       const local = storeToServerSchedule(scheduleStore);
@@ -391,7 +408,7 @@ export default function ScheduleBuilder() {
     } catch (err) {
       alert('Failed to verify: ' + err.message);
     }
-  };
+  }, [scheduleStore, trails]);
 
   const toggleEarlyStart = (day, slotIdx) => {
     const monthData = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
@@ -408,7 +425,7 @@ export default function ScheduleBuilder() {
     });
   };
 
-  const importFromExcel = () => {
+  const importFromExcel = useCallback(() => {
     createFileInput({
       accept: '.xls,.xlsx',
       onFile: async (file) => {
@@ -451,9 +468,9 @@ export default function ScheduleBuilder() {
       },
       onCleanup: () => setShowSettings(false),
     });
-  };
+  }, [scheduleStore, setSelectedMonth]);
 
-  const importScheduleTsv = () => {
+  const importScheduleTsv = useCallback(() => {
       createFileInput({
         accept: '.tsv,.txt',
         onFile: async (file) => {
@@ -641,7 +658,7 @@ export default function ScheduleBuilder() {
         },
         onCleanup: () => setShowSettings(false),
       });
-     };
+    }, [trails, scheduleStore, setScheduleStore]);
 
   const getQuarterForMonth = (monthIndex) => {
     // Calendar quarters: Q1=Jan/Feb/Mar, Q2=Apr/May/Jun, Q3=Jul/Aug/Sep, Q4=Oct/Nov/Dec
@@ -651,7 +668,7 @@ export default function ScheduleBuilder() {
     return { q: '4', months: ['Oct', 'Nov', 'Dec'], label: '4th Quarter' };
   };
 
-  const exportExcelSchedule = () => {
+  const exportExcelSchedule = useCallback(() => {
     const quarter = getQuarterForMonth(selectedMonth);
     const qYear = year;
     const hikeDays = getHikeDays();
@@ -777,9 +794,9 @@ export default function ScheduleBuilder() {
 
     const tsv = rows.map(r => r.join('\t')).join('\n');
     downloadBlob(tsv, `${prefix}-${quarter.q}Q${qYear.toString().slice(2)}_hikes.tsv`, 'text/tab-separated-values');
-  };
+  }, [selectedMonth, year, scheduleStore, findTrailById]);
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     const month = MONTH_NAMES[selectedMonth];
     const title = `Over-the-Hill Hike Descriptions -- ${month}, ${year}`;
     const daysInMonth = getDaysInMonth(year, selectedMonth);
@@ -811,26 +828,7 @@ export default function ScheduleBuilder() {
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
-  };
-
-  const nextHikeDate = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (now.getHours() >= 12) today.setDate(today.getDate() + 1);
-    const hikeDays = getHikeDays();
-    let earliest = null;
-    MONTH_NAMES.forEach((monthName, m) => {
-      const monthData = scheduleStore[monthName] || {};
-      Object.keys(monthData).forEach(dayStr => {
-        const day = parseInt(dayStr, 10);
-        const date = createDate(year, m, day);
-        if (date >= today && hikeDays.includes(date.getDay()) && (!earliest || date < earliest)) {
-          earliest = date;
-        }
-      });
-    });
-    return earliest;
-  }, [scheduleStore, year]);
+  }, [selectedMonth, year, assignedHikes, findTrailById, trailDetails]);
 
    const hikeCards = useMemo(() => {
       return filteredHikes.reduce((cards, item) => {
@@ -859,6 +857,29 @@ export default function ScheduleBuilder() {
     }, []);
   }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, weatherMap]);
 
+  // Register settings into context for header dropdown
+  const { register } = useScheduleSettings();
+  const settingsActions = useMemo(() => ({
+    showSettings, setShowSettings,
+    fetchingWeather, nextHikeDate, fetchWeatherForAll,
+    handleExport, exportExcelSchedule,
+    importFromExcel, hasApiKey, importScheduleTsv,
+    openHistory, verifyServerSchedule,
+    debugMode, setDebugMode,
+    handleReload, clearSchedule,
+  }), [
+    showSettings, setShowSettings,
+    fetchingWeather, nextHikeDate, fetchWeatherForAll,
+    handleExport, exportExcelSchedule,
+    importFromExcel, hasApiKey, importScheduleTsv,
+    openHistory, verifyServerSchedule,
+    debugMode, setDebugMode,
+    handleReload, clearSchedule,
+  ]);
+  useEffect(() => {
+    register(settingsActions);
+  }, [register, settingsActions]);
+
   if (loading) {
     return <LoadingSpinner message="Loading trails..." />;
   }
@@ -874,130 +895,7 @@ export default function ScheduleBuilder() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-3">
-        <div className="mb-6 flex items-baseline gap-3">
-          <PageNav />
-          <span className="text-xs text-gray-400">v{APP_VERSION}</span>
-          <div className="relative">
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-              title={tt('Import/Export schedule')}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-            </button>
-            {showSettings && (
-                <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[160px] z-50">
-                 <button
-                    onClick={fetchWeatherForAll}
-                    disabled={fetchingWeather || !nextHikeDate}
-                    className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-                      fetchingWeather || !nextHikeDate
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    title={tt('Fetch NWS weather forecast for all unscheduled hikes')}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
-                    </svg>
-                    {fetchingWeather ? 'Fetching Weather…' : !nextHikeDate ? 'No Upcoming Hike Date' : 'Fetch Weather for All'}
-                  </button>
-                 <button
-                    onClick={handleExport}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                    title={tt('Export monthly hike descriptions as HTML in a new tab')}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" />
-                    </svg>
-                    Export Monthly HTML
-                  </button>
-               <button onClick={exportExcelSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('Export quarterly schedule as TSV file')}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export Quarterly Schedule
-                </button>
-                <button onClick={importFromExcel} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`} title={tt('Import schedule from Excel file')}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Import SOTHH Schedule.xls {!hasApiKey && '(need API key)'}
-                </button>
-                <button onClick={importScheduleTsv} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('Import quarterly schedule from TSV file')}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Import Quarterly Schedule TSV
-                </button>
-                <button onClick={openHistory} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('View schedule history and restore previous versions')}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Schedule History
-                </button>
-                <button onClick={verifyServerSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2" title={tt('Compare local schedule with server and report differences')}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Verify Pushed to Server
-                </button>
-         <button
-               onClick={() => setDebugMode(!debugMode)}
-              className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-                debugMode
-                  ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-              title={tt('Show hike index numbers on cards for debugging')}
-            >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  Debug Mode {debugMode ? 'ON' : 'OFF'}
-                </button>
-                <button
-                  onClick={handleReload}
-                  disabled={!hasApiKey}
-                  className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-                    hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
-                  }`}
-                  title={tt('Force server to reload JSON data from disk')}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m0 0a8.003 8.003 0 0113.385-4.368l-.707.707" />
-                  </svg>
-                  Reload Server Data {!hasApiKey && '(need API key)'}
-                </button>
-                <button
-                  onClick={clearSchedule}
-
-              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-2"
-              title={tt('Remove all schedule data (cannot be undone)')}
-            >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Clear All Data
-                </button>
-              </div>
-            )}
-          </div>
-           <MonthSelector
-              selectedMonth={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
-              monthSlotStats={monthSlotStats}
-              assignedCount={assignedCount}
-              hikeDates={hikeDates}
-              title={tt('Select month to view/edit')}
-            />
-
-         </div>
+    <>
 
          {/* Schedule History Panel */}
         {showHistory && (
@@ -1064,6 +962,8 @@ export default function ScheduleBuilder() {
               setFilters={setFilters}
               lookup={lookup}
               resetFilters={() => setFilters({ ...DEFAULT_FILTERS })}
+              totalCount={trails.length}
+              filteredCount={filteredHikes.length}
             />
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
@@ -1289,7 +1189,6 @@ export default function ScheduleBuilder() {
            onConfirm={confirmSwap}
            onCancel={cancelSwap}
          />
-      </main>
-    </div>
+     </>
   );
 }

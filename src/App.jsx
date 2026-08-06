@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Calendar from './pages/Calendar';
 import LoadingSpinner from './components/LoadingSpinner';
+import Layout from './components/Layout';
 import { useEffect, useState, lazy, Suspense } from 'react';
+import { PageContextProvider } from './contexts/PageContext';
+import { MonthContextProvider } from './contexts/MonthContext';
 
 const Home = lazy(() => import('./pages/Home'));
 const TrailDetail = lazy(() => import('./pages/TrailDetail'));
@@ -82,13 +85,19 @@ function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ApiKeySync />
-      <Routes>
-        <Route path="/" element={<Calendar />} />
-        <Route path="/browse" element={<PageLazy><Home /></PageLazy>} />
-        <Route path="/trail/:id" element={<PageLazy><TrailDetail /></PageLazy>} />
-        <Route path="/trails" element={<PageLazy><TrailManager /></PageLazy>} />
-        <Route path="/schedule" element={<PageLazy><ScheduleBuilder /></PageLazy>} />
-      </Routes>
+      <PageContextProvider>
+        <MonthContextProvider>
+          <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Calendar />} />
+            <Route path="/browse" element={<PageLazy><Home /></PageLazy>} />
+            <Route path="/trail/:id" element={<PageLazy><TrailDetail /></PageLazy>} />
+            <Route path="/trails" element={<PageLazy><TrailManager /></PageLazy>} />
+            <Route path="/schedule" element={<PageLazy><ScheduleBuilder /></PageLazy>} />
+          </Route>
+        </Routes>
+        </MonthContextProvider>
+      </PageContextProvider>
       <ToastContainer />
     </BrowserRouter>
   );

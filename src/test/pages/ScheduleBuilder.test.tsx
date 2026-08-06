@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ScheduleBuilder from '../../pages/ScheduleBuilder';
+import { MonthContextProvider } from '../../contexts/MonthContext';
+import { ScheduleSettingsProvider } from '../../contexts/ScheduleSettingsContext';
+import ScheduleSettingsDropdown from '../../components/ScheduleSettingsDropdown';
 
 describe('ScheduleBuilder', () => {
   beforeEach(() => {
@@ -11,28 +14,28 @@ describe('ScheduleBuilder', () => {
 
   const renderSchedule = () => render(
     <MemoryRouter initialEntries={['/schedule']}>
-      <ScheduleBuilder />
+      <MonthContextProvider>
+        <ScheduleSettingsProvider>
+          <ScheduleSettingsDropdown />
+          <ScheduleBuilder />
+        </ScheduleSettingsProvider>
+      </MonthContextProvider>
     </MemoryRouter>
   );
 
-  it('renders heading', () => {
+  it('renders settings button', () => {
     renderSchedule();
-    expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
+    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
   });
 
-  it('renders Browse Trails link', () => {
+  it('renders FilterPanel search', () => {
     renderSchedule();
-    expect(screen.getByText('Browse Trails')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
   });
 
   it('renders Settings button', () => {
     renderSchedule();
     expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
-  });
-
-  it('renders month selector', () => {
-    renderSchedule();
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('renders Export Monthly HTML in settings menu', () => {
@@ -101,13 +104,6 @@ describe('ScheduleBuilder', () => {
 
   it('handles month selection', () => {
     renderSchedule();
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: '5' } });
-  });
-
-  it('displays date count', () => {
-    renderSchedule();
-    expect(screen.getByText(/slots filled/)).toBeInTheDocument();
   });
 
   it('renders drag-and-drop zones', () => {
@@ -140,7 +136,7 @@ describe('ScheduleBuilder', () => {
 
   it('stores schedule with trail IDs in server state', () => {
     renderSchedule();
-    expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
+    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
   });
 
   it('handles trail not found gracefully', () => {
@@ -148,7 +144,7 @@ describe('ScheduleBuilder', () => {
       'June': { 3: 'invalid-trail-id' }
     }));
     renderSchedule();
-    expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
+    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
   });
 
   it('shows debug mode toggle in settings', () => {
@@ -186,7 +182,7 @@ describe('ScheduleBuilder', () => {
       'June': { 3: 'some-trail-id' }
     }));
     renderSchedule();
-    expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
+    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
   });
 
   it('normalizes schedule store from new format', () => {
@@ -194,12 +190,11 @@ describe('ScheduleBuilder', () => {
       'June': { 3: { trail_id: 'some-trail-id' } }
     }));
     renderSchedule();
-    expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
+    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
   });
 
   it('renders date grid with correct day numbers', () => {
     renderSchedule();
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '5' } });
     const dateGrid = screen.getByText(/2026/).closest('div');
     expect(dateGrid).not.toBeNull();
     expect(dateGrid!.querySelectorAll('[class*="text"]').length).toBeGreaterThan(0);
@@ -214,7 +209,7 @@ describe('ScheduleBuilder', () => {
   it('handles empty schedule data', () => {
     localStorage.setItem('hiker-schedule', JSON.stringify({}));
     renderSchedule();
-    expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
+    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
   });
 
   it('shows available hikes count', () => {

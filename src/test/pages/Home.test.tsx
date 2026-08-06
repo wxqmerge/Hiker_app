@@ -15,14 +15,14 @@ describe('Home', () => {
     </MemoryRouter>
   );
 
-  it('renders heading', () => {
+  it('renders TrailList with trail names', () => {
     renderHome();
-    expect(screen.getByText('Browse Trails')).toBeInTheDocument();
+    expect(screen.getByText('Mount Rainier')).toBeInTheDocument();
   });
 
-  it('renders Schedule Builder link', () => {
+  it('renders Stevens Ridge trail', () => {
     renderHome();
-    expect(screen.getByText('Schedule Builder')).toBeInTheDocument();
+    expect(screen.getByText('Stevens Ridge')).toBeInTheDocument();
   });
 
   it('renders FilterPanel', () => {
@@ -32,7 +32,7 @@ describe('Home', () => {
 
   it('shows trail count', () => {
     renderHome();
-    expect(screen.getByText(/Showing.*trails/)).toBeInTheDocument();
+    expect(screen.getByText(/\d+ of \d+ trails/)).toBeInTheDocument();
   });
 
   it('renders TrailList', () => {
@@ -55,8 +55,8 @@ describe('Home', () => {
     });
   });
 
-  it('renders with error state gracefully', () => {
-    const { container } = renderHome();
-    expect(container.querySelector('.min-h-screen')).toBeInTheDocument();
+  it('renders Easy Path trail', () => {
+    renderHome();
+    expect(screen.getByText('Easy Path Trail')).toBeInTheDocument();
   });
 });

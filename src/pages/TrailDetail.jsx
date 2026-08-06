@@ -2,7 +2,6 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useMemo } from 'react';
 import GPXHelp from '../components/GPXHelp';
 import MonthGrid from '../components/MonthGrid';
-const APP_VERSION = __APP_VERSION;
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
@@ -359,7 +358,7 @@ export default function TrailDetail() {
 
   if (!trail) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <h2 className="text-xl text-gray-800 mb-2">Trail not found</h2>
           <Link to="/" className="text-green-600 hover:underline">Back to Browse</Link>
@@ -369,120 +368,114 @@ export default function TrailDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-3 max-w-3xl">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="text-green-700 hover:text-green-900 font-medium flex items-center gap-1">
-                ← Browse
-              </Link>
-              <span className="text-gray-300">|</span>
-              <div className="text-sm text-gray-600">
-                Trail {currentIndex + 1} of {trails.length}
-              </div>
-              <span className="text-xs text-gray-400">v{APP_VERSION}</span>
-            </div>
-
-            <div className="text-center flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{getTrailName(trail)}</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={goToPrevious}
-                disabled={currentIndex === 0}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  currentIndex === 0
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
-                title={tt('Go to previous trail')}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Previous
-              </button>
-
-              <button
-                onClick={goToNext}
-                disabled={currentIndex === trails.length - 1}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  currentIndex === trails.length - 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
-                title={tt('Go to next trail')}
-              >
-                Next
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              <span className="text-gray-300">|</span>
-
-              <button
-                onClick={exportTrailAsTsv}
-                className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors text-blue-700 hover:text-blue-900"
-                title={tt('Export this hike as TSV matching Excel format')}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export TSV
-              </button>
-
-              <button
-                onClick={copyReport}
-                className={`flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                  copied ? 'text-green-800' : 'text-green-700 hover:text-green-900'
-                }`}
-                title={tt('Copy trail report to clipboard')}
-              >
-                {copied ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    Copy Report
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={startEditMode}
-                className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors text-green-700 hover:text-green-900"
-                title={tt('Edit trail details')}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Edit
-              </button>
-              <button
-                onClick={startDuplicate}
-                className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors text-blue-700 hover:text-blue-900"
-                title="Duplicate this trail as a new entry"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Duplicate
-              </button>
+    <div className="max-w-3xl">
+      <div className="sticky top-14 z-30 bg-gray-50 border-b border-gray-200 py-2 mb-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-green-700 hover:text-green-900 font-medium text-sm flex items-center gap-1">
+              ← Browse
+            </Link>
+            <span className="text-gray-300">|</span>
+            <div className="text-sm text-gray-600">
+              Trail {currentIndex + 1} of {trails.length}
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToPrevious}
+              disabled={currentIndex === 0}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                currentIndex === 0
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+              title={tt('Go to previous trail')}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Prev
+            </button>
+
+            <button
+              onClick={goToNext}
+              disabled={currentIndex === trails.length - 1}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                currentIndex === trails.length - 1
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+              title={tt('Go to next trail')}
+            >
+              Next
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            <span className="text-gray-300">|</span>
+
+            <button
+              onClick={exportTrailAsTsv}
+              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-blue-700 hover:text-blue-900"
+              title={tt('Export this hike as TSV matching Excel format')}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              TSV
+            </button>
+
+            <button
+              onClick={copyReport}
+              className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors ${
+                copied ? 'text-green-800' : 'text-green-700 hover:text-green-900'
+              }`}
+              title={tt('Copy trail report to clipboard')}
+            >
+              {copied ? (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                  Report
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={startEditMode}
+              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-green-700 hover:text-green-900"
+              title={tt('Edit trail details')}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              Edit
+            </button>
+            <button
+              onClick={startDuplicate}
+              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-blue-700 hover:text-blue-900"
+              title="Duplicate this trail as a new entry"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Dup
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-green-800 text-white p-6">
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-3xl font-bold">{getEditedValue('fullName') || getTrailName(trail)}</h1>
@@ -723,12 +716,11 @@ export default function TrailDetail() {
                      </div>
                    </div>
                  );
-               })()}
-          </div>
-        </div>
-      </main>
+                })()}
+           </div>
+         </div>
 
-      {isEditMode && (
+       {isEditMode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">

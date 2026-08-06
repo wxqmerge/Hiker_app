@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Calendar from '../../pages/Calendar';
+import { MonthContextProvider } from '../../contexts/MonthContext';
 
 vi.mock('../../hooks/useTrails', () => ({
   useTrails: () => ({
@@ -70,31 +71,15 @@ vi.mock('../../hooks/useTrailStore', () => ({
 describe('Calendar', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (globalThis as any).__APP_VERSION = '1.0.0';
   });
 
   const renderWithRouter = (ui: React.ReactElement) =>
-    render(<MemoryRouter>{ui}</MemoryRouter>);
-
-  it('renders PageNav', () => {
-    renderWithRouter(<Calendar />);
-    expect(screen.getByText('Calendar')).toBeInTheDocument();
-  });
-
-  it('renders MonthSelector', () => {
-    renderWithRouter(<Calendar />);
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
-  });
+    render(<MemoryRouter><MonthContextProvider>{ui}</MonthContextProvider></MemoryRouter>);
 
   it('shows no hikes assigned message when empty', () => {
     renderWithRouter(<Calendar />);
     const text = document.body.textContent || '';
     expect(text).toContain('Assigned Hikes');
-  });
-
-  it('renders main container', () => {
-    const { container } = renderWithRouter(<Calendar />);
-    expect(container.querySelector('.min-h-screen')).toBeInTheDocument();
   });
 
   it('renders ScheduledCards', () => {

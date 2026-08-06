@@ -48,7 +48,7 @@ export default function NextHikeBanner({ nextHikes }) {
   return (
     <>
       {nextHikes.map((hike, idx) => (
-        <NextHikeCard key={`${hike.trailId}-${hike.monthIndex}-${hike.day}`} hike={hike} idx={idx} weather={weatherMap[idx]} />
+        <NextHikeCard key={idx} hike={hike} idx={idx} weather={weatherMap[idx]} />
       ))}
     </>
   );

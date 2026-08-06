@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env' });
 dotenv.config({ path: '../.env' });
 
 import express, { Application, Request, Response } from 'express';
@@ -96,6 +95,13 @@ app.get('/health', (_req: Request, res: Response) => {
       lastError: wh.lastError,
       consecutiveFailures: wh.consecutiveFailures,
     },
+  });
+});
+
+app.get('/api/config', (_req, res) => {
+  res.json({
+    scheduleName: process.env.SCHEDULE_NAME || 'default',
+    hikeDays: process.env.HIKE_DAYS || '3,5',
   });
 });
 

@@ -34,6 +34,9 @@ Excel → python extract_trails_xls.py → exported_data/*.json
 ### Server Data Persistence
 All writes go to `exported_data/` JSON files via `dataService.ts` — **not IndexedDB**. There is no client-side storage.
 
+### Config (Server Is Source of Truth)
+**Single build shared across deployments** (sothh, ramblers). The client does NOT read config from env vars at build time. Instead, the server exposes `/api/config` (`{ scheduleName, hikeDays }`) and the client fetches it at runtime. Server reads only root `.env` — `server/.env` is ignored (local-only, never committed).
+
 ### Shared Types Compilation
 `server/package.json` build script runs 4 steps in order:
 1. `compile-shared.js` — copies TS to temp dir, compiles with tsc
@@ -48,6 +51,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - Trail ID lookup falls back: `"360-rd"` → `"360"` (first segment)
 - Schedule `findTrailById` uses 3-tier matching: exact → case-insensitive → slug word matching
 - **API Base URL**: `getApiBase()` auto-detects from URL — subdomain (`sothh-dev.example.com`) or path (`example.com/sothh-dev`). All `fetch()` calls must use this or `request()` wrapper. Never hardcode `/api/` paths in production code.
+- **`/api/config`**: Returns `{ scheduleName, hikeDays }` — client should not hardcode these values.
 
 ## Dev Server Gotchas
 - Dev: Vite proxies `/api` and `/health` to `localhost:3000`

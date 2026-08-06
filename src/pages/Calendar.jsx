@@ -5,12 +5,11 @@ import { useTooltips } from '../hooks/useTooltips';
 import { useNextHike } from '../hooks/useNextHike';
 import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
 import { useApiKey } from '../hooks/useApiKey';
-import PageNav from '../components/PageNav';
+import { useMonthContext } from '../contexts/MonthContext';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
-import MonthSelector from '../components/MonthSelector';
 import { MONTH_NAMES } from '../utils/constants';
 import { updateSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
@@ -18,8 +17,6 @@ import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleF
 import { updateLeader } from '../utils/scheduleActions';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
-
-const APP_VERSION = __APP_VERSION;
 
 export default function Calendar() {
   const { trails, schedule: scheduleData, loading } = useTrails();
@@ -33,7 +30,7 @@ export default function Calendar() {
 
   const nextHikes = useNextHike({ trails, schedule: scheduleData, year });
 
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
+  const { selectedMonth, setSelectedMonth } = useMonthContext();
   const hasSyncedInitialMonth = useRef(false);
   const hasApiKey = useApiKey();
   const [pendingSwap, setPendingSwap] = useState(null);
@@ -101,46 +98,30 @@ export default function Calendar() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-3">
-        <div className="mb-6 flex items-baseline gap-3">
-          <PageNav />
-          <span className="text-xs text-gray-400">v{APP_VERSION}</span>
-          <MonthSelector
-            selectedMonth={selectedMonth}
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
-            monthSlotStats={monthSlotStats}
-            assignedCount={assignedCount}
-            hikeDates={hikeDates}
-            title={tt('Select month to view')}
-          />
+    <>
+      {nextHikes && selectedMonth === nextHikes[0]?.monthIndex && (
+        <NextHikeBanner nextHikes={nextHikes} />
+      )}
 
-        </div>
+      <ScheduledCards
+        assignedHikes={assignedHikes}
+        trailIndexToId={trailIndexToId}
+        findTrailById={findTrailById}
+        year={year}
+        selectedMonth={selectedMonth}
+        hasApiKey={hasApiKey}
+        dragData={dragData}
+        handleDragStart={handleDragStart}
+        handleDragEnd={handleDragEnd}
+        onLeaderChange={hasApiKey ? handleLeaderChange : undefined}
+        tt={tt}
+      />
 
-        {nextHikes && selectedMonth === nextHikes[0]?.monthIndex && (
-          <NextHikeBanner nextHikes={nextHikes} />
-        )}
-
-        <ScheduledCards
-          assignedHikes={assignedHikes}
-          trailIndexToId={trailIndexToId}
-          findTrailById={findTrailById}
-          year={year}
-          selectedMonth={selectedMonth}
-          hasApiKey={hasApiKey}
-          dragData={dragData}
-          handleDragStart={handleDragStart}
-          handleDragEnd={handleDragEnd}
-          onLeaderChange={hasApiKey ? handleLeaderChange : undefined}
-          tt={tt}
-        />
-
-        <SwapConfirmationModal
-          pendingSwap={pendingSwap}
-          onConfirm={confirmSwap}
-          onCancel={cancelSwap}
-        />
-      </main>
-    </div>
+      <SwapConfirmationModal
+        pendingSwap={pendingSwap}
+        onConfirm={confirmSwap}
+        onCancel={cancelSwap}
+      />
+    </>
   );
 }

@@ -1,12 +1,11 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import PageNav from '../components/PageNav';
+
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDateToISO } from '../utils/dateUtils';
 import { getGroupName } from '../utils/config';
 import { getTrailName } from '../utils/data';
 
-const APP_VERSION = __APP_VERSION;
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv, sanitizeFilename } from '../utils/io';
@@ -531,37 +530,34 @@ export default function TrailManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-3 max-w-5xl">
-        <div className="flex items-baseline justify-between mb-4">
-          <PageNav />
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-400">v{APP_VERSION}</span>
-            <p className="text-gray-600 text-sm">
-              {filteredTrails.length} of {trails.length} trails
-              {trails.filter(t => t.hasGpx).length > 0 && (
-                <span className="text-gray-400"> · {trails.filter(t => t.hasGpx).length} GPX</span>
-              )}
-              {trails.filter(t => t.webLink).length > 0 && (
-                <span className="text-gray-400"> · {trails.filter(t => t.webLink).length} links</span>
-              )}
-              {trails.filter(t => t.tideStationId).length > 0 && (
-                <span className="text-gray-400"> · {trails.filter(t => t.tideStationId).length} tides</span>
-              )}
-            </p>
-            <AdminMenu hasApiKey={hasApiKey} actions={adminActions} tt={tt} />
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              title={tt('Go back to previous page')}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-          </div>
+    <div className="max-w-5xl">
+      <div className="flex items-baseline justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <p className="text-gray-600 text-sm">
+            {filteredTrails.length} of {trails.length} trails
+            {trails.filter(t => t.hasGpx).length > 0 && (
+              <span className="text-gray-400"> · {trails.filter(t => t.hasGpx).length} GPX</span>
+            )}
+            {trails.filter(t => t.webLink).length > 0 && (
+              <span className="text-gray-400"> · {trails.filter(t => t.webLink).length} links</span>
+            )}
+            {trails.filter(t => t.tideStationId).length > 0 && (
+              <span className="text-gray-400"> · {trails.filter(t => t.tideStationId).length} tides</span>
+            )}
+          </p>
+          <AdminMenu hasApiKey={hasApiKey} actions={adminActions} tt={tt} />
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            title={tt('Go back to previous page')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
         </div>
+      </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="w-full flex flex-wrap items-center gap-1 text-xs">
@@ -709,7 +705,6 @@ export default function TrailManager() {
             </div>
           )}
         </div>
-      </main>
     </div>
   );
 }
