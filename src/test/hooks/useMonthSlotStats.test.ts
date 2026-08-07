@@ -22,6 +22,21 @@ vi.mock('../../utils/dateUtils', () => ({
     }
     return result;
   }),
+  getHikeSlotsForMonth: vi.fn((year, month, hikeDays) => {
+    const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const hikesPerDow = {};
+    hikeDays.forEach(d => { hikesPerDow[d] = (hikesPerDow[d] || 0) + 1; });
+    const result = [];
+    for (let day = 1; day <= days[month]; day++) {
+      const date = new Date(year, month, day);
+      const dow = date.getDay();
+      const hikesForThisDow = hikesPerDow[dow] || 0;
+      for (let s = 0; s < hikesForThisDow; s++) {
+        result.push({ day, slot: s });
+      }
+    }
+    return result;
+  }),
 }));
 
 describe('useMonthSlotStats', () => {

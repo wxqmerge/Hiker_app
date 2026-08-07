@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { getHikeDays } from '../utils/config';
-import { getHikeDaysForMonth } from '../utils/dateUtils';
+import { getHikeSlotsForMonth } from '../utils/dateUtils';
 import { ensureArray } from '../utils/array';
 
 export function useMonthSlotStats({ trails, scheduleStore, year }) {
@@ -10,7 +10,7 @@ export function useMonthSlotStats({ trails, scheduleStore, year }) {
     const trailIdSet = new Set(trails.map(t => t.id));
     const stats = {};
     MONTH_NAMES.forEach((name, idx) => {
-      const total = getHikeDaysForMonth(year, idx, hikeDays).length;
+      const total = getHikeSlotsForMonth(year, idx, hikeDays).length;
       let filled = 0;
       const monthData = scheduleStore[name] || {};
       Object.values(monthData).forEach(val => {
