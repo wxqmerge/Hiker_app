@@ -64,10 +64,10 @@ function NextHikeCard({ hike, idx, weather }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                       <Link
-                        to={`/trail/${hike.trailId}`}
-                        className="text-2xl md:text-3xl font-bold text-white hover:text-green-100 transition-colors truncate"
-                      >
+                        <Link
+                         to={`/trail/${hike.trailId}`}
+                         className="text-2xl md:text-3xl font-bold text-white hover:text-green-100 transition-colors"
+                       >
                         {displayHikeName}
                       </Link>
                       <span className={`px-3 py-1 rounded-full text-base font-medium ${DIFFICULTY_COLORS[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
