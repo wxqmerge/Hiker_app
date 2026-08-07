@@ -70,9 +70,9 @@ describe('TrailCard', () => {
     expect(link).toHaveAttribute('href', '/trail/trail-1');
   });
 
-  it('renders Copy Report button', () => {
+  it('renders Report button', () => {
     renderWithRouter();
-    expect(screen.getByText('Copy Report')).toBeInTheDocument();
+    expect(screen.getByText('Report')).toBeInTheDocument();
   });
 
   it('uses fullName when available', () => {

@@ -37,6 +37,45 @@ export function generateReportText(trail, trailDetails = null, earlyStart = fals
   return report;
 }
 
+// Build description + web link + GPX HTML snippet for a trail.
+// mode "compact" → monthly report classes; mode "card" → single-trail classes
+function buildTrailDetailsHtml(trail, trailDetails, mode = 'compact') {
+  let html = '';
+
+  if (trailDetails && trailDetails[trail.id]) {
+    const desc = trailDetails[trail.id].fullDescription || '';
+    if (desc.trim()) {
+      if (mode === 'compact') {
+        html += `<div class="entry-desc">${esc(desc.trim()).replace(/\n/g, '<br>')}</div>`;
+      } else {
+        html += `<div class="section"><h2>Description</h2><p>${esc(desc.trim())}</p></div>`;
+      }
+    }
+  }
+
+  if (trail.notes && mode !== 'compact') {
+    html += `<div class="section"><h2>Notes</h2><p>${esc(trail.notes)}</p></div>`;
+  }
+
+  if (trail.webLink) {
+    if (mode === 'compact') {
+      html += `<div class="entry-link"><a href="${esc(trail.webLink)}" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></div>`;
+    } else {
+      html += `<div class="section"><h2>Web Link</h2><p><a href="${esc(trail.webLink)}" class="link">${esc(trail.webLink)}</a></p></div>`;
+    }
+  }
+
+  if (trail.hasGpx) {
+    if (mode === 'compact') {
+      html += '<div class="entry-gpx">GPX: available</div>';
+    } else {
+      html += `<div class="section"><h2>GPX</h2><p>Available</p></div>`;
+    }
+  }
+
+  return html;
+}
+
 // Generate HTML report for the monthly schedule
 function buildTrailLineHtml(trail, earlyStart) {
   const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
@@ -60,21 +99,7 @@ export function generateReportHtml(entries, title) {
     let html = `<div class="entry">`;
     html += `<div class="entry-header">${esc(dateStr)}\t${buildTrailLineHtml(trail, earlyStart)}</div>`;
 
-    // Description
-    if (trailDetails && trailDetails[trail.id]) {
-      const desc = trailDetails[trail.id].fullDescription || '';
-      if (desc.trim()) {
-        html += `<div class="entry-desc">${esc(desc.trim()).replace(/\n/g, '<br>')}</div>`;
-      }
-    }
-
-    // Web link
-    if (trail.webLink) {
-      html += `<div class="entry-link"><a href="${esc(trail.webLink)}" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></div>`;
-    }
-    if (trail.hasGpx) {
-      html += '<div class="entry-gpx">GPX: available</div>';
-    }
+    html += buildTrailDetailsHtml(trail, trailDetails, 'compact');
 
     html += `</div>`;
     return html;
@@ -121,6 +146,54 @@ export function getRideCost(range) {
   } else {
     return 'ride-$10';
   }
+}
+
+// Generate HTML report for a single trail (same format as monthly report)
+export function generateTrailHtml(trail, trailDetails, dateStr) {
+  let title = trail.name;
+  let headerHtml = '';
+  let formattedDate = '';
+  if (dateStr) {
+    const date = dateStr instanceof Date ? dateStr : new Date(dateStr);
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    formattedDate = `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+    title = `${formattedDate} — ${trail.name}`;
+    const trailLine = buildTrailLineHtml(trail, false);
+    headerHtml = `<div class="entry-header">${esc(formattedDate)}\t${trailLine}</div>`;
+  }
+
+  let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(title)}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
+  h1 { font-size: 24pt; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 30px; }
+  .entry { margin-bottom: 28px; }
+  .entry-header { font-size: 18pt; font-weight: bold; font-family: Arial, sans-serif; white-space: pre-wrap; }
+  .early-start { color: red; }
+  .entry-desc { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 4px; white-space: pre-line; }
+  .entry-link { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 6px; }
+  .entry-link a { color: blue; }
+</style>
+</head>
+<body>
+<h1>${esc(title)}</h1>
+`;
+
+  if (dateStr) {
+    html += `<div class="entry">${headerHtml}`;
+    html += buildTrailDetailsHtml(trail, trailDetails, 'compact');
+    html += `</div>`;
+  } else {
+    html += buildTrailDetailsHtml(trail, trailDetails, 'compact');
+  }
+
+  html += `</body></html>`;
+  return html;
 }
 
 // Copy text to clipboard

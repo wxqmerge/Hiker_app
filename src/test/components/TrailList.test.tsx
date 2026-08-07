@@ -55,13 +55,13 @@ describe('TrailList', () => {
     expect(trailLinks[1]).toHaveAttribute('href', '/trail/trail-2');
   });
 
-  it('renders Copy Report buttons for each trail', () => {
+  it('renders Report buttons for each trail', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <TrailList trails={mockTrails} />
       </MemoryRouter>
     );
-    const buttons = screen.getAllByText('Copy Report');
+    const buttons = screen.getAllByText('Report');
     expect(buttons.length).toBe(2);
   });
 

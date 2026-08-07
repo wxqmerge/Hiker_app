@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
+
 import { useState, memo, useMemo, useCallback } from 'react';
-import { generateReportText as genReport, copyToClipboard } from '../utils/report';
+import { generateTrailHtml, copyToClipboard } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { useGpxActions } from '../hooks/useGpxActions';
 import { getTrailName, getTrailDetailsById, getScoredMonths } from '../utils/data';
@@ -13,7 +13,6 @@ import TrailActionButtons from './shared/TrailActionButtons';
 
 const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange, hikeDate }) {
   const showToast = useToast();
-  const [copied, setCopied] = useState(false);
   const [nameCopied, setNameCopied] = useState(false);
   const { handleGpxDownload, handleTrailhead } = useGpxActions(trail, showToast);
   const trailDetails = useTrailDetails();
@@ -25,13 +24,17 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     if (onLeaderChange) onLeaderChange();
   }, [onLeaderChange]);
 
-  const handleCopy = useCallback(async (e) => {
+  const handleCopy = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-    await copyToClipboard(genReport(trail, detailsForTrail), setCopied, showToast);
-  }, [trail, trailDetails, showToast]);
+    const html = generateTrailHtml(trail, detailsForTrail, hikeDate);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, [trail, trailDetails, hikeDate]);
 
   const handleCopyName = useCallback(async (e) => {
     e.preventDefault();
@@ -70,11 +73,13 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
          ? 'border-green-500 ring-2 ring-green-200 bg-white' 
          : 'border-gray-100 bg-white'
      }`}>
-       <Link 
-         to={`/trail/${trail.id}`}
-         className="block p-4"
-         title={tt('View full trail details')}
-       >
+        <a
+          href={`/trail/${trail.id}`}
+          className="block p-4"
+          title={tt('View full trail details')}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-bold text-gray-900">{getTrailName(trail)}</h3>
@@ -130,9 +135,9 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
               </div>
             ) : null}
           </div>
-        </Link>
+        </a>
 
-        {/* Leader change button - outside Link to prevent navigation interference */}
+        {/* Leader change button - outside anchor to prevent navigation interference */}
         {leader && onLeaderChange && (
           <div className="px-4 py-1">
             <button
@@ -178,28 +183,17 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
         </div>
       )}
 
-      {/* Copy button bar */}
+      {/* Report button bar */}
       <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex items-center justify-between">
         <button
           onClick={handleCopy}
           className="flex items-center gap-2 text-sm text-green-600 hover:text-green-800 font-medium"
-          title={tt('Copy trail report to clipboard')}
+          title={tt('Open trail report in new tab')}
         >
-          {copied ? (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Copied!
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-              </svg>
-              Copy Report
-            </>
-          )}
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          Report
         </button>
       </div>
     </div>

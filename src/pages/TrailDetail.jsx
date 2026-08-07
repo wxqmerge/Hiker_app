@@ -5,7 +5,7 @@ import MonthGrid from '../components/MonthGrid';
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
-import { generateReportText as genReport, copyToClipboard, getRideCost } from '../utils/report';
+import { generateTrailHtml, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName } from '../utils/data';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
@@ -69,7 +69,6 @@ export default function TrailDetail() {
   const { trailDetails, saveTrail, saveTrailDetail } = useTrailStore();
   const { title: tt } = useTooltips();
   const showToast = useToast();
-  const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(() => searchParams.get('edit') === 'true');
   const [editedFields, setEditedFields] = useState({});
   const [isDuplicate, setIsDuplicate] = useState(false);
@@ -332,8 +331,39 @@ export default function TrailDetail() {
     setEditedFields(prev => ({ ...prev, [field]: value }));
   };
 
-  const copyReport = async () => {
-    await copyToClipboard(genReport(trail, trailDetailsResult?.[id]), setCopied, showToast);
+  const copyReport = () => {
+    const html = generateTrailHtml(trail, trailDetailsResult);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const exportTrailAsHtml = () => {
+    const htmlTrail = {
+      id: trail.id,
+      name: getEditedValue('fullName') || getTrailName(trail),
+      fullName: getEditedValue('fullName') || getTrailName(trail),
+      distance: getEditedValue('distance'),
+      distanceExtended: getEditedValue('distanceExtended'),
+      elevationStart: getEditedValue('elevationStart'),
+      elevationMax: getEditedValue('elevationMax'),
+      difficulty: getEditedValue('difficulty') || 'Unknown',
+      parking: getEditedValue('parking') || '',
+      range: getEditedValue('range') || '',
+      notes: getEditedValue('notes') || '',
+      seasonal: trail.seasonal || {},
+      altNames: getEditedValue('altNames'),
+      webLink: trail.webLink || '',
+      hasGpx: !!trail.gpxFile,
+    };
+    const htmlDetail = {};
+    const desc = getEditedValue('description');
+    if (desc) htmlDetail.fullDescription = desc;
+    const html = generateTrailHtml(htmlTrail, htmlDetail);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   };
 
   const goToPrevious = () => {
@@ -428,27 +458,25 @@ export default function TrailDetail() {
             </button>
 
             <button
-              onClick={copyReport}
-              className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors ${
-                copied ? 'text-green-800' : 'text-green-700 hover:text-green-900'
-              }`}
-              title={tt('Copy trail report to clipboard')}
+              onClick={exportTrailAsHtml}
+              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-purple-700 hover:text-purple-900"
+              title={tt('Export this trail as HTML')}
             >
-              {copied ? (
-                <>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                  </svg>
-                  Report
-                </>
-              )}
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 3h10l4 8v9a2 2 0 01-2 2H5a2 2 0 01-2-2V5l4-2z" />
+              </svg>
+              HTML
+            </button>
+
+            <button
+              onClick={copyReport}
+              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-green-700 hover:text-green-900"
+              title={tt('Open trail report in new tab')}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Report
             </button>
 
             <button
