@@ -651,9 +651,9 @@ echo ""
 echo "--- Access ---"
 if [ -f "server/.env" ] && grep -q '^ADMIN_API_KEY=' server/.env; then
     ADMIN_KEY=$(grep '^ADMIN_API_KEY=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
-    echo "  $APP_URL  (key: $ADMIN_KEY)"
+    echo "  ${APP_URL}?apikey=$ADMIN_KEY"
 else
-    echo "  $APP_URL  (no API key set)"
+    echo "  $APP_URL"
 fi
 
 exit $ERRORS
