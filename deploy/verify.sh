@@ -553,6 +553,17 @@ fi
 # Summary
 echo ""
 echo "=== Summary ==="
+# Compute app URL for display
+if [ -z "$FRONTEND_URL" ]; then
+    if [[ "$DOMAIN" == *".example.com" ]]; then
+        SUBDOMAIN=$(echo "$DOMAIN" | cut -d'.' -f1)
+        APP_URL="https://example.com/$SUBDOMAIN/"
+    else
+        APP_URL="https://$DOMAIN/"
+    fi
+else
+    APP_URL="$FRONTEND_URL"
+fi
 if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
     echo -e "${GREEN}All checks passed.${NC}"
 elif [ $ERRORS -eq 0 ]; then
@@ -633,6 +644,16 @@ else
     if [ "$DIRECT_HEALTH" != "200" ]; then
         echo "  sudo systemctl restart $SERVICE"
     fi
+fi
+
+# Always show app URL with API key at the end
+echo ""
+echo "--- Access ---"
+if [ -f "server/.env" ] && grep -q '^ADMIN_API_KEY=' server/.env; then
+    ADMIN_KEY=$(grep '^ADMIN_API_KEY=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    echo "  $APP_URL  (key: $ADMIN_KEY)"
+else
+    echo "  $APP_URL  (no API key set)"
 fi
 
 exit $ERRORS
