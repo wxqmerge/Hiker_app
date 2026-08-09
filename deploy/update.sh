@@ -162,8 +162,13 @@ if [ -z "$ADMIN_KEY" ]; then
 fi
 echo "  ADMIN_API_KEY: (set)"
 
-DOMAIN="$(basename "$DIR").example.com"
-echo "  DOMAIN: $DOMAIN"
+if grep -q '^DOMAIN=' "$ENV_FILE"; then
+    DOMAIN=$(grep '^DOMAIN=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')
+else
+    DOMAIN="example.com"
+fi
+FULL_DOMAIN="$(basename "$DIR").$DOMAIN"
+echo "  DOMAIN: $FULL_DOMAIN"
 
 if grep -q '^PORT=' "$ENV_FILE"; then
     SERVER_PORT=$(grep '^PORT=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')
@@ -328,17 +333,17 @@ if [ ! -f "$TEMPLATE" ]; then
     exit 1
 fi
 
-sed -e "s|<DOMAIN>|$DOMAIN|g" \
+sed -e "s|<DOMAIN>|$FULL_DOMAIN|g" \
     -e "s|<PORT>|$SERVER_PORT|g" \
     -e "s|<SUBDOMAIN>|$SUBDOMAIN|g" \
     "$TEMPLATE" | sudo tee "$NGINX_CONF" > /dev/null
 echo "  Config written to $NGINX_CONF (not enabled yet)."
 
 # 10. Get/renew SSL certificate (--standalone, no nginx needed)
-echo "[10/13] Getting SSL certificate for $DOMAIN..."
+echo "[10/13] Getting SSL certificate for $FULL_DOMAIN..."
 if command -v certbot &>/dev/null; then
     sudo systemctl stop nginx 2>/dev/null || true
-    if ! sudo certbot certonly --standalone -d "$DOMAIN" --non-interactive --agree-tos --email "admin@example.com" --key-type ecdsa 2>&1; then
+    if ! sudo certbot certonly --standalone -d "$FULL_DOMAIN" --non-interactive --agree-tos --email "admin@$DOMAIN" --key-type ecdsa 2>&1; then
         echo "  WARNING: certbot failed (cert may already exist). Continuing..."
     else
         echo "  SSL certificate obtained/renewed."

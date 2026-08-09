@@ -12,9 +12,6 @@ done
 
 # Load local deployment config
 DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [ -f "$DEPLOY_DIR/.env" ]; then
-    source "$DEPLOY_DIR/.env"
-fi
 
 SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
@@ -22,7 +19,12 @@ DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
 ERRORS=0
 WARNINGS=0
 DIR="$(pwd)"
-DOMAIN="$(basename "$DIR").example.com"
+if [ -f "$DIR/server/.env" ] && grep -q '^DOMAIN=' "$DIR/server/.env"; then
+    PARENT_DOMAIN=$(grep '^DOMAIN=' "$DIR/server/.env" | head -1 | cut -d= -f2- | tr -d '[:space:]')
+else
+    PARENT_DOMAIN="example.com"
+fi
+DOMAIN="$(basename "$DIR").$PARENT_DOMAIN"
 if [ -f "$DIR/server/.env" ] && grep -q '^PORT=' "$DIR/server/.env"; then
     SERVER_PORT=$(grep '^PORT=' "$DIR/server/.env" | head -1 | cut -d= -f2- | tr -d '[:space:]')
 else
@@ -479,9 +481,9 @@ echo "--- HTTPS Check ---"
 if command -v curl &>/dev/null; then
     # Use FRONTEND_URL if set, otherwise default to the domain root or subpath
     if [ -z "$FRONTEND_URL" ]; then
-        if [[ "$DOMAIN" == *".example.com" ]]; then
+        if [[ "$DOMAIN" == *".${PARENT_DOMAIN}" ]]; then
             SUBDOMAIN=$(echo "$DOMAIN" | cut -d'.' -f1)
-            FRONTEND_URL="https://example.com/$SUBDOMAIN/"
+            FRONTEND_URL="https://$PARENT_DOMAIN/$SUBDOMAIN/"
         else
             FRONTEND_URL="https://$DOMAIN/"
         fi
@@ -555,9 +557,9 @@ echo ""
 echo "=== Summary ==="
 # Compute app URL for display
 if [ -z "$FRONTEND_URL" ]; then
-    if [[ "$DOMAIN" == *".example.com" ]]; then
+    if [[ "$DOMAIN" == *".${PARENT_DOMAIN}" ]]; then
         SUBDOMAIN=$(echo "$DOMAIN" | cut -d'.' -f1)
-        APP_URL="https://example.com/$SUBDOMAIN/"
+        APP_URL="https://$PARENT_DOMAIN/$SUBDOMAIN/"
     else
         APP_URL="https://$DOMAIN/"
     fi
