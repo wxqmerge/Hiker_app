@@ -1,20 +1,31 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
+function getParentDomain() {
+  if (typeof window === 'undefined') return '';
+  const hostname = window.location.hostname;
+  const parts = hostname.split('.');
+  if (parts.length > 2) {
+    return parts.slice(-2).join('.');
+  }
+  return hostname;
+}
+
 export function getApiBase() {
   if (API_BASE) return API_BASE;
   if (typeof window === 'undefined') return '';
   const hostname = window.location.hostname;
   const path = window.location.pathname;
-  if (hostname.endsWith('.example.com') && hostname.split('.').length > 2) {
+  const parentDomain = getParentDomain();
+  if (hostname !== parentDomain) {
     return `https://${hostname}`;
   }
   const match = path.match(/^\/([\w-]+)-dev(\/|$)/);
   if (match) {
-    return `https://${match[1]}-dev.example.com`;
+    return `https://${match[1]}-dev.${parentDomain}`;
   }
   const pathMatch = path.match(/^\/([\w]+-[\w-]+)(\/|$)/);
   if (pathMatch) {
-    return `https://${pathMatch[1]}.example.com`;
+    return `https://${pathMatch[1]}.${parentDomain}`;
   }
   return '';
 }
