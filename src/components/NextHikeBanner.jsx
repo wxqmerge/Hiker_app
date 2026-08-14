@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { DAY_NAMES, MONTH_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getTrailName } from '../utils/data';
-import { openWeatherForTrail, fetchWeatherForTrail } from '../utils/io';
+import { openWeatherForTrail, fetchWeatherAndTide } from '../utils/io';
 import { getGpx } from '../api/client';
 import { useGpxActions } from '../hooks/useGpxActions';
 import TrailStats from './shared/TrailStats';
@@ -16,11 +16,13 @@ export default function NextHikeBanner({ nextHikes }) {
     if (!nextHikes || nextHikes.length === 0) return;
     let cancelled = false;
     (async () => {
-      const weatherPromises = nextHikes.map((hike, idx) =>
-        fetchWeatherForTrail(getGpx, hike.trailId, hike.date)
+      const weatherPromises = nextHikes.map((hike, idx) => {
+        const trail = hike.trail;
+        if (trail?.trailHeadLat == null || trail?.trailHeadLon == null) return null;
+        return fetchWeatherAndTide(trail.trailHeadLat, trail.trailHeadLon, hike.date, trail.tideStationId || null)
           .then(w => ({ idx, w }))
-          .catch(() => null)
-      );
+          .catch(() => null);
+      });
       const weatherResults = await Promise.allSettled(weatherPromises);
       if (cancelled) return;
       const map = {};

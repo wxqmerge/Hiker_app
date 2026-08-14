@@ -9,13 +9,13 @@ import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
-import { MONTH_NAMES } from '../utils/constants';
 import { updateSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
 import { updateLeader } from '../utils/scheduleActions';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
+import { useScheduleWeather } from '../hooks/useScheduleWeather';
 
 export default function Calendar() {
   const { trails, schedule: scheduleData, loading } = useTrails();
@@ -31,6 +31,8 @@ export default function Calendar() {
   const hasSyncedInitialMonth = useRef(false);
   const hasApiKey = useApiKey();
   const [pendingSwap, setPendingSwap] = useState(null);
+
+  const dayWeatherMap = useScheduleWeather({ schedule: scheduleData, selectedMonth, trails });
 
   useEffect(() => {
     if (!hasSyncedInitialMonth.current && nextHikes && nextHikes.length > 0 && !loading) {
@@ -109,6 +111,7 @@ export default function Calendar() {
         handleDragEnd={handleDragEnd}
         onLeaderChange={hasApiKey ? handleLeaderChange : undefined}
         tt={tt}
+        weatherMap={dayWeatherMap}
       />
 
       <SwapConfirmationModal

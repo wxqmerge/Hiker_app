@@ -75,6 +75,11 @@ export function filterTrails(items, filters, trailDetails) {
       if ((filters.gpx === 'gpx' && !hasGpx) || (filters.gpx === 'noGpx' && hasGpx)) return false;
     }
 
+    if (filters.tide && filters.tide !== 'all') {
+      const hasTide = !!t.tideStationId;
+      if ((filters.tide === 'tide' && !hasTide) || (filters.tide === 'noTide' && hasTide)) return false;
+    }
+
     return true;
   });
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import { getDevicePlatform } from '../utils/device';
 
 export default function GPXHelp({ variant = 'light' }) {

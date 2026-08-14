@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDateToISO } from '../utils/dateUtils';
@@ -11,8 +11,9 @@ import { useTooltips } from '../hooks/useTooltips';
 import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv, sanitizeFilename } from '../utils/io';
 import JSZip from 'jszip';
 import { getGpx } from '../api/client';
-import { importTrailsFromXls, getSchedule, updateSchedule, request, exportDataZip, importDataZip } from '../api/client';
+import { importTrailsFromXls, getSchedule, updateSchedule, request, exportDataZip, importDataZip, resyncGpxCoords } from '../api/client';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
+import DropdownItem from '../components/shared/DropdownItem';
 
 function AdminMenu({ hasApiKey, actions, tt }) {
   const [open, setOpen] = useState(false);
@@ -26,6 +27,16 @@ function AdminMenu({ hasApiKey, actions, tt }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  const item = (label, fn) => (
+    <DropdownItem onClick={() => { setOpen(false); fn(); }} disabled={!hasApiKey} locked={!hasApiKey}>{label}</DropdownItem>
+  );
+
+  const section = (title) => (
+    <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
+    </div>
+  );
 
   return (
     <div className="relative" ref={menuRef}>
@@ -50,54 +61,19 @@ function AdminMenu({ hasApiKey, actions, tt }) {
             <div className="px-3 py-2 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Import Trails</p>
             </div>
-            <button onClick={() => { setOpen(false); actions.importDatabase(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-              Import Database (XLS)
-              {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-            <button onClick={() => { setOpen(false); actions.importHikeTsv(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-              Import Hike TSV
-              {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-
-            <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Import All</p>
-            </div>
-            <button onClick={() => { setOpen(false); actions.importAllJson(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-              Import All JSON
-              {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-            <button onClick={() => { setOpen(false); actions.importZip(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-              Import ZIP
-              {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-
-            <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Schedule</p>
-            </div>
-            <button onClick={() => { setOpen(false); actions.importScheduleJson(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-              Import Schedule JSON
-              {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-
-            <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Popularity Data</p>
-            </div>
-            <button onClick={() => { setOpen(false); actions.importMonthlyTsv(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-              Import Monthly Pop TSV
-              {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-
-            <div className="px-3 py-2 border-t border-b border-gray-100 mt-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Maintenance</p>
-            </div>
-            <button onClick={() => { setOpen(false); actions.cleanupOrphanedDetails(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-              Cleanup Orphaned Details
-              {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
-            <button onClick={() => { setOpen(false); actions.validateData(); }} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${hasApiKey ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-              Validate Data
-              {!hasApiKey && <span className="text-xs">locked</span>}
-            </button>
+            {item('Import Database (XLS)', actions.importDatabase)}
+            {item('Import Hike TSV', actions.importHikeTsv)}
+            {section('Import All')}
+            {item('Import All JSON', actions.importAllJson)}
+            {item('Import ZIP', actions.importZip)}
+            {section('Schedule')}
+            {item('Import Schedule JSON', actions.importScheduleJson)}
+            {section('Popularity Data')}
+            {item('Import Monthly Pop TSV', actions.importMonthlyTsv)}
+            {section('Maintenance')}
+            {item('Cleanup Orphaned Details', actions.cleanupOrphanedDetails)}
+            {item('Validate Data', actions.validateData)}
+            {item('Re-sync GPX Coords', actions.resyncCoords)}
           </div>
         </>
       )}
@@ -108,7 +84,16 @@ function AdminMenu({ hasApiKey, actions, tt }) {
 export default function TrailManager() {
   const { title: tt } = useTooltips();
   const { trails, loading, trailDetails, saveTrail, deleteTrail, saveTrailDetail, exportJSON, importJSON } = useTrailStore();
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get('q') || '';
+  const setSearch = useCallback((val) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (val) next.set('q', val);
+      else next.delete('q');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const [gpxFilter, setGpxFilter] = useState('all');
   const [apiKey, setApiKey] = useState(localStorage.getItem('hiker-api-key') || '');
   const [validationResults, setValidationResults] = useState(null);
@@ -126,6 +111,7 @@ export default function TrailManager() {
   };
   const navigate = useNavigate();
   const hasApiKey = apiKey.trim().length > 0;
+  const requireKey = useCallback((msg) => { if (!hasApiKey) { alert(msg); return true; } return false; }, [hasApiKey]);
 
   const handleValidateDatabase = useCallback(async () => {
     setValidating(true);
@@ -289,10 +275,7 @@ export default function TrailManager() {
   }, [trails, trailDetails]);
 
   const importMonthlyTsv = useCallback(() => {
-    if (!hasApiKey) {
-      alert('API key required for monthly popularity import.');
-      return;
-    }
+    if (requireKey('API key required for monthly popularity import.')) return;
     createFileInput({
       accept: '.tsv,.txt,.csv',
       onFile: async (file) => {
@@ -329,7 +312,7 @@ export default function TrailManager() {
         alert(`Updated monthly popularity for ${updated} trail(s).`);
       },
     });
-  }, [hasApiKey, trails, trailDetails, saveTrailDetail]);
+  }, [requireKey, trails, trailDetails, saveTrailDetail]);
 
   const exportScheduleJson = useCallback(async () => {
     try {
@@ -345,10 +328,7 @@ export default function TrailManager() {
   }, []);
 
   const importScheduleJson = useCallback(async () => {
-    if (!hasApiKey) {
-      alert('API key required for schedule import.');
-      return;
-    }
+    if (requireKey('API key required for schedule import.')) return;
     createFileInput({
       accept: '.json',
       onFile: async (file) => {
@@ -364,7 +344,7 @@ export default function TrailManager() {
         }
       },
     });
-  }, [hasApiKey]);
+  }, [requireKey]);
 
   const exportAllDataJson = useCallback(async () => {
     try {
@@ -377,10 +357,7 @@ export default function TrailManager() {
   }, [exportJSON]);
 
   const importAllDataJson = useCallback(() => {
-    if (!hasApiKey) {
-      alert('API key required for data import.');
-      return;
-    }
+    if (requireKey('API key required for data import.')) return;
     createImportFileInput(
       async (imported) => {
         if (!confirm('Import trail data? This will upsert all trails and details from the file.')) return;
@@ -394,7 +371,7 @@ export default function TrailManager() {
       },
       (msg) => alert(msg)
     );
-  }, [hasApiKey, importJSON]);
+  }, [requireKey, importJSON]);
 
   const exportAllDataZip = useCallback(async () => {
     try {
@@ -451,10 +428,7 @@ export default function TrailManager() {
   }, [trails]);
 
   const importAllDataZip = useCallback(() => {
-    if (!hasApiKey) {
-      alert('API key required for data import.');
-      return;
-    }
+    if (requireKey('API key required for data import.')) return;
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip';
@@ -474,13 +448,10 @@ export default function TrailManager() {
       }
     };
     input.click();
-  }, [hasApiKey]);
+  }, [requireKey]);
 
   const cleanupOrphanedDetails = useCallback(async () => {
-    if (!hasApiKey) {
-      alert('API key required.');
-      return;
-    }
+    if (requireKey('API key required.')) return;
     if (!confirm('Remove trail detail entries that no longer have a matching trail?')) return;
     try {
       const res = await request('/api/cleanup/orphaned-details', { method: 'POST', apiKey: true });
@@ -493,13 +464,10 @@ export default function TrailManager() {
     } catch (err) {
       alert('Cleanup failed: ' + err.message);
     }
-  }, [hasApiKey]);
+  }, [requireKey]);
 
   const validateData = useCallback(async () => {
-    if (!hasApiKey) {
-      alert('API key required.');
-      return;
-    }
+    if (requireKey('API key required.')) return;
     try {
       const res = await request('/api/validate');
       const issues = res.results.filter(r => !r.valid);
@@ -512,7 +480,20 @@ export default function TrailManager() {
     } catch (err) {
       alert('Validation failed: ' + err.message);
     }
-  }, [hasApiKey]);
+  }, [requireKey]);
+
+  const resyncCoords = useCallback(async () => {
+    if (requireKey('API key required.')) return;
+    try {
+      const res = await resyncGpxCoords();
+      let msg = `Re-synced ${res.updated} trail(s).`;
+      if (res.errors?.length) msg += `\n\n${res.errors.length} issue(s):\n` + res.errors.join('\n');
+      alert(msg);
+      if (res.updated > 0) window.location.reload();
+    } catch (err) {
+      alert('Re-sync failed: ' + err.message);
+    }
+  }, [requireKey]);
 
   const adminActions = useMemo(() => ({
     importDatabase: handleImportDatabase,
@@ -523,7 +504,8 @@ export default function TrailManager() {
     importMonthlyTsv,
     cleanupOrphanedDetails,
     validateData,
-  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData]);
+    resyncCoords,
+  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords]);
 
   if (loading) {
     return <LoadingSpinner />;

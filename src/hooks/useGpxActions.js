@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { getGpx } from '../api/client';
-import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, sanitizeFilename } from '../utils/io';
+import { downloadBlob, openGoogleMapsTrailhead, sanitizeFilename } from '../utils/io';
 import { getTrailName } from '../utils/data';
 
-export function useGpxActions(options, showToast) {
+export function useGpxActions(options) {
   const { trail, trailId, trailName } = typeof options === 'object' && options?.id ? { trail: options } : { trail: null, trailId: options, trailName };
   const [gpxDownloading, setGpxDownloading] = useState(false);
 
@@ -26,26 +26,15 @@ export function useGpxActions(options, showToast) {
     }
   }, [trail, trailId, trailName, gpxDownloading]);
 
-  const handleTrailhead = useCallback(async (e) => {
+  const handleTrailhead = useCallback((e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    const id = trail?.id || trailId;
-    if (!id) return;
-    try {
-      const gpx = await getGpx(id);
-      if (!gpx) return;
-      const coord = getFirstCoordinateFromGpx(gpx);
-      if (coord) {
-        openGoogleMapsTrailhead(coord.lat, coord.lon);
-      } else if (showToast) {
-        showToast('No GPS coordinates found in GPX file', 'error');
-      }
-    } catch {
-      if (showToast) showToast('Failed to load GPX file', 'error');
+    if (trail?.trailHeadLat != null && trail?.trailHeadLon != null) {
+      openGoogleMapsTrailhead(trail.trailHeadLat, trail.trailHeadLon);
     }
-  }, [trail, trailId, showToast]);
+  }, [trail]);
 
   return {
     gpxDownloading,

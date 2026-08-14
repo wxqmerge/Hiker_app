@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * A shared component for rendering a grid or list of months.
  * @param {Object} props

@@ -1,6 +1,7 @@
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import { usePageContext } from '../contexts/PageContext';
 import { useMonthContext } from '../contexts/MonthContext';
+import { useDayContext } from '../contexts/DayContext';
 import { ScheduleSettingsProvider } from '../contexts/ScheduleSettingsContext';
 import { getGroupName } from '../utils/config';
 import { getTrailName } from '../utils/data';
@@ -8,7 +9,9 @@ import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useEffect } from 'react';
 import { NAV_LINKS } from '../utils/constants';
+import { getDaysInMonth } from '../utils/dateUtils';
 import MonthSelector from './MonthSelector';
+import DaySelector from './DaySelector';
 import ScheduleSettingsDropdown from './ScheduleSettingsDropdown';
 
 const APP_VERSION = __APP_VERSION;
@@ -44,10 +47,16 @@ function PageContextSetter() {
 function HeaderContent() {
   const { pageContext } = usePageContext();
   const { selectedMonth, setSelectedMonth } = useMonthContext();
+  const { selectedDay, setSelectedDay } = useDayContext();
   const { pathname } = useLocation();
   const groupName = getGroupName();
-  const showMonth = pathname === '/' || pathname === '/schedule';
   const isSchedule = pathname === '/schedule';
+  const isBrowse = pathname === '/browse';
+
+  useEffect(() => {
+    const daysInMonth = getDaysInMonth(2026, selectedMonth);
+    setSelectedDay(String(Math.min(new Date().getDate(), daysInMonth)));
+  }, [selectedMonth, setSelectedDay]);
 
   return (
     <>
@@ -72,11 +81,17 @@ function HeaderContent() {
                 ))}
                 <span className="text-xs text-gray-400">v{APP_VERSION}</span>
               </nav>
-              {showMonth && (
-                <MonthSelector
-                  selectedMonth={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
-                  title="Select month"
+              <MonthSelector
+                selectedMonth={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+                title="Select month"
+              />
+              {isBrowse && (
+                <DaySelector
+                  selectedDay={selectedDay}
+                  onChange={(e) => setSelectedDay(e.target.value)}
+                  month={selectedMonth}
+                  title="Select day"
                 />
               )}
               <div className="flex items-center gap-3 ml-4 min-w-0">

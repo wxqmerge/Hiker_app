@@ -41,7 +41,6 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
           console.warn('[Schedule] Version mismatch! Server:', newVersion, 'Client was on:', serverVersionRef.current);
         }
         serverVersionRef.current = newVersion;
-        console.log('[Schedule] Server version:', newVersion);
       }
 
       if (newEtag) {

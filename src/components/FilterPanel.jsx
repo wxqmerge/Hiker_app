@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { useTooltips } from '../hooks/useTooltips';
 import DualRangeSlider from './DualRangeSlider';
+import PillButton from './shared/PillButton';
 
 export default function FilterPanel({ filters, setFilters, lookup, resetFilters, totalCount, filteredCount }) {
   const { title: tt } = useTooltips();
@@ -42,7 +43,8 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
     filters.difficulties.length > 0 ||
     filters.months.length > 0 ||
     filters.wilderness ||
-    (filters.gpx && filters.gpx !== 'all');
+    (filters.gpx && filters.gpx !== 'all') ||
+    (filters.tide && filters.tide !== 'all');
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
@@ -101,148 +103,36 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
        {/* Difficulty */}
         <div className="flex gap-1.5">
             {difficulties.map(diff => (
-              <button
-                key={diff.code}
-                onClick={() => toggleDifficulty(diff.code)}
-                className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-                  filters.difficulties.includes(diff.code)
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                title={tt(`Toggle ${diff.label} filter`)}
-              >
+              <PillButton key={diff.code} active={filters.difficulties.includes(diff.code)} onClick={() => toggleDifficulty(diff.code)} title={tt(`Toggle ${diff.label} filter`)}>
                 {diff.label}
-              </button>
+              </PillButton>
             ))}
           </div>
 
          {/* Sort */}
-         <div className="flex gap-1.5 ml-auto">
-          <button
-            onClick={() => setSortBy('name')}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.sortBy === 'name'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Sort alphabetically')}
-          >
-            A-Z
-          </button>
-          <button
-            onClick={() => setSortBy('popularity')}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.sortBy === 'popularity'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Sort by popularity')}
-          >
-            Pop
-          </button>
-          <button
-            onClick={() => setSortBy('elevation-up')}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.sortBy === 'elevation-up'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Sort by elevation (low to high)')}
-          >
-            Elev ↑
-          </button>
-          <button
-            onClick={() => setSortBy('elevation-down')}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.sortBy === 'elevation-down'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Sort by elevation (high to low)')}
-          >
-            Elev ↓
-          </button>
-          <button
-            onClick={() => setSortBy('distance-up')}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.sortBy === 'distance-up'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Sort by distance (shortest first)')}
-          >
-            Dist ↑
-          </button>
-          <button
-            onClick={() => setSortBy('distance-down')}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.sortBy === 'distance-down'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Sort by distance (longest first)')}
-          >
-            Dist ↓
-          </button>
-          <button
-            onClick={toggleWilderness}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.wilderness
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Filter wilderness trails')}
-          >
-            ◆
-          </button>
-          <button
-            onClick={() => setSortBy('not-wilderness')}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.sortBy === 'not-wilderness'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Sort non-wilderness trails first')}
-          >
-            ◆ off
-          </button>
+          <div className="flex gap-1.5 ml-auto">
+           <PillButton active={filters.sortBy === 'name'} onClick={() => setSortBy('name')} title={tt('Sort alphabetically')}>A-Z</PillButton>
+           <PillButton active={filters.sortBy === 'popularity'} onClick={() => setSortBy('popularity')} title={tt('Sort by popularity')}>Pop</PillButton>
+           <PillButton active={filters.sortBy === 'elevation-up'} onClick={() => setSortBy('elevation-up')} title={tt('Sort by elevation (low to high)')}>Elev ↑</PillButton>
+           <PillButton active={filters.sortBy === 'elevation-down'} onClick={() => setSortBy('elevation-down')} title={tt('Sort by elevation (high to low)')}>Elev ↓</PillButton>
+           <PillButton active={filters.sortBy === 'distance-up'} onClick={() => setSortBy('distance-up')} title={tt('Sort by distance (shortest first)')}>Dist ↑</PillButton>
+           <PillButton active={filters.sortBy === 'distance-down'} onClick={() => setSortBy('distance-down')} title={tt('Sort by distance (longest first)')}>Dist ↓</PillButton>
+           <PillButton active={filters.wilderness} onClick={toggleWilderness} title={tt('Filter wilderness trails')}>◆</PillButton>
+           <PillButton active={filters.sortBy === 'not-wilderness'} onClick={() => setSortBy('not-wilderness')} title={tt('Sort non-wilderness trails first')}>◆ off</PillButton>
         </div>
 
         {/* GPX */}
         <div className="flex gap-1.5 items-center">
-          <button
-            onClick={() => setFilters(prev => ({ ...prev, gpx: 'all' }))}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.gpx === 'all'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Show all trails')}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setFilters(prev => ({ ...prev, gpx: 'gpx' }))}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.gpx === 'gpx'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Filter trails with GPX')}
-          >
-            GPX
-          </button>
-          <button
-            onClick={() => setFilters(prev => ({ ...prev, gpx: 'noGpx' }))}
-            className={`px-2.5 py-1 rounded-full text-sm font-medium transition-colors ${
-              filters.gpx === 'noGpx'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={tt('Filter trails without GPX')}
-          >
-            No GPX
-          </button>
+          <PillButton active={filters.gpx === 'all'} onClick={() => setFilters(prev => ({ ...prev, gpx: 'all' }))} title={tt('Show all trails')}>All</PillButton>
+          <PillButton active={filters.gpx === 'gpx'} onClick={() => setFilters(prev => ({ ...prev, gpx: 'gpx' }))} title={tt('Filter trails with GPX')}>GPX</PillButton>
+          <PillButton active={filters.gpx === 'noGpx'} onClick={() => setFilters(prev => ({ ...prev, gpx: 'noGpx' }))} title={tt('Filter trails without GPX')}>No GPX</PillButton>
+        </div>
+
+        {/* Tide */}
+        <div className="flex gap-1.5 items-center">
+          <PillButton color="blue" active={filters.tide === 'all'} onClick={() => setFilters(prev => ({ ...prev, tide: 'all' }))} title={tt('Show all trails')}>All</PillButton>
+          <PillButton color="blue" active={filters.tide === 'tide'} onClick={() => setFilters(prev => ({ ...prev, tide: 'tide' }))} title={tt('Filter trails with tide data')}>Tide</PillButton>
+          <PillButton color="blue" active={filters.tide === 'noTide'} onClick={() => setFilters(prev => ({ ...prev, tide: 'noTide' }))} title={tt('Filter trails without tide data')}>No Tide</PillButton>
         </div>
 
         {/* Months */}

@@ -42,7 +42,7 @@ export function openGoogleMapsTrailhead(lat, lon) {
 }
 
 // Open NWS weather forecast page for a coordinate
-function openWeatherUrl(lat, lon) {
+export function openWeatherUrl(lat, lon) {
   const url = `https://forecast.weather.gov/MapClick.php?lon=${lon}&lat=${lat}`;
   window.open(url, '_blank');
 }
@@ -55,7 +55,7 @@ function openWeatherUrl(lat, lon) {
  * Uses a module-level cache keyed by "lat,lon" with a 3-hour TTL so the
  * forecast refreshes when NWS updates it.
  */
-const _nwsCache = new Map();
+export const _nwsCache = new Map();
 const _nwsTTL = 3 * 60 * 60 * 1000; // 3 hours
 
 export async function fetchNwsForecastForDate(lat, lon, targetDate) {
@@ -98,7 +98,7 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
   const dayName = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
 
   const matchDay = (p) => {
-    if (isSameDay) return p.name.includes('Today') || p.name.includes('today');
+    if (isSameDay) return /^(Today|This (Morning|Afternoon|Evening)|Tonight)$/.test(p.name);
     return p.name.includes(dayName);
   };
 
@@ -125,20 +125,100 @@ export async function openWeatherForTrail(getGpxFn, trailId) {
 }
 
 /**
- * Fetch weather forecast for a trail on a given date.
- * Gets GPX → extracts first coordinate → fetches NWS forecast.
- * @param {Function} getGpxFn - Function(trailId) => Promise<gpxContent>
- * @param {string} trailId
- * @param {Date} targetDate
- * @returns {{temp: number, rain: number}|null}
+ * Build a trailCoords map from trail IDs and trail objects.
+ * Includes trails that have coordinates OR a tide station ID.
+ * @param {string[]} trailIds
+ * @param {Array} trails
+ * @returns {Object<string, {lat: number|null, lon: number|null, stationId: string|null}>}
  */
-export async function fetchWeatherForTrail(getGpxFn, trailId, targetDate) {
+export function buildTrailCoords(trailIds, trails) {
+  const trailById = new Map((trails || []).map(t => [t.id, t]));
+  const trailCoords = {};
+  for (const id of trailIds) {
+    const t = trailById.get(id);
+    const hasCoords = t?.trailHeadLat != null && t?.trailHeadLon != null;
+    const hasTide = !!t?.tideStationId;
+    if (hasCoords || hasTide) {
+      trailCoords[id] = {
+        lat: t.trailHeadLat ?? null,
+        lon: t.trailHeadLon ?? null,
+        stationId: t.tideStationId || null,
+      };
+    }
+  }
+  return trailCoords;
+}
+
+/**
+ * Fetch weather for coordinates on a given date, plus tide if a station ID
+ * is provided.
+ * @param {number} lat
+ * @param {number} lon
+ * @param {Date} targetDate
+ * @param {string|null} [stationId] - NOAA tide station ID (tide fetched only when provided)
+ * @returns {{temp: number, rain: number, tide?: number}|null}
+ */
+export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
   try {
-    const gpx = await getGpxFn(trailId);
-    if (!gpx) return null;
-    const coord = getFirstCoordinateFromGpx(gpx);
-    if (!coord) return null;
-    return await fetchNwsForecastForDate(coord.lat, coord.lon, targetDate);
+    const hasCoords = lat != null && lon != null;
+    const tasks = [];
+    if (hasCoords) tasks.push(fetchNwsForecastForDate(lat, lon, targetDate));
+    if (stationId) tasks.push(fetchTideHeightAt(stationId, targetDate));
+    if (tasks.length === 0) return null;
+
+    const results = await Promise.allSettled(tasks);
+    const entry = {};
+    if (hasCoords && results[0].status === 'fulfilled' && results[0].value) Object.assign(entry, results[0].value);
+    const tideIdx = hasCoords ? 1 : 0;
+    if (stationId && results[tideIdx]?.status === 'fulfilled' && results[tideIdx]?.value) {
+      entry.tide = results[tideIdx].value.height;
+      entry.tideTime = results[tideIdx].value.time;
+    }
+
+    return Object.keys(entry).length > 0 ? entry : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch the nearest low tide (feet, MLLW datum) to the given local hour.
+ * @param {string} stationId - NOAA tide station ID
+ * @param {Date} targetDate
+ * @param {number} [hour] - Local hour 0-23 (default 10 = 10am)
+ * @returns {{height: number, time: string}|null}
+ */
+export async function fetchTideHeightAt(stationId, targetDate, hour = 10) {
+  if (!stationId || !targetDate) return null;
+  try {
+    const d = new Date(targetDate);
+    const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    const res = await fetch(
+      `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&interval=hilo&begin_date=${dateStr}&end_date=${dateStr}&station=${stationId}&time_zone=lst_ldt&units=english&format=json`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const preds = (data.predictions || []).filter(p => p.type === 'L');
+    if (!preds.length) return null;
+    const target = new Date(targetDate);
+    target.setHours(hour, 0, 0, 0);
+    let best = null;
+    for (const p of preds) {
+      // API returns "YYYY-MM-DD HH:MM" in local station time
+      const [datePart, timePart] = p.t.split(' ');
+      const [y, mo, dd] = datePart.split('-').map(Number);
+      const [hh, mm] = timePart.split(':').map(Number);
+      const t = new Date(y, mo - 1, dd, hh, mm);
+      if (isNaN(t.getTime())) continue;
+      const diff = Math.abs(t.getTime() - target.getTime());
+      if (!best || diff < best.diff) best = { diff, v: p.v, hh, mm };
+    }
+    if (!best) return null;
+    const height = parseFloat(best.v);
+    if (isNaN(height)) return null;
+    const h12 = best.hh % 12 || 12;
+    const time = `${h12}:${String(best.mm).padStart(2, '0')}${best.hh >= 12 ? 'p' : 'a'}`;
+    return { height, time };
   } catch {
     return null;
   }
@@ -177,6 +257,14 @@ export function downloadBlob(data, filename, type = 'application/json') {
   a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Open HTML content in a new browser tab
+export function openHtmlInNewTab(html) {
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 // Create a hidden file input, trigger it, and call onFile with the selected file

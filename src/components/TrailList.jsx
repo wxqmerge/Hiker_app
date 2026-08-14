@@ -1,6 +1,6 @@
 import TrailCard from './TrailCard';
 
-export default function TrailList({ trails, selectedMonths }) {
+export default function TrailList({ trails, selectedMonths, weatherMap, hikeDate }) {
   if (trails.length === 0) {
     return (
       <div className="text-center py-12">
@@ -20,6 +20,8 @@ export default function TrailList({ trails, selectedMonths }) {
           key={trail.id} 
           trail={trail}
           selectedMonths={selectedMonths}
+          weather={weatherMap?.[trail.id]}
+          hikeDate={hikeDate}
         />
       ))}
     </div>

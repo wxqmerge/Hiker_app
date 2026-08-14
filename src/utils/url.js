@@ -35,3 +35,12 @@ export function getGoogleAllTrailsSearchUrl(trailName) {
   const query = encodeURIComponent(`alltrails.com+washington+${trailName}`);
   return `https://www.google.com/search?q=${query}`;
 }
+
+export function getNoaaTideUrl(stationId, date) {
+  let url = `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${stationId}`;
+  if (date) {
+    const bdate = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+    url += `&bdate=${bdate}`;
+  }
+  return url;
+}

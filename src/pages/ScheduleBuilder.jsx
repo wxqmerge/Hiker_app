@@ -16,8 +16,9 @@ import SwapConfirmationModal from '../components/SwapConfirmationModal';
 import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
-import { downloadBlob, createFileInput, getFirstCoordinateFromGpx, openGoogleMapsTrailhead, fetchWeatherForTrail } from '../utils/io';
+import { downloadBlob, createFileInput, openGoogleMapsTrailhead, fetchWeatherAndTide, openHtmlInNewTab } from '../utils/io';
 import { getGroupName } from '../utils/config';
+import { getNoaaTideUrl } from '../utils/url.js';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule, getGpx } from '../api/client';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
@@ -152,14 +153,12 @@ export default function ScheduleBuilder() {
     }
   }, [gpxDownloading]);
 
-  const handleTrailhead = useCallback(async (trailId) => {
-    const gpx = await getGpx(trailId);
-    if (!gpx) return;
-    const coord = getFirstCoordinateFromGpx(gpx);
-    if (coord) {
-      openGoogleMapsTrailhead(coord.lat, coord.lon);
+  const handleTrailhead = useCallback((trailId) => {
+    const trail = trails.find(t => t.id === trailId);
+    if (trail?.trailHeadLat != null && trail?.trailHeadLon != null) {
+      openGoogleMapsTrailhead(trail.trailHeadLat, trail.trailHeadLon);
     }
-  }, []);
+  }, [trails]);
 
   const hikeTrailMap = useMemo(() => {
     const scheduleIds = Object.values(assignedHikes).flat().map(v => v?.trail_id).filter(Boolean);
@@ -314,12 +313,12 @@ export default function ScheduleBuilder() {
     let successCount = 0;
     let failCount = 0;
     const concurrency = 5;
-    const items = hikeTrailMap.filter(item => item.trail?.hasGpx);
+    const items = hikeTrailMap.filter(item => item.trail?.trailHeadLat != null && item.trail?.trailHeadLon != null);
     for (let i = 0; i < items.length; i += concurrency) {
       const batch = items.slice(i, i + concurrency);
       await Promise.allSettled(batch.map(async (item) => {
         const trail = item.trail;
-        const w = await fetchWeatherForTrail(getGpx, trail.id, nextHikeDate);
+        const w = await fetchWeatherAndTide(trail.trailHeadLat, trail.trailHeadLon, nextHikeDate, trail.tideStationId || null);
         if (w) {
           results[trail.id] = w;
           successCount++;
@@ -806,9 +805,7 @@ export default function ScheduleBuilder() {
     });
 
     const html = generateReportHtml(entries, title);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    openHtmlInNewTab(html);
   }, [selectedMonth, year, assignedHikes, findTrailById, trailDetails]);
 
    const hikeCards = useMemo(() => {
@@ -1122,7 +1119,7 @@ export default function ScheduleBuilder() {
                                 )}
                                 {trail?.tideStationId && (
                                   <a
-                                    href={`https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${trail.tideStationId}&bdate=${year}${String(selectedMonth + 1).padStart(2, '0')}${String(day).padStart(2, '0')}`}
+                                    href={getNoaaTideUrl(trail.tideStationId, new Date(year, selectedMonth, day))}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue-600 hover:text-blue-800 transition-colors"

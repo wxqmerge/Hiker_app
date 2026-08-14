@@ -5,7 +5,7 @@ export const TRAIL_FIELDS = new Set([
   'id', 'name', 'fullName', 'distance', 'distanceExtended',
   'elevationStart', 'elevationMax', 'difficulty',
   'parking', 'range', 'notes', 'altNames', 'difficultyOrder',
-  'seasonal', 'webLink', 'tideStationId', 'gpxData', 'hasGpx', 'gpxFile',
+  'seasonal', 'webLink', 'tideStationId', 'gpxData', 'hasGpx', 'gpxFile', 'trailHeadLat', 'trailHeadLon',
 ]);
 
 export const TRAIL_DETAIL_FIELDS = new Set([

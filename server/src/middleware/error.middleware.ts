@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import type { RequestHandler } from 'express';
 
 export function withErrorTag(tag: string) {
   return (fn: RequestHandler): RequestHandler => {

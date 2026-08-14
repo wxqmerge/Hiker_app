@@ -1,5 +1,3 @@
-import { MONTH_NAMES } from './constants';
- 
 let groupConfig = {
   name: null,
   hikeDays: null

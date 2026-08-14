@@ -16,6 +16,7 @@ export default function ScheduledCards({
   handleDragEnd,
   onLeaderChange,
   tt,
+  weatherMap,
 }) {
   const cards = useMemo(() => {
     const hikeDays = getHikeDays();
@@ -98,7 +99,7 @@ export default function ScheduledCards({
                style={{ opacity: dragData?.sourceDay === item.day ? 0.4 : 1 }}
              >
                <div className="relative">
-                 <TrailCard trail={item.trail} isActive={false} leader={item.leader} onLeaderChange={() => memoizedLeaderChange(item)} hikeDate={createDate(year, selectedMonth, item.day)} />
+                  <TrailCard trail={item.trail} isActive={false} leader={item.leader} onLeaderChange={() => memoizedLeaderChange(item)} hikeDate={createDate(year, selectedMonth, item.day)} weather={weatherMap?.[item.day]?.[item.trailId]} />
                 <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
                   {item.day}
                   <span className="text-[8px]">{getDayLabel(createDate(year, selectedMonth, item.day).getDay())}</span>

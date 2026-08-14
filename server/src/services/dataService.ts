@@ -317,17 +317,6 @@ export async function getScheduleHistory(): Promise<Array<{ timestamp: string; e
   }
 }
 
-export async function clearScheduleHistory(): Promise<void> {
-  try {
-    const files = await fs.readdir(HISTORY_DIR);
-    for (const f of files.filter(f => f.startsWith('schedule_') && f.endsWith('.json'))) {
-      await fs.unlink(path.join(HISTORY_DIR, f));
-    }
-  } catch (error) {
-    console.warn('[DATA] Could not clear schedule history:', (error as Error).message);
-  }
-}
-
 export async function restoreScheduleByTimestamp(timestamp: string): Promise<ScheduleData> {
   const files = await fs.readdir(HISTORY_DIR);
   for (const f of files) {

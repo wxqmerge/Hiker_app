@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { PageContextProvider } from './contexts/PageContext';
 import { MonthContextProvider } from './contexts/MonthContext';
+import { DayContextProvider } from './contexts/DayContext';
 
 const Home = lazy(() => import('./pages/Home'));
 const TrailDetail = lazy(() => import('./pages/TrailDetail'));
@@ -87,6 +88,7 @@ function App() {
       <ApiKeySync />
       <PageContextProvider>
         <MonthContextProvider>
+          <DayContextProvider>
           <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Calendar />} />
@@ -95,7 +97,8 @@ function App() {
             <Route path="/trails" element={<PageLazy><TrailManager /></PageLazy>} />
             <Route path="/schedule" element={<PageLazy><ScheduleBuilder /></PageLazy>} />
           </Route>
-        </Routes>
+          </Routes>
+          </DayContextProvider>
         </MonthContextProvider>
       </PageContextProvider>
       <ToastContainer />

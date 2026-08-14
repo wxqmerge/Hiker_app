@@ -8,41 +8,40 @@ vi.mock('../../api/client', () => ({
 
 vi.mock('../../utils/io', () => ({
   downloadBlob: vi.fn(),
-  getFirstCoordinateFromGpx: vi.fn(() => ({ lat: 40.0, lon: -74.0 })),
   openGoogleMapsTrailhead: vi.fn(),
   sanitizeFilename: vi.fn(s => String(s).replace(/[^a-zA-Z0-9_-]/g, '_')),
 }));
 
 import { getGpx } from '../../api/client';
-import { downloadBlob, getFirstCoordinateFromGpx, openGoogleMapsTrailhead } from '../../utils/io';
+import { downloadBlob, openGoogleMapsTrailhead } from '../../utils/io';
 
 describe('useGpxActions', () => {
   const trail = {
     id: 'trail-1',
     name: 'Test Trail',
     fullName: 'Test Trail Full',
+    trailHeadLat: 40.0,
+    trailHeadLon: -74.0,
   };
-
-  const showToast = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('returns expected properties', () => {
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
+    const { result } = renderHook(() => useGpxActions(trail));
     expect(result.current).toHaveProperty('gpxDownloading');
     expect(result.current).toHaveProperty('handleGpxDownload');
     expect(result.current).toHaveProperty('handleTrailhead');
   });
 
   it('initializes gpxDownloading as false', () => {
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
+    const { result } = renderHook(() => useGpxActions(trail));
     expect(result.current.gpxDownloading).toBe(false);
   });
 
   it('downloads GPX when handleGpxDownload called', async () => {
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
+    const { result } = renderHook(() => useGpxActions(trail));
     await act(async () => {
       await result.current.handleGpxDownload();
     });
@@ -51,7 +50,7 @@ describe('useGpxActions', () => {
   });
 
   it('downloads GPX with event', async () => {
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
+    const { result } = renderHook(() => useGpxActions(trail));
     const event = { preventDefault: vi.fn(), stopPropagation: vi.fn() };
     await act(async () => {
       await result.current.handleGpxDownload(event);
@@ -61,44 +60,43 @@ describe('useGpxActions', () => {
   });
 
   it('sets gpxDownloading to true during download', async () => {
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
+    const { result } = renderHook(() => useGpxActions(trail));
     await act(async () => {
       result.current.handleGpxDownload();
     });
     expect(result.current.gpxDownloading).toBe(true);
   });
 
-  it('opens trailhead when handleTrailhead called', async () => {
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
-    await act(async () => {
-      await result.current.handleTrailhead();
+  it('opens trailhead when handleTrailhead called', () => {
+    const { result } = renderHook(() => useGpxActions(trail));
+    act(() => {
+      result.current.handleTrailhead();
     });
-    expect(getGpx).toHaveBeenCalledWith('trail-1');
     expect(openGoogleMapsTrailhead).toHaveBeenCalledWith(40.0, -74.0);
   });
 
-  it('opens trailhead with event', async () => {
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
+  it('opens trailhead with event', () => {
+    const { result } = renderHook(() => useGpxActions(trail));
     const event = { preventDefault: vi.fn(), stopPropagation: vi.fn() };
-    await act(async () => {
-      await result.current.handleTrailhead(event);
+    act(() => {
+      result.current.handleTrailhead(event);
     });
     expect(event.preventDefault).toHaveBeenCalled();
     expect(event.stopPropagation).toHaveBeenCalled();
   });
 
-  it('shows toast when no GPS coordinates', async () => {
-    vi.mocked(getFirstCoordinateFromGpx).mockReturnValueOnce(null);
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
-    await act(async () => {
-      await result.current.handleTrailhead();
+  it('does not open trailhead when no coordinates', () => {
+    const noCoordTrail = { id: 'trail-1', name: 'Test Trail' };
+    const { result } = renderHook(() => useGpxActions(noCoordTrail));
+    act(() => {
+      result.current.handleTrailhead();
     });
-    expect(showToast).toHaveBeenCalledWith('No GPS coordinates found in GPX file', 'error');
+    expect(openGoogleMapsTrailhead).not.toHaveBeenCalled();
   });
 
   it('handles missing GPX gracefully', async () => {
     vi.mocked(getGpx).mockResolvedValueOnce(null);
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
+    const { result } = renderHook(() => useGpxActions(trail));
     await act(async () => {
       await result.current.handleGpxDownload();
     });
@@ -106,7 +104,7 @@ describe('useGpxActions', () => {
   });
 
   it('accepts trailId and trailName separately', async () => {
-    const { result } = renderHook(() => useGpxActions({ id: 'trail-1', name: 'Trail Name' }, showToast));
+    const { result } = renderHook(() => useGpxActions({ id: 'trail-1', name: 'Trail Name' }));
     await act(async () => {
       await result.current.handleGpxDownload();
     });
@@ -114,7 +112,7 @@ describe('useGpxActions', () => {
   });
 
   it('does not download when already downloading', async () => {
-    const { result } = renderHook(() => useGpxActions(trail, showToast));
+    const { result } = renderHook(() => useGpxActions(trail));
     await act(async () => {
       result.current.handleGpxDownload();
     });

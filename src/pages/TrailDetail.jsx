@@ -9,10 +9,10 @@ import { generateTrailHtml, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName } from '../utils/data';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
-import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput, sanitizeFilename } from '../utils/io';
-import { uploadGpxFile } from '../api/client';
+import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput, sanitizeFilename, openHtmlInNewTab } from '../utils/io';
+import { uploadGpxFile, getGpx } from '../api/client';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
-import { getGoogleAllTrailsSearchUrl } from '../utils/url.js';
+import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../utils/url.js';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MonthlyScoreGrid, { ScoreBreakdownRow } from '../components/MonthlyScoreGrid.jsx';
 
@@ -257,6 +257,10 @@ export default function TrailDetail() {
       if (editedFields.gpxData === '') delete updatedTrail.gpxData;
       else updatedTrail.gpxData = editedFields.gpxData;
     }
+    if (editedFields.gpxFile !== undefined) updatedTrail.gpxFile = editedFields.gpxFile;
+    if (editedFields.hasGpx !== undefined) updatedTrail.hasGpx = editedFields.hasGpx;
+    if (editedFields.trailHeadLat !== undefined) updatedTrail.trailHeadLat = editedFields.trailHeadLat;
+    if (editedFields.trailHeadLon !== undefined) updatedTrail.trailHeadLon = editedFields.trailHeadLon;
 
     if (editedFields.bestSeason !== undefined || editedFields.availableMonths !== undefined) {
       if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
@@ -333,10 +337,7 @@ export default function TrailDetail() {
 
   const copyReport = () => {
     const html = generateTrailHtml(trail, trailDetailsResult);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    openHtmlInNewTab(html);
   };
 
   const exportTrailAsHtml = () => {
@@ -361,9 +362,7 @@ export default function TrailDetail() {
     const desc = getEditedValue('description');
     if (desc) htmlDetail.fullDescription = desc;
     const html = generateTrailHtml(htmlTrail, htmlDetail);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    openHtmlInNewTab(html);
   };
 
   const goToPrevious = () => {
@@ -682,7 +681,7 @@ export default function TrailDetail() {
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Tide Station</h3>
               <a
-                href={`https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${getEditedValue('tideStationId')}`}
+                href={getNoaaTideUrl(getEditedValue('tideStationId'))}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline"
@@ -700,11 +699,11 @@ export default function TrailDetail() {
               <h3 className="text-lg font-semibold text-gray-800 mb-2">GPX Track</h3>
                <div className="flex items-center gap-3">
                  <GPXHelp variant="light" />
-                 <button
-                    onClick={() => shareGpxFile(trail.gpxFile, getTrailName(trail))}
-                   className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
-                   title="Share GPX to Organic Maps (mobile) or download (desktop)"
-                 >
+                  <button
+                     onClick={async () => { const gpx = await getGpx(trail.id); if (gpx) shareGpxFile(gpx, getTrailName(trail)); }}
+                    className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
+                    title="Share GPX to Organic Maps (mobile) or download (desktop)"
+                  >
                   <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
@@ -1095,6 +1094,8 @@ export default function TrailDetail() {
                                   console.log('[TrailDetail] GPX upload result:', result);
                                   updateField('gpxFile', result.gpxFile);
                                   updateField('hasGpx', true);
+                                  if (result.trailHeadLat != null) updateField('trailHeadLat', result.trailHeadLat);
+                                  if (result.trailHeadLon != null) updateField('trailHeadLon', result.trailHeadLon);
                                   showToast('GPX uploaded successfully');
                                 } catch (err) {
                                   console.error('[TrailDetail] GPX upload error:', err);

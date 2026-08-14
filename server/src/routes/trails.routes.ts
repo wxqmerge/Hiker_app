@@ -11,6 +11,7 @@ import {
   getTrailDetailById,
   updateTrailDetail,
   getGpxFileName,
+  getGpxIndex,
 } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
@@ -19,6 +20,7 @@ import {
   whitelistTrailFields,
   whitelistTrailDetailFields,
 } from '../middleware/validation.middleware.js';
+import { extractFirstCoordinateFromGpx } from '../utils/gpxCoord.js';
 import { sendWithEtag } from '../utils/etag.js';
 import { getCurrentDir } from '../utils/path.js';
 
@@ -27,6 +29,20 @@ const GPX_DIR = path.join(__dirname, '../../../GPX');
 const GPX_UPLOAD_DIR = path.join(__dirname, '../../../exported_data/gpx');
 
 const gpxUpload = multer({ dest: GPX_UPLOAD_DIR, limits: { fileSize: 5 * 1024 * 1024 } });
+
+async function resolveGpxPath(gpxFile: string): Promise<string | null> {
+  const uploadPath = path.join(GPX_UPLOAD_DIR, gpxFile);
+  const originalPath = path.join(GPX_DIR, gpxFile);
+  try {
+    await fs.access(uploadPath);
+    return uploadPath;
+  } catch { /* not in upload dir */ }
+  try {
+    await fs.access(originalPath);
+    return originalPath;
+  } catch { /* not in original dir either */ }
+  return null;
+}
 
 const router = Router();
 
@@ -58,20 +74,7 @@ router.get('/gpx/:id', async (req, res) => {
   if (!gpxFile) {
     return res.status(404).json({ success: false, error: { message: 'GPX not found for this trail' } });
   }
-  // Check uploaded GPX first, then original GPX directory
-  const uploadPath = path.join(GPX_UPLOAD_DIR, gpxFile);
-  const originalPath = path.join(GPX_DIR, gpxFile);
-  let gpxPath: string | null = null;
-  try {
-    await fs.access(uploadPath);
-    gpxPath = uploadPath;
-  } catch { /* not in upload dir */ }
-  if (!gpxPath) {
-    try {
-      await fs.access(originalPath);
-      gpxPath = originalPath;
-    } catch { /* not in original dir either */ }
-  }
+  const gpxPath = await resolveGpxPath(gpxFile);
   if (!gpxPath) {
     return res.status(404).json({ success: false, error: { message: 'GPX file not found' } });
   }
@@ -128,10 +131,46 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
     return res.status(500).json({ success: false, error: { message: `Could not save GPX file: ${(err as Error).message}` } });
   }
 
-  // Update trail with gpxFile
+  // Update trail with gpxFile and extracted trailhead coordinates
   const whitelisted = whitelistTrailFields(req.body);
-  await updateTrail((existing ? { ...existing, ...whitelisted, gpxFile: gpxFileName, hasGpx: true } : { ...whitelisted, id: req.params.id, gpxFile: gpxFileName, hasGpx: true }) as any);
-  res.json({ success: true, gpxFile: gpxFileName });
+  const coord = extractFirstCoordinateFromGpx(content);
+  const trailUpdates = coord
+    ? { gpxFile: gpxFileName, hasGpx: true, trailHeadLat: coord.lat, trailHeadLon: coord.lon }
+    : { gpxFile: gpxFileName, hasGpx: true };
+  await updateTrail((existing ? { ...existing, ...whitelisted, ...trailUpdates } : { ...whitelisted, id: req.params.id, ...trailUpdates }) as any);
+  res.json({ success: true, gpxFile: gpxFileName, trailHeadLat: coord?.lat ?? null, trailHeadLon: coord?.lon ?? null });
+}));
+
+router.post('/resync-gpx-coords', requireAdminKey, withErrorTag('TRAILS')(async (_req, res) => {
+  const trails = getTrails();
+  const gpxIndex = getGpxIndex();
+  let updated = 0;
+  const errors = [];
+
+  for (const trail of trails) {
+    if (!trail.hasGpx) continue;
+    const gpxFile = gpxIndex[trail.id];
+    if (!gpxFile) {
+      errors.push(trail.id + ': no gpxFile');
+      continue;
+    }
+    try {
+      const gpxPath = await resolveGpxPath(gpxFile);
+      if (!gpxPath) throw new Error('GPX file not found');
+      const content = await fs.readFile(gpxPath, 'utf-8');
+      const coord = extractFirstCoordinateFromGpx(content);
+      if (coord) {
+        await updateTrail({ ...trail, trailHeadLat: coord.lat, trailHeadLon: coord.lon });
+        updated++;
+      } else {
+        errors.push(trail.id + ': no coords in GPX');
+      }
+    } catch (err) {
+      errors.push(trail.id + ': ' + (err as Error).message);
+    }
+  }
+
+  res.json({ success: true, updated, errors });
 }));
 
 router.delete('/:id', requireAdminKey, withErrorTag('TRAILS')(async (req, res) => {

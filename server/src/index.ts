@@ -28,7 +28,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 app.set('trust proxy', 1);
 
-app.use((req, res, next) => {
+app.use((_req, res, next) => {
   res.set('X-Build-Version', buildHash);
   res.set('X-Build-Timestamp', buildTs);
   next();

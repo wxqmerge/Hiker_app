@@ -37,6 +37,8 @@ export interface Trail {
   tideStationId?: string;
   hasGpx?: boolean;
   gpxFile?: string;
+  trailHeadLat?: number;
+  trailHeadLon?: number;
 }
 
 export interface TrailDetail {

@@ -11,10 +11,8 @@ vi.mock('../../api/client', () => ({
 }));
 
 vi.mock('../../utils/io', () => ({
-  getFirstCoordinateFromGpx: vi.fn(() => null),
-  openWeatherForTrail: vi.fn(),
-  fetchNwsForecastForDate: vi.fn(() => Promise.resolve(null)),
-  fetchWeatherForTrail: vi.fn(() => Promise.resolve(null)),
+  openWeatherUrl: vi.fn(),
+  fetchWeatherAndTide: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock('../../hooks/useGpxActions', () => ({
@@ -42,6 +40,8 @@ describe('NextHikeBanner', () => {
     parking: 'Trailhead',
     range: 30,
     hasGpx: true,
+    trailHeadLat: 47.0,
+    trailHeadLon: -121.0,
   };
 
   const nextHikes = [

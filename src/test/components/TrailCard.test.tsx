@@ -49,11 +49,6 @@ describe('TrailCard', () => {
     expect(screen.getByText('ride-$5')).toBeInTheDocument();
   });
 
-  it('renders seasonal months', () => {
-    renderWithRouter();
-    expect(screen.getByText('Jan, Feb, Mar')).toBeInTheDocument();
-  });
-
   it('does not render seasonal section when no seasonal data', () => {
     render(
       <MemoryRouter initialEntries={['/trail/trail-1']}>

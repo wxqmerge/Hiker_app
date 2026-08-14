@@ -2,13 +2,13 @@ import { Router } from 'express';
 import multer from 'multer';
 import { getSchedule, updateSchedule, loadData, getScheduleHistory, restoreScheduleByTimestamp, getScheduleVersion } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
-import { ScheduleEntrySchema, ScheduleSchema, RestoreTimestampSchema } from '../middleware/validation.middleware.js';
+import { ScheduleSchema, RestoreTimestampSchema } from '../middleware/validation.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
 import { validateXlsBuffer, findPythonCmd, runPythonScript, processXlsImport } from '../utils/xlsImport.js';
 import fs from 'fs';
 import path from 'path';
 import { getCurrentDir } from '../utils/path.js';
-import { MONTH_ABBR, normalizeMonthKey } from '../utils/monthUtils.js';
+import { normalizeMonthKey } from '../utils/monthUtils.js';
 
 const __dirname = getCurrentDir(import.meta.url);
 const PROJECT_ROOT = path.join(__dirname, '../../..');
@@ -24,18 +24,7 @@ router.get('/group', (_req, res) => {
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 } });
 
-const QUARTER_MONTHS: Record<string, string[]> = {
-  '1': ['Dec', 'Jan', 'Feb'],
-  '2': ['Mar', 'Apr', 'May'],
-  '3': ['Jun', 'Jul', 'Aug'],
-  '4': ['Sep', 'Oct', 'Nov'],
-};
-
-function quarterToMonths(quarter: string): string[] {
-  return quarter.replace('Q', '').split(',').map(q => QUARTER_MONTHS[q.charAt(0)] || []).flat();
-}
-
-router.post('/reload', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
+router.post('/reload', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
   await loadData();
   res.json({ success: true, message: 'Schedule and trail data reloaded from disk' });
 }));

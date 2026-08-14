@@ -23,7 +23,6 @@ export async function request(path, options = {}) {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
     const errMsg = error.error?.message || `HTTP ${res.status}`;
-    console.error(`[API] ${options.method || 'GET'} ${path} failed: ${res.status} ${errMsg}`);
     if (options.throwOnError !== false) {
       throw new Error(errMsg);
     }
@@ -85,6 +84,13 @@ export async function uploadGpxFile(trailId, file) {
   });
   gpxCache.delete(trailId);
   return result;
+}
+
+export async function resyncGpxCoords() {
+  return request('/api/trails/resync-gpx-coords', {
+    method: 'POST',
+    apiKey: true,
+  });
 }
 
 export async function updateTrail(trail) {

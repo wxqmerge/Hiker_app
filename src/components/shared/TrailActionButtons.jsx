@@ -2,9 +2,8 @@
 // Used by TrailCard and NextHikeBanner with different styling
 
 import { getTrailName } from '../../utils/data';
-import { getGoogleAllTrailsSearchUrl } from '../../utils/url.js';
-import { openWeatherForTrail } from '../../utils/io';
-import { getGpx } from '../../api/client';
+import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../../utils/url.js';
+import { openWeatherUrl } from '../../utils/io';
 
 export default function TrailActionButtons({ trail, hikeDate, buttonClassName = '', iconSize = 'w-3.5 h-3.5', onGpxDownload, onTrailhead, onWeather }) {
   const trailName = getTrailName(trail);
@@ -16,8 +15,8 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
     }
     if (onWeather) {
       onWeather();
-    } else {
-      openWeatherForTrail(getGpx, trail.id);
+    } else if (trail.trailHeadLat != null && trail.trailHeadLon != null) {
+      openWeatherUrl(trail.trailHeadLat, trail.trailHeadLon);
     }
   };
 
@@ -40,7 +39,7 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
 
       {trail.tideStationId && (
         <a
-          href={`https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${trail.tideStationId}${hikeDate ? `&bdate=${hikeDate.getFullYear()}${String(hikeDate.getMonth() + 1).padStart(2, '0')}${String(hikeDate.getDate()).padStart(2, '0')}` : ''}`}
+          href={getNoaaTideUrl(trail.tideStationId, hikeDate)}
           target="_blank"
           rel="noopener noreferrer"
           className={buttonClassName}
@@ -69,25 +68,27 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
       )}
 
       {trail.hasGpx && (
-        <>
-          <button
-            onClick={onGpxDownload}
-            className={buttonClassName}
-            title={`Download GPX for ${trailName}`}
-          >
-            <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span className="truncate">GPX</span>
-          </button>
+        <button
+          onClick={onGpxDownload}
+          className={buttonClassName}
+          title={`Download GPX for ${trailName}`}
+        >
+          <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4-4V4" />
+          </svg>
+          <span className="truncate">GPX</span>
+        </button>
+      )}
 
+      {trail.trailHeadLat != null && trail.trailHeadLon != null && (
+        <>
           <button
             onClick={onTrailhead}
             className={buttonClassName}
             title={`Open trailhead for ${trailName} in Google Maps`}
           >
             <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <span className="truncate">TH</span>
