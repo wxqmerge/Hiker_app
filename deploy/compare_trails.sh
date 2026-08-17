@@ -89,6 +89,8 @@ echo "--- Environment ---"
 printf "%-20s %12s %10s %12s %8s %8s\n" "Instance" "Group" "HikeDays" "NodeEnv" "Port" "API Key"
 printf "%-20s %12s %10s %12s %8s %8s\n" "--------------------" "------------" "----------" "------------" "--------" "--------"
 
+declare -A PORTS
+
 for dir in "$BASE"/*/; do
     [ -d "$dir" ] || continue
     env_file="$dir/server/.env"
@@ -108,7 +110,25 @@ for dir in "$BASE"/*/; do
     [ -n "$API_KEY" ] && API_KEY="set" || API_KEY="none"
 
     printf "%-20s %12s %10s %12s %8s %8s\n" "$name" "$SCHED_NAME" "$HIKE_DAYS" "$NODE_ENV_VAL" "$PORT_VAL" "$API_KEY"
+    if [ "$PORT_VAL" != "-" ]; then
+        PORTS["$PORT_VAL"]+="$name "
+    fi
 done
+
+# Check for port conflicts
+port_conflict=0
+for p in "${!PORTS[@]}"; do
+    instances="${PORTS[$p]}"
+    count=$(echo "$instances" | wc -w)
+    if [ "$count" -gt 1 ]; then
+        echo "ERROR: Port $p is used by multiple instances: $instances" >&2
+        port_conflict=1
+    fi
+done
+if [ "$port_conflict" -eq 1 ]; then
+    echo "Port conflict detected! Exiting." >&2
+    exit 1
+fi
 
 echo ""
 echo "--- Build Status ---"
