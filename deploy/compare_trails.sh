@@ -139,8 +139,12 @@ for dir in "$BASE"/*/; do
     [ -d "$dir" ] || continue
     name=$(basename "$dir")
 
-    dist_count=$(find "$dir/dist" -type f 2>/dev/null | wc -l)
-    server_dist=$(ls "$dir/server/dist/index.js" 2>/dev/null && echo "yes" || echo "no")
+    dist_count=$(find "$dir/dist" -type f 2>/dev/null | wc -l | tr -d ' ')
+    if [ -f "$dir/server/dist/index.js" ]; then
+        server_dist="yes"
+    else
+        server_dist="no"
+    fi
     git_head=$(cd "$dir" 2>/dev/null && git log --oneline -1 2>/dev/null | cut -c1-7 || echo "?")
 
     [ "$dist_count" -eq 0 ] 2>/dev/null && dist_count="missing"
