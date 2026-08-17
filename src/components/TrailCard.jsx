@@ -68,17 +68,17 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
         <a
           href={`${import.meta.env.BASE_URL}trail/${trail.id}`}
           className="block p-4"
-          title={tt('View full trail details')}
+          title={tt('Open trail details')}
           target="_blank"
           rel="noopener noreferrer"
         >
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-bold text-gray-900">{getTrailName(trail)}</h3>
-              <button
+                  <button
                 onClick={handleCopyName}
                 className="text-gray-400 hover:text-green-700 flex-shrink-0"
-                title={tt('Copy trail name to clipboard')}
+                title={tt('Copy trail name')}
               >
                 {nameCopied ? (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,7 +157,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
             <button
               type="button"
               className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
-              title="Click to change leader"
+              title="Change hike leader"
               onClick={handleLeaderClick}
             >
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,7 +194,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
         <button
           onClick={handleCopy}
           className="flex items-center gap-2 text-sm text-green-600 hover:text-green-800 font-medium"
-          title={tt('Open trail report in new tab')}
+                      title={tt('Open trail report')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
