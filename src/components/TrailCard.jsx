@@ -106,9 +106,13 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
               <div className="flex flex-col gap-1">
                 {weather && (
                   <>
-                    <div
-                      className={`flex items-center gap-1 ${weather.rain >= 40 ? 'text-blue-500' : 'text-gray-700'}`}
-                      title={weather.temp != null ? `Forecast: ${weather.temp}°F, ${weather.rain}% rain` : undefined}
+                    <a
+                      href={trail.trailHeadLat != null && trail.trailHeadLon != null ? `https://forecast.weather.gov/MapClick.php?lon=${trail.trailHeadLon}&lat=${trail.trailHeadLat}` : undefined}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center gap-1 ${weather.rain >= 40 ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-600`}
+                      title={weather.temp != null ? `Forecast: ${weather.temp}°F, ${weather.rain}% rain — open weather` : undefined}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
@@ -117,7 +121,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                         {weather.temp != null && `${weather.temp}°`}
                         {weather.rain >= 1 && ` · ${weather.rain}%`}
                       </span>
-                    </div>
+                    </a>
                     {weather.tide != null && (
                       <a
                         className="flex items-center gap-1 text-gray-700 hover:text-blue-600"
