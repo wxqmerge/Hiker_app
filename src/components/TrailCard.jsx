@@ -66,7 +66,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
          : 'border-gray-100 bg-white'
      }`}>
         <a
-          href={`/trail/${trail.id}`}
+          href={`${import.meta.env.BASE_URL}trail/${trail.id}`}
           className="block p-4"
           title={tt('View full trail details')}
           target="_blank"
