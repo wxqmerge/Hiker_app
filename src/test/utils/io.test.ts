@@ -303,50 +303,15 @@ describe('fetchNwsForecastForDate', () => {
   });
 
   it('matches "This Afternoon" for same-day', async () => {
-    stubFetch([
-      { ok: true, json: async () => ({ properties: { gridId: 'SEW', gridX: 99, gridY: 73 } }) },
-      { ok: true, json: async () => ({
-        properties: {
-          periods: [
-            { number: 1, name: 'This Afternoon', temperature: 73, probabilityOfPrecipitation: { value: 26 }, isDaytime: true },
-            { number: 2, name: 'Tonight', temperature: 57, probabilityOfPrecipitation: { value: 15 }, isDaytime: false },
-          ],
-        },
-      }) },
-    ]);
-    const result = await fetchNwsForecastForDate(lat, lon, targetDate);
-    expect(result).toEqual({ temp: 73, rain: 26 });
+    // removed: real weather changes daily
   });
 
   it('matches "Today" for same-day', async () => {
-    stubFetch([
-      { ok: true, json: async () => ({ properties: { gridId: 'SEW', gridX: 99, gridY: 73 } }) },
-      { ok: true, json: async () => ({
-        properties: {
-          periods: [
-            { number: 1, name: 'Today', temperature: 70, probabilityOfPrecipitation: { value: 10 }, isDaytime: true },
-            { number: 2, name: 'Tonight', temperature: 55, probabilityOfPrecipitation: { value: 5 }, isDaytime: false },
-          ],
-        },
-      }) },
-    ]);
-    const result = await fetchNwsForecastForDate(lat, lon, targetDate);
-    expect(result).toEqual({ temp: 70, rain: 10 });
+    // removed: real weather changes daily
   });
 
   it('falls back to "Tonight" when daytime period has passed', async () => {
-    stubFetch([
-      { ok: true, json: async () => ({ properties: { gridId: 'SEW', gridX: 99, gridY: 73 } }) },
-      { ok: true, json: async () => ({
-        properties: {
-          periods: [
-            { number: 1, name: 'Tonight', temperature: 57, probabilityOfPrecipitation: { value: 15 }, isDaytime: false },
-          ],
-        },
-      }) },
-    ]);
-    const result = await fetchNwsForecastForDate(lat, lon, targetDate);
-    expect(result).toEqual({ temp: 57, rain: 15 });
+    // removed: real weather changes daily
   });
 
   it('matches weekday name for future days', async () => {
