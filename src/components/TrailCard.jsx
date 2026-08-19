@@ -13,6 +13,7 @@ import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import TrailStats from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
 import LeaderEdit from './LeaderEdit';
+import { Icon } from './ui';
 
 const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange, hikeDate }) {
   const showToast = useToast();
@@ -83,13 +84,9 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                 title={tt('Copy trail name')}
               >
                 {nameCopied ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Icon path="M5 13l4 4L19 7" />
                 ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                  </svg>
+                  <Icon path="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 )}
               </button>
             </div>
@@ -116,9 +113,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                       title={weather.temp != null ? `Forecast: ${weather.temp}°F, ${weather.rain}% rain — open weather` : undefined}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
-                      </svg>
+                      <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
                       <span>
                         {weather.temp != null && `${weather.temp}°`}
                         {weather.rain >= 1 && ` · ${weather.rain}%`}
@@ -133,21 +128,17 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                         title={`Low tide ${weather.tideTime}: ${weather.tide} ft — view NOAA predictions`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
-                        </svg>
+                        <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
                         <span>{weather.tideTime} · {weather.tide} ft</span>
                       </a>
                     )}
                   </>
                 )}
                {leader && !onLeaderChange ? (
-                 <div className="flex items-center gap-1 text-gray-700">
-                   <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                   </svg>
-                   <span className="truncate" title={leader}>{leader}</span>
-                 </div>
+                  <div className="flex items-center gap-1 text-gray-700">
+                    <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <span className="truncate" title={leader}>{leader}</span>
+                  </div>
                ) : null}
              </div>
            </div>
@@ -173,9 +164,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                 title="Change hike leader"
                 onClick={handleLeaderClick}
               >
-                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+                <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 <span>Leader: {leader}</span>
               </button>
             )}
@@ -184,13 +173,12 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
 
            {/* Web Link / Tide / Search / GPX - outside Link to avoid nested anchors */}
            <div className="px-4 pb-2 flex items-center gap-2">
-             <TrailActionButtons
-               trail={trail}
-               hikeDate={hikeDate}
-               buttonClassName="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-               onGpxDownload={handleGpxDownload}
-               onTrailhead={handleTrailhead}
-             />
+              <TrailActionButtons
+                trail={trail}
+                hikeDate={hikeDate}
+                onGpxDownload={handleGpxDownload}
+                onTrailhead={handleTrailhead}
+              />
            </div>
 
       {/* Pop score indicator */}
@@ -210,9 +198,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
           className="flex items-center gap-2 text-sm text-green-600 hover:text-green-800 font-medium"
                       title={tt('Open trail report')}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
+          <Icon path="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           Report
         </button>
       </div>

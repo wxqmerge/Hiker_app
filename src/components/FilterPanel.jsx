@@ -3,6 +3,7 @@ import { MONTH_NAMES } from '../utils/constants';
 import { useTooltips } from '../hooks/useTooltips';
 import DualRangeSlider from './DualRangeSlider';
 import PillButton from './shared/PillButton';
+import { Button, Icon } from './ui';
 
 export default function FilterPanel({ filters, setFilters, lookup, resetFilters, totalCount, filteredCount }) {
   const { title: tt } = useTooltips();
@@ -52,15 +53,15 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
         <h3 className="text-sm font-semibold text-gray-800">
           Filters{filteredCount != null ? ` · ${filteredCount} of ${totalCount} trails` : ''}
         </h3>
-        <button
+        <Button
+          variant="icon"
+          size="sm"
           onClick={() => setCollapsed(!collapsed)}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
           title={tt(collapsed ? 'Show filters' : 'Hide filters')}
+          aria-label={collapsed ? 'Show filters' : 'Hide filters'}
         >
-          <svg className={`w-4 h-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-          </svg>
-        </button>
+          <Icon className={`transition-transform ${collapsed ? '' : 'rotate-180'}`} path="M5 15l7-7 7 7" />
+        </Button>
       </div>
       {!collapsed && (
         <div className="p-3.5">
@@ -155,13 +156,15 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
 
         {/* Reset */}
         {hasActiveFilters && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={resetFilters}
-            className="text-sm text-green-600 hover:text-green-800 font-medium px-2.5 py-1"
             title={tt('Reset all filters')}
+            aria-label="Reset all filters"
           >
             ✕
-          </button>
+          </Button>
         )}
           </div>
         </div>

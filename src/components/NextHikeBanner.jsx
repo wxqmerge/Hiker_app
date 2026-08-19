@@ -53,8 +53,6 @@ function NextHikeCard({ hike, idx, weather }) {
   const handleWeather = useCallback(() => openWeatherForTrail(getGpx, hike.trailId), [hike.trailId]);
   const displayHikeName = getTrailName(hike.trail);
 
-  const btnClass = 'flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xl font-bold transition-colors';
-
   return (
           <div className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>
             <div className="p-5 md:p-7">
@@ -101,8 +99,8 @@ function NextHikeCard({ hike, idx, weather }) {
                     <TrailActionButtons
                       trail={trail}
                       hikeDate={hike.date}
-                      buttonClassName={btnClass}
-                      iconSize="w-6 h-6"
+                      variant="hero"
+                      iconSize="w-4 h-4"
                       onGpxDownload={handleGpxDownload}
                       onTrailhead={handleTrailhead}
                       onWeather={handleWeather}

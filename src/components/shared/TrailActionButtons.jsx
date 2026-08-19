@@ -5,8 +5,15 @@ import { getTrailName } from '../../utils/data';
 import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../../utils/url.js';
 import { openWeatherUrl } from '../../utils/io';
 
-export default function TrailActionButtons({ trail, hikeDate, buttonClassName = '', iconSize = 'w-3.5 h-3.5', onGpxDownload, onTrailhead, onWeather }) {
+// Named button styles so TrailCard (link) and NextHikeBanner (hero) stay consistent.
+const VARIANTS = {
+  link: 'flex items-center gap-1 text-blue-600 hover:text-blue-800',
+  hero: 'flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-medium transition-colors',
+};
+
+export default function TrailActionButtons({ trail, hikeDate, variant = 'link', buttonClassName = '', iconSize = 'w-3.5 h-3.5', onGpxDownload, onTrailhead, onWeather }) {
   const trailName = getTrailName(trail);
+  const baseClass = `${VARIANTS[variant] || VARIANTS.link} ${buttonClassName}`.trim();
 
   const handleWeatherClick = (e) => {
     if (e) {
@@ -27,7 +34,7 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
           href={trail.webLink}
           target="_blank"
           rel="noopener noreferrer"
-          className={buttonClassName}
+          className={baseClass}
           title={trail.webLink}
         >
           <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +49,7 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
           href={getNoaaTideUrl(trail.tideStationId, hikeDate)}
           target="_blank"
           rel="noopener noreferrer"
-          className={buttonClassName}
+          className={baseClass}
           title={`NOAA Tide Station ${trail.tideStationId}`}
         >
           <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +64,7 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
           href={getGoogleAllTrailsSearchUrl(trailName)}
           target="_blank"
           rel="noopener noreferrer"
-          className={buttonClassName}
+          className={baseClass}
           title={`Search for ${trailName} on AllTrails in Washington`}
         >
           <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,7 +77,7 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
       {trail.hasGpx && (
         <button
           onClick={onGpxDownload}
-          className={buttonClassName}
+          className={baseClass}
           title={`Download GPX for ${trailName}`}
         >
           <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +91,7 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
         <>
           <button
             onClick={onTrailhead}
-            className={buttonClassName}
+            className={baseClass}
             title={`Open trailhead for ${trailName} in Google Maps`}
           >
             <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +103,7 @@ export default function TrailActionButtons({ trail, hikeDate, buttonClassName = 
 
           <button
             onClick={handleWeatherClick}
-            className={buttonClassName}
+            className={baseClass}
             title={`Open weather forecast for ${trailName}`}
           >
             <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
