@@ -315,14 +315,19 @@ describe('fetchNwsForecastForDate', () => {
   });
 
   it('matches weekday name for future days', async () => {
-    const futureDate = new Date(2026, 7, 19); // Aug 19, 2026 (Wednesday)
+    // Use tomorrow so the date is always "future" (not today), regardless of
+    // when the test runs. The weekday name is computed dynamically so it
+    // always matches the period name the function looks for.
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 1);
+    const dayName = futureDate.toLocaleDateString('en-US', { weekday: 'long' });
     stubFetch([
       { ok: true, json: async () => ({ properties: { gridId: 'SEW', gridX: 99, gridY: 73 } }) },
       { ok: true, json: async () => ({
         properties: {
           periods: [
-            { number: 1, name: 'Wednesday', temperature: 75, probabilityOfPrecipitation: { value: 30 }, isDaytime: true },
-            { number: 2, name: 'Wednesday Night', temperature: 58, probabilityOfPrecipitation: { value: 10 }, isDaytime: false },
+            { number: 1, name: dayName, temperature: 75, probabilityOfPrecipitation: { value: 30 }, isDaytime: true },
+            { number: 2, name: `${dayName} Night`, temperature: 58, probabilityOfPrecipitation: { value: 10 }, isDaytime: false },
           ],
         },
       }) },

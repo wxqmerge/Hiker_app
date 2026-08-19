@@ -8,12 +8,14 @@ import { getTrailName } from '../utils/data';
 
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
+import { useToast } from '../hooks/useToast';
 import { createFileInput, createImportFileInput, downloadBlob, exportTrailTsv, parseTrailTsv, sanitizeFilename } from '../utils/io';
 import JSZip from 'jszip';
 import { getGpx } from '../api/client';
 import { importTrailsFromXls, getSchedule, updateSchedule, request, exportDataZip, importDataZip, resyncGpxCoords } from '../api/client';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import DropdownItem from '../components/shared/DropdownItem';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 function AdminMenu({ hasApiKey, actions, tt }) {
   const [open, setOpen] = useState(false);
@@ -84,7 +86,12 @@ function AdminMenu({ hasApiKey, actions, tt }) {
 
 export default function TrailManager() {
   const { title: tt } = useTooltips();
+  const showToast = useToast();
   const { trails, loading, trailDetails, saveTrail, deleteTrail, saveTrailDetail, exportJSON, importJSON } = useTrailStore();
+  const [pendingConfirm, setPendingConfirm] = useState(null);
+  const [pendingTsvChoice, setPendingTsvChoice] = useState(null);
+  const [newTrailForm, setNewTrailForm] = useState(false);
+  const [newTrailName, setNewTrailName] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get('q') || '';
   const setSearch = useCallback((val) => {
@@ -112,7 +119,11 @@ export default function TrailManager() {
   };
   const navigate = useNavigate();
   const hasApiKey = apiKey.trim().length > 0;
-  const requireKey = useCallback((msg) => { if (!hasApiKey) { alert(msg); return true; } return false; }, [hasApiKey]);
+  const requireKey = useCallback((msg) => { if (!hasApiKey) { showToast(msg, 'error'); return true; } return false; }, [hasApiKey, showToast]);
+
+  const askConfirm = useCallback((title, message, onConfirm, danger = false) => {
+    setPendingConfirm({ title, message, onConfirm, danger });
+  }, []);
 
   const handleValidateDatabase = useCallback(async () => {
     setValidating(true);
@@ -128,7 +139,7 @@ export default function TrailManager() {
 
   const handleSaveApiKey = () => {
     localStorage.setItem('hiker-api-key', apiKey);
-    alert('API key saved!');
+    showToast('API key saved!', 'success');
   };
 
   const filteredTrails = useMemo(() => {
@@ -140,22 +151,23 @@ export default function TrailManager() {
     });
   }, [trails, search, gpxFilter]);
 
-  const handleDelete = async (trail) => {
-    if (confirm(`Delete trail "${getTrailName(trail)}"?`)) {
+  const handleDelete = (trail) => {
+    askConfirm('Delete trail', `Delete trail "${getTrailName(trail)}"?`, async () => {
       try {
         await deleteTrail(trail.id);
+        showToast('Trail deleted.', 'success');
       } catch (err) {
-        alert('Delete failed: ' + err.message);
+        showToast('Delete failed: ' + err.message, 'error');
       }
-    }
+    }, true);
   };
 
-  const handleNewTrail = useCallback(async () => {
-    const name = prompt('Trail name:');
+  const submitNewTrail = useCallback(async () => {
+    const name = newTrailName.trim();
     if (!name) return;
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (trails.find(t => t.id === id)) {
-      alert('A trail with this ID already exists.');
+      showToast('A trail with this ID already exists.', 'error');
       return;
     }
     const newTrail = {
@@ -173,34 +185,67 @@ export default function TrailManager() {
     };
     try {
       await saveTrail(newTrail);
+      setNewTrailForm(false);
+      setNewTrailName('');
       navigate(`/trail/${id}`);
     } catch (err) {
-      alert('Create failed: ' + err.message);
+      showToast('Create failed: ' + err.message, 'error');
     }
-  }, [trails, saveTrail, navigate]);
+  }, [newTrailName, trails, saveTrail, navigate, showToast]);
+
+  const handleNewTrail = useCallback(() => {
+    setNewTrailName('');
+    setNewTrailForm(true);
+  }, []);
 
   const handleImportDatabase = useCallback(() => {
     createFileInput({
       accept: '.xls',
       onFile: async (file) => {
         if (file.name !== 'Hike Data BaseM.xls') {
-          alert('Invalid file: "' + file.name + '". Only "Hike Data BaseM.xls" is accepted.');
+          showToast('Invalid file: "' + file.name + '". Only "Hike Data BaseM.xls" is accepted.', 'error');
           return;
         }
         try {
           const result = await importTrailsFromXls(file);
           if (!result.success) {
-            alert('Import failed: ' + (result.error?.message || 'Unknown error'));
+            showToast('Import failed: ' + (result.error?.message || 'Unknown error'), 'error');
             return;
           }
-          alert(result.message || 'Trail database imported successfully!');
+          showToast(result.message || 'Trail database imported successfully!', 'success');
           window.location.reload();
         } catch (err) {
-          alert('Import error: ' + err.message);
+          showToast('Import error: ' + err.message, 'error');
         }
       },
     });
-  }, []);
+  }, [showToast]);
+
+  const doImportHikeTsv = useCallback(async (parsedTrail, parsedDetail, targetTrail) => {
+    const generateId = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'new-trail';
+    let newId = targetTrail?.id || generateId(parsedTrail.fullName);
+    let counter = 1;
+    while (trails.find(t => t.id === newId) && !targetTrail) {
+      newId = generateId(parsedTrail.fullName) + '-' + counter++;
+    }
+    const saved = targetTrail
+      ? await saveTrail({ ...parsedTrail, id: targetTrail.id })
+      : await saveTrail({
+          ...parsedTrail,
+          id: newId,
+        });
+    const savedId = saved.id || targetTrail?.id;
+    const detailToSave = {};
+    if (parsedDetail.fullDescription) detailToSave.fullDescription = parsedDetail.fullDescription;
+    if (parsedDetail.pros != null) detailToSave.pros = parsedDetail.pros;
+    if (parsedDetail.others != null) detailToSave.others = parsedDetail.others;
+    if (parsedDetail.leaders?.length) detailToSave.leaders = parsedDetail.leaders;
+    if (Object.keys(detailToSave).length > 0) {
+      await saveTrailDetail(savedId, detailToSave);
+    }
+    showToast(`Trail "${saved.fullName}" imported successfully!`, 'success');
+    navigate(`/trail/${savedId}?edit=true`);
+  }, [trails, saveTrail, saveTrailDetail, navigate, showToast]);
 
   const handleImportHikeTsv = useCallback(() => {
     createFileInput({
@@ -210,55 +255,21 @@ export default function TrailManager() {
         try {
           const { trail: parsedTrail, detail: parsedDetail } = parseTrailTsv(text);
           if (!parsedTrail.fullName) {
-            alert('Import failed: Trail Name is required.');
+            showToast('Import failed: Trail Name is required.', 'error');
             return;
           }
           const existingByName = trails.find(t => t.fullName === parsedTrail.fullName);
-          let targetTrail = existingByName;
           if (existingByName) {
-            const action = prompt(
-              `Trail "${parsedTrail.fullName}" already exists.\n\n` +
-              `Type "update" to update it, "new" to create a duplicate, or anything else to cancel.`
-            );
-            if (action === 'update') {
-              targetTrail = existingByName;
-            } else if (action === 'new') {
-              parsedTrail.fullName = `${parsedTrail.fullName} (copy)`;
-              parsedTrail.name = `${parsedTrail.name || parsedTrail.fullName} (copy)`;
-              targetTrail = null;
-            } else {
-              return;
-            }
+            setPendingTsvChoice({ parsedTrail, parsedDetail, existingByName });
+            return;
           }
-          const generateId = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'new-trail';
-          let newId = targetTrail?.id || generateId(parsedTrail.fullName);
-          let counter = 1;
-          while (trails.find(t => t.id === newId) && !targetTrail) {
-            newId = generateId(parsedTrail.fullName) + '-' + counter++;
-          }
-          const saved = targetTrail
-            ? await saveTrail({ ...parsedTrail, id: targetTrail.id })
-            : await saveTrail({
-                ...parsedTrail,
-                id: newId,
-              });
-          const savedId = saved.id || targetTrail?.id;
-          const detailToSave = {};
-          if (parsedDetail.fullDescription) detailToSave.fullDescription = parsedDetail.fullDescription;
-          if (parsedDetail.pros != null) detailToSave.pros = parsedDetail.pros;
-          if (parsedDetail.others != null) detailToSave.others = parsedDetail.others;
-          if (parsedDetail.leaders?.length) detailToSave.leaders = parsedDetail.leaders;
-          if (Object.keys(detailToSave).length > 0) {
-            await saveTrailDetail(savedId, detailToSave);
-          }
-          alert(`Trail "${saved.fullName}" imported successfully!`);
-          navigate(`/trail/${savedId}?edit=true`);
+          await doImportHikeTsv(parsedTrail, parsedDetail, null);
         } catch (err) {
-          alert('Import failed: ' + (err.message || 'Invalid TSV format'));
+          showToast('Import failed: ' + (err.message || 'Invalid TSV format'), 'error');
         }
       },
     });
-  }, [trails, saveTrail, saveTrailDetail, navigate]);
+  }, [trails, doImportHikeTsv, showToast]);
 
   const exportMonthlyTsv = useCallback(() => {
     const header = ['Trail ID', 'Trail Name', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -283,13 +294,13 @@ export default function TrailManager() {
         const text = await file.text();
         const lines = text.trim().split('\n');
         if (lines.length < 2) {
-          alert('TSV file is empty or has only a header.');
+          showToast('TSV file is empty or has only a header.', 'error');
           return;
         }
         const headerCols = lines[0].split('\t');
         const isMonthly = headerCols.length >= 14 && headerCols[2]?.trim() === 'Jan';
         if (!isMonthly) {
-          alert('This is not a monthly popularity TSV.\n\nExpected 14 columns: Trail ID, Trail Name, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec');
+          showToast('This is not a monthly popularity TSV.\n\nExpected 14 columns: Trail ID, Trail Name, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec', 'error');
           return;
         }
         let updated = 0;
@@ -310,10 +321,10 @@ export default function TrailManager() {
           });
           updated++;
         }
-        alert(`Updated monthly popularity for ${updated} trail(s).`);
+        showToast(`Updated monthly popularity for ${updated} trail(s).`, 'success');
       },
     });
-  }, [requireKey, trails, trailDetails, saveTrailDetail]);
+  }, [requireKey, trails, trailDetails, saveTrailDetail, showToast]);
 
   const exportScheduleJson = useCallback(async () => {
     try {
@@ -324,9 +335,9 @@ export default function TrailManager() {
       const json = JSON.stringify(schedule, null, 2);
       downloadBlob(json, filename, 'application/json');
     } catch (err) {
-      alert('Export failed: ' + err.message);
+      showToast('Export failed: ' + err.message, 'error');
     }
-  }, []);
+  }, [showToast]);
 
   const importScheduleJson = useCallback(async () => {
     if (requireKey('API key required for schedule import.')) return;
@@ -336,16 +347,21 @@ export default function TrailManager() {
         const text = await file.text();
         try {
           const schedule = JSON.parse(text);
-          if (!confirm('Replace the entire schedule with this data? This will overwrite all current schedule entries.')) return;
-          await updateSchedule(schedule);
-          alert('Schedule imported successfully!');
-          window.location.reload();
+          askConfirm('Import schedule', 'Replace the entire schedule with this data? This will overwrite all current schedule entries.', async () => {
+            try {
+              await updateSchedule(schedule);
+              showToast('Schedule imported successfully!', 'success');
+              window.location.reload();
+            } catch {
+              showToast('Import failed: Invalid JSON format', 'error');
+            }
+          }, true);
         } catch {
-          alert('Import failed: Invalid JSON format');
+          showToast('Import failed: Invalid JSON format', 'error');
         }
       },
     });
-  }, [requireKey]);
+  }, [requireKey, askConfirm, showToast]);
 
   const exportAllDataJson = useCallback(async () => {
     try {
@@ -353,26 +369,27 @@ export default function TrailManager() {
       const prefix = getGroupName() || 'hiker';
       downloadBlob(JSON.stringify(data, null, 2), `${prefix}-trail-data.json`);
     } catch (err) {
-      alert('Export failed: ' + err.message);
+      showToast('Export failed: ' + err.message, 'error');
     }
-  }, [exportJSON]);
+  }, [exportJSON, showToast]);
 
   const importAllDataJson = useCallback(() => {
     if (requireKey('API key required for data import.')) return;
     createImportFileInput(
       async (imported) => {
-        if (!confirm('Import trail data? This will upsert all trails and details from the file.')) return;
-        try {
-          await importJSON(imported);
-          alert('Data imported successfully!');
-          window.location.reload();
-        } catch (err) {
-          alert('Import failed: ' + err.message);
-        }
+        askConfirm('Import trail data', 'Import trail data? This will upsert all trails and details from the file.', async () => {
+          try {
+            await importJSON(imported);
+            showToast('Data imported successfully!', 'success');
+            window.location.reload();
+          } catch (err) {
+            showToast('Import failed: ' + err.message, 'error');
+          }
+        }, true);
       },
-      (msg) => alert(msg)
+      (msg) => showToast(msg, 'error')
     );
-  }, [requireKey, importJSON]);
+  }, [requireKey, importJSON, askConfirm, showToast]);
 
   const exportAllDataZip = useCallback(async () => {
     try {
@@ -386,14 +403,14 @@ export default function TrailManager() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Export failed: ' + err.message);
+      showToast('Export failed: ' + err.message, 'error');
     }
-  }, []);
+  }, [showToast]);
 
   const exportGpxZip = useCallback(async () => {
     const trailsWithGpx = trails.filter(t => t.hasGpx);
     if (trailsWithGpx.length === 0) {
-      alert('No trails have GPX files.');
+      showToast('No trails have GPX files.', 'error');
       return;
     }
     const zip = new JSZip();
@@ -414,7 +431,7 @@ export default function TrailManager() {
       }
     }
     if (downloaded === 0) {
-      alert('Failed to fetch any GPX files.');
+      showToast('Failed to fetch any GPX files.', 'error');
       return;
     }
     const blob = await zip.generateAsync({ type: 'blob' });
@@ -425,8 +442,8 @@ export default function TrailManager() {
     a.download = `trails-gpx-${date}.zip`;
     a.click();
     URL.revokeObjectURL(url);
-    alert(`Exported ${downloaded} GPX file(s).${failed > 0 ? ` (${failed} failed)` : ''}`);
-  }, [trails]);
+    showToast(`Exported ${downloaded} GPX file(s).${failed > 0 ? ` (${failed} failed)` : ''}`, 'success');
+  }, [trails, showToast]);
 
   const importAllDataZip = useCallback(() => {
     if (requireKey('API key required for data import.')) return;
@@ -436,36 +453,38 @@ export default function TrailManager() {
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      if (!confirm('Import all data from ZIP? This will overwrite matching JSON files on the server. ' + Object.keys(JSON.parse(JSON.stringify({ trails: 1, details: 2, schedule: 3, lookup: 4, gpx: 5 }))).length + ' files will be checked.')) return;
-      try {
-        const result = await importDataZip(file);
-        let msg = `Data imported successfully! ${result.imported} file(s) written.`;
-        if (result.skippedSchedules?.length > 0) msg += ` Skipped schedule files: ${result.skippedSchedules.join(', ')} (wrong instance).`;
-        if (result.reconciled > 0) msg += ` ${result.reconciled} GPX index entry/entries removed (trail IDs not on this instance).`;
-        alert(msg);
-        window.location.reload();
-      } catch (err) {
-        alert('Import failed: ' + err.message);
-      }
+      askConfirm('Import all data from ZIP', 'Import all data from ZIP? This will overwrite matching JSON files on the server. 5 files will be checked.', async () => {
+        try {
+          const result = await importDataZip(file);
+          let msg = `Data imported successfully! ${result.imported} file(s) written.`;
+          if (result.skippedSchedules?.length > 0) msg += ` Skipped schedule files: ${result.skippedSchedules.join(', ')} (wrong instance).`;
+          if (result.reconciled > 0) msg += ` ${result.reconciled} GPX index entry/entries removed (trail IDs not on this instance).`;
+          showToast(msg, 'success');
+          window.location.reload();
+        } catch (err) {
+          showToast('Import failed: ' + err.message, 'error');
+        }
+      }, true);
     };
     input.click();
-  }, [requireKey]);
+  }, [requireKey, askConfirm, showToast]);
 
   const cleanupOrphanedDetails = useCallback(async () => {
     if (requireKey('API key required.')) return;
-    if (!confirm('Remove trail detail entries that no longer have a matching trail?')) return;
-    try {
-      const res = await request('/api/cleanup/orphaned-details', { method: 'POST', apiKey: true });
-      if (res.removed > 0) {
-        alert(`Removed ${res.removed} orphaned detail(s): ${res.orphaned.join(', ')}`);
-        window.location.reload();
-      } else {
-        alert('No orphaned details found.');
+    askConfirm('Cleanup orphaned details', 'Remove trail detail entries that no longer have a matching trail?', async () => {
+      try {
+        const res = await request('/api/cleanup/orphaned-details', { method: 'POST', apiKey: true });
+        if (res.removed > 0) {
+          showToast(`Removed ${res.removed} orphaned detail(s): ${res.orphaned.join(', ')}`, 'success');
+          window.location.reload();
+        } else {
+          showToast('No orphaned details found.', 'info');
+        }
+      } catch (err) {
+        showToast('Cleanup failed: ' + err.message, 'error');
       }
-    } catch (err) {
-      alert('Cleanup failed: ' + err.message);
-    }
-  }, [requireKey]);
+    }, true);
+  }, [requireKey, askConfirm, showToast]);
 
   const validateData = useCallback(async () => {
     if (requireKey('API key required.')) return;
@@ -474,14 +493,14 @@ export default function TrailManager() {
       const issues = res.results.filter(r => !r.valid);
       if (issues.length > 0) {
         const msg = issues.map(i => `${i.file}: ${i.issues?.join('; ') || i.error}`).join('\n');
-        alert(`Validation found ${issues.length} issue(s):\n\n${msg}`);
+        showToast(`Validation found ${issues.length} issue(s):\n\n${msg}`, 'error');
       } else {
-        alert('All data files are valid.');
+        showToast('All data files are valid.', 'success');
       }
     } catch (err) {
-      alert('Validation failed: ' + err.message);
+      showToast('Validation failed: ' + err.message, 'error');
     }
-  }, [requireKey]);
+  }, [requireKey, showToast]);
 
   const resyncCoords = useCallback(async () => {
     if (requireKey('API key required.')) return;
@@ -489,12 +508,12 @@ export default function TrailManager() {
       const res = await resyncGpxCoords();
       let msg = `Re-synced ${res.updated} trail(s).`;
       if (res.errors?.length) msg += `\n\n${res.errors.length} issue(s):\n` + res.errors.join('\n');
-      alert(msg);
+      showToast(msg, res.errors?.length ? 'error' : 'success');
       if (res.updated > 0) window.location.reload();
     } catch (err) {
-      alert('Re-sync failed: ' + err.message);
+      showToast('Re-sync failed: ' + err.message, 'error');
     }
-  }, [requireKey]);
+  }, [requireKey, showToast]);
 
 const adminActions = useMemo(() => ({
     importDatabase: handleImportDatabase,
@@ -510,12 +529,12 @@ const adminActions = useMemo(() => ({
       if (requireKey('API key required for schedule reload.')) return;
       try {
         await request('/api/schedule/reload', { method: 'POST', apiKey: true });
-        alert('✓ Schedule and trail data reloaded from disk.');
+        showToast('Schedule and trail data reloaded from disk.', 'success');
       } catch (err) {
-        alert('Failed to reload: ' + err.message);
+        showToast('Failed to reload: ' + err.message, 'error');
       }
     },
-}), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords, requireKey]);
+  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords, requireKey, showToast]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -561,6 +580,29 @@ const adminActions = useMemo(() => ({
             <button onClick={exportMonthlyTsv} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={tt('Export monthly popularity as TSV')}>Export Monthly Pop</button>
             <button onClick={handleValidateDatabase} disabled={validating} className="px-2 py-1 font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50" title={tt('Validate database JSON files')}>{validating ? 'Validating...' : 'Validate DB'}</button>
           </div>
+          {newTrailForm && (
+            <form
+              className="w-full flex items-center gap-2"
+              onSubmit={(e) => { e.preventDefault(); submitNewTrail(); }}
+            >
+              <input
+                type="text"
+                autoFocus
+                placeholder="Trail name"
+                value={newTrailName}
+                onChange={(e) => setNewTrailName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') setNewTrailForm(false); }}
+                aria-label="New trail name"
+                className="flex-1 min-w-[200px] px-3 py-2 border border-green-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+              />
+              <button type="submit" className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm" title={tt('Create trail')}>
+                Create
+              </button>
+              <button type="button" onClick={() => setNewTrailForm(false)} className="px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm" title={tt('Cancel')}>
+                Cancel
+              </button>
+            </form>
+          )}
           <input
             type="text"
             placeholder="Search trails..."
@@ -697,6 +739,51 @@ const adminActions = useMemo(() => ({
             </div>
           )}
         </div>
+
+        <ConfirmDialog
+          open={!!pendingConfirm}
+          title={pendingConfirm?.title}
+          message={pendingConfirm?.message}
+          danger={pendingConfirm?.danger}
+          onConfirm={async () => {
+            const { onConfirm } = pendingConfirm;
+            setPendingConfirm(null);
+            await onConfirm();
+          }}
+          onCancel={() => setPendingConfirm(null)}
+        />
+        <ConfirmDialog
+          open={!!pendingTsvChoice}
+          title="Trail already exists"
+          message={pendingTsvChoice ? `Trail "${pendingTsvChoice.parsedTrail.fullName}" already exists.` : ''}
+          actions={pendingTsvChoice ? [
+            {
+              label: 'Update',
+              onClick: async () => {
+                const { parsedTrail, parsedDetail, existingByName } = pendingTsvChoice;
+                setPendingTsvChoice(null);
+                await doImportHikeTsv(parsedTrail, parsedDetail, existingByName);
+              },
+            },
+            {
+              label: 'Create copy',
+              variant: 'secondary',
+              onClick: async () => {
+                const { parsedTrail, parsedDetail } = pendingTsvChoice;
+                parsedTrail.fullName = `${parsedTrail.fullName} (copy)`;
+                parsedTrail.name = `${parsedTrail.name || parsedTrail.fullName} (copy)`;
+                setPendingTsvChoice(null);
+                await doImportHikeTsv(parsedTrail, parsedDetail, null);
+              },
+            },
+            {
+              label: 'Cancel',
+              variant: 'secondary',
+              onClick: () => setPendingTsvChoice(null),
+            },
+          ] : undefined}
+          onCancel={() => setPendingTsvChoice(null)}
+        />
     </div>
   );
 }

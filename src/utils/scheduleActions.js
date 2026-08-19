@@ -2,11 +2,10 @@ import { MONTH_NAMES } from '../utils/constants';
 import { updateSchedule, getSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
+import { showToast } from '../hooks/useToast';
 
-export async function updateLeader(scheduleStore, selectedMonth, day, slotIdx, currentLeader) {
-  const newLeader = prompt('Enter new leader name:', currentLeader || '');
-  if (newLeader === null) return false;
-  const trimmed = newLeader.trim();
+export async function updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader) {
+  const trimmed = (newLeader || '').trim();
   if (!trimmed.length) return false;
   const monthName = MONTH_NAMES[selectedMonth];
 
@@ -35,7 +34,7 @@ export async function updateLeader(scheduleStore, selectedMonth, day, slotIdx, c
     return true;
   } catch (error) {
     console.error('[updateLeader] Failed to save leader:', error);
-    alert('Failed to save leader: ' + error.message);
+    showToast('Failed to save leader: ' + error.message, 'error');
     return false;
   }
 }

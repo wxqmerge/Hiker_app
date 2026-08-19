@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { MONTH_NAMES } from '../utils/constants';
+import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
 import { getDaysInMonth, createDate, getTodayHikeRef } from '../utils/dateUtils';
@@ -11,7 +11,7 @@ import { ensureArray } from '../utils/array';
  * Scans configured hike days chronologically starting from today.
  * Returns up to `maxHikes` total hikes (default 2).
  */
-export function useNextHike({ trails, schedule, year = 2026, maxHikes = 2 }) {
+export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 2 }) {
 
   const scheduleStore = useMemo(() => serverScheduleToStore(schedule), [schedule]);
 

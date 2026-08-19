@@ -12,10 +12,12 @@ import { useTooltips } from '../hooks/useTooltips';
 import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
 import TrailStats from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
+import LeaderEdit from './LeaderEdit';
 
 const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange, hikeDate }) {
   const showToast = useToast();
   const [nameCopied, setNameCopied] = useState(false);
+  const [showLeaderEdit, setShowLeaderEdit] = useState(false);
   const { handleGpxDownload, handleTrailhead } = useGpxActions(trail);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
@@ -23,7 +25,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
   const handleLeaderClick = useCallback((e) => {
     e.stopPropagation();
     e.preventDefault();
-    if (onLeaderChange) onLeaderChange();
+    if (onLeaderChange) setShowLeaderEdit(true);
   }, [onLeaderChange]);
 
   const handleCopy = useCallback((e) => {
@@ -154,17 +156,29 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
         {/* Leader change button - outside anchor to prevent navigation interference */}
         {leader && onLeaderChange && (
           <div className="px-4 py-1">
-            <button
-              type="button"
-              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
-              title="Change hike leader"
-              onClick={handleLeaderClick}
-            >
-              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span>Leader: {leader}</span>
-            </button>
+            {showLeaderEdit ? (
+              <LeaderEdit
+                initialLeader={leader}
+                tt={tt}
+                onSave={(newLeader) => {
+                  onLeaderChange(newLeader);
+                  setShowLeaderEdit(false);
+                }}
+                onCancel={() => setShowLeaderEdit(false)}
+              />
+            ) : (
+              <button
+                type="button"
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
+                title="Change hike leader"
+                onClick={handleLeaderClick}
+              >
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>Leader: {leader}</span>
+              </button>
+            )}
           </div>
         )}
 

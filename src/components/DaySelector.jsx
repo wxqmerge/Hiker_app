@@ -1,7 +1,8 @@
 import { getDaysInMonth } from '../utils/dateUtils';
+import { CURRENT_YEAR } from '../utils/constants';
 
 export default function DaySelector({ selectedDay, onChange, month, title }) {
-  const year = 2026;
+  const year = CURRENT_YEAR;
   const daysInMonth = getDaysInMonth(year, month);
 
   return (

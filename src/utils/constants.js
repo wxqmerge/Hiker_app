@@ -1,5 +1,11 @@
 // Shared constants
 
+// The year the current schedule/season is for. Derived from the system clock
+// so the app does not silently break when the calendar year rolls over.
+// NOTE: season boundaries are real schedule data; if the schedule ever spans
+// a different year than "now", this should become configurable via /api/config.
+export const CURRENT_YEAR = new Date().getFullYear();
+
 export const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'

@@ -8,7 +8,7 @@ import { getTrailName } from '../utils/data';
 import { useTrails } from '../hooks/useTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useEffect } from 'react';
-import { NAV_LINKS } from '../utils/constants';
+import { NAV_LINKS, CURRENT_YEAR } from '../utils/constants';
 import { getDaysInMonth } from '../utils/dateUtils';
 import MonthSelector from './MonthSelector';
 import DaySelector from './DaySelector';
@@ -54,7 +54,7 @@ function HeaderContent() {
   const isBrowse = pathname === '/browse';
 
   useEffect(() => {
-    const daysInMonth = getDaysInMonth(2026, selectedMonth);
+    const daysInMonth = getDaysInMonth(CURRENT_YEAR, selectedMonth);
     setSelectedDay(String(Math.min(new Date().getDate(), daysInMonth)));
   }, [selectedMonth, setSelectedDay]);
 

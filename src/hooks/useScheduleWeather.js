@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchWeatherAndTide, buildTrailCoords } from '../utils/io';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
-import { MONTH_NAMES } from '../utils/constants';
+import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
 import { createDate, getDaysInMonth } from '../utils/dateUtils';
 import { ensureArray } from '../utils/array';
 
-const YEAR = 2026;
+const YEAR = CURRENT_YEAR;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**

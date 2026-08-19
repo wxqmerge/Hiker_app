@@ -10,6 +10,11 @@ vi.mock('../../hooks/useTrailStore', () => ({
   setSchedule: vi.fn(),
 }));
 
+vi.mock('../../hooks/useToast', () => ({
+  showToast: vi.fn(),
+  useToast: vi.fn(),
+}));
+
 vi.mock('../../utils/scheduleFormat', () => ({
   serverScheduleToStore: vi.fn((data) => {
     const store: any = {};
@@ -53,40 +58,37 @@ vi.mock('../../utils/scheduleFormat', () => ({
 }));
 
 import { updateSchedule, getSchedule } from '../../api/client';
+import { showToast } from '../../hooks/useToast';
 
 const mockUpdateSchedule = updateSchedule as any;
 const mockGetSchedule = getSchedule as any;
+const mockShowToast = showToast as any;
 
 describe('updateLeader', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (window as any).prompt = vi.fn();
-    (window as any).alert = vi.fn();
     console.error = vi.fn();
   });
 
-  it('returns false when prompt is cancelled', async () => {
-    (window.prompt as any).mockReturnValue(null);
+  it('returns false when newLeader is empty', async () => {
     const result = await updateLeader({}, 0, 1, 0, '');
     expect(result).toBe(false);
   });
 
   it('trims leader name', async () => {
-    (window.prompt as any).mockReturnValue('  Trimmed Leader  ');
     mockGetSchedule.mockResolvedValue({
       Jan: [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: false, leader: '' }],
     });
     mockUpdateSchedule.mockResolvedValue(undefined);
 
     const store = { January: { '1': [{ trail_id: 'trail-1', early_start: false, leader: '' }] } };
-    const result = await updateLeader(store, 0, 1, 0, '');
+    const result = await updateLeader(store, 0, 1, 0, '  Trimmed Leader  ');
     expect(result).toBe(true);
     const callData = mockUpdateSchedule.mock.calls[0][0];
     expect(callData.Jan[0].leader).toBe('Trimmed Leader');
   });
 
   it('updates specific slot', async () => {
-    (window.prompt as any).mockReturnValue('New Leader');
     mockGetSchedule.mockResolvedValue({
       Jun: [
         { day: 5, slot: 0, trail_id: 'trail-1', early_start: false, leader: 'First' },
@@ -103,7 +105,7 @@ describe('updateLeader', () => {
         ],
       },
     };
-    const result = await updateLeader(store, 5, 5, 1, 'Second');
+    const result = await updateLeader(store, 5, 5, 1, 'New Leader');
     expect(result).toBe(true);
     const callData = mockUpdateSchedule.mock.calls[0][0];
     expect(callData.Jun[1].leader).toBe('New Leader');
@@ -111,37 +113,34 @@ describe('updateLeader', () => {
   });
 
   it('falls back to store when getSchedule fails', async () => {
-    (window.prompt as any).mockReturnValue('Fallback Leader');
     mockGetSchedule.mockRejectedValue(new Error('Network error'));
     mockUpdateSchedule.mockResolvedValue(undefined);
 
     const store = {
       March: { '10': [{ trail_id: 'trail-1', early_start: false, leader: '' }] },
     };
-    const result = await updateLeader(store, 2, 10, 0, '');
+    const result = await updateLeader(store, 2, 10, 0, 'Fallback Leader');
     expect(result).toBe(true);
   });
 
-  it('returns false and alerts when updateSchedule fails', async () => {
-    (window.prompt as any).mockReturnValue('New Leader');
+  it('returns false and toasts when updateSchedule fails', async () => {
     mockGetSchedule.mockResolvedValue({
       Jan: [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: false, leader: '' }],
     });
     mockUpdateSchedule.mockRejectedValue(new Error('Save failed'));
 
     const store = { January: { '1': [{ trail_id: 'trail-1', early_start: false, leader: '' }] } };
-    const result = await updateLeader(store, 0, 1, 0, '');
+    const result = await updateLeader(store, 0, 1, 0, 'New Leader');
     expect(result).toBe(false);
-    expect(window.alert).toHaveBeenCalledWith('Failed to save leader: Save failed');
+    expect(mockShowToast).toHaveBeenCalledWith('Failed to save leader: Save failed', 'error');
   });
 
   it('handles empty month data', async () => {
-    (window.prompt as any).mockReturnValue('New Leader');
     mockGetSchedule.mockResolvedValue({});
     mockUpdateSchedule.mockResolvedValue(undefined);
 
     const store = {};
-    const result = await updateLeader(store, 0, 1, 0, '');
+    const result = await updateLeader(store, 0, 1, 0, 'New Leader');
     expect(result).toBe(true);
   });
 });

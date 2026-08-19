@@ -25,7 +25,7 @@ describe('ScheduleBuilder', () => {
 
   it('renders settings button', () => {
     renderSchedule();
-    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
+    expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
   });
 
   it('renders FilterPanel search', () => {
@@ -35,12 +35,12 @@ describe('ScheduleBuilder', () => {
 
   it('renders Settings button', () => {
     renderSchedule();
-    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
+    expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
   });
 
   it('renders Export Monthly HTML in settings menu', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
   });
@@ -62,42 +62,42 @@ describe('ScheduleBuilder', () => {
 
   it('opens settings menu', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
   });
 
   it('shows Export Quarterly Schedule button', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     expect(screen.getByText('Export Quarterly Schedule')).toBeInTheDocument();
   });
 
   it('shows Import SOTHH Schedule.xls button', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     expect(screen.getByText(/Import SOTHH Schedule\.xls/)).toBeInTheDocument();
   });
 
   it('shows Import Quarterly Schedule TSV button', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     expect(screen.getByText(/Import Quarterly Schedule TSV/)).toBeInTheDocument();
   });
 
   it('shows Clear All Data button', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     expect(screen.getByText('Clear All Data')).toBeInTheDocument();
   });
 
   it('shows Debug Mode toggle', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     expect(screen.getByText(/Debug Mode/)).toBeInTheDocument();
   });
@@ -136,7 +136,7 @@ describe('ScheduleBuilder', () => {
 
   it('stores schedule with trail IDs in server state', () => {
     renderSchedule();
-    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
+    expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
   });
 
   it('handles trail not found gracefully', () => {
@@ -144,19 +144,19 @@ describe('ScheduleBuilder', () => {
       'June': { 3: 'invalid-trail-id' }
     }));
     renderSchedule();
-    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
+    expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
   });
 
   it('shows debug mode toggle in settings', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     expect(screen.getByText(/Debug Mode/)).toBeInTheDocument();
   });
 
   it('toggles debug mode', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     const debugBtn = screen.getByText(/Debug Mode/);
     fireEvent.click(debugBtn);
@@ -166,7 +166,7 @@ describe('ScheduleBuilder', () => {
   it('clears console on search change in debug mode', () => {
     const clearSpy = vi.spyOn(console, 'clear');
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Import/Export schedule');
+    const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
     const debugBtn = screen.getByText(/Debug Mode/);
     fireEvent.click(debugBtn);
@@ -182,7 +182,7 @@ describe('ScheduleBuilder', () => {
       'June': { 3: 'some-trail-id' }
     }));
     renderSchedule();
-    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
+    expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
   });
 
   it('normalizes schedule store from new format', () => {
@@ -190,7 +190,7 @@ describe('ScheduleBuilder', () => {
       'June': { 3: { trail_id: 'some-trail-id' } }
     }));
     renderSchedule();
-    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
+    expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
   });
 
   it('renders date grid with correct day numbers', () => {
@@ -209,7 +209,7 @@ describe('ScheduleBuilder', () => {
   it('handles empty schedule data', () => {
     localStorage.setItem('hiker-schedule', JSON.stringify({}));
     renderSchedule();
-    expect(screen.getByTitle('Import/Export schedule')).toBeInTheDocument();
+    expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
   });
 
   it('shows available hikes count', () => {

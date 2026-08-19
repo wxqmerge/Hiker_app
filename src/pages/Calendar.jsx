@@ -16,12 +16,15 @@ import { updateLeader } from '../utils/scheduleActions';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { useScheduleWeather } from '../hooks/useScheduleWeather';
+import { useToast } from '../hooks/useToast';
+import { CURRENT_YEAR } from '../utils/constants';
 
 export default function Calendar() {
   const { trails, schedule: scheduleData, loading } = useTrails();
   const { title: tt } = useTooltips();
+  const showToast = useToast();
 
-  const year = 2026;
+  const year = CURRENT_YEAR;
 
   const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
 
@@ -64,12 +67,12 @@ export default function Calendar() {
       setSchedule(serverData);
     } catch (error) {
       console.error('[Calendar] Failed to save schedule:', error);
-      alert('Failed to save schedule to server: ' + error.message);
+      showToast('Failed to save schedule to server: ' + error.message, 'error');
     }
-  }, [scheduleStore]);
+  }, [scheduleStore, showToast]);
 
-  const handleLeaderChange = useCallback(async (day, slotIdx, currentLeader) => {
-    await updateLeader(scheduleStore, selectedMonth, day, slotIdx, currentLeader);
+  const handleLeaderChange = useCallback(async (day, slotIdx, newLeader) => {
+    await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader);
   }, [selectedMonth, scheduleStore]);
 
   const {

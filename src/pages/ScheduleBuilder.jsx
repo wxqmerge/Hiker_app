@@ -13,7 +13,10 @@ import { getTrailName } from '../utils/data';
 import TrailCard from '../components/TrailCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
-import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
+import { MONTH_NAMES, DAY_NAMES, DEFAULT_FILTERS, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR, CURRENT_YEAR } from '../utils/constants';
+import { useToast } from '../hooks/useToast';
+import ConfirmDialog from '../components/ConfirmDialog';
+import LeaderEdit from '../components/LeaderEdit';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { generateReportHtml } from '../utils/report';
 import { downloadBlob, createFileInput, openGoogleMapsTrailhead, fetchWeatherAndTide, openHtmlInNewTab } from '../utils/io';
@@ -61,7 +64,11 @@ export default function ScheduleBuilder() {
   const { filters, setFilters } = useFilters(trails, trailDetails);
   const { title: tt } = useTooltips();
   const { selectedMonth, setSelectedMonth } = useMonthContext();
-  const [isSaving, setIsSaving] = useState(false); // eslint-disable-line no-unused-vars
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const savedTimeoutRef = useRef(null);
+  const doTsvImportRef = useRef(null);
+  const showToast = useToast();
+  const [debugMode, setDebugMode] = useState(false);
   const hasApiKey = useApiKey();
   const [scheduleStore, setScheduleStore] = useState(() => {
     return {};
@@ -91,18 +98,21 @@ export default function ScheduleBuilder() {
     const serverData = storeToServerSchedule(scheduleStore);
     const entryCount = Object.values(serverData).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
     try {
-      setIsSaving(true);
-      console.log('[ScheduleBuilder] Saving schedule:', entryCount, 'entries');
+      setSaveStatus('saving');
+      if (debugMode) console.log('[ScheduleBuilder] Saving schedule:', entryCount, 'entries');
       const result = await updateSchedule(serverData);
-      console.log('[ScheduleBuilder] Save successful, ETag:', result?.etag);
+      if (debugMode) console.log('[ScheduleBuilder] Save successful, ETag:', result?.etag);
+      setSaveStatus('saved');
+      showToast('Schedule saved', 'success');
+      if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
+      savedTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
       return result;
     } catch (err) {
       console.error('[ScheduleBuilder] Failed to save schedule:', err);
-      alert('Failed to save schedule to server: ' + err.message);
-    } finally {
-      setIsSaving(false);
+      setSaveStatus('error');
+      showToast('Failed to save schedule: ' + err.message, 'error');
     }
-  }, [scheduleStore]);
+  }, [scheduleStore, debugMode, showToast]);
 
   useEffect(() => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -115,7 +125,7 @@ export default function ScheduleBuilder() {
   }, [scheduleStore, saveScheduleToServer]);
 
   const [pendingSwap, setPendingSwap] = useState(null);
-  const year = 2026;
+  const year = CURRENT_YEAR;
 
   const {
     assignedHikes,
@@ -132,10 +142,14 @@ export default function ScheduleBuilder() {
   const [showHistory, setShowHistory] = useState(false);
   const [historyEntries, setHistoryEntries] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
   const [gpxDownloading, setGpxDownloading] = useState(null);
   const [weatherMap, setWeatherMap] = useState({});
   const [fetchingWeather, setFetchingWeather] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState(null);
+  const [confirmClearCurrent, setConfirmClearCurrent] = useState(false);
+  const [pendingTsvImport, setPendingTsvImport] = useState(null);
+  const [leaderEdit, setLeaderEdit] = useState(null);
 
 
 
@@ -223,10 +237,13 @@ export default function ScheduleBuilder() {
   });
 
   const clearSchedule = useCallback(() => {
-    if (confirm('Clear all schedule data?')) {
-      setScheduleStore({});
-      setShowSettings(false);
-    }
+    setConfirmClear(true);
+  }, []);
+
+  const doClearSchedule = useCallback(() => {
+    setScheduleStore({});
+    setShowSettings(false);
+    setConfirmClear(false);
   }, []);
 
   const loadHistory = useCallback(async () => {
@@ -236,11 +253,11 @@ export default function ScheduleBuilder() {
       setHistoryEntries(entries);
     } catch (err) {
       console.error('[ScheduleBuilder] Failed to load history:', err);
-      alert('Failed to load schedule history: ' + err.message);
+      showToast('Failed to load schedule history: ' + err.message, 'error');
     } finally {
       setLoadingHistory(false);
     }
-  }, []);
+  }, [showToast]);
 
   const openHistory = useCallback(() => {
     setShowHistory(true);
@@ -252,41 +269,48 @@ export default function ScheduleBuilder() {
     setShowHistory(false);
   };
 
-  const handleRestore = async (timestamp) => {
-    const entry = historyEntries.find(e => e.timestamp === timestamp);
-    const dateStr = entry ? new Date(timestamp).toLocaleString() : '';
-    if (!confirm(`Restore schedule from ${dateStr}?\nThis will replace your current schedule.`)) return;
+  const handleRestore = (timestamp) => {
+    setPendingRestore(timestamp);
+  };
+
+  const doRestore = async (timestamp) => {
+    setPendingRestore(null);
     try {
       const result = await restoreSchedule(timestamp);
       if (result.success) {
         closeHistory();
-        alert('Schedule restored successfully.');
+        showToast('Schedule restored successfully.', 'success');
       }
     } catch (err) {
-      alert('Restore failed: ' + err.message);
+      showToast('Restore failed: ' + err.message, 'error');
     }
   };
 
-  const handleClearCurrentSchedule = async () => {
-    if (!confirm('Clear the current schedule? Your history will be preserved.')) return;
+  const handleClearCurrentSchedule = () => {
+    setConfirmClearCurrent(true);
+  };
+
+  const doClearCurrentSchedule = async () => {
+    setConfirmClearCurrent(false);
     try {
       await updateSchedule({});
       closeHistory();
+      showToast('Current schedule cleared.', 'success');
     } catch (err) {
-      alert('Clear failed: ' + err.message);
+      showToast('Clear failed: ' + err.message, 'error');
     }
   };
 
   const handleReload = useCallback(async () => {
     try {
       await reloadSchedule();
-      alert('✓ Schedule and trail data reloaded from disk.');
+      showToast('Schedule and trail data reloaded from disk.', 'success');
       // Force a refresh of the local state by triggering a load
       await loadSchedule();
     } catch (err) {
-      alert('Failed to reload: ' + err.message);
+      showToast('Failed to reload: ' + err.message, 'error');
     }
-  }, []);
+  }, [showToast]);
 
   const nextHikeDate = useMemo(() => {
     const today = getTodayHikeRef();
@@ -329,8 +353,8 @@ export default function ScheduleBuilder() {
     }
     setWeatherMap(results);
     setFetchingWeather(false);
-    alert(`Weather fetched: ${successCount} success, ${failCount} failed/skipped`);
-  }, [fetchingWeather, hikeTrailMap, nextHikeDate]);
+    showToast(`Weather fetched: ${successCount} success, ${failCount} failed/skipped`, 'info');
+  }, [fetchingWeather, hikeTrailMap, nextHikeDate, showToast]);
 
   const verifyServerSchedule = useCallback(async () => {
     try {
@@ -367,7 +391,7 @@ export default function ScheduleBuilder() {
         console.log('[Verify Pushed to Server]', result);
 
         if (schedulesMatch && trailsMatch) {
-        alert('✓ Local matches server.\n\nSchedule: ' + serverEntries.length + ' entries\nTrails: ' + serverTrails.length + ' trails');
+        showToast('Local matches server. Schedule: ' + serverEntries.length + ' entries, Trails: ' + serverTrails.length + ' trails', 'success');
       } else {
         let msg = '⚠ Local differs from server!\n\n';
         msg += 'Schedule — Server: ' + serverEntries.length + ' | Local: ' + localEntries.length + ' entries\n';
@@ -388,12 +412,12 @@ export default function ScheduleBuilder() {
           msg += '\n\n' + extraTrails.length + ' trail(s) NOT in local:\n' + extraTrails.slice(0, 5).join('\n');
           if (extraTrails.length > 5) msg += '\n...and ' + (extraTrails.length - 5) + ' more';
         }
-        alert(msg);
+        showToast(msg, 'error');
       }
     } catch (err) {
-      alert('Failed to verify: ' + err.message);
+      showToast('Failed to verify: ' + err.message, 'error');
     }
-  }, [scheduleStore, trails]);
+  }, [scheduleStore, trails, showToast]);
 
   const toggleEarlyStart = (day, slotIdx) => {
     const monthData = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
@@ -417,7 +441,7 @@ export default function ScheduleBuilder() {
         try {
           const result = await importScheduleFromXls(file);
           if (!result.success) {
-            alert('Import failed: ' + (result.error?.message || 'Unknown error'));
+            showToast('Import failed: ' + (result.error?.message || 'Unknown error'), 'error');
             return;
           }
           const serverData = storeToServerSchedule(scheduleStore);
@@ -446,14 +470,14 @@ export default function ScheduleBuilder() {
               if (result.unmatched > 5) msg += '...';
             }
           }
-          alert(msg);
-        } catch (err) {
-          alert('Import error: ' + err.message);
-        }
-      },
-      onCleanup: () => setShowSettings(false),
-    });
-  }, [scheduleStore, setSelectedMonth]);
+           showToast(msg, 'success');
+         } catch (err) {
+           showToast('Import error: ' + err.message, 'error');
+         }
+       },
+       onCleanup: () => setShowSettings(false),
+     });
+   }, [scheduleStore, setSelectedMonth, showToast]);
 
   const importScheduleTsv = useCallback(() => {
       createFileInput({
@@ -474,7 +498,7 @@ export default function ScheduleBuilder() {
             console.log('[TSV Import] Header index:', headerIdx);
 
             if (headerIdx < 0) {
-              alert('Could not find quarterly schedule header in file.');
+              showToast('Could not find quarterly schedule header in file.', 'error');
               return;
             }
 
@@ -484,7 +508,7 @@ export default function ScheduleBuilder() {
             const fileGroup = fileGroupMatch ? fileGroupMatch[1] : null;
             const currentGroup = getGroupName() || 'hiker';
             if (fileGroup && fileGroup !== currentGroup) {
-              alert(`This schedule is for "${fileGroup}" but you're running "${currentGroup}". Import cancelled.`);
+              showToast(`This schedule is for "${fileGroup}" but you're running "${currentGroup}". Import cancelled.`, 'error');
               return;
             }
 
@@ -543,11 +567,22 @@ export default function ScheduleBuilder() {
                 warnMsg += 'Multiple columns share the same day+slot — only one hike will survive per date.\n';
               }
               warnMsg += '\nDo you want to proceed anyway?';
-              if (!confirm(warnMsg)) {
-                return;
-              }
+              setPendingTsvImport({ lines, headerIdx, columnGroups, warnMsg });
+              return;
             }
 
+            await doTsvImportRef.current(lines, headerIdx, columnGroups);
+            return;
+          } catch (err) {
+            showToast('Import error: ' + err.message, 'error');
+          }
+        },
+        onCleanup: () => setShowSettings(false),
+      });
+    }, [trails, showToast]);
+
+  async function doTsvImportSchedule(lines, headerIdx, columnGroups) {
+    try {
             // Pre-build normalized trail lookup for O(1) matching
             const trailLookup = new Map();
             const trailIdLookup = new Map();
@@ -615,7 +650,7 @@ export default function ScheduleBuilder() {
             console.log('[TSV Import] Matched:', matchedCount, 'Unmatched:', unmatchedCount, 'Schedule:', JSON.stringify(schedule).substring(0, 200));
 
             if (!Object.keys(schedule).length) {
-              alert('No valid schedule data found in file.');
+              showToast('No valid schedule data found in file.', 'error');
               return;
             }
 
@@ -626,24 +661,22 @@ export default function ScheduleBuilder() {
               normalized[abbr] = entries;
             }
             const result = await updateSchedule(normalized);
-           if (!result.success) {
-             alert('Import failed: ' + (result.error?.message || 'Unknown error'));
-             return;
-           }
+            if (!result.success) {
+              showToast('Import failed: ' + (result.error?.message || 'Unknown error'), 'error');
+              return;
+            }
 
-           await loadSchedule();
-           let msg = `Imported: ${matchedCount} hikes across ${Object.keys(schedule).length} month(s).`;
-           if (unmatchedCount > 0) {
-             msg += `\n${unmatchedCount} hike(s) could not be matched to a trail.`;
-           }
-           alert(msg);
+            await loadSchedule();
+            let msg = `Imported: ${matchedCount} hikes across ${Object.keys(schedule).length} month(s).`;
+            if (unmatchedCount > 0) {
+              msg += `\n${unmatchedCount} hike(s) could not be matched to a trail.`;
+            }
+            showToast(msg, 'success');
           } catch (err) {
-            alert('Import error: ' + err.message);
+            showToast('Import error: ' + err.message, 'error');
           }
-        },
-        onCleanup: () => setShowSettings(false),
-      });
-    }, [trails]);
+  }
+  doTsvImportRef.current = doTsvImportSchedule;
 
   const getQuarterForMonth = (monthIndex) => {
     // Calendar quarters: Q1=Jan/Feb/Mar, Q2=Apr/May/Jun, Q3=Jul/Aug/Sep, Q4=Oct/Nov/Dec
@@ -978,10 +1011,19 @@ export default function ScheduleBuilder() {
           {/* Right Panel - Dates */}
           <div className="flex-[1]">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between gap-2">
                <h3 className="text-sm font-semibold text-gray-800">
-                 {MONTH_NAMES[selectedMonth]} {year} — {getHikeDaysLabel()}
-               </h3>
+                  {MONTH_NAMES[selectedMonth]} {year} — {getHikeDaysLabel()}
+                </h3>
+                {saveStatus !== 'idle' && (
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                    saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700'
+                      : saveStatus === 'saved' ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save failed'}
+                  </span>
+                )}
               </div>
               <div className="p-4">
                 <div className="space-y-3">
@@ -1057,19 +1099,30 @@ export default function ScheduleBuilder() {
                                      )}
                                         <button
                                           type="button"
-                                          onClick={async (e) => {
+                                          onClick={(e) => {
                                             e.stopPropagation();
-                                            await updateLeader(scheduleStore, selectedMonth, day, slotIdx, leader);
+                                            setLeaderEdit({ day, slotIdx });
                                           }}
                                           className={`mt-1 w-full text-xs border rounded px-1.5 py-0.5 text-left truncate transition-colors ${
                                             leader
                                               ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
                                               : 'border-gray-300 text-gray-400 hover:bg-gray-50 cursor-pointer'
-                                         }`}
-                                         title="Click to set leader"
-                                       >
-                                        {leader || 'Set Leader'}
-                                      </button>
+                                          }`}
+                                          title="Click to set leader"
+                                        >
+                                          {leader || 'Set Leader'}
+                                        </button>
+                                        {leaderEdit && leaderEdit.day === day && leaderEdit.slotIdx === slotIdx && (
+                                          <LeaderEdit
+                                            initialLeader={leader}
+                                            tt={tt}
+                                            onSave={async (newLeader) => {
+                                              await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader);
+                                              setLeaderEdit(null);
+                                            }}
+                                            onCancel={() => setLeaderEdit(null)}
+                                          />
+                                        )}
                                   </>
                                 ) : trailId ? (
                                  <div className="text-sm text-amber-600 italic">
@@ -1162,11 +1215,50 @@ export default function ScheduleBuilder() {
             </div>
           </div>
         </div>
-       <SwapConfirmationModal
-           pendingSwap={pendingSwap}
-           onConfirm={confirmSwap}
-           onCancel={cancelSwap}
-         />
-     </>
+        <SwapConfirmationModal
+            pendingSwap={pendingSwap}
+            onConfirm={confirmSwap}
+            onCancel={cancelSwap}
+          />
+          <ConfirmDialog
+            open={confirmClear}
+            title="Clear all schedule data?"
+            message="This will remove all scheduled hikes. Your history will be preserved."
+            confirmLabel="Clear"
+            danger
+            onConfirm={doClearSchedule}
+            onCancel={() => setConfirmClear(false)}
+          />
+          <ConfirmDialog
+            open={!!pendingRestore}
+            title="Restore schedule?"
+            message={pendingRestore ? `Restore schedule from ${new Date(pendingRestore).toLocaleString()}?\nThis will replace your current schedule.` : ''}
+            confirmLabel="Restore"
+            danger
+            onConfirm={() => doRestore(pendingRestore)}
+            onCancel={() => setPendingRestore(null)}
+          />
+          <ConfirmDialog
+            open={confirmClearCurrent}
+            title="Clear the current schedule?"
+            message="Your history will be preserved."
+            confirmLabel="Clear"
+            danger
+            onConfirm={doClearCurrentSchedule}
+            onCancel={() => setConfirmClearCurrent(false)}
+          />
+          <ConfirmDialog
+            open={!!pendingTsvImport}
+            title="Import warning"
+            message={pendingTsvImport?.warnMsg || ''}
+            confirmLabel="Proceed"
+            onConfirm={async () => {
+              const { lines, headerIdx, columnGroups } = pendingTsvImport;
+              setPendingTsvImport(null);
+              await doTsvImportSchedule(lines, headerIdx, columnGroups);
+            }}
+            onCancel={() => setPendingTsvImport(null)}
+          />
+      </>
   );
 }

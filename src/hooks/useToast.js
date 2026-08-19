@@ -1,12 +1,12 @@
-import { useCallback } from 'react';
-
 const listeners = new Set();
 
+// Non-hook version so plain (non-React) modules can raise a toast too.
+export function showToast(message, type = 'info') {
+  listeners.forEach(fn => fn({ id: Date.now() + Math.random(), message, type }));
+}
+
 export function useToast() {
-  const show = useCallback((message, type = 'info') => {
-    listeners.forEach(fn => fn({ id: Date.now() + Math.random(), message, type }));
-  }, []);
-  return show;
+  return showToast;
 }
 
 export const getToastListeners = () => listeners;

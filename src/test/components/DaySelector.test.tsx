@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import DaySelector from '../../components/DaySelector';
+import { CURRENT_YEAR } from '../../utils/constants';
+
+const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+const FEB_DAYS = isLeap(CURRENT_YEAR) ? 29 : 28;
 
 describe('DaySelector', () => {
   const props = {
@@ -28,7 +32,7 @@ describe('DaySelector', () => {
   it('renders February days for February', () => {
     render(<DaySelector {...props} month={1} />);
     const select = screen.getByRole('combobox');
-    expect(select.options.length).toBe(29);
+    expect(select.options.length).toBe(FEB_DAYS + 1);
   });
 
   it('includes a placeholder option with empty value', () => {

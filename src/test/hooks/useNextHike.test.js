@@ -32,11 +32,11 @@ import { useNextHike } from '../../hooks/useNextHike';
        const date = new Date(2026, 0, 6, 10, 0);
        vi.setSystemTime(date);
 
-       const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
+        const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026 }));
 
-       expect(result.current).toEqual([
-         {
-           day: 7,
+        expect(result.current).toEqual([
+          {
+            day: 7,
            monthIndex: 0,
            date: expect.any(Date),
            trail: mockTrails[0],
@@ -62,11 +62,11 @@ import { useNextHike } from '../../hooks/useNextHike';
        const date = new Date(2026, 0, 8, 10, 0);
        vi.setSystemTime(date);
 
-       const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
+        const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026 }));
 
-       expect(result.current).toEqual([
-         {
-           day: 9,
+        expect(result.current).toEqual([
+          {
+            day: 9,
            monthIndex: 0,
            date: expect.any(Date),
            trail: mockTrails[1],
@@ -91,9 +91,9 @@ import { useNextHike } from '../../hooks/useNextHike';
        const date = new Date(2026, 0, 7, 13, 0);
        vi.setSystemTime(date);
 
-       const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
+        const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026 }));
 
-       // Should find Jan 9 (Fri) and Feb 4 (Wed)
+        // Should find Jan 9 (Fri) and Feb 4 (Wed)
        expect(result.current?.[0]?.day).toBe(9);
        expect(result.current?.[0]?.monthIndex).toBe(0);
        expect(result.current?.[1]?.day).toBe(4);
@@ -105,16 +105,16 @@ import { useNextHike } from '../../hooks/useNextHike';
       const date = new Date(2026, 0, 31, 10, 0);
       vi.setSystemTime(date);
   
-      const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule }));
+      const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026 }));
       
       expect(result.current?.[0]?.day).toBe(4);
       expect(result.current?.[0]?.monthIndex).toBe(1); // Feb
     });
  
    it('returns null if no hikes are found in the year', () => {
-     const emptySchedule = {};
-     const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: emptySchedule }));
-     
-     expect(result.current).toBeNull();
+      const emptySchedule = {};
+      const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: emptySchedule, year: 2026 }));
+      
+      expect(result.current).toBeNull();
    });
  });
