@@ -74,6 +74,7 @@ function AdminMenu({ hasApiKey, actions, tt }) {
             {item('Cleanup Orphaned Details', actions.cleanupOrphanedDetails)}
             {item('Validate Data', actions.validateData)}
             {item('Re-sync GPX Coords', actions.resyncCoords)}
+            {item('Reload Schedule', actions.reloadSchedule)}
           </div>
         </>
       )}
@@ -495,7 +496,7 @@ export default function TrailManager() {
     }
   }, [requireKey]);
 
-  const adminActions = useMemo(() => ({
+const adminActions = useMemo(() => ({
     importDatabase: handleImportDatabase,
     importHikeTsv: handleImportHikeTsv,
     importAllJson: importAllDataJson,
@@ -505,7 +506,16 @@ export default function TrailManager() {
     cleanupOrphanedDetails,
     validateData,
     resyncCoords,
-  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords]);
+    reloadSchedule: async () => {
+      if (requireKey('API key required for schedule reload.')) return;
+      try {
+        await request('/api/schedule/reload', { method: 'POST', apiKey: true });
+        alert('✓ Schedule and trail data reloaded from disk.');
+      } catch (err) {
+        alert('Failed to reload: ' + err.message);
+      }
+    },
+}), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords, requireKey]);
 
   if (loading) {
     return <LoadingSpinner />;
