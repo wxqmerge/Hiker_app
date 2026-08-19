@@ -162,6 +162,9 @@ export async function loadData(): Promise<void> {
 
   console.log(`[DATA] Loaded ${trails.length} trails, ${Object.keys(trailDetails).length} details, ${Object.keys(gpxIndex).length} GPX mappings`);
   console.log(`[DATA] Schedule months: ${Object.keys(schedule).join(', ') || '(none)'}`);
+  if (Object.keys(schedule).length === 0) {
+    console.warn('[DATA] Schedule is empty — use TSV import (Import Hike Tsv) or ScheduleBuilder to add hikes, not direct JSON editing');
+  }
 }
 
 export function getTrails(): Trail[] {

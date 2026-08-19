@@ -262,6 +262,7 @@ app.get('/api/validate', async (_req, res) => {
             }
             if (totalScheduled === 0) {
               issues.push('no scheduled hikes found — schedule is empty');
+              issues.push('→ use TSV import (Import Hike Tsv) or ScheduleBuilder to add hikes, not direct JSON editing');
             }
           }
         }

@@ -26,7 +26,12 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 102
 
 router.post('/reload', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
   await loadData();
-  res.json({ success: true, message: 'Schedule and trail data reloaded from disk' });
+  const schedule = getSchedule();
+  const hasHikes = Object.keys(schedule).reduce((sum, key) => sum + (Array.isArray(schedule[key]) ? schedule[key].length : 0), 0);
+  const message = hasHikes > 0
+    ? 'Schedule and trail data reloaded from disk'
+    : 'Schedule and trail data reloaded from disk — → use TSV import (Import Hike Tsv) or ScheduleBuilder to add hikes';
+  res.json({ success: true, message });
 }));
 
 router.get('/', (req, res) => {
