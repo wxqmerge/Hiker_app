@@ -207,9 +207,10 @@ In production mode, the server serves the static `dist/` frontend and falls back
 
 | Route | Page |
 |-------|------|
-| `/` | Browse Trails (Home) |
+| `/` | Calendar |
+| `/browse` | Browse Trails (Home) |
 | `/trail/:id` | Trail Detail |
-| `/trails` | Trail Manager |
+| `/trails` | Redirects to `/browse` |
 | `/schedule` | Schedule Builder |
 
 ## Data Pipeline

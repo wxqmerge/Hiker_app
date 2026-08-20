@@ -46,7 +46,6 @@ describe('TrailDetail', () => {
 
   it('deletes the current trail after confirmation', async () => {
     localStorage.setItem('hiker-api-key', 'test-key');
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const { default: TrailDetail } = await import('../../pages/TrailDetail');
     render(
       <MemoryRouter initialEntries={['/trail/trail-1']}>
@@ -59,6 +58,7 @@ describe('TrailDetail', () => {
       expect(screen.getByTitle('Delete this trail')).toBeInTheDocument();
     }, { timeout: 3000 });
     fireEvent.click(screen.getByTitle('Delete this trail'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
     await waitFor(() => {
       expect(globalThis.fetch.mock.calls.some(([url, options]) => url === '/api/trails/trail-1' && options?.method === 'DELETE')).toBe(true);
     }, { timeout: 3000 });

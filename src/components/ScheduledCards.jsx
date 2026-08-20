@@ -15,6 +15,7 @@ export default function ScheduledCards({
   handleDragStart,
   handleDragEnd,
   onLeaderChange,
+  onRequestMove,
   tt,
   weatherMap,
 }) {
@@ -109,6 +110,17 @@ export default function ScheduledCards({
                     <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start" role="img" aria-label="Early start">
                      ⏰
                     </div>
+                  )}
+                  {onRequestMove && (
+                    <button
+                      type="button"
+                      onClick={() => onRequestMove(item)}
+                      className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-2 py-1 rounded"
+                      title={tt('Move to another date')}
+                      aria-label={`Move ${item.trail.fullName || item.trail.name} to another date`}
+                    >
+                      Move
+                    </button>
                   )}
               </div>
             </div>

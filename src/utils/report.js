@@ -29,7 +29,7 @@ function buildTrailDetailsHtml(trail, trailDetails, mode = 'compact') {
     if (mode === 'compact') {
       html += `<div class="entry-link"><a href="${esc(trail.webLink)}" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></div>`;
     } else {
-      html += `<div class="section"><h2>Web Link</h2><p><a href="${esc(trail.webLink)}" class="link">${esc(trail.webLink)}</a></p></div>`;
+      html += `<div class="section"><h2>Web Link</h2><p><a href="${esc(trail.webLink)}" class="link" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></p></div>`;
     }
   }
 

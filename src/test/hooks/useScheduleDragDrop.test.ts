@@ -51,6 +51,27 @@ describe('useScheduleDragDrop', () => {
     expect(result).toHaveProperty('handleDropOnDate');
     expect(result).toHaveProperty('handleDropOnAvailable');
     expect(result).toHaveProperty('removeHike');
+    expect(result).toHaveProperty('moveHike');
+  });
+
+  it('moveHike moves a scheduled hike to an empty slot', () => {
+    const result = useScheduleDragDrop(baseDeps);
+    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: false, leader: '' }, 5, 0);
+    expect(updateScheduleFn).toHaveBeenCalled();
+  });
+
+  it('moveHike offers a swap when the target slot is occupied', () => {
+    scheduleStore.January = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
+    const result = useScheduleDragDrop(baseDeps);
+    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: false, leader: '' }, 8, 0);
+    expect(setPendingSwap).toHaveBeenCalledTimes(1);
+  });
+
+  it('moveHike does nothing without API key', () => {
+    const deps = { ...baseDeps, hasApiKey: false };
+    const result = useScheduleDragDrop(deps);
+    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: false, leader: '' }, 5, 0);
+    expect(updateScheduleFn).not.toHaveBeenCalled();
   });
 
   it('cancelSwap clears pending swap', () => {

@@ -13,6 +13,7 @@ import { getTrailName } from '../utils/data';
 import TrailCard from '../components/TrailCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
+import MoveHikeModal from '../components/MoveHikeModal';
 import { MONTH_NAMES, DEFAULT_FILTERS } from '../utils/constants';
 import LeaderEdit from '../components/LeaderEdit';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
@@ -56,6 +57,7 @@ export default function ScheduleBuilder() {
   } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
 
   const [leaderEdit, setLeaderEdit] = useState(null);
+  const [moveSource, setMoveSource] = useState(null);
   const { isDownloading, downloadGpx, openTrailhead } = useGpxActions();
 
   const updateMonthSchedule = useCallback((monthName, updater) => {
@@ -78,6 +80,7 @@ export default function ScheduleBuilder() {
     handleDropOnDate,
     handleDropOnAvailable,
     removeHike,
+    moveHike,
   } = useScheduleDragDrop({
     scheduleStore,
     selectedMonth,
@@ -114,19 +117,30 @@ export default function ScheduleBuilder() {
             title={tt('Drag to schedule on a date')}
             aria-label={`Drag ${getTrailName(trail)} to schedule on a date`}
           >
-           <div className="relative">
-              <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} weather={weatherMap[trail.id]} />
+            <div className="relative">
+               <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} weather={weatherMap[trail.id]} />
             {debugMode && (
               <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                 {item.hikeIndex}
               </div>
+            )}
+            {hasApiKey && (
+              <button
+                type="button"
+                onClick={() => setMoveSource({ hikeIndex: item.hikeIndex, sourceDay: null, sourceSlot: null, trailId: trail.id, earlyStart: false, leader: '' })}
+                className="absolute bottom-2 right-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-2 py-1 rounded"
+                title={tt('Move to another date')}
+                aria-label={`Move ${getTrailName(trail)} to another date`}
+              >
+                Move
+              </button>
             )}
           </div>
         </div>
       );
       return cards;
     }, []);
-  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, weatherMap]);
+  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, weatherMap, hasApiKey]);
 
   if (loading) {
     return <LoadingSpinner message="Loading trails..." />;
@@ -379,6 +393,14 @@ export default function ScheduleBuilder() {
                                   </a>
                                 )}
                                 <button
+                                  onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader })}
+                                  className="text-blue-600 hover:text-blue-800 transition-colors text-xs font-medium"
+                                  title={tt('Move to another date')}
+                                  aria-label={`Move ${displayHikeName || 'hike'} to another date`}
+                                >
+                                  Move
+                                </button>
+                                <button
                                   onClick={() => removeHike(day, slotIdx)}
                                    className="text-red-400 hover:text-red-600 transition-colors"
                                    title={tt('Remove hike from this date')}
@@ -398,6 +420,17 @@ export default function ScheduleBuilder() {
             </div>
           </div>
         </div>
+        <MoveHikeModal
+          open={!!moveSource}
+          source={moveSource}
+          hikeDates={hikeDates}
+          assignedHikes={assignedHikes}
+          findTrailById={findTrailById}
+          year={year}
+          selectedMonth={selectedMonth}
+          onMove={moveHike}
+          onClose={() => setMoveSource(null)}
+        />
         <SwapConfirmationModal
             pendingSwap={pendingSwap}
             onConfirm={confirmSwap}

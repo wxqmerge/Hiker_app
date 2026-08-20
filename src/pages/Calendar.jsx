@@ -9,6 +9,7 @@ import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
+import MoveHikeModal from '../components/MoveHikeModal';
 import { updateSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
@@ -34,6 +35,7 @@ export default function Calendar() {
   const hasSyncedInitialMonth = useRef(false);
   const hasApiKey = useApiKey();
   const [pendingSwap, setPendingSwap] = useState(null);
+  const [moveSource, setMoveSource] = useState(null);
 
   const dayWeatherMap = useScheduleWeather({ schedule: scheduleData, selectedMonth, trails, year });
 
@@ -46,6 +48,7 @@ export default function Calendar() {
 
   const {
     assignedHikes,
+    hikeDates,
     findTrailById,
     trailIndexToId,
     dragData,
@@ -76,6 +79,7 @@ export default function Calendar() {
   const {
     confirmSwap,
     cancelSwap,
+    moveHike,
   } = useScheduleDragDrop({
     scheduleStore,
     selectedMonth,
@@ -111,8 +115,28 @@ export default function Calendar() {
         handleDragStart={handleDragStart}
         handleDragEnd={handleDragEnd}
         onLeaderChange={hasApiKey ? handleLeaderChange : undefined}
+        onRequestMove={hasApiKey ? (item) => setMoveSource({
+          hikeIndex: item.hikeIdx,
+          sourceDay: item.day,
+          sourceSlot: item.idx,
+          trailId: item.trailId,
+          earlyStart: item.earlyStart,
+          leader: item.leader,
+        }) : undefined}
         tt={tt}
         weatherMap={dayWeatherMap}
+      />
+
+      <MoveHikeModal
+        open={!!moveSource}
+        source={moveSource}
+        hikeDates={hikeDates}
+        assignedHikes={assignedHikes}
+        findTrailById={findTrailById}
+        year={year}
+        selectedMonth={selectedMonth}
+        onMove={moveHike}
+        onClose={() => setMoveSource(null)}
       />
 
       <SwapConfirmationModal

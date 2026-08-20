@@ -180,9 +180,10 @@ Quarter column positions vary across 17 Excel sheets.
 
 | Route | Page |
 |-------|------|
-| `/` | Browse Trails |
+| `/` | Calendar |
+| `/browse` | Browse Trails |
 | `/trail/:id` | Trail Detail |
-| `/trails` | Trail Manager |
+| `/trails` | Redirects to `/browse` |
 | `/schedule` | Schedule Builder |
 
 ## Testing

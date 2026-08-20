@@ -50,22 +50,14 @@ export function useScheduleDragDrop({
     setPendingSwap(null);
   };
 
-  const handleDropOnDate = (targetDay, targetSlot) => {
-    if (!dragData) return;
-    if (hasApiKey === false) return;
+  const performMove = (source, targetDay, targetSlot) => {
+    if (hasApiKey === false) return false;
 
-    const { hikeIndex, sourceDay, sourceSlot, trailId: dragTrailId, earlyStart: dragEarlyStart, leader: dragLeader } = dragData;
-    const trailId = dragTrailId || trailIndexToId[hikeIndex];
+    const { hikeIndex, sourceDay, sourceSlot, trailId: sourceTrailId, earlyStart: sourceEarlyStart, leader: sourceLeader } = source;
+    const trailId = sourceTrailId || trailIndexToId[hikeIndex];
 
-    if (sourceDay === targetDay && sourceSlot === targetSlot) {
-      setDragData(null);
-      return;
-    }
-
-    if (!trailId) {
-      setDragData(null);
-      return;
-    }
+    if (sourceDay === targetDay && sourceSlot === targetSlot) return false;
+    if (!trailId) return false;
 
     const monthName = MONTH_NAMES[selectedMonth];
     const monthData = scheduleStore[monthName] || {};
@@ -97,15 +89,14 @@ export function useScheduleDragDrop({
         sourceEntry,
         targetEntry,
         trailId,
-        earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (hasSource ? sourceEntry?.early_start || false : false),
-        leader: dragLeader || (hasSource ? sourceEntry?.leader || '' : ''),
+        earlyStart: sourceEarlyStart !== undefined ? sourceEarlyStart : (hasSource ? sourceEntry?.early_start || false : false),
+        leader: sourceLeader || (hasSource ? sourceEntry?.leader || '' : ''),
       });
-      setDragData(null);
-      return;
+      return true;
     }
 
-    const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : (hasSource ? sourceEntry?.early_start || false : false);
-    const leader = dragLeader || (hasSource ? sourceEntry?.leader || '' : '');
+    const earlyStart = sourceEarlyStart !== undefined ? sourceEarlyStart : (hasSource ? sourceEntry?.early_start || false : false);
+    const leader = sourceLeader || (hasSource ? sourceEntry?.leader || '' : '');
 
     updateScheduleFn(monthName, prev => {
       let next = prev;
@@ -115,7 +106,18 @@ export function useScheduleDragDrop({
       next = setDayEntry(next, targetDay, targetSlot, { trail_id: trailId, early_start: earlyStart, leader });
       return next;
     });
-    setDragData(null);
+    return true;
+  };
+
+  const handleDropOnDate = (targetDay, targetSlot) => {
+    if (!dragData) return;
+    if (performMove(dragData, targetDay, targetSlot)) {
+      setDragData(null);
+    }
+  };
+
+  const moveHike = (source, targetDay, targetSlot) => {
+    performMove(source, targetDay, targetSlot);
   };
 
   const handleDropOnAvailable = (sourceDay, sourceSlot) => {
@@ -142,5 +144,6 @@ export function useScheduleDragDrop({
     handleDropOnDate,
     handleDropOnAvailable,
     removeHike,
+    moveHike,
   };
 }

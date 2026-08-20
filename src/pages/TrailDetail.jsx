@@ -17,6 +17,7 @@ import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../utils/url.js';
 import { hasStoredApiKey } from '../utils/apiKey';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MonthlyScoreGrid, { ScoreBreakdownRow } from '../components/MonthlyScoreGrid.jsx';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const SEASON_MAP = {
   'All': 'All',
@@ -83,6 +84,7 @@ export default function TrailDetail() {
   const [editedFields, setEditedFields] = useState({});
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [duplicateId, setDuplicateId] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const trail = useMemo(() => findTrailById(trails, id), [trails, id]);
   const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
@@ -310,13 +312,17 @@ export default function TrailDetail() {
     navigate(`/trail/${id}${searchParams.toString() ? '?' + searchParams.toString() : ''}`, { replace: true });
   };
 
-  const handleDelete = async () => {
-    const name = getTrailName(trail);
-    if (!window.confirm(`Delete trail "${name}"? This cannot be undone.`)) return;
+  const requestDelete = () => {
     if (!hasStoredApiKey()) {
       showToast('API key required to delete trails.', 'error');
       return;
     }
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setDeleteOpen(false);
+    const name = getTrailName(trail);
     const target = currentIndex < trails.length - 1
       ? trails[currentIndex + 1].id
       : currentIndex > 0
@@ -367,31 +373,6 @@ export default function TrailDetail() {
 
   const copyReport = () => {
     const html = generateTrailHtml(trail, trailDetailsResult, hikeDate);
-    openHtmlInNewTab(html);
-  };
-
-  const exportTrailAsHtml = () => {
-    const htmlTrail = {
-      id: trail.id,
-      name: getEditedValue('fullName') || getTrailName(trail),
-      fullName: getEditedValue('fullName') || getTrailName(trail),
-      distance: getEditedValue('distance'),
-      distanceExtended: getEditedValue('distanceExtended'),
-      elevationStart: getEditedValue('elevationStart'),
-      elevationMax: getEditedValue('elevationMax'),
-      difficulty: getEditedValue('difficulty') || 'Unknown',
-      parking: getEditedValue('parking') || '',
-      range: getEditedValue('range') || '',
-      notes: getEditedValue('notes') || '',
-      seasonal: trail.seasonal || {},
-      altNames: getEditedValue('altNames'),
-      webLink: trail.webLink || '',
-      hasGpx: !!trail.gpxFile,
-    };
-    const htmlDetail = {};
-    const desc = getEditedValue('description');
-    if (desc) htmlDetail.fullDescription = desc;
-    const html = generateTrailHtml(htmlTrail, htmlDetail, hikeDate);
     openHtmlInNewTab(html);
   };
 
@@ -472,6 +453,7 @@ export default function TrailDetail() {
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
+              Next
             </button>
 
             <span className="text-gray-300">|</span>
@@ -486,18 +468,6 @@ export default function TrailDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               TSV
-            </button>
-
-            <button
-              onClick={exportTrailAsHtml}
-              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-purple-700 hover:text-purple-900"
-              title={tt('Export this trail as HTML')}
-              aria-label="Export this trail as HTML"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 3h10l4 8v9a2 2 0 01-2 2H5a2 2 0 01-2-2V5l4-2z" />
-              </svg>
-              HTML
             </button>
 
             <button
@@ -536,7 +506,7 @@ export default function TrailDetail() {
             </button>
             {!isDuplicate && (
               <button
-                onClick={handleDelete}
+                onClick={requestDelete}
                 className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-red-700 hover:text-red-900"
                 title="Delete this trail"
                 aria-label="Delete this trail"
@@ -1196,6 +1166,16 @@ export default function TrailDetail() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete trail"
+        message={`Delete "${getTrailName(trail)}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }
