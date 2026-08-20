@@ -6,10 +6,16 @@ import { MONTH_ABBR } from '../../utils/constants';
 
 vi.mock('../../utils/io', async (importOriginal) => {
   const actual = await importOriginal();
-  return {
-    ...actual,
-    fetchWeatherAndTide: vi.fn(async () => ({ temp: 70, rain: 10 })),
-  };
+  const fetchWeatherAndTide = vi.fn(async () => ({ temp: 70, rain: 10 }));
+  const fetchWeatherForCoords = vi.fn(async (trailCoords, date) => {
+    const results = {};
+    await Promise.all(Object.entries(trailCoords).map(async ([id, info]) => {
+      const res = await fetchWeatherAndTide(info.lat, info.lon, date, info.stationId);
+      if (res) results[id] = res;
+    }));
+    return results;
+  });
+  return { ...actual, fetchWeatherAndTide, fetchWeatherForCoords };
 });
 
 describe('useDayWeather', () => {

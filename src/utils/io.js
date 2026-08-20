@@ -182,6 +182,21 @@ export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
 }
 
 /**
+ * Fetch weather for a map of trail coordinates on a given date.
+ * @param {Object<string, {lat: number|null, lon: number|null, stationId: string|null}>} trailCoords
+ * @param {Date} date
+ * @returns {Promise<Object<string, {temp: number, rain: number, tide?: number}>>}
+ */
+export async function fetchWeatherForCoords(trailCoords, date) {
+  const results = {};
+  await Promise.allSettled(Object.entries(trailCoords).map(async ([trailId, info]) => {
+    const res = await fetchWeatherAndTide(info.lat, info.lon, date, info.stationId);
+    if (res) results[trailId] = res;
+  }));
+  return results;
+}
+
+/**
  * Fetch the nearest low tide (feet, MLLW datum) to the given local hour.
  * @param {string} stationId - NOAA tide station ID
  * @param {Date} targetDate

@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { fetchWeatherAndTide, buildTrailCoords } from '../utils/io';
+import { fetchWeatherForCoords, buildTrailCoords } from '../utils/io';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
 import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
-import { createDate, getDaysInMonth } from '../utils/dateUtils';
+import { createDate, getDaysInMonth, MS_PER_DAY } from '../utils/dateUtils';
 import { ensureArray } from '../utils/array';
 
 const YEAR = CURRENT_YEAR;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Fetch NWS weather and 10am tide for trails scheduled on any day of the
@@ -54,11 +53,7 @@ export function useScheduleWeather({ schedule, selectedMonth, trails }) {
     (async () => {
       const results = {};
       await Promise.allSettled(Object.entries(target.days).map(async ([day, info]) => {
-        const dayResults = {};
-        await Promise.allSettled(Object.entries(info.trailCoords).map(async ([trailId, coord]) => {
-          const res = await fetchWeatherAndTide(coord.lat, coord.lon, info.date, coord.stationId);
-          if (res) dayResults[trailId] = res;
-        }));
+        const dayResults = await fetchWeatherForCoords(info.trailCoords, info.date);
         if (Object.keys(dayResults).length > 0) results[day] = dayResults;
       }));
       if (!cancelled) setWeatherMap(results);

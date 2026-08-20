@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { fetchWeatherAndTide, buildTrailCoords } from '../utils/io';
+import { fetchWeatherForCoords, buildTrailCoords } from '../utils/io';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
 import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
-import { createDate } from '../utils/dateUtils';
+import { createDate, MS_PER_DAY } from '../utils/dateUtils';
 import { ensureArray } from '../utils/array';
 
 const YEAR = CURRENT_YEAR;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Fetch NWS weather and 10am tide for trails on the selected month+day,
@@ -56,11 +55,7 @@ export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, 
     if (!target) return;
     let cancelled = false;
     (async () => {
-      const results = {};
-      await Promise.allSettled(Object.entries(target.trailCoords).map(async ([trailId, info]) => {
-        const res = await fetchWeatherAndTide(info.lat, info.lon, target.date, info.stationId);
-        if (res) results[trailId] = res;
-      }));
+      const results = await fetchWeatherForCoords(target.trailCoords, target.date);
       if (!cancelled) setWeatherMap(results);
     })();
     return () => { cancelled = true; };

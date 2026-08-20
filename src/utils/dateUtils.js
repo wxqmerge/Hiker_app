@@ -1,4 +1,9 @@
 /**
+ * Milliseconds in one day.
+ */
+export const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
  * Get the number of days in a specific month.
  * @param {number} year 
  * @param {number} month - 0-indexed (0=Jan, 11=Dec)
