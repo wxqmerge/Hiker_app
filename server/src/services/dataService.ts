@@ -243,17 +243,35 @@ export async function updateTrail(trail: Trail & { gpxData?: string }): Promise<
 export async function deleteTrail(id: string): Promise<void> {
   trails = trails.filter(t => t.id !== id);
   delete trailDetails[id];
+  const oldGpxFile = gpxIndex[id];
   delete gpxIndex[id];
-  // Remove uploaded GPX file if it exists
-  const uploadedGpxPath = path.join(GPX_UPLOAD_DIR, `${id}.gpx`);
-  try {
-    await fs.unlink(uploadedGpxPath);
-  } catch {
-    // File may not exist
+
+  for (const month of Object.keys(schedule)) {
+    const entries = schedule[month];
+    if (!Array.isArray(entries)) continue;
+    const filtered = entries.filter(entry => entry?.trail_id !== id);
+    if (filtered.length === 0) {
+      delete schedule[month];
+    } else if (filtered.length !== entries.length) {
+      schedule[month] = filtered;
+    }
   }
+
+  // Remove uploaded GPX file if it exists
+  const gpxPaths = new Set([path.join(GPX_UPLOAD_DIR, `${id}.gpx`)]);
+  if (oldGpxFile) gpxPaths.add(path.join(GPX_UPLOAD_DIR, oldGpxFile));
+  for (const gpxPath of gpxPaths) {
+    try {
+      await fs.unlink(gpxPath);
+    } catch {
+      // File may not exist
+    }
+  }
+
   await writeWithHealth(path.join(DATA_DIR, 'trails.json'), { trails });
   await writeWithHealth(path.join(DATA_DIR, 'trail_details.json'), trailDetails);
   await writeWithHealth(path.join(DATA_DIR, 'gpx_index.json'), gpxIndex);
+  await writeWithHealth(path.join(DATA_DIR, getScheduleFile()), schedule);
 }
 
 export async function updateTrailDetail(id: string, detail: TrailDetail): Promise<void> {

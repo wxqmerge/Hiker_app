@@ -57,7 +57,7 @@ export function findTrailIndexById(trails, trailId) {
   if (idx >= 0) return idx;
 
   const lower = trailId.toLowerCase();
-  idx = trails.findIndex(t => t.id.toLowerCase() === lower);
+  idx = trails.findIndex(t => t.id && t.id.toLowerCase() === lower);
   return idx;
 }
 

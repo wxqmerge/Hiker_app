@@ -21,6 +21,8 @@ import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSched
 
 const ScheduleSettingsContext = createContext({});
 
+const schedulePollingStore = { setSchedule };
+
 async function loadSchedule() {
   const data = await getSchedule();
   setSchedule(data);
@@ -66,7 +68,7 @@ export function ScheduleSettingsProvider({ children }) {
     }
   }, [scheduleData]);
 
-  useSchedulePolling({ setSchedule }, 5000);
+  useSchedulePolling(schedulePollingStore, 5000);
 
   // Close the settings dropdown when clicking outside (works on all pages)
   useEffect(() => {

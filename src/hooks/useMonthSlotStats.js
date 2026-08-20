@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
-import { getHikeDays } from '../utils/config';
+import { useHikeDays } from './useHikeDays';
 import { getHikeSlotsForMonth } from '../utils/dateUtils';
 import { normalizeDayEntries } from '../utils/scheduleFormat';
 
 export function useMonthSlotStats({ trails, scheduleStore, year }) {
+  const hikeDays = useHikeDays();
   return useMemo(() => {
-    const hikeDays = getHikeDays();
     const trailIdSet = new Set(trails.map(t => t.id));
     const stats = {};
     MONTH_NAMES.forEach((name, idx) => {
@@ -20,5 +20,5 @@ export function useMonthSlotStats({ trails, scheduleStore, year }) {
       stats[idx] = { total, filled };
     });
     return stats;
-  }, [scheduleStore, year, trails]);
+  }, [scheduleStore, year, trails, hikeDays]);
 }

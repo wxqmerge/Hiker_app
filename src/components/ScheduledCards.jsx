@@ -2,7 +2,8 @@ import { useMemo, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import TrailCard from './TrailCard';
 import { createDate, getHikeDaysForMonth } from '../utils/dateUtils';
-import { getHikeDays, getDayLabel } from '../utils/config';
+import { getDayLabel } from '../utils/config';
+import { useHikeDays } from '../hooks/useHikeDays';
 
 export default function ScheduledCards({
   assignedHikes,
@@ -19,8 +20,8 @@ export default function ScheduledCards({
   tt,
   weatherMap,
 }) {
+  const hikeDays = useHikeDays();
   const cards = useMemo(() => {
-    const hikeDays = getHikeDays();
     const allDays = getHikeDaysForMonth(year, selectedMonth, hikeDays);
         return allDays
         .flatMap(day => {
@@ -43,8 +44,8 @@ export default function ScheduledCards({
                 };
              });
         })
-       .filter(Boolean);
-  }, [assignedHikes, trailIndexToId, selectedMonth, findTrailById, year]);
+        .filter(Boolean);
+  }, [assignedHikes, trailIndexToId, selectedMonth, findTrailById, year, hikeDays]);
 
   const memoizedDragStart = useCallback((item) => {
     if (!item.hikeIdx || !hasApiKey) return;

@@ -3,7 +3,7 @@ import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { serverScheduleToStore, getDayEntries } from '../utils/scheduleFormat';
 import { getDaysInMonth, createDate, getTodayHikeRef } from '../utils/dateUtils';
-import { getHikeDays } from '../utils/config';
+import { useHikeDays } from './useHikeDays';
 
 /**
  * Compute the next upcoming hike(s) from schedule data.
@@ -13,11 +13,11 @@ import { getHikeDays } from '../utils/config';
 export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 2 }) {
 
   const scheduleStore = useMemo(() => serverScheduleToStore(schedule), [schedule]);
+  const hikeDays = useHikeDays();
 
   return useMemo(() => {
     const allHikes = [];
     const today = getTodayHikeRef();
-    const hikeDays = getHikeDays();
 
     for (let m = 0; m < 12 && allHikes.length < maxHikes; m++) {
       const monthData = scheduleStore[MONTH_NAMES[m]] || {};
@@ -46,5 +46,5 @@ export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 
       }
     }
     return allHikes.length > 0 ? allHikes : null;
-  }, [scheduleStore, trails, year, maxHikes]);
+  }, [scheduleStore, trails, year, maxHikes, hikeDays]);
 }

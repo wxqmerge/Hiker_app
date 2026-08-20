@@ -55,10 +55,11 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const corsOrigins = process.env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(o => o) || ['*'];
+const corsOrigins = process.env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(o => o) || [];
+const allowAnyOrigin = corsOrigins.length === 0;
 app.use(cors({
-  origin: corsOrigins.length === 1 && corsOrigins[0] === '*' ? '*' : corsOrigins,
-  credentials: true,
+  origin: allowAnyOrigin ? true : corsOrigins,
+  credentials: !allowAnyOrigin,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
 }));

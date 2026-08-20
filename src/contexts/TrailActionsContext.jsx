@@ -9,6 +9,7 @@ import { getTrailName } from '../utils/data';
 import { getGroupName } from '../utils/config';
 import { formatDateToISO } from '../utils/dateUtils';
 import { getStoredApiKey, storeApiKey } from '../utils/apiKey';
+import { useApiKey } from '../hooks/useApiKey';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 const TrailActionsContext = createContext(null);
@@ -25,7 +26,7 @@ export function TrailActionsProvider({ children }) {
   const [pendingConfirm, setPendingConfirm] = useState(null);
   const [pendingTsvChoice, setPendingTsvChoice] = useState(null);
 
-  const hasApiKey = apiKey.trim().length > 0;
+  const hasApiKey = useApiKey();
   const requireKey = useCallback((msg) => {
     if (!hasApiKey) {
       showToast(msg, 'error');

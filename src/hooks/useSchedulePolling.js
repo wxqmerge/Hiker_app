@@ -15,6 +15,7 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
 
   const pollSchedule = useCallback(async () => {
     if (!mountedRef.current) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
 
     try {
       const headers = {};

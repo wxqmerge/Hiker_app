@@ -61,7 +61,10 @@ function HeaderContent() {
 
   useEffect(() => {
     const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
-    setSelectedDay(String(Math.min(new Date().getDate(), daysInMonth)));
+    const day = parseInt(selectedDay, 10);
+    if (isNaN(day) || day < 1 || day > daysInMonth) {
+      setSelectedDay(String(Math.min(new Date().getDate(), daysInMonth)));
+    }
   }, [selectedMonth, selectedDay, selectedYear, setSelectedDay]);
 
   const trailSummary = useMemo(() => {

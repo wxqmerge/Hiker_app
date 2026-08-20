@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { getHikeSlotsForMonth } from '../utils/dateUtils';
-import { getHikeDays } from '../utils/config';
+import { useHikeDays } from './useHikeDays';
 import { normalizeDayEntries } from '../utils/scheduleFormat';
 
 /**
@@ -22,10 +22,10 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
     return result;
   }, [scheduleStore, selectedMonth]);
 
-    const hikeDates = useMemo(() => {
-    const hikeDays = getHikeDays();
+  const hikeDays = useHikeDays();
+  const hikeDates = useMemo(() => {
     return getHikeSlotsForMonth(year, selectedMonth, hikeDays);
-  }, [selectedMonth, year]);
+  }, [selectedMonth, year, hikeDays]);
 
   const findTrailById = useCallback((trailId) => findTrailByIdUtil(trails, trailId), [trails]);
 

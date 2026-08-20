@@ -164,6 +164,24 @@ export function useTrailStore() {
       const newTrails = _trails.filter(t => t.id !== trailId);
       const newDetails = { ..._trailDetails };
       delete newDetails[trailId];
+
+      let newSchedule = _schedule;
+      if (newSchedule) {
+        newSchedule = { ...newSchedule };
+        for (const month of Object.keys(newSchedule)) {
+          const entries = newSchedule[month];
+          if (!Array.isArray(entries)) continue;
+          const filtered = entries.filter(entry => entry?.trail_id !== trailId);
+          if (filtered.length === 0) {
+            delete newSchedule[month];
+          } else if (filtered.length !== entries.length) {
+            newSchedule[month] = filtered;
+          }
+        }
+        _schedule = newSchedule;
+        _scheduleVer++;
+      }
+
       _trails = newTrails;
       _trailsVer++;
       _trailDetails = newDetails;

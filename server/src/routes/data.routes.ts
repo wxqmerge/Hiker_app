@@ -121,9 +121,10 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
     const ext = path.extname(name);
     if (ext !== '.json' && ext !== '.gpx') continue;
 
-    // Ensure target is within DATA_DIR
+    // Ensure target is within DATA_DIR (avoid sibling-prefix bypasses)
+    const dataRoot = path.resolve(DATA_DIR);
     const realTarget = path.resolve(target);
-    if (!realTarget.startsWith(path.resolve(DATA_DIR))) {
+    if (realTarget !== dataRoot && !realTarget.startsWith(dataRoot + path.sep)) {
       console.warn(`[DATA] Skipping unsafe path: ${name}`);
       continue;
     }

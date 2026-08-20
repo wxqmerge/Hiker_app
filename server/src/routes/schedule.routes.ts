@@ -110,6 +110,7 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
         path.join(PROJECT_ROOT, 'import_schedule_xls.py'),
         trailsPath
       );
+      await loadData();
       res.json(result);
     } catch (pyError) {
       const err = pyError as Error & { stderr?: string };
@@ -192,7 +193,7 @@ router.post('/import-trails-xls', requireAdminKey, upload.single('file'), async 
   }
 });
 
-router.get('/ensure-writable', withErrorTag('SCHEDULE')(async (_req, res) => {
+router.get('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
   const dataDir = path.join(PROJECT_ROOT, 'exported_data');
   const files = await fs.promises.readdir(dataDir);
   const results: Array<{ file: string; success: boolean; error?: string }> = [];

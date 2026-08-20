@@ -3,8 +3,28 @@ let groupConfig = {
   hikeDays: null
 };
 
+let configVersion = 0;
+const configSubscribers = new Set();
+
+export function getConfigVersion() {
+  return configVersion;
+}
+
+export function subscribeConfigChange(listener) {
+  configSubscribers.add(listener);
+  return () => {
+    configSubscribers.delete(listener);
+  };
+}
+
+function notifyConfigChange() {
+  configVersion += 1;
+  configSubscribers.forEach(listener => listener());
+}
+
 export function setGroupConfig(config) {
   groupConfig = { ...groupConfig, ...config };
+  notifyConfigChange();
 }
 
 /**

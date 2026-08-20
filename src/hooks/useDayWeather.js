@@ -16,8 +16,7 @@ import { getTodayMidnight, getTrailIdsFromEntries, buildWeatherTarget } from '..
  * Returns { [trailId]: { temp, rain, tide } }.
  */
 export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, trails, year = CURRENT_YEAR }) {
-  const [weatherMap, setWeatherMap] = useState({});
-  const [fetchedKey, setFetchedKey] = useState(null);
+  const [weather, setWeather] = useState({ key: null, map: {} });
 
   const target = useMemo(() => {
     const day = selectedDay ? parseInt(selectedDay, 10) : null;
@@ -37,14 +36,8 @@ export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, 
     if (ids.length === 0) return null;
 
     const { trailCoords, inForecastRange } = buildWeatherTarget(date, ids, trails, today);
-    return { key: `${selectedMonth}:${day}`, date, trailCoords, inForecastRange };
+    return { key: `${year}:${selectedMonth}:${day}`, date, trailCoords, inForecastRange };
   }, [schedule, selectedMonth, selectedDay, trailIds, trails, year]);
-
-  const key = target ? target.key : null;
-  if (key !== fetchedKey) {
-    setFetchedKey(key);
-    setWeatherMap({});
-  }
 
   useEffect(() => {
     if (!target) return;
@@ -53,10 +46,15 @@ export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, 
       const results = target.inForecastRange
         ? await fetchWeatherForCoords(target.trailCoords, target.date)
         : await fetchTideForCoords(target.trailCoords, target.date);
-      if (!cancelled) setWeatherMap(results);
+      if (!cancelled) setWeather({ key: target.key, map: results });
     })();
     return () => { cancelled = true; };
   }, [target]);
+
+  const weatherMap = useMemo(() => {
+    if (!target || weather.key !== target.key) return {};
+    return weather.map;
+  }, [target, weather]);
 
   return weatherMap;
 }

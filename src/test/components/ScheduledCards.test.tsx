@@ -39,6 +39,8 @@ vi.mock('../../utils/dateUtils', () => {
 vi.mock('../../utils/config', () => ({
   getHikeDays: vi.fn(() => [1]),
   getDayLabel: vi.fn(() => 'Mon'),
+  getConfigVersion: vi.fn(() => 0),
+  subscribeConfigChange: vi.fn(() => () => {}),
 }));
 
 vi.mock('../../components/TrailCard', () => ({
