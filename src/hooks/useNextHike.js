@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
-import { serverScheduleToStore } from '../utils/scheduleFormat';
+import { serverScheduleToStore, getDayEntries } from '../utils/scheduleFormat';
 import { getDaysInMonth, createDate, getTodayHikeRef } from '../utils/dateUtils';
 import { getHikeDays } from '../utils/config';
-import { ensureArray } from '../utils/array';
 
 /**
  * Compute the next upcoming hike(s) from schedule data.
@@ -27,8 +26,7 @@ export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 
         const date = createDate(year, m, day);
         const dow = date.getDay();
         if (hikeDays.includes(dow) && date >= today) {
-          const entries = monthData[day] || [];
-          const entryList = ensureArray(entries);
+          const entryList = getDayEntries(monthData, day);
           for (const entry of entryList) {
             if (allHikes.length >= maxHikes) break;
             if (!entry) continue;

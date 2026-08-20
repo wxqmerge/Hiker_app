@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchWeatherForCoords, fetchTideForCoords } from '../utils/io';
-import { serverScheduleToStore } from '../utils/scheduleFormat';
+import { serverScheduleToStore, getDayEntries } from '../utils/scheduleFormat';
 import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
 import { createDate, getDaysInMonth } from '../utils/dateUtils';
 import { getTodayMidnight, getTrailIdsFromEntries, buildWeatherTarget } from '../utils/weatherTargets';
@@ -25,7 +25,7 @@ export function useScheduleWeather({ schedule, selectedMonth, trails, year = CUR
 
     const days = {};
     for (let day = 1; day <= daysInMonth; day++) {
-      const trailIds = getTrailIdsFromEntries(monthData[day]);
+      const trailIds = getTrailIdsFromEntries(getDayEntries(monthData, day));
       if (trailIds.length === 0) continue;
       const date = createDate(year, selectedMonth, day);
       days[day] = buildWeatherTarget(date, trailIds, trails, today);

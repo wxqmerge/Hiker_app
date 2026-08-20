@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import Calendar from './pages/Calendar';
 import LoadingSpinner from './components/LoadingSpinner';
 import Layout from './components/Layout';
 import { useEffect, useState, lazy, Suspense } from 'react';
@@ -8,6 +7,7 @@ import { MonthContextProvider } from './contexts/MonthContext';
 import { DayContextProvider } from './contexts/DayContext';
 import { YearContextProvider } from './contexts/YearContext';
 
+const Calendar = lazy(() => import('./pages/Calendar'));
 const Home = lazy(() => import('./pages/Home'));
 const TrailDetail = lazy(() => import('./pages/TrailDetail'));
 const ScheduleBuilder = lazy(() => import('./pages/ScheduleBuilder'));
@@ -22,6 +22,7 @@ import { getApiBase } from './utils/url.js';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 import { setGroupConfig, getGroupName } from './utils/config';
+import { storeApiKey } from './utils/apiKey';
 
 function ApiKeySync() {
   const { search } = useLocation();
@@ -29,7 +30,7 @@ function ApiKeySync() {
     const params = new URLSearchParams(search);
     const key = params.get('apikey');
     if (key) {
-      localStorage.setItem('hiker-api-key', key);
+      storeApiKey(key);
     }
   }, [search]);
   return null;
@@ -92,7 +93,7 @@ function App() {
           <DayContextProvider>
           <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<Calendar />} />
+            <Route path="/" element={<PageLazy><Calendar /></PageLazy>} />
             <Route path="/browse" element={<PageLazy><Home /></PageLazy>} />
             <Route path="/trail/:id" element={<PageLazy><TrailDetail /></PageLazy>} />
             <Route path="/trails" element={<Navigate to="/browse" replace />} />

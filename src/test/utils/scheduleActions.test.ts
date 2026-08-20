@@ -15,7 +15,10 @@ vi.mock('../../hooks/useToast', () => ({
   useToast: vi.fn(),
 }));
 
-vi.mock('../../utils/scheduleFormat', () => ({
+vi.mock('../../utils/scheduleFormat', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
   serverScheduleToStore: vi.fn((data) => {
     const store: any = {};
     const monthMap: any = { Jan: 'January', Jun: 'June', Mar: 'March' };
@@ -55,7 +58,8 @@ vi.mock('../../utils/scheduleFormat', () => ({
     }
     return serverData;
   }),
-}));
+  };
+});
 
 import { updateSchedule, getSchedule } from '../../api/client';
 import { showToast } from '../../hooks/useToast';

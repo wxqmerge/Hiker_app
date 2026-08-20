@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import NextHikeBanner from '../../components/NextHikeBanner';
+
+const { mockHandleGpxShare } = vi.hoisted(() => ({ mockHandleGpxShare: vi.fn() }));
 
 vi.mock('react-router-dom', () => ({
   Link: ({ to, children }) => <a href={to}>{children}</a>,
@@ -18,6 +20,7 @@ vi.mock('../../utils/io', () => ({
 vi.mock('../../hooks/useGpxActions', () => ({
   useGpxActions: vi.fn(() => ({
     handleGpxDownload: vi.fn(),
+    handleGpxShare: mockHandleGpxShare,
     handleTrailhead: vi.fn(),
   })),
 }));
@@ -115,6 +118,24 @@ describe('NextHikeBanner', () => {
   it('renders GPX download button when available', () => {
     render(<NextHikeBanner nextHikes={nextHikes} />);
     expect(screen.getByText('GPX')).toBeInTheDocument();
+  });
+
+  it('renders GPX share button when available', () => {
+    render(<NextHikeBanner nextHikes={nextHikes} />);
+    expect(screen.getByText('Share')).toBeInTheDocument();
+  });
+
+  it('calls handleGpxShare when share button clicked', () => {
+    render(<NextHikeBanner nextHikes={nextHikes} />);
+    fireEvent.click(screen.getByText('Share'));
+    expect(mockHandleGpxShare).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render share button when trail has no GPX', () => {
+    const noGpxTrail = { ...trail, hasGpx: false };
+    const hikes = [{ ...nextHikes[0], trail: noGpxTrail }];
+    render(<NextHikeBanner nextHikes={hikes} />);
+    expect(screen.queryByText('Share')).not.toBeInTheDocument();
   });
 
   it('renders trailhead button when GPX available', () => {

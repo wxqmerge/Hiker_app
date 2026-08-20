@@ -1,6 +1,6 @@
 import { buildTrailCoords } from './io';
 import { createDate, MS_PER_DAY } from './dateUtils';
-import { ensureArray } from './array';
+import { normalizeDayEntries } from './scheduleFormat';
 
 export function getTodayMidnight(now = new Date()) {
   return createDate(now.getFullYear(), now.getMonth(), now.getDate());
@@ -12,7 +12,7 @@ export function isWithinForecastRange(date, today = getTodayMidnight()) {
 }
 
 export function getTrailIdsFromEntries(entries) {
-  return [...new Set(ensureArray(entries).map(e => e?.trail_id).filter(Boolean))];
+  return [...new Set(normalizeDayEntries(entries).map(e => e.trail_id).filter(Boolean))];
 }
 
 export function buildWeatherTarget(date, trailIds, trails, today = getTodayMidnight()) {

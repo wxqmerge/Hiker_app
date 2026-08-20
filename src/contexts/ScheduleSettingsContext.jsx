@@ -14,8 +14,7 @@ import { getTrailName } from '../utils/data';
 import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
 import { getHikeDays, getDayName, getGroupName } from '../utils/config';
 import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth } from '../utils/dateUtils';
-import { ensureArray } from '../utils/array';
-import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
+import { serverScheduleToStore, storeToServerSchedule, getDayEntries, normalizeServerMonthEntries } from '../utils/scheduleFormat';
 import { generateReportHtml } from '../utils/report';
 import { downloadBlob, createFileInput, fetchWeatherAndTide, openHtmlInNewTab } from '../utils/io';
 import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule } from '../api/client';
@@ -88,7 +87,7 @@ export function ScheduleSettingsProvider({ children }) {
     }
     lastSavedStoreRef.current = currentStoreJson;
     const serverData = storeToServerSchedule(scheduleStore);
-    const entryCount = Object.values(serverData).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
+    const entryCount = Object.values(serverData).reduce((sum, entries) => sum + normalizeServerMonthEntries(entries).length, 0);
     try {
       setSaveStatus('saving');
       if (debugMode) console.log('[Schedule] Saving schedule:', entryCount, 'entries');
@@ -247,12 +246,15 @@ export function ScheduleSettingsProvider({ children }) {
       const serverEntries = Object.entries(serverData).flatMap(([m, entries]) => {
         if (m === '_etag' || m === '_status') return [];
         const abbr = MONTH_FULL_TO_ABBR[m] || m;
-        if (Array.isArray(entries)) {
-          return entries.map(e => `${abbr}:${e.day}:${e.trail_id}`);
-        }
-        return Object.entries(entries).map(([day, entry]) => `${abbr}:${day}:${entry.trail_id}`);
+        return normalizeServerMonthEntries(entries)
+          .filter(e => e.trail_id)
+          .map(e => `${abbr}:${e.day}:${e.trail_id}`);
       });
-      const localEntries = Object.entries(local).flatMap(([m, entries]) => entries.map(e => `${m}:${e.day}:${e.trail_id}`));
+      const localEntries = Object.entries(local).flatMap(([m, entries]) =>
+        normalizeServerMonthEntries(entries)
+          .filter(e => e.trail_id)
+          .map(e => `${m}:${e.day}:${e.trail_id}`)
+      );
 
       const serverSet = new Set(serverEntries);
       const localSet = new Set(localEntries);
@@ -571,7 +573,7 @@ export function ScheduleSettingsProvider({ children }) {
       for (let day = 1; day <= daysInMonth; day++) {
         const date = createDate(qYear, monthIndex, day);
         const dayOfWeek = date.getDay();
-        const entries = ensureArray(monthData[String(day)]);
+        const entries = getDayEntries(monthData, day);
         const validEntries = entries.filter(e => e && e.trail_id);
 
         if (validEntries.length > 0) {

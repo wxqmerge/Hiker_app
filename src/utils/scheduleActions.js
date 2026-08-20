@@ -1,7 +1,7 @@
 import { MONTH_NAMES } from '../utils/constants';
 import { updateSchedule, getSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
-import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
+import { serverScheduleToStore, storeToServerSchedule, getDayEntries, setDayEntry } from '../utils/scheduleFormat';
 import { showToast } from '../hooks/useToast';
 
 export async function updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader) {
@@ -17,15 +17,8 @@ export async function updateLeader(scheduleStore, selectedMonth, day, slotIdx, n
   }
   const store = serverScheduleToStore(latestServer);
   const current = store[monthName] || {};
-  const updated = { ...current };
-  const existing = updated[day];
-  if (Array.isArray(existing)) {
-    const updatedEntry = { ...existing[slotIdx], leader: trimmed };
-    updated[day] = [...existing];
-    updated[day][slotIdx] = updatedEntry;
-  } else {
-    updated[day] = [{ ...existing, leader: trimmed }];
-  }
+  const existingEntry = getDayEntries(current, day)[slotIdx] || { trail_id: null, early_start: false, leader: '' };
+  const updated = setDayEntry(current, day, slotIdx, { ...existingEntry, leader: trimmed });
   const newStore = { ...store, [monthName]: updated };
   const serverData = storeToServerSchedule(newStore);
   try {

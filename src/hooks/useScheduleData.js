@@ -3,7 +3,7 @@ import { MONTH_NAMES } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { getHikeSlotsForMonth } from '../utils/dateUtils';
 import { getHikeDays } from '../utils/config';
-import { ensureArray } from '../utils/array';
+import { normalizeDayEntries } from '../utils/scheduleFormat';
 
 /**
  * Shared schedule data hook for ScheduleBuilder and Calendar pages.
@@ -17,17 +17,7 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
     const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
     const result = {};
     Object.entries(raw).forEach(([day, val]) => {
-      const entries = ensureArray(val);
-      result[day] = entries.map(e => {
-        const entry = typeof e === 'string'
-          ? { trail_id: e, early_start: false, leader: '' }
-          : {
-              trail_id: typeof e?.trail_id === 'string' ? e.trail_id : null,
-              early_start: !!e?.early_start,
-              leader: e?.leader || '',
-            };
-        return entry;
-      });
+      result[day] = normalizeDayEntries(val);
     });
     return result;
   }, [scheduleStore, selectedMonth]);

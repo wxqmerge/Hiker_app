@@ -61,6 +61,30 @@ describe('useScheduleData', () => {
       const { result } = renderScheduleHook(store);
       expect(result.current.assignedHikes['1'][0].trail_id).toBeNull();
     });
+
+    it('normalizes object-shaped day entries', () => {
+      const store = {
+        July: {
+          '1': { trail_id: 'trail-1', early_start: true, leader: 'Alice' },
+        },
+      };
+      const { result } = renderScheduleHook(store);
+      expect(result.current.assignedHikes['1']).toEqual([
+        { trail_id: 'trail-1', early_start: true, leader: 'Alice' },
+      ]);
+    });
+
+    it('normalizes string day entries', () => {
+      const store = {
+        July: {
+          '1': 'trail-1',
+        },
+      };
+      const { result } = renderScheduleHook(store);
+      expect(result.current.assignedHikes['1']).toEqual([
+        { trail_id: 'trail-1', early_start: false, leader: '' },
+      ]);
+    });
   });
 
   describe('hikeDates', () => {

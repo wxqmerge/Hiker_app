@@ -141,4 +141,54 @@ describe('useGpxActions', () => {
     });
     expect(shareGpxFile).not.toHaveBeenCalled();
   });
+
+  describe('trail-agnostic mode', () => {
+    it('returns per-trail action helpers', () => {
+      const { result } = renderHook(() => useGpxActions());
+      expect(result.current).toHaveProperty('isDownloading');
+      expect(result.current).toHaveProperty('downloadGpx');
+      expect(result.current).toHaveProperty('openTrailhead');
+      expect(result.current).toHaveProperty('shareGpx');
+    });
+
+    it('tracks downloading state by trail ID', async () => {
+      const { result } = renderHook(() => useGpxActions());
+      expect(result.current.isDownloading('trail-1')).toBe(false);
+      await act(async () => {
+        result.current.downloadGpx('trail-1', 'Test Trail');
+      });
+      expect(result.current.isDownloading('trail-1')).toBe(true);
+      expect(getGpx).toHaveBeenCalledWith('trail-1');
+      expect(downloadBlob).toHaveBeenCalled();
+    });
+
+    it('does not start a duplicate download for the same trail', async () => {
+      const { result } = renderHook(() => useGpxActions());
+      await act(async () => {
+        result.current.downloadGpx('trail-1', 'Test Trail');
+      });
+      const callsBefore = getGpx.mock.calls.length;
+      await act(async () => {
+        result.current.downloadGpx('trail-1', 'Test Trail');
+      });
+      expect(getGpx.mock.calls.length).toBe(callsBefore);
+    });
+
+    it('opens trailhead from a trail object', () => {
+      const { result } = renderHook(() => useGpxActions());
+      act(() => {
+        result.current.openTrailhead(trail);
+      });
+      expect(openGoogleMapsTrailhead).toHaveBeenCalledWith(40.0, -74.0);
+    });
+
+    it('shares GPX by trail ID and name', async () => {
+      const { result } = renderHook(() => useGpxActions());
+      await act(async () => {
+        await result.current.shareGpx('trail-1', 'Test Trail Full');
+      });
+      expect(getGpx).toHaveBeenCalledWith('trail-1');
+      expect(shareGpxFile).toHaveBeenCalledWith('<gpx><trk><trkseg><trkpt lat="40.0" lon="-74.0"/></trkseg></trk></gpx>', 'Test Trail Full');
+    });
+  });
 });

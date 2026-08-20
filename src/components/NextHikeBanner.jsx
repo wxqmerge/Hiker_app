@@ -49,7 +49,7 @@ export default function NextHikeBanner({ nextHikes }) {
 
 function NextHikeCard({ hike, idx, weather }) {
   const trail = hike.trail;
-  const { handleGpxDownload, handleTrailhead } = useGpxActions(trail);
+  const { handleGpxDownload, handleGpxShare, handleTrailhead } = useGpxActions(trail);
   const handleWeather = useCallback(() => openWeatherForTrail(getGpx, hike.trailId), [hike.trailId]);
   const displayHikeName = getTrailName(hike.trail);
 
@@ -102,6 +102,7 @@ function NextHikeCard({ hike, idx, weather }) {
                       variant="hero"
                       iconSize="w-4 h-4"
                       onGpxDownload={handleGpxDownload}
+                      onGpxShare={handleGpxShare}
                       onTrailhead={handleTrailhead}
                       onWeather={handleWeather}
                     />

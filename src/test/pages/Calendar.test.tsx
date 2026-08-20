@@ -50,10 +50,14 @@ vi.mock('../../hooks/useScheduleDragDrop', () => ({
   }),
 }));
 
-vi.mock('../../utils/scheduleFormat', () => ({
-  serverScheduleToStore: () => ({}),
-  storeToServerSchedule: () => ({}),
-}));
+vi.mock('../../utils/scheduleFormat', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    serverScheduleToStore: () => ({}),
+    storeToServerSchedule: () => ({}),
+  };
+});
 
 vi.mock('../../api/client', () => ({
   updateSchedule: vi.fn(),

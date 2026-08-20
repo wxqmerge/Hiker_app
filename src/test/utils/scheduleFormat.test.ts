@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { serverScheduleToStore, storeToServerSchedule } from '../../utils/scheduleFormat';
+import {
+  serverScheduleToStore,
+  storeToServerSchedule,
+  normalizeDayEntries,
+  getDayEntries,
+  setDayEntry,
+  clearDayEntry,
+  normalizeServerMonthEntries,
+} from '../../utils/scheduleFormat';
 import { MONTH_NAMES, DAY_NAMES } from '../../utils/constants';
 
 describe('TSV import day matching', () => {
@@ -117,14 +125,24 @@ describe('scheduleFormat', () => {
       expect(serverScheduleToStore({})).toEqual({});
     });
 
-    it('handles dict format entries', () => {
+    it('handles dict format entries as arrays', () => {
       const serverData = {
         Jun: {
           '3': { trail_id: 'trail-1', early_start: false, leader: 'Alice' },
         },
       };
       const store = serverScheduleToStore(serverData);
-      expect(store.June['3']).toEqual({ trail_id: 'trail-1', early_start: false, leader: 'Alice' });
+      expect(store.June['3']).toEqual([{ trail_id: 'trail-1', early_start: false, leader: 'Alice' }]);
+    });
+
+    it('normalizes legacy string entries to arrays', () => {
+      const serverData = {
+        Jun: {
+          '3': 'some-trail-id',
+        },
+      };
+      const store = serverScheduleToStore(serverData);
+      expect(store.June['3']).toEqual([{ trail_id: 'some-trail-id', early_start: false, leader: '' }]);
     });
 
     it('handles multiple days', () => {
@@ -255,5 +273,85 @@ describe('scheduleFormat', () => {
       const serverData = storeToServerSchedule(store);
       expect(serverData.Jun[0].early_start).toBe(true);
     });
+  });
+});
+
+describe('schedule entry normalization', () => {
+  it('normalizeDayEntries converts objects, strings, and arrays', () => {
+    expect(normalizeDayEntries({ trail_id: 'trail-1', early_start: true, leader: 'Alice' }))
+      .toEqual([{ trail_id: 'trail-1', early_start: true, leader: 'Alice' }]);
+    expect(normalizeDayEntries('trail-2'))
+      .toEqual([{ trail_id: 'trail-2', early_start: false, leader: '' }]);
+    expect(normalizeDayEntries([{ trail_id: 'trail-1' }, 'trail-2']))
+      .toEqual([
+        { trail_id: 'trail-1', early_start: false, leader: '' },
+        { trail_id: 'trail-2', early_start: false, leader: '' },
+      ]);
+  });
+
+  it('normalizeDayEntries returns empty array for missing values', () => {
+    expect(normalizeDayEntries(null)).toEqual([]);
+    expect(normalizeDayEntries(undefined)).toEqual([]);
+    expect(normalizeDayEntries('')).toEqual([]);
+  });
+
+  it('getDayEntries reads array-shaped and object-shaped day entries', () => {
+    const monthData = {
+      1: [{ trail_id: 'trail-1', early_start: false, leader: '' }],
+      2: { trail_id: 'trail-2', early_start: true, leader: 'Bob' },
+    };
+    expect(getDayEntries(monthData, 1)).toEqual([{ trail_id: 'trail-1', early_start: false, leader: '' }]);
+    expect(getDayEntries(monthData, 2)).toEqual([{ trail_id: 'trail-2', early_start: true, leader: 'Bob' }]);
+    expect(getDayEntries(monthData, 3)).toEqual([]);
+  });
+
+  it('setDayEntry creates array-shaped day entries', () => {
+    const monthData = { 1: { trail_id: 'trail-1', early_start: false, leader: '' } };
+    const updated = setDayEntry(monthData, 1, 0, { trail_id: 'trail-2', early_start: true, leader: 'Alice' });
+    expect(updated['1']).toEqual([{ trail_id: 'trail-2', early_start: true, leader: 'Alice' }]);
+  });
+
+  it('setDayEntry preserves other slots when updating one slot', () => {
+    const monthData = {
+      1: [
+        { trail_id: 'trail-1', early_start: false, leader: '' },
+        { trail_id: 'trail-2', early_start: false, leader: '' },
+      ],
+    };
+    const updated = setDayEntry(monthData, 1, 1, { trail_id: 'trail-3', early_start: true, leader: 'Bob' });
+    expect(updated['1']).toEqual([
+      { trail_id: 'trail-1', early_start: false, leader: '' },
+      { trail_id: 'trail-3', early_start: true, leader: 'Bob' },
+    ]);
+  });
+
+  it('clearDayEntry replaces an entry with an empty entry', () => {
+    const monthData = {
+      1: [{ trail_id: 'trail-1', early_start: true, leader: 'Alice' }],
+    };
+    const updated = clearDayEntry(monthData, 1, 0);
+    expect(updated['1']).toEqual([{ trail_id: null, early_start: false, leader: '' }]);
+  });
+
+  it('normalizeServerMonthEntries flattens array and object server formats', () => {
+    const arrayEntries = normalizeServerMonthEntries([
+      { day: 5, slot: 0, trail_id: 'trail-1', early_start: false, leader: 'Alice' },
+      { day: 5, slot: 1, trail_id: 'trail-2', early_start: true, leader: 'Bob' },
+    ]);
+    expect(arrayEntries).toEqual([
+      { day: 5, slot: 0, trail_id: 'trail-1', early_start: false, leader: 'Alice' },
+      { day: 5, slot: 1, trail_id: 'trail-2', early_start: true, leader: 'Bob' },
+    ]);
+
+    const objectEntries = normalizeServerMonthEntries({
+      5: [
+        { trail_id: 'trail-1', early_start: false, leader: 'Alice' },
+        { trail_id: 'trail-2', early_start: true, leader: 'Bob' },
+      ],
+    });
+    expect(objectEntries).toEqual([
+      { day: 5, slot: 0, trail_id: 'trail-1', early_start: false, leader: 'Alice' },
+      { day: 5, slot: 1, trail_id: 'trail-2', early_start: true, leader: 'Bob' },
+    ]);
   });
 });

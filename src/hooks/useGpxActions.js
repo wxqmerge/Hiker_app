@@ -4,54 +4,74 @@ import { downloadBlob, openGoogleMapsTrailhead, sanitizeFilename, shareGpxFile }
 import { getTrailName } from '../utils/data';
 
 export function useGpxActions(trail) {
-  const [gpxDownloading, setGpxDownloading] = useState(false);
+  const [downloadingIds, setDownloadingIds] = useState(() => new Set());
 
-  const handleGpxDownload = useCallback(async (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    const id = trail?.id;
-    if (!id || gpxDownloading) return;
-    setGpxDownloading(true);
+  const isDownloading = useCallback(
+    (trailId) => downloadingIds.has(trailId),
+    [downloadingIds]
+  );
+
+  const downloadGpx = useCallback(async (trailId, trailName) => {
+    if (!trailId || downloadingIds.has(trailId)) return;
+    setDownloadingIds(prev => {
+      const next = new Set(prev);
+      next.add(trailId);
+      return next;
+    });
     try {
-      const gpx = await getGpx(id);
+      const gpx = await getGpx(trailId);
       if (gpx) {
-        const safeName = sanitizeFilename(getTrailName(trail) || 'route');
+        const safeName = sanitizeFilename(trailName || 'route');
         downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
       }
     } finally {
-      setTimeout(() => setGpxDownloading(false), 1000);
+      setTimeout(() => {
+        setDownloadingIds(prev => {
+          const next = new Set(prev);
+          next.delete(trailId);
+          return next;
+        });
+      }, 1000);
     }
-  }, [trail, gpxDownloading]);
+  }, [downloadingIds]);
 
-  const handleTrailhead = useCallback((e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  const openTrailhead = useCallback((trailObj) => {
+    if (trailObj?.trailHeadLat != null && trailObj?.trailHeadLon != null) {
+      openGoogleMapsTrailhead(trailObj.trailHeadLat, trailObj.trailHeadLon);
     }
-    if (trail?.trailHeadLat != null && trail?.trailHeadLon != null) {
-      openGoogleMapsTrailhead(trail.trailHeadLat, trail.trailHeadLon);
-    }
-  }, [trail]);
+  }, []);
 
-  const handleGpxShare = useCallback(async (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    const id = trail?.id;
-    if (!id) return;
-    const gpx = await getGpx(id);
+  const shareGpx = useCallback(async (trailId, trailName) => {
+    if (!trailId) return;
+    const gpx = await getGpx(trailId);
     if (gpx) {
-      shareGpxFile(gpx, getTrailName(trail) || 'route');
+      shareGpxFile(gpx, trailName || 'route');
     }
-  }, [trail]);
+  }, []);
+
+  if (trail) {
+    const gpxDownloading = trail.id ? downloadingIds.has(trail.id) : false;
+    return {
+      gpxDownloading,
+      handleGpxDownload: async (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        await downloadGpx(trail.id, getTrailName(trail));
+      },
+      handleTrailhead: (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        openTrailhead(trail);
+      },
+      handleGpxShare: async (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        await shareGpx(trail.id, getTrailName(trail));
+      },
+    };
+  }
 
   return {
-    gpxDownloading,
-    handleGpxDownload,
-    handleTrailhead,
-    handleGpxShare,
+    isDownloading,
+    downloadGpx,
+    openTrailhead,
+    shareGpx,
   };
 }

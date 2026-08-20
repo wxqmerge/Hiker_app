@@ -16,11 +16,10 @@ import SwapConfirmationModal from '../components/SwapConfirmationModal';
 import { MONTH_NAMES, DEFAULT_FILTERS } from '../utils/constants';
 import LeaderEdit from '../components/LeaderEdit';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
-import { downloadBlob, openGoogleMapsTrailhead } from '../utils/io';
 import { getNoaaTideUrl } from '../utils/url.js';
-import { getGpx } from '../api/client';
 import { createDate } from '../utils/dateUtils';
-import { ensureArray } from '../utils/array';
+import { useGpxActions } from '../hooks/useGpxActions';
+import { getDayEntries, setDayEntry } from '../utils/scheduleFormat';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
@@ -56,31 +55,8 @@ export default function ScheduleBuilder() {
     handleDragEnd,
   } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
 
-  const [gpxDownloading, setGpxDownloading] = useState(null);
   const [leaderEdit, setLeaderEdit] = useState(null);
-
-
-
-  const handleGpxDownload = useCallback(async (trailId, trailName) => {
-    if (gpxDownloading) return;
-    setGpxDownloading(trailId);
-    try {
-      const gpx = await getGpx(trailId);
-      if (gpx) {
-        const safeName = (trailName || 'route').replace(/[^a-zA-Z0-9]/g, '_');
-        downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
-      }
-    } finally {
-      setTimeout(() => setGpxDownloading(null), 1000);
-    }
-  }, [gpxDownloading]);
-
-  const handleTrailhead = useCallback((trailId) => {
-    const trail = trails.find(t => t.id === trailId);
-    if (trail?.trailHeadLat != null && trail?.trailHeadLon != null) {
-      openGoogleMapsTrailhead(trail.trailHeadLat, trail.trailHeadLon);
-    }
-  }, [trails]);
+  const { isDownloading, downloadGpx, openTrailhead } = useGpxActions();
 
   const updateMonthSchedule = useCallback((monthName, updater) => {
     setScheduleStore(prev => {
@@ -117,17 +93,10 @@ export default function ScheduleBuilder() {
 
   const toggleEarlyStart = (day, slotIdx) => {
     const monthData = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
-    const entries = ensureArray(monthData[day]);
-    const entry = entries[slotIdx];
-    if (!entry) return;
+    const entry = getDayEntries(monthData, day)[slotIdx];
+    if (!entry?.trail_id) return;
 
-    updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => {
-      const next = { ...prev };
-      const currentEntries = next[day] ? [...ensureArray(next[day])] : [{}];
-      currentEntries[slotIdx] = { ...entry, early_start: !entry.early_start };
-      next[day] = currentEntries;
-      return next;
-    });
+    updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => setDayEntry(prev, day, slotIdx, { ...entry, early_start: !entry.early_start }));
   };
 
 
@@ -354,21 +323,21 @@ export default function ScheduleBuilder() {
                                </label>
                                {trail?.hasGpx && (
                                  <>
-                                   <button
-                                      onClick={() => handleGpxDownload(trailId, getTrailName(trail))}
-                                     disabled={gpxDownloading !== null}
-                                     className="text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
-                                     title={tt('Download GPX file')}
-                                   >
-                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4-4V4" />
-                                     </svg>
-                                   </button>
-                                   <button
-                                     onClick={() => handleTrailhead(trailId)}
-                                     className="text-blue-600 hover:text-blue-800 transition-colors"
-                                     title={tt('Open trailhead in Google Maps')}
-                                   >
+                                    <button
+                                       onClick={() => downloadGpx(trailId, getTrailName(trail))}
+                                      disabled={isDownloading(trailId)}
+                                      className="text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
+                                      title={tt('Download GPX file')}
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4-4V4" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={() => openTrailhead(trail)}
+                                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                                      title={tt('Open trailhead in Google Maps')}
+                                    >
                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />

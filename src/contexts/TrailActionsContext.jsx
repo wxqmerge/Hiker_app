@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useToast } from '../hooks/useToast';
 import { createFileInput, createImportFileInput, downloadBlob, parseTrailTsv, sanitizeFilename } from '../utils/io';
-import JSZip from 'jszip';
 import { getGpx, importTrailsFromXls, getSchedule, updateSchedule, request, exportDataZip, importDataZip, resyncGpxCoords } from '../api/client';
 import { getTrailName } from '../utils/data';
 import { getGroupName } from '../utils/config';
 import { formatDateToISO } from '../utils/dateUtils';
-import { getStoredApiKey } from '../utils/apiKey';
+import { getStoredApiKey, storeApiKey } from '../utils/apiKey';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 const TrailActionsContext = createContext(null);
@@ -40,7 +39,7 @@ export function TrailActionsProvider({ children }) {
   }, []);
 
   const saveApiKey = useCallback(() => {
-    localStorage.setItem('hiker-api-key', apiKey);
+    storeApiKey(apiKey);
     showToast('API key saved!', 'success');
   }, [apiKey, showToast]);
 
@@ -313,6 +312,7 @@ export function TrailActionsProvider({ children }) {
       showToast('No trails have GPX files.', 'error');
       return;
     }
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
     let downloaded = 0;
     let failed = 0;

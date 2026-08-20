@@ -1,5 +1,6 @@
 import { MONTH_NAMES, DAY_NAMES } from '../utils/constants';
 import { getTrailName } from '../utils/data';
+import { getDayEntries, setDayEntry, clearDayEntry } from '../utils/scheduleFormat';
 
 /**
  * Shared drag-and-drop swap logic for ScheduleBuilder and Calendar.
@@ -35,18 +36,10 @@ export function useScheduleDragDrop({
     const monthName = MONTH_NAMES[selectedMonth];
 
     updateScheduleFn(monthName, prev => {
-      const next = { ...prev };
-      
-      // Update target slot
-      const targetEntries = Array.isArray(next[targetDay]) ? [...next[targetDay]] : [next[targetDay] || {}];
-      targetEntries[targetSlot] = { trail_id: trailId, early_start: earlyStart, leader: swapLeader };
-      next[targetDay] = targetEntries;
-
+      let next = prev;
+      next = setDayEntry(next, targetDay, targetSlot, { trail_id: trailId, early_start: earlyStart, leader: swapLeader });
       if (sourceDay !== null && sourceDay !== undefined) {
-        // Update source slot
-        const sourceEntries = Array.isArray(next[sourceDay]) ? [...next[sourceDay]] : [next[sourceDay] || {}];
-        sourceEntries[sourceSlot] = { trail_id: targetEntry.trail_id, early_start: targetEntry.early_start, leader: targetEntry.leader || '' };
-        next[sourceDay] = sourceEntries;
+        next = setDayEntry(next, sourceDay, sourceSlot, { trail_id: targetEntry.trail_id, early_start: targetEntry.early_start, leader: targetEntry.leader || '' });
       }
       return next;
     });
@@ -76,16 +69,18 @@ export function useScheduleDragDrop({
 
     const monthName = MONTH_NAMES[selectedMonth];
     const monthData = scheduleStore[monthName] || {};
-    const targetEntries = Array.isArray(monthData[targetDay]) ? monthData[targetDay] : (monthData[targetDay] ? [monthData[targetDay]] : []);
-    const targetEntry = targetEntries[targetSlot] || { trail_id: null };
+    const targetEntries = getDayEntries(monthData, targetDay);
+    const targetEntry = targetEntries[targetSlot] || { trail_id: null, early_start: false, leader: '' };
+    const hasSource = sourceDay !== null && sourceDay !== undefined;
+    const sourceEntries = hasSource ? getDayEntries(monthData, sourceDay) : [];
+    const sourceEntry = sourceEntries[sourceSlot] || null;
 
-    // Check if target slot already has a hike -- offer swap
     if (targetEntry && targetEntry.trail_id) {
       const sourceTrail = findTrailById(trailId);
       const targetTrail = findTrailById(targetEntry.trail_id);
       const sourceTrailName = sourceTrail ? getTrailName(sourceTrail) : trailId;
       const targetTrailName = targetTrail ? getTrailName(targetTrail) : targetEntry.trail_id;
-      const sourceDayOfWeek = sourceDay !== null && sourceDay !== undefined ? new Date(year, selectedMonth, sourceDay).getDay() : null;
+      const sourceDayOfWeek = hasSource ? new Date(year, selectedMonth, sourceDay).getDay() : null;
       const targetDayOfWeek = new Date(year, selectedMonth, targetDay).getDay();
       const sourceDayLabel = sourceDayOfWeek !== null ? `${DAY_NAMES[sourceDayOfWeek]} ${sourceDay}` : 'Available Hikes';
       const targetDayLabel = `${DAY_NAMES[targetDayOfWeek]} ${targetDay}`;
@@ -99,30 +94,25 @@ export function useScheduleDragDrop({
         sourceSlot,
         targetDay,
         targetSlot,
-        sourceEntry: sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot] : monthData[sourceDay]) : null,
+        sourceEntry,
         targetEntry,
         trailId,
-        earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot]?.early_start : monthData[sourceDay]?.early_start) : false),
-        leader: dragLeader || (sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot]?.leader : monthData[sourceDay]?.leader) : ''),
+        earlyStart: dragEarlyStart !== undefined ? dragEarlyStart : (hasSource ? sourceEntry?.early_start || false : false),
+        leader: dragLeader || (hasSource ? sourceEntry?.leader || '' : ''),
       });
       setDragData(null);
       return;
     }
 
-    // Normal drop on empty slot
-    const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : ((sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot] : monthData[sourceDay]) : null)?.early_start || false);
-    const leader = dragLeader || (sourceDay !== null && sourceDay !== undefined ? (Array.isArray(monthData[sourceDay]) ? monthData[sourceDay][sourceSlot]?.leader : monthData[sourceDay]?.leader) : '');
+    const earlyStart = dragEarlyStart !== undefined ? dragEarlyStart : (hasSource ? sourceEntry?.early_start || false : false);
+    const leader = dragLeader || (hasSource ? sourceEntry?.leader || '' : '');
 
     updateScheduleFn(monthName, prev => {
-      const next = { ...prev };
-      if (sourceDay !== null && sourceDay !== undefined) {
-        const sourceEntries = Array.isArray(next[sourceDay]) ? [...next[sourceDay]] : [next[sourceDay] || {}];
-        sourceEntries[sourceSlot] = { trail_id: null, early_start: false, leader: '' };
-        next[sourceDay] = sourceEntries;
+      let next = prev;
+      if (hasSource) {
+        next = clearDayEntry(next, sourceDay, sourceSlot);
       }
-      const targetEntries = Array.isArray(next[targetDay]) ? [...next[targetDay]] : [next[targetDay] || {}];
-      targetEntries[targetSlot] = { trail_id: trailId, early_start: earlyStart, leader: leader };
-      next[targetDay] = targetEntries;
+      next = setDayEntry(next, targetDay, targetSlot, { trail_id: trailId, early_start: earlyStart, leader });
       return next;
     });
     setDragData(null);
@@ -137,25 +127,13 @@ export function useScheduleDragDrop({
       return;
     }
 
-    updateScheduleFn(MONTH_NAMES[selectedMonth], prev => {
-      const next = { ...prev };
-      const entries = Array.isArray(next[sourceDay]) ? [...next[sourceDay]] : [next[sourceDay] || {}];
-      entries[sourceSlot] = { trail_id: null, early_start: false, leader: '' };
-      next[sourceDay] = entries;
-      return next;
-    });
+    updateScheduleFn(MONTH_NAMES[selectedMonth], prev => clearDayEntry(prev, sourceDay, sourceSlot));
     setDragData(null);
   };
 
   const removeHike = (day, slotIdx) => {
     if (hasApiKey === false) return;
-    updateScheduleFn(MONTH_NAMES[selectedMonth], prev => {
-      const next = { ...prev };
-      const entries = Array.isArray(next[day]) ? [...next[day]] : [next[day] || {}];
-      entries[slotIdx] = { trail_id: null, early_start: false, leader: '' };
-      next[day] = entries;
-      return next;
-    });
+    updateScheduleFn(MONTH_NAMES[selectedMonth], prev => clearDayEntry(prev, day, slotIdx));
   };
 
   return {

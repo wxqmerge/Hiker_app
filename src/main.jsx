@@ -14,3 +14,14 @@ if (!rootElement) {
     </StrictMode>,
   );
 }
+
+// Register the service worker in production only, scoped to the app base path
+// so subpath deployments (e.g. /sothh-dev/) work correctly.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const base = import.meta.env.BASE_URL;
+    navigator.serviceWorker
+      .register(`${base}sw.js`, { scope: base })
+      .catch((err) => console.warn('Service worker registration failed:', err));
+  });
+}
