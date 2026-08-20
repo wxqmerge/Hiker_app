@@ -163,20 +163,6 @@ describe('ScheduleBuilder', () => {
     expect(debugBtn).toHaveTextContent(/ON|OFF/);
   });
 
-  it('clears console on search change in debug mode', () => {
-    const clearSpy = vi.spyOn(console, 'clear');
-    renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
-    const debugBtn = screen.getByText(/Debug Mode/);
-    fireEvent.click(debugBtn);
-    fireEvent.click(document.body);
-    const searchInput = screen.getByPlaceholderText('Search...');
-    fireEvent.change(searchInput, { target: { value: 'test' } });
-    expect(clearSpy).toHaveBeenCalled();
-    clearSpy.mockRestore();
-  });
-
   it('normalizes schedule store from legacy format', () => {
     localStorage.setItem('hiker-schedule', JSON.stringify({
       'June': { 3: 'some-trail-id' }

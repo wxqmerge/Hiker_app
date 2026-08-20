@@ -1,10 +1,10 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTrails } from '../hooks/useTrails';
-import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { useTooltips } from '../hooks/useTooltips';
 import { useNextHike } from '../hooks/useNextHike';
 import { useApiKey } from '../hooks/useApiKey';
 import { useMonthContext } from '../contexts/MonthContext';
+import { useYearContext } from '../contexts/YearContext';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
@@ -17,14 +17,14 @@ import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { useScheduleWeather } from '../hooks/useScheduleWeather';
 import { useToast } from '../hooks/useToast';
-import { CURRENT_YEAR } from '../utils/constants';
 
 export default function Calendar() {
   const { trails, schedule: scheduleData, loading } = useTrails();
   const { title: tt } = useTooltips();
   const showToast = useToast();
 
-  const year = CURRENT_YEAR;
+  const { selectedYear } = useYearContext();
+  const year = selectedYear;
 
   const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
 
@@ -35,7 +35,7 @@ export default function Calendar() {
   const hasApiKey = useApiKey();
   const [pendingSwap, setPendingSwap] = useState(null);
 
-  const dayWeatherMap = useScheduleWeather({ schedule: scheduleData, selectedMonth, trails });
+  const dayWeatherMap = useScheduleWeather({ schedule: scheduleData, selectedMonth, trails, year });
 
   useEffect(() => {
     if (!hasSyncedInitialMonth.current && nextHikes && nextHikes.length > 0 && !loading) {
@@ -43,8 +43,6 @@ export default function Calendar() {
       setSelectedMonth(nextHikes[0].monthIndex);
     }
   }, [loading, nextHikes, setSelectedMonth]);
-
-  useSchedulePolling({ setSchedule }, 5000);
 
   const {
     assignedHikes,

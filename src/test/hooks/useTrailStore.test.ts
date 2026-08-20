@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useTrailStore, setSchedule, getSchedule, resetTrailStore } from '../../hooks/useTrailStore';
+import { useTrailStore, setSchedule, resetTrailStore } from '../../hooks/useTrailStore';
 
 vi.mock('../../api/client.js', () => ({
   getTrails: vi.fn(() => Promise.resolve([{ id: 'trail-1', name: 'Test Trail' }])),
@@ -64,7 +64,9 @@ describe('useTrailStore', () => {
   });
 
   it('resets trail store', () => {
+    setSchedule({ Jan: { 1: [{ trail_id: 'trail-1' }] } });
     resetTrailStore();
-    expect(getSchedule()).toBeNull();
+    const { result } = renderHook(() => useTrailStore());
+    expect(result.current.schedule).toBeNull();
   });
 });

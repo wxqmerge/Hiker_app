@@ -55,8 +55,12 @@ export function openWeatherUrl(lat, lon) {
  * Uses a module-level cache keyed by "lat,lon" with a 3-hour TTL so the
  * forecast refreshes when NWS updates it.
  */
-export const _nwsCache = new Map();
+const _nwsCache = new Map();
 const _nwsTTL = 3 * 60 * 60 * 1000; // 3 hours
+
+export function clearNwsCache() {
+  _nwsCache.clear();
+}
 
 export async function fetchNwsForecastForDate(lat, lon, targetDate) {
   const cacheKey = `${lat},${lon}`;
@@ -192,6 +196,22 @@ export async function fetchWeatherForCoords(trailCoords, date) {
   await Promise.allSettled(Object.entries(trailCoords).map(async ([trailId, info]) => {
     const res = await fetchWeatherAndTide(info.lat, info.lon, date, info.stationId);
     if (res) results[trailId] = res;
+  }));
+  return results;
+}
+
+/**
+ * Fetch tide predictions for a map of trail coordinates on a given date.
+ * @param {Object<string, {lat: number|null, lon: number|null, stationId: string|null}>} trailCoords
+ * @param {Date} date
+ * @returns {Promise<Object<string, {tide: number, tideTime: string}>>}
+ */
+export async function fetchTideForCoords(trailCoords, date) {
+  const results = {};
+  await Promise.allSettled(Object.entries(trailCoords).map(async ([trailId, info]) => {
+    if (!info?.stationId) return;
+    const res = await fetchTideHeightAt(info.stationId, date);
+    if (res) results[trailId] = { tide: res.height, tideTime: res.time };
   }));
   return results;
 }

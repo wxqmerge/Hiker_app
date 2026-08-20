@@ -10,10 +10,11 @@ vi.mock('../../utils/io', () => ({
   downloadBlob: vi.fn(),
   openGoogleMapsTrailhead: vi.fn(),
   sanitizeFilename: vi.fn(s => String(s).replace(/[^a-zA-Z0-9_-]/g, '_')),
+  shareGpxFile: vi.fn(),
 }));
 
 import { getGpx } from '../../api/client';
-import { downloadBlob, openGoogleMapsTrailhead } from '../../utils/io';
+import { downloadBlob, openGoogleMapsTrailhead, shareGpxFile } from '../../utils/io';
 
 describe('useGpxActions', () => {
   const trail = {
@@ -123,5 +124,21 @@ describe('useGpxActions', () => {
     expect(getGpx.mock.calls.length).toBe(callsBefore);
   });
 
+  it('shares GPX when handleGpxShare called', async () => {
+    const { result } = renderHook(() => useGpxActions(trail));
+    await act(async () => {
+      await result.current.handleGpxShare();
+    });
+    expect(getGpx).toHaveBeenCalledWith('trail-1');
+    expect(shareGpxFile).toHaveBeenCalledWith('<gpx><trk><trkseg><trkpt lat="40.0" lon="-74.0"/></trkseg></trk></gpx>', 'Test Trail Full');
+  });
 
+  it('does not share GPX when missing', async () => {
+    vi.mocked(getGpx).mockResolvedValueOnce(null);
+    const { result } = renderHook(() => useGpxActions(trail));
+    await act(async () => {
+      await result.current.handleGpxShare();
+    });
+    expect(shareGpxFile).not.toHaveBeenCalled();
+  });
 });

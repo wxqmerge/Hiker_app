@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
+import { hasStoredApiKey } from '../utils/apiKey';
 
 export function useApiKey() {
-  return useMemo(() => !!localStorage.getItem('hiker-api-key'), []);
+  return useMemo(() => hasStoredApiKey(), []);
 }

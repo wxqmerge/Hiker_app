@@ -46,6 +46,5 @@ export const DIFFICULTY_COLORS = {
 export const NAV_LINKS = [
   { to: '/', label: 'Calendar' },
   { to: '/browse', label: 'Browse Trails' },
-  { to: '/trails', label: 'Trail Manager' },
   { to: '/schedule', label: 'Schedule Builder' },
 ];

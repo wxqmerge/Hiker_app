@@ -63,19 +63,6 @@ describe('useScheduleData', () => {
     });
   });
 
-  describe('assignedCount', () => {
-    it('counts entries with valid trail_id', () => {
-      const store = {
-        July: {
-          '1': [{ trail_id: 'trail-1', early_start: false, leader: 'Alice' }],
-          '3': [{ trail_id: null, early_start: false, leader: '' }],
-        },
-      };
-      const { result } = renderScheduleHook(store);
-      expect(result.current.assignedCount).toBe(1);
-    });
-  });
-
   describe('hikeDates', () => {
     it('generates correct hike dates for July 2026', () => {
       const { result } = renderScheduleHook({});

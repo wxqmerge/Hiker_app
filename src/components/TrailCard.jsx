@@ -9,7 +9,7 @@ import { openHtmlInNewTab } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
-import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
+import { getSeasonalInfo, sumMonthlyScores } from '../utils/score.js';
 import TrailStats from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
 import LeaderEdit from './LeaderEdit';
@@ -52,13 +52,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     const trailSeasonal = trail?.seasonal || {};
     const { hasQuarterData } = getSeasonalInfo(trailSeasonal);
     const availableMonths = getAvailableMonthsFromSeasonal(trail.seasonal || {});
-    const allScores = monthly.map((hikeCount, idx) =>
-      calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
-    );
-    if (selectedMonths && selectedMonths.length > 0) {
-      return selectedMonths.reduce((sum, mIdx) => sum + (allScores[mIdx] || 0), 0);
-    }
-    return allScores.reduce((sum, s) => sum + s, 0);
+    return sumMonthlyScores(monthly, availableMonths, selectedMonths || [], hasQuarterData);
   }, [trail, trailDetails, selectedMonths]);
   const hasPopScore = popScore != null && popScore > 0;
 

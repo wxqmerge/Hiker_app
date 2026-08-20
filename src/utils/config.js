@@ -7,10 +7,6 @@ export function setGroupConfig(config) {
   groupConfig = { ...groupConfig, ...config };
 }
 
-export function resetConfig() {
-  groupConfig = { name: null, hikeDays: null };
-}
-
 /**
  * Get the configured group name for the client.
  * @returns {string|null}

@@ -8,7 +8,7 @@ import { ensureArray } from '../utils/array';
 /**
  * Shared schedule data hook for ScheduleBuilder and Calendar pages.
  * Provides: assignedHikes, hikeDates, trailIndexToId, handleDragStart/End,
- * findTrailById, assignedCount, dragData.
+ * findTrailById, dragData.
  */
 export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) {
   const [dragData, setDragData] = useState(null);
@@ -31,10 +31,6 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
     });
     return result;
   }, [scheduleStore, selectedMonth]);
-
-  const assignedCount = useMemo(() => {
-    return Object.values(assignedHikes).flat().filter(v => v?.trail_id).length;
-  }, [assignedHikes]);
 
     const hikeDates = useMemo(() => {
     const hikeDays = getHikeDays();
@@ -61,7 +57,6 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
 
   return {
     assignedHikes,
-    assignedCount,
     hikeDates,
     findTrailById,
     trailIndexToId,

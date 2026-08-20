@@ -1,22 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
-import { fetchWeatherForCoords, buildTrailCoords } from '../utils/io';
+import { fetchWeatherForCoords, fetchTideForCoords } from '../utils/io';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
 import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
-import { createDate, MS_PER_DAY } from '../utils/dateUtils';
-import { ensureArray } from '../utils/array';
-
-const YEAR = CURRENT_YEAR;
+import { createDate } from '../utils/dateUtils';
+import { getTodayMidnight, getTrailIdsFromEntries, buildWeatherTarget } from '../utils/weatherTargets';
 
 /**
- * Fetch NWS weather and 10am tide for trails on the selected month+day,
- * but only when that date falls within the next 7 days.
+ * Fetch NWS weather and 10am tide for trails on the selected month+day.
+ * Weather is fetched only when that date falls within the next 7 days.
+ * Tide can be fetched for any past or future date.
  * If `trailIds` is provided, fetches for those trails directly.
  * Otherwise, reads trail IDs from the schedule for that day.
  * Uses trail.trailHeadLat/trailHeadLon from trail data.
  * Tide is fetched only for trails that have a `tideStationId`.
  * Returns { [trailId]: { temp, rain, tide } }.
  */
-export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, trails }) {
+export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, trails, year = CURRENT_YEAR }) {
   const [weatherMap, setWeatherMap] = useState({});
   const [fetchedKey, setFetchedKey] = useState(null);
 
@@ -24,11 +23,8 @@ export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, 
     const day = selectedDay ? parseInt(selectedDay, 10) : null;
     if (day == null || isNaN(day)) return null;
 
-    const now = new Date();
-    const date = createDate(YEAR, selectedMonth, day);
-    const today = createDate(now.getFullYear(), now.getMonth(), now.getDate());
-    const daysAhead = Math.round((date - today) / MS_PER_DAY);
-    if (daysAhead < 0 || daysAhead > 6) return null;
+    const date = createDate(year, selectedMonth, day);
+    const today = getTodayMidnight();
 
     let ids;
     if (trailIds) {
@@ -36,14 +32,13 @@ export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, 
     } else {
       const store = serverScheduleToStore(schedule);
       const monthData = store[MONTH_NAMES[selectedMonth]] || {};
-      const entries = ensureArray(monthData[day]);
-      ids = [...new Set(entries.map(e => e?.trail_id).filter(Boolean))];
+      ids = getTrailIdsFromEntries(monthData[day]);
     }
     if (ids.length === 0) return null;
 
-    const trailCoords = buildTrailCoords(ids, trails);
-    return { key: `${selectedMonth}:${day}`, date, trailCoords };
-  }, [schedule, selectedMonth, selectedDay, trailIds, trails]);
+    const { trailCoords, inForecastRange } = buildWeatherTarget(date, ids, trails, today);
+    return { key: `${selectedMonth}:${day}`, date, trailCoords, inForecastRange };
+  }, [schedule, selectedMonth, selectedDay, trailIds, trails, year]);
 
   const key = target ? target.key : null;
   if (key !== fetchedKey) {
@@ -55,7 +50,9 @@ export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, 
     if (!target) return;
     let cancelled = false;
     (async () => {
-      const results = await fetchWeatherForCoords(target.trailCoords, target.date);
+      const results = target.inForecastRange
+        ? await fetchWeatherForCoords(target.trailCoords, target.date)
+        : await fetchTideForCoords(target.trailCoords, target.date);
       if (!cancelled) setWeatherMap(results);
     })();
     return () => { cancelled = true; };

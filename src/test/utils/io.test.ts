@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchWeatherAndTide, _nwsCache } from '../../utils/io';
+import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchWeatherAndTide, clearNwsCache } from '../../utils/io';
 
 describe('sanitizeFilename', () => {
   it('replaces non-alphanumeric characters with underscores', () => {
@@ -299,7 +299,7 @@ describe('fetchNwsForecastForDate', () => {
 
   beforeEach(() => {
     vi.unstubAllGlobals();
-    _nwsCache.clear();
+    clearNwsCache();
   });
 
   it('matches "This Afternoon" for same-day', async () => {
@@ -372,7 +372,7 @@ describe('fetchWeatherAndTide', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
     vi.clearAllMocks();
-    _nwsCache.clear();
+    clearNwsCache();
   });
 
   it('skips tide fetch when stationId is null', async () => {

@@ -8,11 +8,13 @@ import { useTooltips } from '../hooks/useTooltips';
 import { generateTrailHtml, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName } from '../utils/data';
-import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
-import { downloadBlob, exportTrailTsv, shareGpxFile, createFileInput, sanitizeFilename, openHtmlInNewTab } from '../utils/io';
-import { uploadGpxFile, getGpx } from '../api/client';
+import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';
+import { downloadBlob, exportTrailTsv, createFileInput, sanitizeFilename, openHtmlInNewTab } from '../utils/io';
+import { uploadGpxFile } from '../api/client';
+import { useGpxActions } from '../hooks/useGpxActions';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../utils/url.js';
+import { hasStoredApiKey } from '../utils/apiKey';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MonthlyScoreGrid, { ScoreBreakdownRow } from '../components/MonthlyScoreGrid.jsx';
 
@@ -66,7 +68,7 @@ export default function TrailDetail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { trails, loading } = useTrails();
-  const { trailDetails, saveTrail, saveTrailDetail } = useTrailStore();
+  const { trailDetails, saveTrail, saveTrailDetail, deleteTrail } = useTrailStore();
   const { title: tt } = useTooltips();
   const showToast = useToast();
   const [isEditMode, setIsEditMode] = useState(() => searchParams.get('edit') === 'true');
@@ -78,6 +80,7 @@ export default function TrailDetail() {
   const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
 
   const trailDetailsResult = useMemo(() => getTrailDetailsById(trailDetails, id), [trailDetails, id]);
+  const { handleGpxShare } = useGpxActions(trail);
 
   const availableMonthsFromSeasonal = useMemo(() => getAvailableMonthsFromSeasonal(trail?.seasonal), [trail]);
 
@@ -118,9 +121,7 @@ export default function TrailDetail() {
       if (pop.monthlyScore && pop.monthlyScore.length > 0) return pop.monthlyScore;
       const monthly = pop.monthly || [];
       const availableMonths = getEditedValue('availableMonths') || [];
-      return monthly.map((hikeCount, idx) =>
-        calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
-      );
+      return computeMonthlyScores(monthly, availableMonths, hasQuarterData);
     }
     if (field === 'gpxData') return (editedFields.gpxData ?? trail.gpxData) || '';
     if (field === 'tideStationId') return editedFields.tideStationId ?? trail.tideStationId;
@@ -299,6 +300,27 @@ export default function TrailDetail() {
     setDuplicateId('');
     searchParams.delete('edit');
     navigate(`/trail/${id}${searchParams.toString() ? '?' + searchParams.toString() : ''}`, { replace: true });
+  };
+
+  const handleDelete = async () => {
+    const name = getTrailName(trail);
+    if (!window.confirm(`Delete trail "${name}"? This cannot be undone.`)) return;
+    if (!hasStoredApiKey()) {
+      showToast('API key required to delete trails.', 'error');
+      return;
+    }
+    const target = currentIndex < trails.length - 1
+      ? trails[currentIndex + 1].id
+      : currentIndex > 0
+        ? trails[currentIndex - 1].id
+        : null;
+    try {
+      await deleteTrail(id);
+      showToast(`Deleted "${name}".`, 'success');
+      navigate(target ? `/trail/${target}` : '/');
+    } catch (err) {
+      showToast('Delete failed: ' + err.message, 'error');
+    }
   };
 
   const exportTrailAsTsv = () => {
@@ -498,6 +520,18 @@ export default function TrailDetail() {
               </svg>
               Dup
             </button>
+            {!isDuplicate && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-red-700 hover:text-red-900"
+                title="Delete this trail"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Del
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -700,7 +734,7 @@ export default function TrailDetail() {
                <div className="flex items-center gap-3">
                  <GPXHelp variant="light" />
                   <button
-                     onClick={async () => { const gpx = await getGpx(trail.id); if (gpx) shareGpxFile(gpx, getTrailName(trail)); }}
+                      onClick={handleGpxShare}
                     className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
                     title="Share GPX to Organic Maps (mobile) or download (desktop)"
                   >
@@ -729,13 +763,13 @@ export default function TrailDetail() {
                          <p className="text-sm text-gray-500 mb-2">Monthly Popularity</p>
                          <MonthlyScoreGrid
                            monthly={monthly}
-                           availableMonths={getAvailableMonthsFromSeasonal(popSeasonal, true)}
+                              availableMonths={getAvailableMonthsFromSeasonal(popSeasonal)}
                            seasonal={popSeasonal}
                          />
                          <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200">
                            <ScoreBreakdownRow
                              monthly={monthly}
-                             availableMonths={getAvailableMonthsFromSeasonal(popSeasonal, true)}
+                             availableMonths={getAvailableMonthsFromSeasonal(popSeasonal)}
                              seasonal={popSeasonal}
                            />
                          </div>

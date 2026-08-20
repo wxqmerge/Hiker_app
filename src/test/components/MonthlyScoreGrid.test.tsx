@@ -2,16 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import MonthlyScoreGrid, { ScoreBreakdownRow } from '../../components/MonthlyScoreGrid';
 
-vi.mock('../../utils/score.js', () => ({
-  getSeasonalInfo: (seasonal: any) => ({ hasQuarterData: !!seasonal?.Q1 }),
-  calculateMonthlyScore: (hikeCount: number, idx: number, availableMonths: number[], hasQuarterData: boolean) => {
+vi.mock('../../utils/score.js', () => {
+  const getSeasonalInfo = (seasonal: any) => ({ hasQuarterData: !!seasonal?.Q1 });
+  const calculateMonthlyScore = (hikeCount: number, idx: number, availableMonths: number[], hasQuarterData: boolean) => {
     let score = 0;
     if (hasQuarterData) score += 1;
     if (availableMonths.includes(idx + 1)) score += 1;
     score += Math.min(9, hikeCount * 2);
     return Math.min(10, score);
-  },
-}));
+  };
+  const computeMonthlyScores = (monthly: number[], availableMonths: number[], hasQuarterData: boolean) =>
+    (Array.isArray(monthly) ? monthly : []).map((hikeCount, idx) =>
+      calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData)
+    );
+  return { getSeasonalInfo, calculateMonthlyScore, computeMonthlyScores };
+});
 
 describe('MonthlyScoreGrid', () => {
   const defaultProps = {

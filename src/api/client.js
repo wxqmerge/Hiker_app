@@ -1,5 +1,5 @@
 import { getApiBase } from '../utils/url.js';
-export { getApiBase };
+import { getStoredApiKey } from '../utils/apiKey';
 
 export async function request(path, options = {}) {
   const apiBase = getApiBase();
@@ -11,7 +11,7 @@ export async function request(path, options = {}) {
   }
 
   if (options.apiKey) {
-    headers['X-API-Key'] = localStorage.getItem('hiker-api-key') || '';
+    headers['X-API-Key'] = getStoredApiKey();
   }
 
   const res = await fetch(url, {

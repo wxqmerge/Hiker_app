@@ -4,7 +4,9 @@ import { useTrailStore } from '../hooks/useTrailStore';
 import { useFilters } from '../hooks/useFilters';
 import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
+import { useYearContext } from '../contexts/YearContext';
 import { useDayWeather } from '../hooks/useDayWeather';
+import { createDate } from '../utils/dateUtils';
 import FilterPanel from '../components/FilterPanel';
 import TrailList from '../components/TrailList';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -15,9 +17,10 @@ export default function Home() {
   const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails, trailDetails);
   const { selectedMonth } = useMonthContext();
   const { selectedDay } = useDayContext();
-  const hikeDate = useMemo(() => new Date(new Date().getFullYear(), selectedMonth, parseInt(selectedDay) || 1), [selectedMonth, selectedDay]);
+  const { selectedYear } = useYearContext();
+  const hikeDate = useMemo(() => createDate(selectedYear, selectedMonth, parseInt(selectedDay) || 1), [selectedYear, selectedMonth, selectedDay]);
   const trailIds = useMemo(() => sortedTrails.map(t => t.id), [sortedTrails]);
-  const weatherMap = useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, trails: sortedTrails });
+  const weatherMap = useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, trails: sortedTrails, year: selectedYear });
 
   if (loading) {
     return <LoadingSpinner message="Loading trails..." />;

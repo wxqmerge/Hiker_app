@@ -1,15 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useMemo } from 'react';
 import { MONTH_ABBR } from '../utils/constants';
-import { getSeasonalInfo, calculateMonthlyScore } from '../utils/score.js';
+import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';
 import MonthGrid from './MonthGrid';
 
 export function computeScoreBreakdown(monthly, availableMonths, seasonal) {
   if (!monthly || monthly.length === 0) return [];
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
   const availSet = new Set(availableMonths);
+  const scores = computeMonthlyScores(monthly, availableMonths, hasQuarterData);
   return monthly.map((hikeCount, idx) => {
-    const score = calculateMonthlyScore(hikeCount, idx, availableMonths, hasQuarterData);
+    const score = scores[idx];
     const quarterBase = hasQuarterData ? 1 : 0;
     const monthBase = availSet.has(idx + 1) ? 1 : 0;
     const scheduleBase = Math.min(9, hikeCount * 2);

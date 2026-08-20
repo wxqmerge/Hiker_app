@@ -5,38 +5,6 @@ function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Generate formatted report text from trail data
-// Format: Trail Name◆︎  [Difficulty]  distance / elevation  parking  ride-$X
-//         [newline + description]
-export function generateReportText(trail, trailDetails = null, earlyStart = false) {
-  const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
-
-  let line = `${name}◆︎`;
-  if (earlyStart) line += ' (Early Start)';
-  line += `  ${difficulty}\t${distanceText} / ${elevationText}\t${parking}`;
-  if (rideCost) line += `\t${rideCost}`;
-
-  let report = line;
-
-  // Append description if available
-  if (trailDetails && trailDetails[trail.id]) {
-    const description = trailDetails[trail.id].fullDescription || '';
-    if (description.trim()) {
-      report += '\n' + description.trim();
-    }
-  }
-  
-  // Append web link if available (only DB links, no fallback search URL)
-  if (trail.webLink) {
-    report += `\n\nLink: ${trail.webLink}\n`;
-  }
-  if (trail.hasGpx) {
-    report += '\nGPX: available\n';
-  }
-
-  return report;
-}
-
 // Build description + web link + GPX HTML snippet for a trail.
 // mode "compact" → monthly report classes; mode "card" → single-trail classes
 function buildTrailDetailsHtml(trail, trailDetails, mode = 'compact') {

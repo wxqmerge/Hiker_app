@@ -1,5 +1,5 @@
 import { MONTH_ABBR } from './constants';
-import { getSeasonalInfo, calculateMonthlyScore } from './score.js';
+import { getSeasonalInfo, sumMonthlyScores } from './score.js';
 import { getTrailDetailsById, getTrailName } from './data';
 
 function getTrailMonthlyScore(trail, trailDetails, idx) {
@@ -105,14 +105,9 @@ export function sortTrails(items, filters, trailDetails) {
       const resolved = rawId && trailDetails ? getTrailDetailsById(trailDetails, rawId) : null;
       const details = resolved ? resolved[rawId] : null;
       const monthly = details?.popularity?.monthly || t.monthly || null;
-      if (monthly) {
+      if (Array.isArray(monthly)) {
         const { hasQuarterData } = getSeasonalInfo(seasonal);
-        const scoredMonths = filters.months.length === 0
-          ? monthly.map((hikeCount, i) => ({ hikeCount, i }))
-          : monthly.map((hikeCount, i) => ({ hikeCount, i })).filter(({ i }) => filters.months.includes(i));
-        return scoredMonths.reduce((sum, { hikeCount, i }) => {
-          return sum + calculateMonthlyScore(hikeCount, i, MONTH_ABBR.map((_, j) => j + 1), hasQuarterData);
-        }, 0);
+        return sumMonthlyScores(monthly, MONTH_ABBR.map((_, j) => j + 1), filters.months, hasQuarterData);
       }
       const keyed = filters.months.length === 0
         ? MONTH_ABBR.reduce((sum, m) => sum + (seasonal[m] || 0), 0)

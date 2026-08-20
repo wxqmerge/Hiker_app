@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getSeasonalInfo, calculateMonthlyScore } from '../../utils/score';
+import { getSeasonalInfo, calculateMonthlyScore, computeMonthlyScores, sumMonthlyScores } from '../../utils/score';
 
 describe('getSeasonalInfo', () => {
   it('returns empty keys and false for null/undefined', () => {
@@ -51,5 +51,29 @@ describe('calculateMonthlyScore', () => {
 
   it('caps score at 9', () => {
     expect(calculateMonthlyScore(100, 0, [], true)).toBe(9);
+  });
+});
+
+describe('computeMonthlyScores', () => {
+  it('returns an empty array for non-array input', () => {
+    expect(computeMonthlyScores(null, [])).toEqual([]);
+  });
+
+  it('computes a score for each month', () => {
+    expect(computeMonthlyScores([1, 2, 0], [1, 2], false)).toEqual([3, 5, 0]);
+  });
+});
+
+describe('sumMonthlyScores', () => {
+  it('returns null for non-array input', () => {
+    expect(sumMonthlyScores(null, [])).toBeNull();
+  });
+
+  it('sums all months when no months are selected', () => {
+    expect(sumMonthlyScores([1, 2, 0], [1, 2], [], false)).toBe(8);
+  });
+
+  it('sums only selected months', () => {
+    expect(sumMonthlyScores([1, 2, 3], [1, 2, 3], [0, 2], false)).toBe(10);
   });
 });

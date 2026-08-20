@@ -14,10 +14,6 @@ vi.mock('../../hooks/useTrails', () => ({
   }),
 }));
 
-vi.mock('../../hooks/useSchedulePolling', () => ({
-  useSchedulePolling: vi.fn(),
-}));
-
 vi.mock('../../hooks/useTooltips', () => ({
   useTooltips: () => ({ title: vi.fn((s: string) => s) }),
 }));
@@ -37,7 +33,6 @@ vi.mock('../../hooks/useApiKey', () => ({
 vi.mock('../../hooks/useScheduleData', () => ({
   useScheduleData: () => ({
     assignedHikes: {},
-    assignedCount: 0,
     hikeDates: [],
     findTrailById: vi.fn(),
     trailIndexToId: {},

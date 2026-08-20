@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateReportText, generateReportHtml, getRideCost, copyToClipboard } from '../../utils/report';
+import { generateReportHtml, getRideCost, copyToClipboard } from '../../utils/report';
 
 describe('getRideCost', () => {
   it('returns ride-$3 for range < 30', () => {
@@ -31,107 +31,6 @@ describe('getRideCost', () => {
     expect(getRideCost(-1)).toBeNull();
     expect(getRideCost(null)).toBeNull();
     expect(getRideCost(undefined)).toBeNull();
-  });
-});
-
-describe('generateReportText', () => {
-  const mockTrail = {
-    id: 'trail-1',
-    name: 'Rainier',
-    fullName: 'Mount Rainier',
-    distance: 5.5,
-    elevationStart: 2000,
-    elevationMax: 4000,
-    difficulty: 'Moderate',
-    parking: 'Lot',
-    range: 45,
-  };
-
-  it('includes trail header line', () => {
-    const result = generateReportText(mockTrail);
-    expect(result).toContain('Mount Rainier');
-    expect(result).toContain('[Moderate]');
-  });
-
-  it('generates report with trail info', () => {
-    const report = generateReportText(mockTrail);
-    expect(report).toContain('Mount Rainier');
-    expect(report).toContain('[Moderate]');
-    expect(report).toContain('5.5');
-    expect(report).toContain("2,000'");
-    expect(report).toContain('Lot');
-    expect(report).toContain('ride-$5');
-  });
-
-  it('includes description from trailDetails', () => {
-    const trailDetails = {
-      'trail-1': {
-        fullDescription: 'This is a beautiful trail with great views.',
-        pros: 'Great views',
-        others: 'Parking is easy',
-      },
-    };
-    const result = generateReportText(mockTrail, trailDetails);
-    expect(result).toContain('This is a beautiful trail with great views.');
-  });
-
-  it('exports full description as-is', () => {
-    const trailDetails = {
-      'trail-1': {
-        fullDescription: 'Beautiful trail with great views.',
-      },
-    };
-    const result = generateReportText(mockTrail, trailDetails);
-    expect(result).toContain('Beautiful trail with great views.');
-  });
-
-  it('handles missing trailDetails', () => {
-    const result = generateReportText(mockTrail, null);
-    expect(result).toContain('Mount Rainier');
-  });
-
-  it('handles missing trailDetails for specific trail', () => {
-    const trailDetails = {
-      'trail-99': { fullDescription: 'Some other trail' },
-    };
-    const result = generateReportText(mockTrail, trailDetails);
-    expect(result).toContain('Mount Rainier');
-  });
-
-  it('includes (Early Start) after trail name when earlyStart is true', () => {
-    const result = generateReportText(mockTrail, null, true);
-    expect(result).toContain('(Early Start)');
-    expect(result).toContain('[Moderate]');
-    const earlyStartIdx = result.indexOf('(Early Start)');
-    const difficultyIdx = result.indexOf('[Moderate]');
-    expect(earlyStartIdx).toBeLessThan(difficultyIdx);
-  });
-
-  it('includes early start marker', () => {
-    const report = generateReportText(mockTrail, null, true);
-    expect(report).toContain('Early Start');
-  });
-
-  it('does not include (Early Start) when earlyStart is false', () => {
-    const result = generateReportText(mockTrail, null, false);
-    expect(result).not.toContain('(Early Start)');
-  });
-
-  it('includes web link', () => {
-    const trailWithLink = { ...mockTrail, webLink: 'https://example.com' };
-    const report = generateReportText(trailWithLink);
-    expect(report).toContain('Link: https://example.com');
-  });
-
-  it('includes GPX availability', () => {
-    const trailWithGpx = { ...mockTrail, hasGpx: true };
-    const report = generateReportText(trailWithGpx);
-    expect(report).toContain('GPX: available');
-  });
-
-  it('handles missing trail details', () => {
-    const report = generateReportText(mockTrail, {});
-    expect(report).not.toContain('undefined');
   });
 });
 
