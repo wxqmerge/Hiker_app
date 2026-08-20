@@ -130,11 +130,20 @@ export async function getSchedule() {
   return request('/api/schedule', { stripMetadata: true });
 }
 
-export async function updateSchedule(schedule) {
+export function getScheduleEntryCount(schedule) {
+  if (!schedule || typeof schedule !== 'object') return 0;
+  return Object.values(schedule).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
+}
+
+export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
+  if (getScheduleEntryCount(schedule) === 0 && !confirmEmpty) {
+    throw new Error('Refusing to save an empty schedule. Use an explicit clear action to confirm.');
+  }
   return request('/api/schedule', {
     method: 'PUT',
     body: schedule,
     apiKey: true,
+    headers: confirmEmpty ? { 'X-Confirm-Empty': 'true' } : undefined,
   });
 }
 

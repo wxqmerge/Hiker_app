@@ -112,6 +112,7 @@ export default function ScheduleBuilder() {
             onDragEnd={handleDragEnd}
             className="cursor-grab active:cursor-grabbing"
             title={tt('Drag to schedule on a date')}
+            aria-label={`Drag ${getTrailName(trail)} to schedule on a date`}
           >
            <div className="relative">
               <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} weather={weatherMap[trail.id]} />
@@ -241,8 +242,9 @@ export default function ScheduleBuilder() {
                                    ? 'border-amber-300 bg-amber-50 cursor-pointer'
                                    : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
                              }`}
-                           style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
+                            style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
                           title={trailId ? tt('Drop another hike here to swap · Double-click to edit trail (requires API key)') : tt('Drop a hike here to schedule')}
+                          aria-label={trailId ? `Day ${day}, ${getDayName(dayOfWeek)}: ${displayHikeName}` : `Empty slot on day ${day}, ${getDayName(dayOfWeek)}`}
                         >
                            <div className="flex items-start gap-3">
                              <div className="text-center flex-shrink-0">
@@ -313,32 +315,35 @@ export default function ScheduleBuilder() {
                            {trailId && (
                              <div className="flex items-center gap-1 ml-3">
                                <label className="flex items-center gap-1 cursor-pointer" title={tt('Toggle early start (affects hike description)')}>
-                                 <input
-                                   type="checkbox"
-                                    checked={!!earlyStart}
-                                    onChange={() => toggleEarlyStart(day, slotIdx)}
-                                    className="w-4 h-4 text-orange-500 rounded"
-                                 />
+                                  <input
+                                    type="checkbox"
+                                     checked={!!earlyStart}
+                                     onChange={() => toggleEarlyStart(day, slotIdx)}
+                                     className="w-4 h-4 text-orange-500 rounded"
+                                     aria-label="Toggle early start"
+                                  />
                                  <span className="text-xs text-gray-500">ES</span>
                                </label>
                                {trail?.hasGpx && (
                                  <>
-                                    <button
-                                       onClick={() => downloadGpx(trailId, getTrailName(trail))}
-                                      disabled={isDownloading(trailId)}
-                                      className="text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
-                                      title={tt('Download GPX file')}
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <button
+                                        onClick={() => downloadGpx(trailId, getTrailName(trail))}
+                                       disabled={isDownloading(trailId)}
+                                       className="text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
+                                       title={tt('Download GPX file')}
+                                       aria-label={`Download GPX for ${getTrailName(trail)}`}
+                                     >
+                                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4-4V4" />
                                       </svg>
                                     </button>
-                                    <button
-                                      onClick={() => openTrailhead(trail)}
-                                      className="text-blue-600 hover:text-blue-800 transition-colors"
-                                      title={tt('Open trailhead in Google Maps')}
-                                    >
-                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <button
+                                       onClick={() => openTrailhead(trail)}
+                                       className="text-blue-600 hover:text-blue-800 transition-colors"
+                                       title={tt('Open trailhead in Google Maps')}
+                                       aria-label={`Open trailhead for ${getTrailName(trail)} in Google Maps`}
+                                     >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                      </svg>
@@ -350,10 +355,11 @@ export default function ScheduleBuilder() {
                                      href={getNoaaTideUrl(trail.tideStationId, createDate(year, selectedMonth, day))}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-800 transition-colors"
-                                    title={`NOAA Tide Station ${trail.tideStationId}`}
-                                  >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     className="text-blue-600 hover:text-blue-800 transition-colors"
+                                     title={`NOAA Tide Station ${trail.tideStationId}`}
+                                     aria-label={`View NOAA tide predictions for ${getTrailName(trail)}`}
+                                   >
+                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
                                     </svg>
                                   </a>
@@ -363,20 +369,22 @@ export default function ScheduleBuilder() {
                                     href={trail.webLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-800 transition-colors"
-                                    title={trail.webLink}
-                                  >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     className="text-blue-600 hover:text-blue-800 transition-colors"
+                                     title={trail.webLink}
+                                     aria-label={`Open web link for ${getTrailName(trail)}`}
+                                   >
+                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                     </svg>
                                   </a>
                                 )}
                                 <button
                                   onClick={() => removeHike(day, slotIdx)}
-                                  className="text-red-400 hover:text-red-600 transition-colors"
-                                  title={tt('Remove hike from this date')}
-                                >
-                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   className="text-red-400 hover:text-red-600 transition-colors"
+                                   title={tt('Remove hike from this date')}
+                                   aria-label={`Remove ${displayHikeName || 'hike'} from day ${day}`}
+                                 >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                  </svg>
                                </button>

@@ -25,6 +25,7 @@ export default function ToastContainer() {
       {toasts.map(toast => (
         <div
           key={toast.id}
+          role={toast.type === 'error' ? 'alert' : 'status'}
           className={`px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-opacity ${
             toast.type === 'success'
               ? 'bg-green-600 text-white'

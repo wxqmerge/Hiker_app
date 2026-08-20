@@ -67,6 +67,14 @@ export default function TrailDetail() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const hikeDateParam = searchParams.get('date');
+  const hikeDate = useMemo(() => {
+    if (!hikeDateParam) return null;
+    const m = hikeDateParam.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const d = new Date(hikeDateParam);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }, [hikeDateParam]);
   const { trails, loading } = useTrails();
   const { trailDetails, saveTrail, saveTrailDetail, deleteTrail } = useTrailStore();
   const { title: tt } = useTooltips();
@@ -358,7 +366,7 @@ export default function TrailDetail() {
   };
 
   const copyReport = () => {
-    const html = generateTrailHtml(trail, trailDetailsResult);
+    const html = generateTrailHtml(trail, trailDetailsResult, hikeDate);
     openHtmlInNewTab(html);
   };
 
@@ -383,7 +391,7 @@ export default function TrailDetail() {
     const htmlDetail = {};
     const desc = getEditedValue('description');
     if (desc) htmlDetail.fullDescription = desc;
-    const html = generateTrailHtml(htmlTrail, htmlDetail);
+    const html = generateTrailHtml(htmlTrail, htmlDetail, hikeDate);
     openHtmlInNewTab(html);
   };
 
@@ -442,8 +450,9 @@ export default function TrailDetail() {
                   : 'bg-green-600 text-white hover:bg-green-700'
               }`}
               title={tt('Go to previous trail')}
+              aria-label="Go to previous trail"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Prev
@@ -458,9 +467,9 @@ export default function TrailDetail() {
                   : 'bg-green-600 text-white hover:bg-green-700'
               }`}
               title={tt('Go to next trail')}
+              aria-label="Go to next trail"
             >
-              Next
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -471,8 +480,9 @@ export default function TrailDetail() {
               onClick={exportTrailAsTsv}
               className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-blue-700 hover:text-blue-900"
               title={tt('Export this hike as TSV matching Excel format')}
+              aria-label="Export this hike as TSV"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               TSV
@@ -482,8 +492,9 @@ export default function TrailDetail() {
               onClick={exportTrailAsHtml}
               className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-purple-700 hover:text-purple-900"
               title={tt('Export this trail as HTML')}
+              aria-label="Export this trail as HTML"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 3h10l4 8v9a2 2 0 01-2 2H5a2 2 0 01-2-2V5l4-2z" />
               </svg>
               HTML
@@ -493,8 +504,9 @@ export default function TrailDetail() {
               onClick={copyReport}
               className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-green-700 hover:text-green-900"
               title={tt('Open trail report in new tab')}
+              aria-label="Open trail report in new tab"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
               Report
@@ -504,8 +516,9 @@ export default function TrailDetail() {
               onClick={startEditMode}
               className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-green-700 hover:text-green-900"
               title={tt('Edit trail details')}
+              aria-label="Edit trail details"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
               Edit
@@ -514,8 +527,9 @@ export default function TrailDetail() {
               onClick={startDuplicate}
               className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-blue-700 hover:text-blue-900"
               title="Duplicate this trail as a new entry"
+              aria-label="Duplicate this trail as a new entry"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
               Dup
@@ -525,8 +539,9 @@ export default function TrailDetail() {
                 onClick={handleDelete}
                 className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-red-700 hover:text-red-900"
                 title="Delete this trail"
+                aria-label="Delete this trail"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
                 Del
@@ -733,12 +748,13 @@ export default function TrailDetail() {
               <h3 className="text-lg font-semibold text-gray-800 mb-2">GPX Track</h3>
                <div className="flex items-center gap-3">
                  <GPXHelp variant="light" />
-                  <button
+                <button
                       onClick={handleGpxShare}
                     className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
                     title="Share GPX to Organic Maps (mobile) or download (desktop)"
+                    aria-label="Share GPX to Organic Maps or download"
                   >
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
                   <span>Share GPX (opens in Organic Maps or downloads)</span>
@@ -783,7 +799,7 @@ export default function TrailDetail() {
 
        {isEditMode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-label={isDuplicate ? 'Duplicate trail' : `Edit ${getTrailName(trail)}`}>
             <div className="p-6">
               {isDuplicate ? (
                 <div>
@@ -931,6 +947,7 @@ export default function TrailDetail() {
                             }}
                             className="w-12 text-center px-1 py-1 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
                             title={`${month} hike count`}
+                            aria-label={`${month} hike count`}
                           />
                         </div>
                       )}

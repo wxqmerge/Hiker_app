@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchWeatherAndTide, clearNwsCache } from '../../utils/io';
+import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchWeatherAndTide, clearNwsCache, openWeatherUrl, hasValidCoords } from '../../utils/io';
 
 describe('sanitizeFilename', () => {
   it('replaces non-alphanumeric characters with underscores', () => {
@@ -362,6 +362,23 @@ describe('fetchNwsForecastForDate', () => {
     const result = await fetchNwsForecastForDate(lat, lon, targetDate);
     expect(result).toBeNull();
   });
+
+  it('does not request weather when coordinates are missing or invalid', async () => {
+    const fetchFn = vi.fn();
+    vi.stubGlobal('fetch', fetchFn);
+    await expect(fetchNwsForecastForDate(null, -122.3, targetDate)).resolves.toBeNull();
+    await expect(fetchNwsForecastForDate(47.6, undefined, targetDate)).resolves.toBeNull();
+    await expect(fetchNwsForecastForDate(Number.NaN, -122.3, targetDate)).resolves.toBeNull();
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it('caches unsupported coordinates so repeated calls do not refetch', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) }));
+    vi.stubGlobal('fetch', fetchFn);
+    await expect(fetchNwsForecastForDate(lat, lon, targetDate)).resolves.toBeNull();
+    await expect(fetchNwsForecastForDate(lat, lon, targetDate)).resolves.toBeNull();
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('fetchWeatherAndTide', () => {
@@ -390,5 +407,46 @@ describe('fetchWeatherAndTide', () => {
     const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
     expect(urls).toContainEqual(expect.stringContaining('datagetter'));
     expect(urls).toContainEqual(expect.stringContaining('station=9447130'));
+  });
+
+  it('does not request NWS weather when coordinates are invalid', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal('fetch', fetchFn);
+    await expect(fetchWeatherAndTide(undefined, undefined, targetDate, null)).resolves.toBeNull();
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it('still fetches tide when coordinates are invalid but stationId is provided', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal('fetch', fetchFn);
+    await fetchWeatherAndTide(null, null, targetDate, '9447130');
+    const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
+    expect(urls).not.toContainEqual(expect.stringContaining('api.weather.gov'));
+    expect(urls).toContainEqual(expect.stringContaining('station=9447130'));
+  });
+});
+
+describe('openWeatherUrl', () => {
+  it('does not open a URL when coordinates are invalid', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window);
+    openWeatherUrl(undefined, undefined);
+    openWeatherUrl(Number.NaN, 47.6);
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+});
+
+describe('hasValidCoords', () => {
+  it('accepts numeric and numeric-string coordinates', () => {
+    expect(hasValidCoords(47.6, -122.3)).toBe(true);
+    expect(hasValidCoords('47.6', '-122.3')).toBe(true);
+  });
+
+  it('rejects missing, empty, boolean, or NaN coordinates', () => {
+    expect(hasValidCoords(null, -122.3)).toBe(false);
+    expect(hasValidCoords(47.6, undefined)).toBe(false);
+    expect(hasValidCoords('', -122.3)).toBe(false);
+    expect(hasValidCoords(true, -122.3)).toBe(false);
+    expect(hasValidCoords(Number.NaN, -122.3)).toBe(false);
   });
 });

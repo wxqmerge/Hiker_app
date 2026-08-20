@@ -31,8 +31,9 @@ export default function GPXHelp({ variant = 'light' }) {
       target="_blank"
       rel="noopener noreferrer"
       className={`flex items-center gap-1.5 px-3 py-1 border ${currentStyle.button} text-xs font-medium rounded-md transition-colors`}
+      aria-label="Get a maps app for GPX files"
     >
-      <svg className={`w-3 h-3 ${currentStyle.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className={`w-3 h-3 ${currentStyle.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.724a1 1 0 001.447.894v10.764a1 1 0 00-1.447.894l-6-3" />
       </svg>
       Get Maps

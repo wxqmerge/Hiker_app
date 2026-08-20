@@ -65,6 +65,10 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
   const oldSchedule = getSchedule();
   const oldCount = Object.values(oldSchedule).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
   console.log('[SCHEDULE] Previous:', oldCount, 'entries');
+  if (entryCount === 0 && req.headers['x-confirm-empty'] !== 'true' && req.headers['x-confirm-empty'] !== '1') {
+    console.warn('[SCHEDULE] Refusing to save empty schedule without confirmation');
+    return res.status(400).json({ success: false, error: { message: 'Refusing to save an empty schedule. Use an explicit clear action to confirm.' } });
+  }
   await updateSchedule(normalized as typeof result.data);
   const newVersion = getScheduleVersion();
   console.log('[SCHEDULE] Save complete, new version:', newVersion.substring(0, 8));

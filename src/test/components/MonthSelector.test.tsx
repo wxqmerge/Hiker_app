@@ -42,4 +42,10 @@ describe('MonthSelector', () => {
     const select = screen.getByRole('combobox');
     expect(select).toHaveAttribute('title', 'Select month');
   });
+
+  it('includes the selected year in month labels', () => {
+    render(<MonthSelector {...props} year={2027} />);
+    const select = screen.getByRole('combobox');
+    expect(select.options[6].textContent).toContain('July 2027');
+  });
 });

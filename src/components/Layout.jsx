@@ -79,7 +79,7 @@ function HeaderContent() {
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
           <div className="container mx-auto px-4 py-2">
             <div className="flex items-center justify-between">
-              <nav className="flex items-baseline gap-2 flex-shrink-0">
+              <nav aria-label="Primary" className="flex items-baseline gap-2 flex-shrink-0">
                 {NAV_LINKS.map((link) => (
                   <NavLink
                     key={link.to}
@@ -138,6 +138,7 @@ function HeaderContent() {
             <div className="container mx-auto px-4 py-2">
               <form
                 className="flex items-center gap-2"
+                aria-label="Create new trail"
                 onSubmit={(e) => { e.preventDefault(); submitNewTrail(); }}
               >
                 <input
@@ -159,7 +160,7 @@ function HeaderContent() {
               </form>
             </div>
           )}
-          <main className="container mx-auto px-4 py-3">
+          <main id="main-content" className="container mx-auto px-4 py-3">
             <Outlet />
           </main>
       </div>

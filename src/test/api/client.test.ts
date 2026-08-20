@@ -235,10 +235,34 @@ describe('updateSchedule', () => {
       status: 200,
     });
     const { updateSchedule } = await import('../../api/client');
-    await updateSchedule({ Jan: [] });
+    await updateSchedule({ Jan: [{ day: 1, trail_id: 'trail-1' }] });
     expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/schedule'),
       expect.objectContaining({ method: 'PUT' })
+    );
+  });
+
+  it('refuses to save an empty schedule without confirmation', async () => {
+    const { updateSchedule } = await import('../../api/client');
+    await expect(updateSchedule({ Jan: [] })).rejects.toThrow('Refusing to save an empty schedule');
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('sends an empty schedule when confirmation is provided', async () => {
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+      headers: { get: () => null },
+      status: 200,
+    });
+    const { updateSchedule } = await import('../../api/client');
+    await updateSchedule({ Jan: [] }, { confirmEmpty: true });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/schedule'),
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({ 'X-Confirm-Empty': 'true' }),
+      })
     );
   });
 });

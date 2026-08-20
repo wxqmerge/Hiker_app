@@ -65,6 +65,25 @@ describe('TrailCard', () => {
     expect(link).toHaveAttribute('href', '/trail/trail-1');
   });
 
+  it('includes the hike date in the trail detail link when hikeDate is provided', () => {
+    render(
+      <MemoryRouter initialEntries={['/trail/trail-1']}>
+        <TrailCard trail={baseTrail} hikeDate={new Date(2026, 7, 20)} />
+      </MemoryRouter>
+    );
+    const link = screen.getByRole('link', { name: /Mount Rainier/i });
+    expect(link).toHaveAttribute('href', '/trail/trail-1?date=2026-08-20');
+  });
+
+  it('does not render nested anchors when weather links are present', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/trail/trail-1']}>
+        <TrailCard trail={baseTrail} weather={{ temp: 70, rain: 10 }} />
+      </MemoryRouter>
+    );
+    expect(container.querySelector('a a')).toBeNull();
+  });
+
   it('renders Report button', () => {
     renderWithRouter();
     expect(screen.getByText('Report')).toBeInTheDocument();

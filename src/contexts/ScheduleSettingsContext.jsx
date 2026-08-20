@@ -88,6 +88,9 @@ export function ScheduleSettingsProvider({ children }) {
     lastSavedStoreRef.current = currentStoreJson;
     const serverData = storeToServerSchedule(scheduleStore);
     const entryCount = Object.values(serverData).reduce((sum, entries) => sum + normalizeServerMonthEntries(entries).length, 0);
+    if (entryCount === 0) {
+      return;
+    }
     try {
       setSaveStatus('saving');
       if (debugMode) console.log('[Schedule] Saving schedule:', entryCount, 'entries');
@@ -139,7 +142,7 @@ export function ScheduleSettingsProvider({ children }) {
     setShowSettings(false);
     closeHistory();
     try {
-      await updateSchedule({});
+      await updateSchedule({}, { confirmEmpty: true });
       showToast('Schedule cleared.', 'success');
     } catch (err) {
       showToast('Clear failed: ' + err.message, 'error');
@@ -174,6 +177,9 @@ export function ScheduleSettingsProvider({ children }) {
     try {
       const result = await restoreSchedule(timestamp);
       if (result.success) {
+        if (result.schedule) {
+          setSchedule(result.schedule);
+        }
         closeHistory();
         showToast('Schedule restored successfully.', 'success');
       }
@@ -740,7 +746,7 @@ export function ScheduleSettingsProvider({ children }) {
 
       {/* Schedule History Panel */}
       {showHistory && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-4">
+        <div className="fixed left-1/2 top-20 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-800">
               Schedule History ({historyEntries.length})
@@ -756,7 +762,7 @@ export function ScheduleSettingsProvider({ children }) {
               </button>
             </div>
           </div>
-          <div className="p-4">
+          <div className="p-4 max-h-[60vh] overflow-y-auto">
             {loadingHistory ? (
               <p className="text-sm text-gray-500 text-center py-4">Loading history...</p>
             ) : historyEntries.length === 0 ? (

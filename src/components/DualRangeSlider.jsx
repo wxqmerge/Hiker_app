@@ -69,7 +69,7 @@ export default function DualRangeSlider({
   }, []);
 
   return (
-    <label className="flex flex-col gap-1 text-sm text-gray-600" title={tooltip ? tt(tooltip) : undefined}>
+    <label className="flex flex-col gap-1 text-sm text-gray-600" title={tooltip ? tt(tooltip) : undefined} role="group" aria-label={tooltip}>
       <span className="font-medium">{label}</span>
       <div
         ref={containerRef}
@@ -99,7 +99,7 @@ export default function DualRangeSlider({
           style={{ left: `calc(${pct(value.max)}% - 8px)` }}
         />
       </div>
-      <span className="text-xs text-gray-500">
+      <span className="text-xs text-gray-500" aria-live="polite">
         {value.min}{unit} – {value.max}{unit}
       </span>
     </label>

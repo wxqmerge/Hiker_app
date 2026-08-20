@@ -88,7 +88,7 @@ function NextHikeCard({ hike, idx, weather }) {
                       {weather && (
                         <>
                           <span className="text-green-300">•</span>
-                          <span title={`${weather.temp}°F, ${weather.rain}% rain`} className={weather.rain >= 40 ? 'text-blue-200 font-medium' : ''}>
+                          <span title={`${weather.temp}°F, ${weather.rain}% rain`} aria-label={`Forecast: ${weather.temp}°F, ${weather.rain}% rain`} className={weather.rain >= 40 ? 'text-blue-200 font-medium' : ''}>
                             {weather.temp}°F{weather.rain >= 1 && ` · ${weather.rain}%`}
                           </span>
                         </>

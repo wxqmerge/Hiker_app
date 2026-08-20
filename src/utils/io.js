@@ -37,12 +37,23 @@ export function getFirstCoordinateFromGpx(gpxContent) {
 
 // Open Google Maps for a trailhead coordinate
 export function openGoogleMapsTrailhead(lat, lon) {
+  if (!hasValidCoords(lat, lon)) return;
   const url = `https://www.google.com/maps?q=${lat},${lon}`;
   window.open(url, '_blank');
 }
 
+function isValidCoordinate(value) {
+  if (value == null || value === '' || typeof value === 'boolean') return false;
+  return Number.isFinite(Number(value));
+}
+
+export function hasValidCoords(lat, lon) {
+  return isValidCoordinate(lat) && isValidCoordinate(lon);
+}
+
 // Open NWS weather forecast page for a coordinate
 export function openWeatherUrl(lat, lon) {
+  if (!hasValidCoords(lat, lon)) return;
   const url = `https://forecast.weather.gov/MapClick.php?lon=${lon}&lat=${lat}`;
   window.open(url, '_blank');
 }
@@ -56,16 +67,21 @@ export function openWeatherUrl(lat, lon) {
  * forecast refreshes when NWS updates it.
  */
 const _nwsCache = new Map();
+const _nwsMissCache = new Map();
 const _nwsTTL = 3 * 60 * 60 * 1000; // 3 hours
 
 export function clearNwsCache() {
   _nwsCache.clear();
+  _nwsMissCache.clear();
 }
 
 export async function fetchNwsForecastForDate(lat, lon, targetDate) {
+  if (!hasValidCoords(lat, lon) || !targetDate) return null;
   const cacheKey = `${lat},${lon}`;
-  let cached = _nwsCache.get(cacheKey);
+  const miss = _nwsMissCache.get(cacheKey);
+  if (miss && Date.now() - miss.ts < _nwsTTL) return null;
 
+  let cached = _nwsCache.get(cacheKey);
   let periods;
   if (cached && Date.now() - cached.ts < _nwsTTL) {
     periods = cached.periods;
@@ -74,7 +90,10 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
       const ptRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
         headers: { 'Accept': 'application/geo+json', 'User-Agent': 'Hiker-App' }
       });
-      if (!ptRes.ok) return null;
+      if (!ptRes.ok) {
+        if (ptRes.status === 404) _nwsMissCache.set(cacheKey, { ts: Date.now() });
+        return null;
+      }
       const pt = await ptRes.json();
       const gridId = pt.properties.gridId;
       const gridX = pt.properties.gridX;
@@ -83,7 +102,10 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
         `https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}/forecast`,
         { headers: { 'Accept': 'application/geo+json', 'User-Agent': 'Hiker-App' } }
       );
-      if (!fcRes.ok) return null;
+      if (!fcRes.ok) {
+        if (fcRes.status === 404) _nwsMissCache.set(cacheKey, { ts: Date.now() });
+        return null;
+      }
       const fc = await fcRes.json();
       periods = fc.properties.periods;
       _nwsCache.set(cacheKey, { periods, ts: Date.now() });
@@ -140,7 +162,7 @@ export function buildTrailCoords(trailIds, trails) {
   const trailCoords = {};
   for (const id of trailIds) {
     const t = trailById.get(id);
-    const hasCoords = t?.trailHeadLat != null && t?.trailHeadLon != null;
+    const hasCoords = hasValidCoords(t?.trailHeadLat, t?.trailHeadLon);
     const hasTide = !!t?.tideStationId;
     if (hasCoords || hasTide) {
       trailCoords[id] = {
@@ -164,7 +186,7 @@ export function buildTrailCoords(trailIds, trails) {
  */
 export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
   try {
-    const hasCoords = lat != null && lon != null;
+    const hasCoords = hasValidCoords(lat, lon);
     const tasks = [];
     if (hasCoords) tasks.push(fetchNwsForecastForDate(lat, lon, targetDate));
     if (stationId) tasks.push(fetchTideHeightAt(stationId, targetDate));

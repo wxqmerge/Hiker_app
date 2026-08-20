@@ -12,10 +12,14 @@ vi.mock('../../api/client', () => ({
   getGpx: vi.fn(() => Promise.resolve(null)),
 }));
 
-vi.mock('../../utils/io', () => ({
-  openWeatherUrl: vi.fn(),
-  fetchWeatherAndTide: vi.fn(() => Promise.resolve(null)),
-}));
+vi.mock('../../utils/io', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../utils/io')>();
+  return {
+    ...actual,
+    openWeatherUrl: vi.fn(),
+    fetchWeatherAndTide: vi.fn(() => Promise.resolve(null)),
+  };
+});
 
 vi.mock('../../hooks/useGpxActions', () => ({
   useGpxActions: vi.fn(() => ({

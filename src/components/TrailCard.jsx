@@ -5,7 +5,7 @@ import { useToast } from '../hooks/useToast';
 import { useGpxActions } from '../hooks/useGpxActions';
 import { getTrailName, getTrailDetailsById, getAvailableMonthsFromSeasonal } from '../utils/data';
 import { getNoaaTideUrl } from '../utils/url.js';
-import { openHtmlInNewTab } from '../utils/io';
+import { openHtmlInNewTab, hasValidCoords } from '../utils/io';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
@@ -22,6 +22,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
   const { handleGpxDownload, handleTrailhead } = useGpxActions(trail);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
+  const trailName = getTrailName(trail);
 
   const handleLeaderClick = useCallback((e) => {
     e.stopPropagation();
@@ -45,6 +46,21 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     await copyToClipboard(name, setNameCopied, showToast);
   }, [trail, showToast]);
 
+  const trailDetailHref = useMemo(() => {
+    const base = `${import.meta.env.BASE_URL}trail/${trail.id}`;
+    if (!hikeDate) return base;
+    const d = hikeDate instanceof Date ? hikeDate : new Date(hikeDate);
+    if (Number.isNaN(d.getTime())) return base;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${base}?date=${y}-${m}-${day}`;
+  }, [trail.id, hikeDate]);
+
+  const handleOpenDetails = useCallback(() => {
+    window.open(trailDetailHref, '_blank', 'noopener,noreferrer');
+  }, [trailDetailHref]);
+
   const popScore = useMemo(() => {
     const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
     const monthly = detailsForTrail?.[trail.id]?.popularity?.monthly || [];
@@ -62,20 +78,30 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
          ? 'border-green-500 ring-2 ring-green-200 bg-white' 
          : 'border-gray-100 bg-white'
      }`}>
-        <a
-          href={`${import.meta.env.BASE_URL}trail/${trail.id}`}
-          className="block p-4"
-          title={tt('Open trail details')}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div className="flex justify-between items-start mb-2">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-gray-900">{getTrailName(trail)}</h3>
-                  <button
+          <div
+            className="p-4 cursor-pointer"
+            onClick={handleOpenDetails}
+            title={tt('Open trail details')}
+          >
+           <div className="flex justify-between items-start mb-2">
+             <div className="flex items-center gap-2">
+               <h3 className="text-lg font-bold text-gray-900">
+                 <a
+                   href={trailDetailHref}
+                   className="hover:text-green-700"
+                   title={tt('Open trail details')}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   onClick={(e) => e.stopPropagation()}
+                 >
+                   {getTrailName(trail)}
+                 </a>
+               </h3>
+                   <button
                 onClick={handleCopyName}
                 className="text-gray-400 hover:text-green-700 flex-shrink-0"
                 title={tt('Copy trail name')}
+                aria-label={nameCopied ? `${trailName} name copied` : `Copy ${trailName} name`}
               >
                 {nameCopied ? (
                   <Icon path="M5 13l4 4L19 7" />
@@ -100,11 +126,12 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                 {weather && (
                   <>
                     <a
-                      href={trail.trailHeadLat != null && trail.trailHeadLon != null ? `https://forecast.weather.gov/MapClick.php?lon=${trail.trailHeadLon}&lat=${trail.trailHeadLat}` : undefined}
+                      href={hasValidCoords(trail.trailHeadLat, trail.trailHeadLon) ? `https://forecast.weather.gov/MapClick.php?lon=${trail.trailHeadLon}&lat=${trail.trailHeadLat}` : undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex items-center gap-1 ${weather.rain >= 40 ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-600`}
                       title={weather.temp != null ? `Forecast: ${weather.temp}°F, ${weather.rain}% rain — open weather` : undefined}
+                      aria-label={weather.temp != null ? `Forecast for ${trailName}: ${weather.temp}°F, ${weather.rain}% rain` : `Open weather for ${trailName}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
@@ -120,6 +147,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                         target="_blank"
                         rel="noopener noreferrer"
                         title={`Low tide ${weather.tideTime}: ${weather.tide} ft — view NOAA predictions`}
+                        aria-label={`Low tide for ${trailName} at ${weather.tideTime}: ${weather.tide} ft, view NOAA predictions`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
@@ -135,10 +163,10 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                   </div>
                ) : null}
              </div>
-           </div>
-        </a>
+            </div>
+          </div>
 
-        {/* Leader change button - outside anchor to prevent navigation interference */}
+         {/* Leader change button - outside clickable area to prevent navigation interference */}
         {leader && onLeaderChange && (
           <div className="px-4 py-1">
             {showLeaderEdit ? (
@@ -156,6 +184,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                 type="button"
                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
                 title="Change hike leader"
+                aria-label={`Change leader for ${trailName}`}
                 onClick={handleLeaderClick}
               >
                 <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -180,6 +209,8 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
         <div
           className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-blue-400 flex items-center justify-center text-white text-xs font-semibold"
           title={`Popularity score: ${popScore}`}
+          role="img"
+          aria-label={`Popularity score: ${popScore}`}
         >
           {popScore}
         </div>
@@ -193,7 +224,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                       title={tt('Open trail report')}
         >
           <Icon path="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          Report
+          <span>Report</span>
         </button>
       </div>
     </div>

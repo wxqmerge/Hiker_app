@@ -183,14 +183,17 @@ export default function ScheduleSettingsDropdown() {
         onClick={() => setShowSettings(!showSettings)}
         className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
         title="Schedule settings"
+        aria-label="Schedule settings"
+        aria-expanded={showSettings}
+        aria-controls="schedule-settings-menu"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
         </svg>
       </button>
       {showSettings && (
-        <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-2 w-64 z-50">
-          <div className="flex border-b border-gray-100 mb-1" role="tablist">
+        <div id="schedule-settings-menu" className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-2 w-64 z-50">
+          <div className="flex border-b border-gray-100 mb-1" role="tablist" aria-label="Schedule settings sections">
             {TABS.map((tab) => (
               <button
                 key={tab.id}

@@ -49,6 +49,8 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
             key={idx}
             className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium ${bg} ${text}`}
             title={title}
+            role="img"
+            aria-label={title}
           >
             <span className="text-[9px] leading-none">{month.substring(0, 3)}</span>
             {score > 0 && <span className="text-sm leading-none mt-0.5 font-bold">{score}</span>}

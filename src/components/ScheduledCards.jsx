@@ -92,23 +92,24 @@ export default function ScheduledCards({
                key={`${item.day}-${item.idx}`}
                draggable={hasApiKey}
                onDragStart={() => memoizedDragStart(item)}
-               onDragEnd={handleDragEnd}
-               onDragOver={(e) => e.preventDefault()}
-               className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
-               title={hasApiKey ? tt('Drag to swap with another date') : undefined}
-               style={{ opacity: dragData?.sourceDay === item.day ? 0.4 : 1 }}
-             >
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()}
+                className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
+                title={hasApiKey ? tt('Drag to swap with another date') : undefined}
+                aria-label={`${item.trail.fullName || item.trail.name} scheduled on day ${item.day}${hasApiKey ? ', drag to swap with another date' : ''}`}
+                style={{ opacity: dragData?.sourceDay === item.day ? 0.4 : 1 }}
+              >
                <div className="relative">
                    <TrailCard trail={item.trail} isActive={false} leader={item.leader} onLeaderChange={(newLeader) => memoizedLeaderChange(item, newLeader)} hikeDate={createDate(year, selectedMonth, item.day)} weather={weatherMap?.[item.day]?.[item.trailId]} />
                 <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center flex-col leading-none">
                   {item.day}
                   <span className="text-[8px]">{getDayLabel(createDate(year, selectedMonth, item.day).getDay())}</span>
                 </div>
-                 {item.earlyStart && (
-                   <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start">
-                    ⏰
-                  </div>
-                )}
+                  {item.earlyStart && (
+                    <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start" role="img" aria-label="Early start">
+                     ⏰
+                    </div>
+                  )}
               </div>
             </div>
            ))}
