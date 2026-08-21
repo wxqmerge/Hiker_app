@@ -11,7 +11,7 @@
 //     schedule write, the cached schedule is invalidated.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const TIDE_CACHE = `hiker-tide-${VERSION}`;

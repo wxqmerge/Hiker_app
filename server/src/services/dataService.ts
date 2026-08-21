@@ -3,7 +3,7 @@ import fsSync from 'fs';
 import path from 'path';
 import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsData } from '@shared/types/index.js';
 import { getCurrentDir } from '../utils/path.js';
-import { MONTH_ABBR, isMonthAbbr, fullToAbbr } from '../utils/monthUtils.js';
+import { MONTH_ABBR, resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { generateEtag } from '../utils/etag.js';
 
 const __dirname = getCurrentDir(import.meta.url);
@@ -57,13 +57,9 @@ function normalizeSchedule(schedule: any): ScheduleData {
   const result: ScheduleData = {};
 
   for (const [key, value] of Object.entries(schedule)) {
-    // Normalize month key: full name → abbreviation
-    let monthKey = key;
-    if (!isMonthAbbr(key)) {
-      const abbr = fullToAbbr(key);
-      if (!abbr) continue; // Unknown month, skip
-      monthKey = abbr;
-    }
+    // Normalize month key: legacy month names use the current year; YYYY-MM keys are preserved.
+    const monthKey = resolveScheduleMonthKey(key);
+    if (!monthKey) continue; // Unknown month, skip
 
     // Case 1: Array of entries (canonical format)
     if (Array.isArray(value)) {
@@ -347,7 +343,7 @@ export async function restoreScheduleByTimestamp(timestamp: string): Promise<Sch
       const content = await fs.readFile(path.join(HISTORY_DIR, f), 'utf-8');
       const parsed = JSON.parse(content);
       if (parsed.timestamp === timestamp && parsed.schedule) {
-        schedule = parsed.schedule;
+        schedule = normalizeSchedule(parsed.schedule);
         await writeWithHealth(path.join(DATA_DIR, getScheduleFile()), schedule);
         return schedule;
       }
@@ -363,7 +359,7 @@ export async function updateSchedule(newSchedule: ScheduleData): Promise<void> {
   if (Object.keys(schedule).length > 0) {
     await saveScheduleHistory(schedule);
   }
-  schedule = newSchedule;
+  schedule = normalizeSchedule(newSchedule);
   await writeWithHealth(path.join(DATA_DIR, getScheduleFile()), schedule);
 }
 

@@ -1,4 +1,19 @@
-import { MONTH_NAMES, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from './constants';
+import { MONTH_NAMES, MONTH_ABBR, CURRENT_YEAR } from './constants';
+import { getMonthKey } from './dateUtils';
+
+const YEAR_MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+export function resolveScheduleMonthKey(key, defaultYear = CURRENT_YEAR) {
+  if (typeof key !== 'string') return null;
+  const trimmed = key.trim();
+  if (YEAR_MONTH_KEY.test(trimmed)) return trimmed;
+  const lower = trimmed.toLowerCase();
+  const abbrIndex = MONTH_ABBR.findIndex(abbr => abbr.toLowerCase() === lower);
+  if (abbrIndex >= 0) return getMonthKey(defaultYear, abbrIndex);
+  const fullIndex = MONTH_NAMES.findIndex(name => name.toLowerCase() === lower);
+  if (fullIndex >= 0) return getMonthKey(defaultYear, fullIndex);
+  return null;
+}
 
 function emptyEntry() {
   return { trail_id: null, early_start: false, leader: '' };
@@ -76,13 +91,14 @@ export function serverScheduleToStore(serverData) {
   const store = {};
   if (!serverData) return store;
   for (const [key, entries] of Object.entries(serverData)) {
-    const fullName = MONTH_ABBR_TO_FULL[key] || (MONTH_NAMES.includes(key) ? key : null);
-    if (!fullName) continue;
-    store[fullName] = {};
+    if (key.startsWith('_')) continue;
+    const monthKey = resolveScheduleMonthKey(key);
+    if (!monthKey) continue;
+    store[monthKey] = store[monthKey] || {};
     for (const entry of normalizeServerMonthEntries(entries)) {
       const dayKey = String(entry.day);
-      if (!store[fullName][dayKey]) store[fullName][dayKey] = [];
-      const dayEntries = store[fullName][dayKey];
+      if (!store[monthKey][dayKey]) store[monthKey][dayKey] = [];
+      const dayEntries = store[monthKey][dayKey];
       while (dayEntries.length < entry.slot) {
         dayEntries.push(emptyEntry());
       }
@@ -98,22 +114,22 @@ export function serverScheduleToStore(serverData) {
 
 export function storeToServerSchedule(store) {
   const serverData = {};
-  for (const [fullName, days] of Object.entries(store)) {
-    const abbr = MONTH_FULL_TO_ABBR[fullName];
-    if (!abbr || !days || typeof days !== 'object') continue;
-    serverData[abbr] = [];
+  for (const [key, days] of Object.entries(store)) {
+    const monthKey = resolveScheduleMonthKey(key);
+    if (!monthKey || !days || typeof days !== 'object') continue;
+    serverData[monthKey] = [];
     for (const [day, entries] of Object.entries(days)) {
       const entryList = normalizeDayEntries(entries);
       entryList.forEach((entry, slot) => {
         if (entry?.trail_id) {
           const dayNum = parseInt(day, 10);
           if (!isNaN(dayNum) && dayNum > 0) {
-            serverData[abbr].push({ day: dayNum, slot, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
+            serverData[monthKey].push({ day: dayNum, slot, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
           }
         }
       });
     }
-    serverData[abbr].sort((a, b) => a.day - b.day || a.slot - b.slot);
+    serverData[monthKey].sort((a, b) => a.day - b.day || a.slot - b.slot);
   }
   return serverData;
 }

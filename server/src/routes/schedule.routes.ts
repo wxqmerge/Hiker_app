@@ -8,7 +8,7 @@ import { validateXlsBuffer, findPythonCmd, runPythonScript, processXlsImport } f
 import fs from 'fs';
 import path from 'path';
 import { getCurrentDir } from '../utils/path.js';
-import { normalizeMonthKey } from '../utils/monthUtils.js';
+import { resolveScheduleMonthKey } from '../utils/monthUtils.js';
 
 const __dirname = getCurrentDir(import.meta.url);
 const PROJECT_ROOT = path.join(__dirname, '../../..');
@@ -55,10 +55,12 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
   if (!result.success) {
     return res.status(400).json({ success: false, error: { message: 'Invalid schedule data', details: result.error.issues } });
   }
-  // Normalize month keys: full names and case-insensitive → abbreviated
+  // Normalize month keys: legacy month names use the current year; YYYY-MM keys are preserved.
   const normalized: Record<string, any[]> = {};
   for (const [key, entries] of Object.entries(result.data)) {
-    normalized[normalizeMonthKey(key)] = entries;
+    const monthKey = resolveScheduleMonthKey(key);
+    if (!monthKey) continue;
+    normalized[monthKey] = entries;
   }
   const entryCount = Object.values(normalized).reduce((n: number, entries: any) => n + entries.length, 0);
   console.log('[SCHEDULE] PUT schedule -', entryCount, 'entries');

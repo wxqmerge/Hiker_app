@@ -5,7 +5,6 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { PageContextProvider } from './contexts/PageContext';
 import { MonthContextProvider } from './contexts/MonthContext';
 import { DayContextProvider } from './contexts/DayContext';
-import { YearContextProvider } from './contexts/YearContext';
 
 const Calendar = lazy(() => import('./pages/Calendar'));
 const Home = lazy(() => import('./pages/Home'));
@@ -88,7 +87,6 @@ function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ApiKeySync />
       <PageContextProvider>
-        <YearContextProvider>
         <MonthContextProvider>
           <DayContextProvider>
           <Routes>
@@ -102,7 +100,6 @@ function App() {
           </Routes>
           </DayContextProvider>
         </MonthContextProvider>
-        </YearContextProvider>
       </PageContextProvider>
       <ToastContainer />
     </BrowserRouter>

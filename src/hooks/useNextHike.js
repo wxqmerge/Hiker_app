@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
+import { CURRENT_YEAR } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { serverScheduleToStore, getDayEntries } from '../utils/scheduleFormat';
-import { getDaysInMonth, createDate, getTodayHikeRef } from '../utils/dateUtils';
+import { getDaysInMonth, createDate, getTodayHikeRef, getMonthKey } from '../utils/dateUtils';
 import { useHikeDays } from './useHikeDays';
 
 /**
@@ -20,7 +20,7 @@ export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 
     const today = getTodayHikeRef();
 
     for (let m = 0; m < 12 && allHikes.length < maxHikes; m++) {
-      const monthData = scheduleStore[MONTH_NAMES[m]] || {};
+      const monthData = scheduleStore[getMonthKey(year, m)] || {};
       const daysInMonth = getDaysInMonth(year, m);
       for (let day = 1; day <= daysInMonth && allHikes.length < maxHikes; day++) {
         const date = createDate(year, m, day);
@@ -35,6 +35,8 @@ export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 
             allHikes.push({
               day,
               monthIndex: m,
+              year,
+              monthKey: getMonthKey(year, m),
               date,
               trail,
               trailId: entry.trail_id,

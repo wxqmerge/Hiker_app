@@ -1,3 +1,5 @@
+import { CURRENT_YEAR } from './constants';
+
 /**
  * Milliseconds in one day.
  */
@@ -86,4 +88,24 @@ export function getHikeSlotsForMonth(year, month, hikeDays) {
     }
   }
   return dates;
+}
+
+export function getMonthKey(year, month) {
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
+}
+
+export function parseMonthKey(monthKey) {
+  const [year, month] = String(monthKey).split('-').map(Number);
+  return { year, month: month - 1 };
+}
+
+export function getMonthRange() {
+  const startYear = CURRENT_YEAR - 1;
+  const months = [];
+  for (let year = startYear; year <= startYear + 2; year += 1) {
+    for (let month = 0; month < 12; month += 1) {
+      months.push({ year, month, key: getMonthKey(year, month) });
+    }
+  }
+  return months;
 }

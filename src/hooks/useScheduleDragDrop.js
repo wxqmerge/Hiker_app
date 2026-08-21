@@ -1,6 +1,7 @@
-import { MONTH_NAMES, DAY_NAMES } from '../utils/constants';
+import { DAY_NAMES } from '../utils/constants';
 import { getTrailName } from '../utils/data';
 import { getDayEntries, setDayEntry, clearDayEntry } from '../utils/scheduleFormat';
+import { getMonthKey } from '../utils/dateUtils';
 
 /**
  * Shared drag-and-drop swap logic for ScheduleBuilder and Calendar.
@@ -14,7 +15,7 @@ import { getDayEntries, setDayEntry, clearDayEntry } from '../utils/scheduleForm
  * @param {Function} deps.setPendingSwap
  * @param {Function} deps.findTrailById
  * @param {Object} deps.trailIndexToId
- * @param {Function} deps.updateScheduleFn - (monthName, updater) => void|Promise
+ * @param {Function} deps.updateScheduleFn - (monthKey, updater) => void|Promise
  * @param {boolean} [deps.hasApiKey] - If true, gates operations behind API key check
  */
 export function useScheduleDragDrop({
@@ -33,9 +34,9 @@ export function useScheduleDragDrop({
   const confirmSwap = () => {
     if (!pendingSwap) return;
     const { sourceDay, sourceSlot, targetDay, targetSlot, targetEntry, trailId, earlyStart, leader: swapLeader } = pendingSwap;
-    const monthName = MONTH_NAMES[selectedMonth];
+    const monthKey = getMonthKey(year, selectedMonth);
 
-    updateScheduleFn(monthName, prev => {
+    updateScheduleFn(monthKey, prev => {
       let next = prev;
       next = setDayEntry(next, targetDay, targetSlot, { trail_id: trailId, early_start: earlyStart, leader: swapLeader });
       if (sourceDay !== null && sourceDay !== undefined) {
@@ -59,8 +60,8 @@ export function useScheduleDragDrop({
     if (sourceDay === targetDay && sourceSlot === targetSlot) return false;
     if (!trailId) return false;
 
-    const monthName = MONTH_NAMES[selectedMonth];
-    const monthData = scheduleStore[monthName] || {};
+    const monthKey = getMonthKey(year, selectedMonth);
+    const monthData = scheduleStore[monthKey] || {};
     const targetEntries = getDayEntries(monthData, targetDay);
     const targetEntry = targetEntries[targetSlot] || { trail_id: null, early_start: false, leader: '' };
     const hasSource = sourceDay !== null && sourceDay !== undefined;
@@ -98,7 +99,7 @@ export function useScheduleDragDrop({
     const earlyStart = sourceEarlyStart !== undefined ? sourceEarlyStart : (hasSource ? sourceEntry?.early_start || false : false);
     const leader = sourceLeader || (hasSource ? sourceEntry?.leader || '' : '');
 
-    updateScheduleFn(monthName, prev => {
+    updateScheduleFn(monthKey, prev => {
       let next = prev;
       if (hasSource) {
         next = clearDayEntry(next, sourceDay, sourceSlot);
@@ -129,13 +130,13 @@ export function useScheduleDragDrop({
       return;
     }
 
-    updateScheduleFn(MONTH_NAMES[selectedMonth], prev => clearDayEntry(prev, sourceDay, sourceSlot));
+    updateScheduleFn(getMonthKey(year, selectedMonth), prev => clearDayEntry(prev, sourceDay, sourceSlot));
     setDragData(null);
   };
 
   const removeHike = (day, slotIdx) => {
     if (hasApiKey === false) return;
-    updateScheduleFn(MONTH_NAMES[selectedMonth], prev => clearDayEntry(prev, day, slotIdx));
+    updateScheduleFn(getMonthKey(year, selectedMonth), prev => clearDayEntry(prev, day, slotIdx));
   };
 
   return {

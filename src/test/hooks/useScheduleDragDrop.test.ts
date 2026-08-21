@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useScheduleDragDrop } from '../../hooks/useScheduleDragDrop';
+import { getMonthKey } from '../../utils/dateUtils';
 
 describe('useScheduleDragDrop', () => {
+  const monthKey = getMonthKey(2024, 0);
   const scheduleStore = {
-    January: { 1: [{ trail_id: 'trail-1' }] },
+    [monthKey]: { 1: [{ trail_id: 'trail-1' }] },
   };
 
   const findTrailById = vi.fn((id) => {
@@ -12,11 +14,11 @@ describe('useScheduleDragDrop', () => {
     return null;
   });
 
-  const updateScheduleFn = vi.fn((monthName, updater) => {
+  const updateScheduleFn = vi.fn((targetMonthKey, updater) => {
     if (typeof updater === 'function') {
-      const current = scheduleStore[monthName] || {};
+      const current = scheduleStore[targetMonthKey] || {};
       const updated = updater(current);
-      scheduleStore[monthName] = updated;
+      scheduleStore[targetMonthKey] = updated;
     }
   });
 
@@ -41,7 +43,7 @@ describe('useScheduleDragDrop', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    scheduleStore.January = { 1: [{ trail_id: 'trail-1' }] };
+    scheduleStore[monthKey] = { 1: [{ trail_id: 'trail-1' }] };
   });
 
   it('returns expected functions', () => {
@@ -61,7 +63,7 @@ describe('useScheduleDragDrop', () => {
   });
 
   it('moveHike offers a swap when the target slot is occupied', () => {
-    scheduleStore.January = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
+    scheduleStore[monthKey] = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
     const result = useScheduleDragDrop(baseDeps);
     result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: false, leader: '' }, 8, 0);
     expect(setPendingSwap).toHaveBeenCalledTimes(1);
@@ -102,7 +104,7 @@ describe('useScheduleDragDrop', () => {
   });
 
   it('handleDropOnDate offers swap when target has hike', () => {
-    scheduleStore.January = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
+    scheduleStore[monthKey] = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
     const deps = { ...baseDeps, dragData: { hikeIndex: 0, sourceDay: 1, sourceSlot: 0 } };
     const result = useScheduleDragDrop(deps);
     result.handleDropOnDate(8, 0);
@@ -112,7 +114,7 @@ describe('useScheduleDragDrop', () => {
   });
 
   it('confirmSwap executes the swap', () => {
-    scheduleStore.January = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
+    scheduleStore[monthKey] = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
     const pendingSwap = {
       sourceDay: 1,
       sourceSlot: 0,
@@ -164,15 +166,15 @@ describe('useScheduleDragDrop', () => {
   });
 
   it('normalizes object-shaped day entries when dropping on an empty slot', () => {
-    scheduleStore.January = { 1: { trail_id: 'trail-1' } };
+    scheduleStore[monthKey] = { 1: { trail_id: 'trail-1' } };
     const deps = { ...baseDeps, dragData: { hikeIndex: 1, sourceDay: null, sourceSlot: null } };
     const result = useScheduleDragDrop(deps);
     result.handleDropOnDate(8, 0);
-    expect(scheduleStore.January['8']).toEqual([{ trail_id: 'trail-2', early_start: false, leader: '' }]);
+    expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-2', early_start: false, leader: '' }]);
   });
 
   it('offers swap when target is object-shaped', () => {
-    scheduleStore.January = { 1: { trail_id: 'trail-1' }, 8: { trail_id: 'trail-2' } };
+    scheduleStore[monthKey] = { 1: { trail_id: 'trail-1' }, 8: { trail_id: 'trail-2' } };
     const deps = { ...baseDeps, dragData: { hikeIndex: 0, sourceDay: 1, sourceSlot: 0 } };
     const result = useScheduleDragDrop(deps);
     result.handleDropOnDate(8, 0);
@@ -181,7 +183,7 @@ describe('useScheduleDragDrop', () => {
   });
 
   it('confirmSwap normalizes source and target to arrays', () => {
-    scheduleStore.January = { 1: { trail_id: 'trail-1' }, 8: { trail_id: 'trail-2' } };
+    scheduleStore[monthKey] = { 1: { trail_id: 'trail-1' }, 8: { trail_id: 'trail-2' } };
     const pendingSwap = {
       sourceDay: 1,
       sourceSlot: 0,
@@ -195,14 +197,14 @@ describe('useScheduleDragDrop', () => {
     const deps = { ...baseDeps, pendingSwap };
     const result = useScheduleDragDrop(deps);
     result.confirmSwap();
-    expect(scheduleStore.January['1']).toEqual([{ trail_id: 'trail-2', early_start: false, leader: '' }]);
-    expect(scheduleStore.January['8']).toEqual([{ trail_id: 'trail-1', early_start: false, leader: '' }]);
+    expect(scheduleStore[monthKey]['1']).toEqual([{ trail_id: 'trail-2', early_start: false, leader: '' }]);
+    expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-1', early_start: false, leader: '' }]);
   });
 
   it('removeHike normalizes object-shaped entries to empty arrays', () => {
-    scheduleStore.January = { 1: { trail_id: 'trail-1' } };
+    scheduleStore[monthKey] = { 1: { trail_id: 'trail-1' } };
     const result = useScheduleDragDrop(baseDeps);
     result.removeHike(1, 0);
-    expect(scheduleStore.January['1']).toEqual([{ trail_id: null, early_start: false, leader: '' }]);
+    expect(scheduleStore[monthKey]['1']).toEqual([{ trail_id: null, early_start: false, leader: '' }]);
   });
 });

@@ -2,7 +2,6 @@ import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import { usePageContext } from '../contexts/PageContext';
 import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
-import { useYearContext } from '../contexts/YearContext';
 import { ScheduleSettingsProvider } from '../contexts/ScheduleSettingsContext';
 import { TrailActionsProvider, useTrailActions } from '../contexts/TrailActionsContext';
 import { getGroupName } from '../utils/config';
@@ -13,7 +12,6 @@ import { NAV_LINKS } from '../utils/constants';
 import { getDaysInMonth } from '../utils/dateUtils';
 import MonthSelector from './MonthSelector';
 import DaySelector from './DaySelector';
-import YearSelector from './YearSelector';
 import ScheduleSettingsDropdown from './ScheduleSettingsDropdown';
 
 const APP_VERSION = __APP_VERSION;
@@ -45,9 +43,8 @@ function PageContextSetter() {
 
 function HeaderContent() {
   const { pageContext } = usePageContext();
-  const { selectedMonth, setSelectedMonth } = useMonthContext();
+  const { selectedMonth, selectedYear, selectedMonthKey, setSelectedMonthKey } = useMonthContext();
   const { selectedDay, setSelectedDay } = useDayContext();
-  const { selectedYear, setSelectedYear } = useYearContext();
   const { pathname } = useLocation();
   const { trails } = useTrails();
   const {
@@ -96,16 +93,10 @@ function HeaderContent() {
                     {link.label}
                   </NavLink>
                 ))}
-                <YearSelector
-                  selectedYear={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                  title="Select year"
-                />
                 <MonthSelector
-                  selectedMonth={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+                  selectedMonthKey={selectedMonthKey}
+                  onChange={(e) => setSelectedMonthKey(e.target.value)}
                   title="Select month"
-                  year={selectedYear}
                 />
                 <DaySelector
                   selectedDay={selectedDay}

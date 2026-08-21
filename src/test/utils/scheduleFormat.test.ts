@@ -8,7 +8,8 @@ import {
   clearDayEntry,
   normalizeServerMonthEntries,
 } from '../../utils/scheduleFormat';
-import { MONTH_NAMES, DAY_NAMES } from '../../utils/constants';
+import { DAY_NAMES, CURRENT_YEAR } from '../../utils/constants';
+import { getMonthKey } from '../../utils/dateUtils';
 
 describe('TSV import day matching', () => {
   const matchDay = (label: string) => {
@@ -103,7 +104,7 @@ describe('TSV import day matching', () => {
 
 describe('scheduleFormat', () => {
   describe('serverScheduleToStore', () => {
-    it('converts array format to store format with day keys', () => {
+    it('converts legacy month keys to the current year', () => {
       const serverData = {
         Jul: [
           { day: 1, slot: 0, trail_id: 'trail-1', early_start: true, leader: 'Alice' },
@@ -111,13 +112,36 @@ describe('scheduleFormat', () => {
         ],
       };
       const store = serverScheduleToStore(serverData);
-      expect(store.July).toBeDefined();
-      expect(store.July['1']).toEqual([
+      const julKey = getMonthKey(CURRENT_YEAR, 6);
+      expect(store[julKey]).toBeDefined();
+      expect(store[julKey]['1']).toEqual([
         { trail_id: 'trail-1', early_start: true, leader: 'Alice' },
       ]);
-      expect(store.July['3'][1]).toEqual({
+      expect(store[julKey]['3'][1]).toEqual({
         trail_id: 'trail-2', early_start: false, leader: 'Bob',
       });
+    });
+
+    it('preserves explicit YYYY-MM keys', () => {
+      const serverData = {
+        '2027-07': [
+          { day: 1, slot: 0, trail_id: 'trail-1', early_start: true, leader: 'Alice' },
+        ],
+      };
+      const store = serverScheduleToStore(serverData);
+      expect(store['2027-07']['1']).toEqual([
+        { trail_id: 'trail-1', early_start: true, leader: 'Alice' },
+      ]);
+    });
+
+    it('keeps different years separate', () => {
+      const serverData = {
+        '2026-07': [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: false, leader: '' }],
+        '2027-07': [{ day: 1, slot: 0, trail_id: 'trail-2', early_start: false, leader: '' }],
+      };
+      const store = serverScheduleToStore(serverData);
+      expect(store['2026-07']['1'][0].trail_id).toBe('trail-1');
+      expect(store['2027-07']['1'][0].trail_id).toBe('trail-2');
     });
 
     it('handles empty server data', () => {
@@ -132,7 +156,7 @@ describe('scheduleFormat', () => {
         },
       };
       const store = serverScheduleToStore(serverData);
-      expect(store.June['3']).toEqual([{ trail_id: 'trail-1', early_start: false, leader: 'Alice' }]);
+      expect(store[getMonthKey(CURRENT_YEAR, 5)]['3']).toEqual([{ trail_id: 'trail-1', early_start: false, leader: 'Alice' }]);
     });
 
     it('normalizes legacy string entries to arrays', () => {
@@ -142,7 +166,7 @@ describe('scheduleFormat', () => {
         },
       };
       const store = serverScheduleToStore(serverData);
-      expect(store.June['3']).toEqual([{ trail_id: 'some-trail-id', early_start: false, leader: '' }]);
+      expect(store[getMonthKey(CURRENT_YEAR, 5)]['3']).toEqual([{ trail_id: 'some-trail-id', early_start: false, leader: '' }]);
     });
 
     it('handles multiple days', () => {
@@ -153,8 +177,9 @@ describe('scheduleFormat', () => {
         ],
       };
       const store = serverScheduleToStore(serverData);
-      expect(store.February['5'][0].trail_id).toBe('trail-1');
-      expect(store.February['12'][0].early_start).toBe(true);
+      const febKey = getMonthKey(CURRENT_YEAR, 1);
+      expect(store[febKey]['5'][0].trail_id).toBe('trail-1');
+      expect(store[febKey]['12'][0].early_start).toBe(true);
     });
 
     it('handles early start flag', () => {
@@ -162,7 +187,7 @@ describe('scheduleFormat', () => {
         Apr: [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: true, leader: '' }],
       };
       const store = serverScheduleToStore(serverData);
-      expect(store.April['1'][0].early_start).toBe(true);
+      expect(store[getMonthKey(CURRENT_YEAR, 3)]['1'][0].early_start).toBe(true);
     });
 
     it('filters out NaN days', () => {
@@ -170,28 +195,29 @@ describe('scheduleFormat', () => {
         Jan: [{ day: NaN, slot: 0, trail_id: 'trail-1', early_start: false, leader: '' }],
       };
       const store = serverScheduleToStore(serverData);
-      expect(Object.keys(store.January || {})).toHaveLength(0);
+      expect(Object.keys(store[getMonthKey(CURRENT_YEAR, 0)] || {})).toHaveLength(0);
     });
   });
 
   describe('storeToServerSchedule', () => {
     it('converts store format to array format with correct slots', () => {
       const store = {
-        July: {
+        [getMonthKey(CURRENT_YEAR, 6)]: {
           '1': [{ trail_id: 'trail-1', early_start: true, leader: 'Alice' }],
           '3': [{ trail_id: 'trail-2', early_start: false, leader: 'Bob' }],
         },
       };
       const serverData = storeToServerSchedule(store);
-      expect(serverData.Jul).toHaveLength(2);
-      expect(serverData.Jul[0]).toEqual({
+      const julKey = getMonthKey(CURRENT_YEAR, 6);
+      expect(serverData[julKey]).toHaveLength(2);
+      expect(serverData[julKey][0]).toEqual({
         day: 1,
         slot: 0,
         trail_id: 'trail-1',
         early_start: true,
         leader: 'Alice',
       });
-      expect(serverData.Jul[1]).toEqual({
+      expect(serverData[julKey][1]).toEqual({
         day: 3,
         slot: 0,
         trail_id: 'trail-2',
@@ -202,7 +228,7 @@ describe('scheduleFormat', () => {
 
     it('handles multiple entries per day with correct slots', () => {
       const store = {
-        July: {
+        [getMonthKey(CURRENT_YEAR, 6)]: {
           '1': [
             { trail_id: 'trail-1', early_start: false, leader: 'Alice' },
             { trail_id: 'trail-2', early_start: false, leader: 'Bob' },
@@ -210,9 +236,10 @@ describe('scheduleFormat', () => {
         },
       };
       const serverData = storeToServerSchedule(store);
-      expect(serverData.Jul).toHaveLength(2);
-      expect(serverData.Jul[0].slot).toBe(0);
-      expect(serverData.Jul[1].slot).toBe(1);
+      const julKey = getMonthKey(CURRENT_YEAR, 6);
+      expect(serverData[julKey]).toHaveLength(2);
+      expect(serverData[julKey][0].slot).toBe(0);
+      expect(serverData[julKey][1].slot).toBe(1);
     });
 
     it('handles empty store', () => {
@@ -221,57 +248,59 @@ describe('scheduleFormat', () => {
 
     it('ramblers round-trip: two hikes same day preserve slot 0/1', () => {
       const serverData = {
-        Jul: [
+        [getMonthKey(CURRENT_YEAR, 6)]: [
           { day: 6, slot: 0, trail_id: 'buckhorn-pass', early_start: false, leader: 'Burt' },
           { day: 6, slot: 1, trail_id: 'grindstone', early_start: false, leader: 'Pat' },
         ],
       };
       const store = serverScheduleToStore(serverData);
-      expect(store.July['6']).toHaveLength(2);
-      expect(store.July['6'][0].trail_id).toBe('buckhorn-pass');
-      expect(store.July['6'][1].trail_id).toBe('grindstone');
+      const julKey = getMonthKey(CURRENT_YEAR, 6);
+      expect(store[julKey]['6']).toHaveLength(2);
+      expect(store[julKey]['6'][0].trail_id).toBe('buckhorn-pass');
+      expect(store[julKey]['6'][1].trail_id).toBe('grindstone');
       const roundTrip = storeToServerSchedule(store);
-      expect(roundTrip.Jul).toHaveLength(2);
-      expect(roundTrip.Jul[0]).toEqual({ day: 6, slot: 0, trail_id: 'buckhorn-pass', early_start: false, leader: 'Burt' });
-      expect(roundTrip.Jul[1]).toEqual({ day: 6, slot: 1, trail_id: 'grindstone', early_start: false, leader: 'Pat' });
+      expect(roundTrip[julKey]).toHaveLength(2);
+      expect(roundTrip[julKey][0]).toEqual({ day: 6, slot: 0, trail_id: 'buckhorn-pass', early_start: false, leader: 'Burt' });
+      expect(roundTrip[julKey][1]).toEqual({ day: 6, slot: 1, trail_id: 'grindstone', early_start: false, leader: 'Pat' });
     });
 
     it('sothh round-trip: hikes on different days all slot 0', () => {
       const serverData = {
-        Jul: [
+        [getMonthKey(CURRENT_YEAR, 6)]: [
           { day: 2, slot: 0, trail_id: 'trail-1', early_start: false, leader: 'Alice' },
           { day: 4, slot: 0, trail_id: 'trail-2', early_start: false, leader: 'Bob' },
         ],
       };
       const store = serverScheduleToStore(serverData);
       const roundTrip = storeToServerSchedule(store);
-      expect(roundTrip.Jul).toHaveLength(2);
-      expect(roundTrip.Jul[0].slot).toBe(0);
-      expect(roundTrip.Jul[1].slot).toBe(0);
+      const julKey = getMonthKey(CURRENT_YEAR, 6);
+      expect(roundTrip[julKey]).toHaveLength(2);
+      expect(roundTrip[julKey][0].slot).toBe(0);
+      expect(roundTrip[julKey][1].slot).toBe(0);
     });
 
     it('filters out entries without trail_id', () => {
       const store = {
-        April: { '1': [{ trail_id: null, early_start: false, leader: '' }] },
+        [getMonthKey(CURRENT_YEAR, 3)]: { '1': [{ trail_id: null, early_start: false, leader: '' }] },
       };
       const serverData = storeToServerSchedule(store);
-      expect(serverData.Apr).toHaveLength(0);
+      expect(serverData[getMonthKey(CURRENT_YEAR, 3)]).toHaveLength(0);
     });
 
     it('filters out invalid days', () => {
       const store = {
-        May: { '0': [{ trail_id: 'trail-1', early_start: false, leader: '' }] },
+        [getMonthKey(CURRENT_YEAR, 4)]: { '0': [{ trail_id: 'trail-1', early_start: false, leader: '' }] },
       };
       const serverData = storeToServerSchedule(store);
-      expect(serverData.May).toHaveLength(0);
+      expect(serverData[getMonthKey(CURRENT_YEAR, 4)]).toHaveLength(0);
     });
 
     it('preserves early start flag', () => {
       const store = {
-        June: { '1': [{ trail_id: 'trail-1', early_start: true, leader: '' }] },
+        [getMonthKey(CURRENT_YEAR, 5)]: { '1': [{ trail_id: 'trail-1', early_start: true, leader: '' }] },
       };
       const serverData = storeToServerSchedule(store);
-      expect(serverData.Jun[0].early_start).toBe(true);
+      expect(serverData[getMonthKey(CURRENT_YEAR, 5)][0].early_start).toBe(true);
     });
   });
 });

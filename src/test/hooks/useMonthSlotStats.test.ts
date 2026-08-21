@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useMonthSlotStats } from '../../hooks/useMonthSlotStats';
+import { getMonthKey } from '../../utils/dateUtils';
 
 vi.mock('../../utils/config', () => ({
   getHikeDays: vi.fn(() => [1]),
@@ -39,6 +40,7 @@ vi.mock('../../utils/dateUtils', () => ({
     }
     return result;
   }),
+  getMonthKey: vi.fn((year, month) => `${year}-${String(month + 1).padStart(2, '0')}`),
 }));
 
 describe('useMonthSlotStats', () => {
@@ -48,14 +50,14 @@ describe('useMonthSlotStats', () => {
   ];
 
   const scheduleStore = {
-    Jan: {},
-    Feb: {},
+    [getMonthKey(2024, 0)]: {},
+    [getMonthKey(2024, 1)]: {},
   };
 
   const props = {
     trails,
     scheduleStore,
-    year: 2024,
+    years: [2024],
   };
 
   beforeEach(() => {
@@ -64,48 +66,48 @@ describe('useMonthSlotStats', () => {
 
   it('returns stats for all months', () => {
     const { result } = renderHook(() => useMonthSlotStats(props));
-    expect(result.current).toHaveProperty(0);
-    expect(result.current).toHaveProperty(1);
+    expect(result.current).toHaveProperty(getMonthKey(2024, 0));
+    expect(result.current).toHaveProperty(getMonthKey(2024, 1));
   });
 
   it('calculates total slots for January', () => {
     const { result } = renderHook(() => useMonthSlotStats(props));
     // Jan 2024 has 31 days, Mon = day 1, so 4 Mondays (1, 8, 15, 22, 29) = 5
-    expect(result.current[0].total).toBe(5);
+    expect(result.current[getMonthKey(2024, 0)].total).toBe(5);
   });
 
   it('calculates total slots for February', () => {
     const { result } = renderHook(() => useMonthSlotStats(props));
     // Feb 2024 (leap year) has 29 days, Mon = day 1, so 5 Mondays (5, 12, 19, 26) = 4
-    expect(result.current[1].total).toBe(4);
+    expect(result.current[getMonthKey(2024, 1)].total).toBe(4);
   });
 
   it('counts filled slots', () => {
     const scheduleWithHikes = {
-      January: { 1: [{ trail_id: 'trail-1' }] },
-      February: {},
+      [getMonthKey(2024, 0)]: { 1: [{ trail_id: 'trail-1' }] },
+      [getMonthKey(2024, 1)]: {},
     };
     const { result } = renderHook(() => useMonthSlotStats({ ...props, scheduleStore: scheduleWithHikes }));
-    expect(result.current[0].filled).toBe(1);
+    expect(result.current[getMonthKey(2024, 0)].filled).toBe(1);
   });
 
   it('ignores unknown trail IDs', () => {
     const scheduleWithHikes = {
-      Jan: { 1: [{ trail_id: 'unknown' }] },
-      Feb: {},
+      [getMonthKey(2024, 0)]: { 1: [{ trail_id: 'unknown' }] },
+      [getMonthKey(2024, 1)]: {},
     };
     const { result } = renderHook(() => useMonthSlotStats({ ...props, scheduleStore: scheduleWithHikes }));
-    expect(result.current[0].filled).toBe(0);
+    expect(result.current[getMonthKey(2024, 0)].filled).toBe(0);
   });
 
   it('handles empty schedule', () => {
     const { result } = renderHook(() => useMonthSlotStats(props));
-    expect(result.current[0].filled).toBe(0);
+    expect(result.current[getMonthKey(2024, 0)].filled).toBe(0);
   });
 
   it('returns object with total and filled', () => {
     const { result } = renderHook(() => useMonthSlotStats(props));
-    expect(result.current[0]).toHaveProperty('total');
-    expect(result.current[0]).toHaveProperty('filled');
+    expect(result.current[getMonthKey(2024, 0)]).toHaveProperty('total');
+    expect(result.current[getMonthKey(2024, 0)]).toHaveProperty('filled');
   });
 });

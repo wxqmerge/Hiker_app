@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import MonthSelector from '../../components/MonthSelector';
+import { CURRENT_YEAR } from '../../utils/constants';
+import { getMonthKey } from '../../utils/dateUtils';
 
 describe('MonthSelector', () => {
+  const selectedMonthKey = getMonthKey(CURRENT_YEAR, 0);
   const props = {
-    selectedMonth: 0,
+    selectedMonthKey,
     onChange: vi.fn(),
     title: 'Select month',
   };
@@ -18,16 +21,16 @@ describe('MonthSelector', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('renders all month options', () => {
+  it('renders 36 month options', () => {
     render(<MonthSelector {...props} />);
     const select = screen.getByRole('combobox');
-    expect(select.options.length).toBe(12);
+    expect(select.options.length).toBe(36);
   });
 
-  it('sets selected month', () => {
+  it('sets selected month key', () => {
     render(<MonthSelector {...props} />);
     const select = screen.getByRole('combobox');
-    expect(select.value).toBe('0');
+    expect(select.value).toBe(selectedMonthKey);
   });
 
   it('calls onChange when changed', () => {
@@ -43,9 +46,18 @@ describe('MonthSelector', () => {
     expect(select).toHaveAttribute('title', 'Select month');
   });
 
-  it('includes the selected year in month labels', () => {
-    render(<MonthSelector {...props} year={2027} />);
+  it('covers previous year through next year', () => {
+    render(<MonthSelector {...props} />);
     const select = screen.getByRole('combobox');
-    expect(select.options[6].textContent).toContain('July 2027');
+    const values = Array.from(select.options).map(option => option.value);
+    expect(values[0]).toBe(getMonthKey(CURRENT_YEAR - 1, 0));
+    expect(values[35]).toBe(getMonthKey(CURRENT_YEAR + 1, 11));
+  });
+
+  it('includes the year in month labels', () => {
+    render(<MonthSelector {...props} />);
+    const select = screen.getByRole('combobox');
+    const option = Array.from(select.options).find(o => o.value === getMonthKey(CURRENT_YEAR, 6));
+    expect(option?.textContent).toContain(`July ${CURRENT_YEAR}`);
   });
 });

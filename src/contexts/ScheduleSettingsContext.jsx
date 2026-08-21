@@ -2,7 +2,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { useMonthContext } from './MonthContext';
-import { useYearContext } from './YearContext';
 import { useApiKey } from '../hooks/useApiKey';
 import { useToast } from '../hooks/useToast';
 import { useTooltips } from '../hooks/useTooltips';
@@ -11,9 +10,9 @@ import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { setSchedule } from '../hooks/useTrailStore';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTrailName } from '../utils/data';
-import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR_TO_FULL, MONTH_FULL_TO_ABBR } from '../utils/constants';
+import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR_TO_FULL } from '../utils/constants';
 import { getHikeDays, getDayName, getGroupName } from '../utils/config';
-import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth } from '../utils/dateUtils';
+import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth, getMonthKey } from '../utils/dateUtils';
 import { serverScheduleToStore, storeToServerSchedule, getDayEntries, normalizeServerMonthEntries } from '../utils/scheduleFormat';
 import { generateReportHtml } from '../utils/report';
 import { downloadBlob, createFileInput, fetchWeatherAndTide, openHtmlInNewTab } from '../utils/io';
@@ -30,8 +29,7 @@ async function loadSchedule() {
 
 export function ScheduleSettingsProvider({ children }) {
   const { trails, schedule: scheduleData, trailDetails } = useTrails();
-  const { selectedMonth, setSelectedMonth } = useMonthContext();
-  const { selectedYear } = useYearContext();
+  const { selectedMonth, setSelectedMonth, selectedYear } = useMonthContext();
   const hasApiKey = useApiKey();
   const showToast = useToast();
   const { title: tt } = useTooltips();
@@ -205,8 +203,8 @@ export function ScheduleSettingsProvider({ children }) {
     const today = getTodayHikeRef();
     const hikeDays = getHikeDays();
     let earliest = null;
-    MONTH_NAMES.forEach((monthName, m) => {
-      const monthData = scheduleStore[monthName] || {};
+    for (let m = 0; m < 12; m += 1) {
+      const monthData = scheduleStore[getMonthKey(year, m)] || {};
       Object.keys(monthData).forEach(dayStr => {
         const day = parseInt(dayStr, 10);
         const date = createDate(year, m, day);
@@ -214,7 +212,7 @@ export function ScheduleSettingsProvider({ children }) {
           earliest = date;
         }
       });
-    });
+    }
     return earliest;
   }, [scheduleStore, year]);
 
@@ -250,13 +248,12 @@ export function ScheduleSettingsProvider({ children }) {
       const [serverData, serverTrails] = await Promise.all([getSchedule(), getTrails()]);
       const local = storeToServerSchedule(scheduleStore);
 
-      // Normalize both to abbreviations for comparison
+      // Compare year-aware month keys directly
       const serverEntries = Object.entries(serverData).flatMap(([m, entries]) => {
         if (m === '_etag' || m === '_status') return [];
-        const abbr = MONTH_FULL_TO_ABBR[m] || m;
         return normalizeServerMonthEntries(entries)
           .filter(e => e.trail_id)
-          .map(e => `${abbr}:${e.day}:${e.trail_id}`);
+          .map(e => `${m}:${e.day}:${e.trail_id}`);
       });
       const localEntries = Object.entries(local).flatMap(([m, entries]) =>
         normalizeServerMonthEntries(entries)
@@ -324,15 +321,18 @@ export function ScheduleSettingsProvider({ children }) {
           const serverData = storeToServerSchedule(scheduleStore);
           const excelData = result.schedule || {};
           for (const [month, entries] of Object.entries(excelData)) {
-            const abbr = MONTH_FULL_TO_ABBR[month] || month;
-            if (!serverData[abbr]) serverData[abbr] = [];
-            const existingDays = new Set(serverData[abbr].map(e => e.day));
+            const monthIndex = MONTH_NAMES.indexOf(month);
+            if (monthIndex < 0) continue;
+            const monthKey = getMonthKey(year, monthIndex);
+            if (!serverData[monthKey]) serverData[monthKey] = [];
+            const existingDays = new Set(serverData[monthKey].map(e => e.day));
             for (const [day, entry] of Object.entries(entries)) {
-              if (!existingDays.has(parseInt(day, 10)) && entry.trail_id) {
-                serverData[abbr].push({ day: parseInt(day, 10), trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
+              const dayNum = parseInt(day, 10);
+              if (!existingDays.has(dayNum) && entry.trail_id) {
+                serverData[monthKey].push({ day: dayNum, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
               }
             }
-            serverData[abbr].sort((a, b) => a.day - b.day);
+            serverData[monthKey].sort((a, b) => a.day - b.day);
           }
           await updateSchedule(serverData);
           if (result.months.length > 0) {
@@ -354,7 +354,7 @@ export function ScheduleSettingsProvider({ children }) {
       },
       onCleanup: () => setShowSettings(false),
     });
-  }, [scheduleStore, setSelectedMonth, showToast]);
+  }, [scheduleStore, setSelectedMonth, showToast, year]);
 
   const importScheduleTsv = useCallback(() => {
     createFileInput({
@@ -531,13 +531,24 @@ export function ScheduleSettingsProvider({ children }) {
         return;
       }
 
-      // Convert full month names to abbreviated keys for the server
-      const normalized = {};
+      // Merge imported month entries into the selected year while preserving other years.
+      const current = await getSchedule();
+      const merged = { ...current };
       for (const [month, entries] of Object.entries(schedule)) {
-        const abbr = MONTH_FULL_TO_ABBR[month] || month;
-        normalized[abbr] = entries;
+        const monthIndex = MONTH_NAMES.indexOf(month);
+        if (monthIndex < 0) continue;
+        const monthKey = getMonthKey(year, monthIndex);
+        const existing = Array.isArray(merged[monthKey]) ? [...merged[monthKey]] : [];
+        const existingDays = new Set(existing.map(e => e.day));
+        for (const entry of entries) {
+          if (!existingDays.has(entry.day) && entry.trail_id) {
+            existing.push(entry);
+          }
+        }
+        existing.sort((a, b) => a.day - b.day || a.slot - b.slot);
+        merged[monthKey] = existing;
       }
-      const result = await updateSchedule(normalized);
+      const result = await updateSchedule(merged);
       if (!result.success) {
         showToast('Import failed: ' + (result.error?.message || 'Unknown error'), 'error');
         return;
@@ -575,7 +586,7 @@ export function ScheduleSettingsProvider({ children }) {
     for (const monthAbbr of quarter.months) {
       const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthAbbr);
       const daysInMonth = getDaysInMonth(qYear, monthIndex);
-      const monthKey = MONTH_NAMES[monthIndex];
+      const monthKey = getMonthKey(qYear, monthIndex);
       const monthData = scheduleStore[monthKey] || {};
 
       for (let day = 1; day <= daysInMonth; day++) {

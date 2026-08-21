@@ -1,24 +1,25 @@
 import { useMemo } from 'react';
-import { MONTH_NAMES } from '../utils/constants';
 import { useHikeDays } from './useHikeDays';
-import { getHikeSlotsForMonth } from '../utils/dateUtils';
+import { getHikeSlotsForMonth, getMonthKey } from '../utils/dateUtils';
 import { normalizeDayEntries } from '../utils/scheduleFormat';
 
-export function useMonthSlotStats({ trails, scheduleStore, year }) {
+export function useMonthSlotStats({ trails, scheduleStore, years = [] }) {
   const hikeDays = useHikeDays();
   return useMemo(() => {
     const trailIdSet = new Set(trails.map(t => t.id));
     const stats = {};
-    MONTH_NAMES.forEach((name, idx) => {
-      const total = getHikeSlotsForMonth(year, idx, hikeDays).length;
-      let filled = 0;
-      const monthData = scheduleStore[name] || {};
-      Object.values(monthData).forEach(val => {
-        const entries = normalizeDayEntries(val);
-        filled += entries.filter(e => e?.trail_id && trailIdSet.has(e.trail_id)).length;
-      });
-      stats[idx] = { total, filled };
+    years.forEach(year => {
+      for (let idx = 0; idx < 12; idx += 1) {
+        const total = getHikeSlotsForMonth(year, idx, hikeDays).length;
+        let filled = 0;
+        const monthData = scheduleStore[getMonthKey(year, idx)] || {};
+        Object.values(monthData).forEach(val => {
+          const entries = normalizeDayEntries(val);
+          filled += entries.filter(e => e?.trail_id && trailIdSet.has(e.trail_id)).length;
+        });
+        stats[getMonthKey(year, idx)] = { total, filled };
+      }
     });
     return stats;
-  }, [scheduleStore, year, trails, hikeDays]);
+  }, [scheduleStore, years, trails, hikeDays]);
 }

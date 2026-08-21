@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
-import { MONTH_NAMES } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
-import { getHikeSlotsForMonth } from '../utils/dateUtils';
+import { getHikeSlotsForMonth, getMonthKey } from '../utils/dateUtils';
 import { useHikeDays } from './useHikeDays';
 import { normalizeDayEntries } from '../utils/scheduleFormat';
 
@@ -14,13 +13,14 @@ export function useScheduleData({ trails, scheduleStore, selectedMonth, year }) 
   const [dragData, setDragData] = useState(null);
 
   const assignedHikes = useMemo(() => {
-    const raw = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
+    const monthKey = getMonthKey(year, selectedMonth);
+    const raw = scheduleStore[monthKey] || {};
     const result = {};
     Object.entries(raw).forEach(([day, val]) => {
       result[day] = normalizeDayEntries(val);
     });
     return result;
-  }, [scheduleStore, selectedMonth]);
+  }, [scheduleStore, selectedMonth, year]);
 
   const hikeDays = useHikeDays();
   const hikeDates = useMemo(() => {

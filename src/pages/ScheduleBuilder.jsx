@@ -7,7 +7,6 @@ import { useApiKey } from '../hooks/useApiKey';
 
 import FilterPanel from '../components/FilterPanel';
 import { useMonthContext } from '../contexts/MonthContext';
-import { useYearContext } from '../contexts/YearContext';
 import { useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { getTrailName } from '../utils/data';
 import TrailCard from '../components/TrailCard';
@@ -18,7 +17,7 @@ import { MONTH_NAMES, DEFAULT_FILTERS } from '../utils/constants';
 import LeaderEdit from '../components/LeaderEdit';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { getNoaaTideUrl } from '../utils/url.js';
-import { createDate } from '../utils/dateUtils';
+import { createDate, getMonthKey } from '../utils/dateUtils';
 import { useGpxActions } from '../hooks/useGpxActions';
 import { getDayEntries, setDayEntry } from '../utils/scheduleFormat';
 import { useTrailDetails } from '../hooks/useTrailDetails';
@@ -33,8 +32,7 @@ export default function ScheduleBuilder() {
   const navigate = useNavigate();
   const { filters, setFilters } = useFilters(trails, trailDetails);
   const { title: tt } = useTooltips();
-  const { selectedMonth } = useMonthContext();
-  const { selectedYear } = useYearContext();
+  const { selectedMonth, selectedYear } = useMonthContext();
   const hasApiKey = useApiKey();
   const [pendingSwap, setPendingSwap] = useState(null);
   const year = selectedYear;
@@ -60,11 +58,11 @@ export default function ScheduleBuilder() {
   const [moveSource, setMoveSource] = useState(null);
   const { isDownloading, downloadGpx, openTrailhead } = useGpxActions();
 
-  const updateMonthSchedule = useCallback((monthName, updater) => {
+  const updateMonthSchedule = useCallback((monthKey, updater) => {
     setScheduleStore(prev => {
-      const current = prev[monthName] || {};
+      const current = prev[monthKey] || {};
       const next = updater(current);
-      return { ...prev, [monthName]: next };
+      return { ...prev, [monthKey]: next };
     });
   }, [setScheduleStore]);
 
@@ -95,11 +93,12 @@ export default function ScheduleBuilder() {
   });
 
   const toggleEarlyStart = (day, slotIdx) => {
-    const monthData = scheduleStore[MONTH_NAMES[selectedMonth]] || {};
+    const monthKey = getMonthKey(year, selectedMonth);
+    const monthData = scheduleStore[monthKey] || {};
     const entry = getDayEntries(monthData, day)[slotIdx];
     if (!entry?.trail_id) return;
 
-    updateMonthSchedule(MONTH_NAMES[selectedMonth], prev => setDayEntry(prev, day, slotIdx, { ...entry, early_start: !entry.early_start }));
+    updateMonthSchedule(monthKey, prev => setDayEntry(prev, day, slotIdx, { ...entry, early_start: !entry.early_start }));
   };
 
 
@@ -307,10 +306,10 @@ export default function ScheduleBuilder() {
                                           <LeaderEdit
                                             initialLeader={leader}
                                             tt={tt}
-                                            onSave={async (newLeader) => {
-                                              await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader);
-                                              setLeaderEdit(null);
-                                            }}
+                                              onSave={async (newLeader) => {
+                                                await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader, year);
+                                                setLeaderEdit(null);
+                                              }}
                                             onCancel={() => setLeaderEdit(null)}
                                           />
                                         )}

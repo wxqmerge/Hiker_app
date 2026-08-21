@@ -57,7 +57,7 @@ interface ScheduleEntry {
 }
 
 export interface ScheduleData {
-  [month: string]: ScheduleEntry[];
+  [monthKey: string]: ScheduleEntry[];
 }
 
 export interface LookupData {

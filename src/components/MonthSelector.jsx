@@ -1,25 +1,28 @@
 import { useMemo } from 'react';
-import { MONTH_NAMES, CURRENT_YEAR } from '../utils/constants';
+import { MONTH_NAMES } from '../utils/constants';
+import { getMonthRange } from '../utils/dateUtils';
 import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
 import { useTrails } from '../hooks/useTrails';
 import { serverScheduleToStore } from '../utils/scheduleFormat';
 import Selector from './Selector';
 
-export default function MonthSelector({ selectedMonth, onChange, title, year = CURRENT_YEAR }) {
+export default function MonthSelector({ selectedMonthKey, onChange, title }) {
   const { trails, schedule: scheduleData, loading } = useTrails();
   const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
-  const monthSlotStats = useMonthSlotStats({ trails, scheduleStore, year });
+  const months = useMemo(() => getMonthRange(), []);
+  const years = useMemo(() => Array.from(new Set(months.map(({ year }) => year))), [months]);
+  const monthSlotStats = useMonthSlotStats({ trails, scheduleStore, years });
 
   return (
-    <Selector value={selectedMonth} onChange={onChange} title={title}>
-      {MONTH_NAMES.map((name, idx) => {
-        const stat = monthSlotStats?.[idx];
-        const baseLabel = `${name} ${year}`;
+    <Selector value={selectedMonthKey} onChange={onChange} title={title}>
+      {months.map(({ year, month, key }) => {
+        const stat = monthSlotStats?.[key];
+        const baseLabel = `${MONTH_NAMES[month]} ${year}`;
         const label = stat && !loading
           ? `${baseLabel} ${stat.filled}/${stat.total}`
           : baseLabel;
         return (
-          <option key={idx} value={idx}>{label}</option>
+          <option key={key} value={key}>{label}</option>
         );
       })}
     </Selector>

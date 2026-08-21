@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useScheduleData } from '../../hooks/useScheduleData';
-import { MONTH_NAMES } from '../../utils/constants';
+import { getMonthKey } from '../../utils/dateUtils';
 
 describe('useScheduleData', () => {
   const mockTrails = globalThis.__TEST_MOCK_DATA__.trails;
@@ -20,7 +20,7 @@ describe('useScheduleData', () => {
   describe('assignedHikes', () => {
     it('reads entries from correct slot for Wednesday (slot 0)', () => {
       const store = {
-        July: {
+        [getMonthKey(2026, 6)]: {
           '1': [{ trail_id: 'trail-1', early_start: false, leader: 'Alice' }],
         },
       };
@@ -32,7 +32,7 @@ describe('useScheduleData', () => {
 
     it('reads entries from correct slot for Friday (slot 1)', () => {
       const store = {
-        July: {
+        [getMonthKey(2026, 6)]: {
           '3': [
             { trail_id: 'trail-1', early_start: false, leader: 'Alice' },
             { trail_id: 'trail-2', early_start: false, leader: 'Bob' },
@@ -54,7 +54,7 @@ describe('useScheduleData', () => {
 
     it('handles null trail_id in entry', () => {
       const store = {
-        July: {
+        [getMonthKey(2026, 6)]: {
           '1': [{ trail_id: null, early_start: false, leader: '' }],
         },
       };
@@ -64,7 +64,7 @@ describe('useScheduleData', () => {
 
     it('normalizes object-shaped day entries', () => {
       const store = {
-        July: {
+        [getMonthKey(2026, 6)]: {
           '1': { trail_id: 'trail-1', early_start: true, leader: 'Alice' },
         },
       };
@@ -76,7 +76,7 @@ describe('useScheduleData', () => {
 
     it('normalizes string day entries', () => {
       const store = {
-        July: {
+        [getMonthKey(2026, 6)]: {
           '1': 'trail-1',
         },
       };

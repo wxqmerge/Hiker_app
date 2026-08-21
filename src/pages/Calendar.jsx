@@ -4,7 +4,6 @@ import { useTooltips } from '../hooks/useTooltips';
 import { useNextHike } from '../hooks/useNextHike';
 import { useApiKey } from '../hooks/useApiKey';
 import { useMonthContext } from '../contexts/MonthContext';
-import { useYearContext } from '../contexts/YearContext';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
@@ -24,14 +23,13 @@ export default function Calendar() {
   const { title: tt } = useTooltips();
   const showToast = useToast();
 
-  const { selectedYear } = useYearContext();
+  const { selectedMonth, selectedYear, setSelectedMonthKey } = useMonthContext();
   const year = selectedYear;
 
   const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
 
   const nextHikes = useNextHike({ trails, schedule: scheduleData, year });
 
-  const { selectedMonth, setSelectedMonth } = useMonthContext();
   const hasSyncedInitialMonth = useRef(false);
   const hasApiKey = useApiKey();
   const [pendingSwap, setPendingSwap] = useState(null);
@@ -42,9 +40,9 @@ export default function Calendar() {
   useEffect(() => {
     if (!hasSyncedInitialMonth.current && nextHikes && nextHikes.length > 0 && !loading) {
       hasSyncedInitialMonth.current = true;
-      setSelectedMonth(nextHikes[0].monthIndex);
+      setSelectedMonthKey(nextHikes[0].monthKey);
     }
-  }, [loading, nextHikes, setSelectedMonth]);
+  }, [loading, nextHikes, setSelectedMonthKey]);
 
   const {
     assignedHikes,
@@ -58,10 +56,10 @@ export default function Calendar() {
   } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
 
 
-  const applyScheduleChange = useCallback(async (monthName, updater) => {
+  const applyScheduleChange = useCallback(async (monthKey, updater) => {
     const newStore = { ...scheduleStore };
-    const current = newStore[monthName] || {};
-    newStore[monthName] = updater(current);
+    const current = newStore[monthKey] || {};
+    newStore[monthKey] = updater(current);
     const serverData = storeToServerSchedule(newStore);
     try {
       await updateSchedule(serverData);
@@ -73,8 +71,8 @@ export default function Calendar() {
   }, [scheduleStore, showToast]);
 
   const handleLeaderChange = useCallback(async (day, slotIdx, newLeader) => {
-    await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader);
-  }, [selectedMonth, scheduleStore]);
+    await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader, year);
+  }, [selectedMonth, scheduleStore, year]);
 
   const {
     confirmSwap,
@@ -100,7 +98,7 @@ export default function Calendar() {
 
   return (
     <>
-      {nextHikes && selectedMonth === nextHikes[0]?.monthIndex && (
+      {nextHikes && selectedMonth === nextHikes[0]?.monthIndex && selectedYear === nextHikes[0]?.year && (
         <NextHikeBanner nextHikes={nextHikes} />
       )}
 

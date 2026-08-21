@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { updateLeader } from '../../utils/scheduleActions';
+import { getMonthKey } from '../../utils/dateUtils';
 
 vi.mock('../../api/client', () => ({
   updateSchedule: vi.fn(),
@@ -14,52 +15,6 @@ vi.mock('../../hooks/useToast', () => ({
   showToast: vi.fn(),
   useToast: vi.fn(),
 }));
-
-vi.mock('../../utils/scheduleFormat', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual,
-  serverScheduleToStore: vi.fn((data) => {
-    const store: any = {};
-    const monthMap: any = { Jan: 'January', Jun: 'June', Mar: 'March' };
-    for (const [abbr, entries] of Object.entries(data || {})) {
-      const full = monthMap[abbr] || abbr;
-      store[full] = {};
-      if (Array.isArray(entries)) {
-        for (const e of entries) {
-          const day = String(e.day);
-          if (!store[full][day]) store[full][day] = [];
-          const slot = e.slot !== undefined ? e.slot : 0;
-          store[full][day][slot] = { trail_id: e.trail_id || null, early_start: !!e.early_start, leader: e.leader || '' };
-        }
-      }
-    }
-    return store;
-  }),
-  storeToServerSchedule: vi.fn((store) => {
-    const serverData: any = {};
-    const monthMap: any = { January: 'Jan', June: 'Jun', March: 'Mar' };
-    for (const [full, days] of Object.entries(store || {})) {
-      const abbr = monthMap[full] || full;
-      if (!abbr || !days || typeof days !== 'object') continue;
-      serverData[abbr] = [];
-      for (const [day, entries] of Object.entries(days)) {
-        const entryList = Array.isArray(entries) ? entries : [entries];
-        entryList.forEach((entry: any, slot: number) => {
-          if (entry?.trail_id) {
-            const dayNum = parseInt(day, 10);
-            if (!isNaN(dayNum) && dayNum > 0) {
-              serverData[abbr].push({ day: dayNum, slot, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
-            }
-          }
-        });
-      }
-      serverData[abbr].sort((a: any, b: any) => a.day - b.day || a.slot - b.slot);
-    }
-    return serverData;
-  }),
-  };
-});
 
 import { updateSchedule, getSchedule } from '../../api/client';
 import { showToast } from '../../hooks/useToast';
@@ -80,21 +35,23 @@ describe('updateLeader', () => {
   });
 
   it('trims leader name', async () => {
+    const janKey = getMonthKey(2026, 0);
     mockGetSchedule.mockResolvedValue({
-      Jan: [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: false, leader: '' }],
+      [janKey]: [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: false, leader: '' }],
     });
     mockUpdateSchedule.mockResolvedValue(undefined);
 
-    const store = { January: { '1': [{ trail_id: 'trail-1', early_start: false, leader: '' }] } };
-    const result = await updateLeader(store, 0, 1, 0, '  Trimmed Leader  ');
+    const store = { [janKey]: { '1': [{ trail_id: 'trail-1', early_start: false, leader: '' }] } };
+    const result = await updateLeader(store, 0, 1, 0, '  Trimmed Leader  ', 2026);
     expect(result).toBe(true);
     const callData = mockUpdateSchedule.mock.calls[0][0];
-    expect(callData.Jan[0].leader).toBe('Trimmed Leader');
+    expect(callData[janKey][0].leader).toBe('Trimmed Leader');
   });
 
   it('updates specific slot', async () => {
+    const junKey = getMonthKey(2026, 5);
     mockGetSchedule.mockResolvedValue({
-      Jun: [
+      [junKey]: [
         { day: 5, slot: 0, trail_id: 'trail-1', early_start: false, leader: 'First' },
         { day: 5, slot: 1, trail_id: 'trail-2', early_start: false, leader: 'Second' },
       ],
@@ -102,18 +59,18 @@ describe('updateLeader', () => {
     mockUpdateSchedule.mockResolvedValue(undefined);
 
     const store = {
-      June: {
+      [junKey]: {
         '5': [
           { trail_id: 'trail-1', early_start: false, leader: 'First' },
           { trail_id: 'trail-2', early_start: false, leader: 'Second' },
         ],
       },
     };
-    const result = await updateLeader(store, 5, 5, 1, 'New Leader');
+    const result = await updateLeader(store, 5, 5, 1, 'New Leader', 2026);
     expect(result).toBe(true);
     const callData = mockUpdateSchedule.mock.calls[0][0];
-    expect(callData.Jun[1].leader).toBe('New Leader');
-    expect(callData.Jun[0].leader).toBe('First');
+    expect(callData[junKey][1].leader).toBe('New Leader');
+    expect(callData[junKey][0].leader).toBe('First');
   });
 
   it('falls back to store when getSchedule fails', async () => {
@@ -121,20 +78,21 @@ describe('updateLeader', () => {
     mockUpdateSchedule.mockResolvedValue(undefined);
 
     const store = {
-      March: { '10': [{ trail_id: 'trail-1', early_start: false, leader: '' }] },
+      [getMonthKey(2026, 2)]: { '10': [{ trail_id: 'trail-1', early_start: false, leader: '' }] },
     };
-    const result = await updateLeader(store, 2, 10, 0, 'Fallback Leader');
+    const result = await updateLeader(store, 2, 10, 0, 'Fallback Leader', 2026);
     expect(result).toBe(true);
   });
 
   it('returns false and toasts when updateSchedule fails', async () => {
+    const janKey = getMonthKey(2026, 0);
     mockGetSchedule.mockResolvedValue({
-      Jan: [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: false, leader: '' }],
+      [janKey]: [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: false, leader: '' }],
     });
     mockUpdateSchedule.mockRejectedValue(new Error('Save failed'));
 
-    const store = { January: { '1': [{ trail_id: 'trail-1', early_start: false, leader: '' }] } };
-    const result = await updateLeader(store, 0, 1, 0, 'New Leader');
+    const store = { [janKey]: { '1': [{ trail_id: 'trail-1', early_start: false, leader: '' }] } };
+    const result = await updateLeader(store, 0, 1, 0, 'New Leader', 2026);
     expect(result).toBe(false);
     expect(mockShowToast).toHaveBeenCalledWith('Failed to save leader: Save failed', 'error');
   });
@@ -144,7 +102,7 @@ describe('updateLeader', () => {
     mockUpdateSchedule.mockResolvedValue(undefined);
 
     const store = {};
-    const result = await updateLeader(store, 0, 1, 0, 'New Leader');
+    const result = await updateLeader(store, 0, 1, 0, 'New Leader', 2026);
     expect(result).toBe(true);
   });
 });

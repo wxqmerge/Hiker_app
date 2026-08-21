@@ -23,7 +23,7 @@ vi.mock('../../hooks/useNextHike', () => ({
 }));
 
 vi.mock('../../hooks/useMonthSlotStats', () => ({
-  useMonthSlotStats: () => [],
+  useMonthSlotStats: () => ({}),
 }));
 
 vi.mock('../../hooks/useApiKey', () => ({
