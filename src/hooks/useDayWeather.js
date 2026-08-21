@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { fetchWeatherForCoords, fetchTideForCoords } from '../utils/io';
 import { serverScheduleToStore, getDayEntries } from '../utils/scheduleFormat';
 import { CURRENT_YEAR } from '../utils/constants';
 import { createDate, getMonthKey } from '../utils/dateUtils';
 import { getTodayMidnight, getTrailIdsFromEntries, buildWeatherTarget } from '../utils/weatherTargets';
+import { useWeatherFetch } from './useWeatherFetch';
 
 /**
  * Fetch NWS weather and 10am tide for trails on the selected month+day.
@@ -16,8 +17,6 @@ import { getTodayMidnight, getTrailIdsFromEntries, buildWeatherTarget } from '..
  * Returns { [trailId]: { temp, rain, tide } }.
  */
 export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, trails, year = CURRENT_YEAR }) {
-  const [weather, setWeather] = useState({ key: null, map: {} });
-
   const target = useMemo(() => {
     const day = selectedDay ? parseInt(selectedDay, 10) : null;
     if (day == null || isNaN(day)) return null;
@@ -39,22 +38,11 @@ export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, 
     return { key: `${year}:${selectedMonth}:${day}`, date, trailCoords, inForecastRange };
   }, [schedule, selectedMonth, selectedDay, trailIds, trails, year]);
 
-  useEffect(() => {
-    if (!target) return;
-    let cancelled = false;
-    (async () => {
-      const results = target.inForecastRange
-        ? await fetchWeatherForCoords(target.trailCoords, target.date)
-        : await fetchTideForCoords(target.trailCoords, target.date);
-      if (!cancelled) setWeather({ key: target.key, map: results });
-    })();
-    return () => { cancelled = true; };
-  }, [target]);
+  const fetchFn = useCallback(async (t) => {
+    return t.inForecastRange
+      ? await fetchWeatherForCoords(t.trailCoords, t.date)
+      : await fetchTideForCoords(t.trailCoords, t.date);
+  }, []);
 
-  const weatherMap = useMemo(() => {
-    if (!target || weather.key !== target.key) return {};
-    return weather.map;
-  }, [target, weather]);
-
-  return weatherMap;
+  return useWeatherFetch(target, fetchFn);
 }

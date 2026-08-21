@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { fetchWeatherForCoords, fetchTideForCoords } from '../utils/io';
 import { serverScheduleToStore, getDayEntries } from '../utils/scheduleFormat';
 import { CURRENT_YEAR } from '../utils/constants';
 import { createDate, getDaysInMonth, getMonthKey } from '../utils/dateUtils';
 import { getTodayMidnight, getTrailIdsFromEntries, buildWeatherTarget } from '../utils/weatherTargets';
+import { useWeatherFetch } from './useWeatherFetch';
 
 /**
  * Fetch NWS weather and 10am tide for trails scheduled on any day of the
@@ -14,8 +15,6 @@ import { getTodayMidnight, getTrailIdsFromEntries, buildWeatherTarget } from '..
  * Returns { [day]: { [trailId]: { temp, rain, tide } } }.
  */
 export function useScheduleWeather({ schedule, selectedMonth, trails, year = CURRENT_YEAR }) {
-  const [weather, setWeather] = useState({ key: null, map: {} });
-
   const target = useMemo(() => {
     const store = serverScheduleToStore(schedule);
     const monthData = store[getMonthKey(year, selectedMonth)] || {};
@@ -34,26 +33,16 @@ export function useScheduleWeather({ schedule, selectedMonth, trails, year = CUR
     return { key: `${year}:${selectedMonth}:${today.toDateString()}`, days };
   }, [schedule, selectedMonth, trails, year]);
 
-  useEffect(() => {
-    if (!target) return;
-    let cancelled = false;
-    (async () => {
-      const results = {};
-      await Promise.allSettled(Object.entries(target.days).map(async ([day, info]) => {
-        const dayResults = info.inForecastRange
-          ? await fetchWeatherForCoords(info.trailCoords, info.date)
-          : await fetchTideForCoords(info.trailCoords, info.date);
-        if (Object.keys(dayResults).length > 0) results[day] = dayResults;
-      }));
-      if (!cancelled) setWeather({ key: target.key, map: results });
-    })();
-    return () => { cancelled = true; };
-  }, [target]);
+  const fetchFn = useCallback(async (t) => {
+    const results = {};
+    await Promise.allSettled(Object.entries(t.days).map(async ([day, info]) => {
+      const dayResults = info.inForecastRange
+        ? await fetchWeatherForCoords(info.trailCoords, info.date)
+        : await fetchTideForCoords(info.trailCoords, info.date);
+      if (Object.keys(dayResults).length > 0) results[day] = dayResults;
+    }));
+    return results;
+  }, []);
 
-  const weatherMap = useMemo(() => {
-    if (!target || weather.key !== target.key) return {};
-    return weather.map;
-  }, [target, weather]);
-
-  return weatherMap;
+  return useWeatherFetch(target, fetchFn);
 }
