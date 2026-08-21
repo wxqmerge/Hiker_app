@@ -218,7 +218,6 @@ export default function ScheduleSettingsDropdown() {
         </div>
       </div>
       {section('Import Trails')}
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.importDatabase(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Import Database (XLS)</DropdownItem>
       <DropdownItem onClick={() => { close(); trailActions.adminActions.importHikeTsv(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Import Hike TSV</DropdownItem>
       {section('Import All')}
       <DropdownItem onClick={() => { close(); trailActions.adminActions.importAllJson(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Import All JSON</DropdownItem>

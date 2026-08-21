@@ -57,9 +57,12 @@ export function ScheduleSettingsProvider({ children }) {
     trails, scheduleStore, selectedMonth, year,
   });
 
-  // Load server schedule into local store on mount
+  // Load server schedule into local store on mount.
+  // Skip sync if the user has unsaved local edits to avoid overwriting them.
   useEffect(() => {
     if (scheduleData && Object.keys(scheduleData).length > 0) {
+      const currentJson = JSON.stringify(scheduleStore);
+      if (currentJson !== lastSavedStoreRef.current) return;
       const converted = serverScheduleToStore(scheduleData);
       setScheduleStore(converted);
       lastSavedStoreRef.current = JSON.stringify(converted);

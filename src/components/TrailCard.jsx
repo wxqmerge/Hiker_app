@@ -6,7 +6,7 @@ import { useGpxActions } from '../hooks/useGpxActions';
 import { getTrailName, getTrailDetailsById, getAvailableMonthsFromSeasonal } from '../utils/data';
 import { getNoaaTideUrl } from '../utils/url.js';
 import { openHtmlInNewTab, hasValidCoords } from '../utils/io';
-import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
+import { DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
 import { getSeasonalInfo, sumMonthlyScores } from '../utils/score.js';

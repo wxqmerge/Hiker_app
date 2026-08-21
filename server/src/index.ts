@@ -1,12 +1,15 @@
 import dotenv from 'dotenv';
-dotenv.config({ path: '../.env' });
+import path from 'path';
+import { getCurrentDir } from './utils/path.js';
+
+const __dirname = getCurrentDir(import.meta.url);
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 import express, { Application, Request, Response } from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import path from 'path';
 import http from 'http';
 
 import { router as trailsRouter } from './routes/trails.routes.js';
@@ -16,9 +19,7 @@ import { router as dataRouter } from './routes/data.routes.js';
 import { getWriteHealth, serverVersion, waitForDataReady } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
 import { requireAdminKey } from './middleware/auth.middleware.js';
-import { getCurrentDir } from './utils/path.js';
 
-const __dirname = getCurrentDir(import.meta.url);
 const isDev = process.env.NODE_ENV !== 'production';
 
 const { hash: buildHash, ts: buildTs, full: buildFull } = buildVersion();
@@ -148,7 +149,8 @@ app.get('/api/validate', async (_req, res) => {
   const __dirname = path.dirname(__filename);
   const DATA_DIR = path.join(__dirname, '../../exported_data');
 
-  const MONTH_KEYS = new Set(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+    const MONTH_KEYS = new Set(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+    const YEAR_MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
   const results: Array<{ file: string; valid: boolean; error?: string; recordCount?: number; issues?: string[] }> = [];
 
   function addResult(file: string, valid: boolean, opts?: { error?: string; recordCount?: number; issues?: string[] }) {
@@ -250,7 +252,7 @@ app.get('/api/validate', async (_req, res) => {
           if (keys.length === 0) {
             issues.push('object is empty');
           } else {
-            const invalidKeys = keys.filter(k => !MONTH_KEYS.has(k));
+            const invalidKeys = keys.filter(k => !MONTH_KEYS.has(k) && !YEAR_MONTH_RE.test(k));
             if (invalidKeys.length) issues.push(`invalid month keys: ${invalidKeys.join(', ')}`);
             const nonArrayEntries = keys.filter(k => !Array.isArray(parsed[k]));
             if (nonArrayEntries.length) issues.push(`month(s) with non-array values: ${nonArrayEntries.join(', ')}`);

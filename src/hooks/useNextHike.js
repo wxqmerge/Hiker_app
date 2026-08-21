@@ -19,11 +19,14 @@ export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 
     const allHikes = [];
     const today = getTodayHikeRef();
 
-    for (let m = 0; m < 12 && allHikes.length < maxHikes; m++) {
-      const monthData = scheduleStore[getMonthKey(year, m)] || {};
-      const daysInMonth = getDaysInMonth(year, m);
+    // Scan up to 24 months to handle year rollover (e.g. Dec → Jan of next year).
+    for (let offset = 0; offset < 24 && allHikes.length < maxHikes; offset++) {
+      const y = year + Math.floor(offset / 12);
+      const m = offset % 12;
+      const monthData = scheduleStore[getMonthKey(y, m)] || {};
+      const daysInMonth = getDaysInMonth(y, m);
       for (let day = 1; day <= daysInMonth && allHikes.length < maxHikes; day++) {
-        const date = createDate(year, m, day);
+        const date = createDate(y, m, day);
         const dow = date.getDay();
         if (hikeDays.includes(dow) && date >= today) {
           const entryList = getDayEntries(monthData, day);
@@ -35,8 +38,8 @@ export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 
             allHikes.push({
               day,
               monthIndex: m,
-              year,
-              monthKey: getMonthKey(year, m),
+              year: y,
+              monthKey: getMonthKey(y, m),
               date,
               trail,
               trailId: entry.trail_id,

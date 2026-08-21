@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useToast } from '../hooks/useToast';
 import { createFileInput, createImportFileInput, downloadBlob, parseTrailTsv, sanitizeFilename } from '../utils/io';
-import { getGpx, importTrailsFromXls, getSchedule, updateSchedule, request, exportDataZip, importDataZip, resyncGpxCoords } from '../api/client';
+import { getGpx, getSchedule, updateSchedule, request, exportDataZip, importDataZip, resyncGpxCoords } from '../api/client';
 import { getTrailName } from '../utils/data';
 import { getGroupName } from '../utils/config';
 import { formatDateToISO } from '../utils/dateUtils';
@@ -97,29 +97,6 @@ export function TrailActionsProvider({ children }) {
       showToast('Create failed: ' + err.message, 'error');
     }
   }, [newTrailName, trails, saveTrail, navigate, showToast]);
-
-  const handleImportDatabase = useCallback(() => {
-    createFileInput({
-      accept: '.xls',
-      onFile: async (file) => {
-        if (file.name !== 'Hike Data BaseM.xls') {
-          showToast('Invalid file: "' + file.name + '". Only "Hike Data BaseM.xls" is accepted.', 'error');
-          return;
-        }
-        try {
-          const result = await importTrailsFromXls(file);
-          if (!result.success) {
-            showToast('Import failed: ' + (result.error?.message || 'Unknown error'), 'error');
-            return;
-          }
-          showToast(result.message || 'Trail database imported successfully!', 'success');
-          window.location.reload();
-        } catch (err) {
-          showToast('Import error: ' + err.message, 'error');
-        }
-      },
-    });
-  }, [showToast]);
 
   const doImportHikeTsv = useCallback(async (parsedTrail, parsedDetail, targetTrail) => {
     const generateId = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'new-trail';
@@ -406,7 +383,6 @@ export function TrailActionsProvider({ children }) {
   }, [requireKey, showToast]);
 
   const adminActions = useMemo(() => ({
-    importDatabase: handleImportDatabase,
     importHikeTsv: handleImportHikeTsv,
     importAllJson: importAllDataJson,
     importZip: importAllDataZip,
@@ -415,7 +391,7 @@ export function TrailActionsProvider({ children }) {
     cleanupOrphanedDetails,
     validateData,
     resyncCoords,
-  }), [handleImportDatabase, handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords]);
+  }), [handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords]);
 
   const userActions = useMemo(() => ({
     newTrail: startNewTrail,

@@ -1,3 +1,5 @@
+// Mirrors client-side getFirstCoordinateFromGpx (src/utils/io.js) which uses DOMParser.
+// Server uses regex because Node has no DOM. Keep trkpt → wpt → rtept fallback order in sync.
 export function extractFirstCoordinateFromGpx(gpxContent: string): { lat: number; lon: number } | null {
   // Try trkpt first
   const trkpt = gpxContent.match(/<trkpt\s+lat="([^"]+)"\s+lon="([^"]+)"\/?>/);

@@ -11,10 +11,26 @@
 //     schedule write, the cached schedule is invalidated.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const TIDE_CACHE = `hiker-tide-${VERSION}`;
+
+// Base path prefix (e.g. "/sothh-dev/") derived from the SW's own location.
+// In a subpath deployment the SW lives at /<base>/sw.js, so API requests
+// arrive as /<base>/api/... — we strip the prefix before matching.
+const BASE_PATH = (() => {
+  const swPath = self.location.pathname; // e.g. "/sothh-dev/sw.js" or "/sw.js"
+  const dir = swPath.replace(/sw\.js$/, '');
+  return dir || '/';
+})();
+
+function stripBase(pathname) {
+  if (BASE_PATH !== '/' && pathname.startsWith(BASE_PATH)) {
+    return pathname.slice(BASE_PATH.length - 1);
+  }
+  return pathname;
+}
 
 // Read-only same-origin API endpoints safe to cache (GET, no API key required).
 const CACHE_FIRST_API = new Set([
@@ -26,6 +42,7 @@ const CACHE_FIRST_API = new Set([
 const NETWORK_FIRST_API = new Set([
   '/api/schedule',
   '/api/schedule/group',
+  '/api/config',
 ]);
 
 const WEATHER_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours, matches client NWS cache
@@ -39,8 +56,9 @@ function isWeatherUrl(url) {
 }
 
 function isScheduleWrite(url, method) {
+  const path = stripBase(url.pathname);
   return (
-    (url.pathname === '/api/schedule' || url.pathname.startsWith('/api/schedule/')) &&
+    (path === '/api/schedule' || path.startsWith('/api/schedule/')) &&
     ['PUT', 'POST', 'DELETE'].includes(method)
   );
 }
@@ -87,7 +105,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  const path = url.pathname;
+  const path = stripBase(url.pathname);
   if (CACHE_FIRST_API.has(path)) {
     event.respondWith(cacheFirst(request, API_CACHE));
     return;
@@ -172,9 +190,10 @@ function invalidateScheduleCache(origin) {
     const keys = await cache.keys();
     const toDelete = keys.filter((k) => {
       const u = new URL(k);
+      const path = stripBase(u.pathname);
       return (
         u.origin === origin &&
-        (u.pathname === '/api/schedule' || u.pathname === '/api/schedule/group')
+        (path === '/api/schedule' || path === '/api/schedule/group' || path === '/api/config')
       );
     });
     await Promise.all(toDelete.map((k) => cache.delete(k)));

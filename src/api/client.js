@@ -130,7 +130,7 @@ export async function getSchedule() {
   return request('/api/schedule', { stripMetadata: true });
 }
 
-export function getScheduleEntryCount(schedule) {
+function getScheduleEntryCount(schedule) {
   if (!schedule || typeof schedule !== 'object') return 0;
   return Object.values(schedule).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
 }
@@ -157,16 +157,6 @@ export async function importScheduleFromXls(file) {
   });
 }
 
-export async function importTrailsFromXls(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  return request('/api/schedule/import-trails-xls', {
-    method: 'POST',
-    body: formData,
-    apiKey: true,
-  });
-}
-
 export async function getScheduleHistory() {
   return request('/api/schedule/history');
 }
@@ -181,7 +171,7 @@ export async function restoreSchedule(timestamp) {
 
 export async function ensureScheduleWritable() {
   try {
-    return await request('/api/schedule/ensure-writable');
+    return await request('/api/schedule/ensure-writable', { apiKey: true });
   } catch {
     console.warn('[CLIENT] Failed to ensure schedule files are writable');
     return null;

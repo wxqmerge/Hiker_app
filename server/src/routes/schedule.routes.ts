@@ -4,7 +4,7 @@ import { getSchedule, updateSchedule, loadData, getScheduleHistory, restoreSched
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { ScheduleSchema, RestoreTimestampSchema } from '../middleware/validation.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
-import { validateXlsBuffer, findPythonCmd, runPythonScript, processXlsImport } from '../utils/xlsImport.js';
+import { validateXlsBuffer, processXlsImport } from '../utils/xlsImport.js';
 import fs from 'fs';
 import path from 'path';
 import { getCurrentDir } from '../utils/path.js';
@@ -127,6 +127,8 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
         success: false,
         error: { message: 'Python script failed. Contact administrator.' }
       });
+    } finally {
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
     }
   } catch (error) {
     console.error('[SCHEDULE] Error importing XLS:', error);
@@ -134,64 +136,6 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
       fs.unlinkSync(path.join(PROJECT_ROOT, 'tmp_upload.xls'));
     } catch { /* ignore */ }
     res.status(500).json({ success: false, error: { message: 'Failed to import Excel file' } });
-  }
-});
-
-// Import trail data from Hike Data BaseM.xls
-router.post('/import-trails-xls', requireAdminKey, upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
-    }
-
-    if (!validateXlsBuffer(req.file.buffer)) {
-      return res.status(400).json({ success: false, error: { message: 'Invalid file format. Only XLS files are accepted.' } });
-    }
-
-    fs.writeFileSync(path.join(PROJECT_ROOT, 'Hike Data BaseM.xls'), req.file.buffer);
-
-    let pythonCmd: string;
-    try {
-      pythonCmd = await findPythonCmd();
-    } catch {
-      return res.status(500).json({
-        success: false,
-        error: { message: 'Python not found. Install Python 3 with pandas and openpyxl to import trail data.' }
-      });
-    }
-
-    try {
-      const { stdout, stderr } = await runPythonScript(pythonCmd, path.join(PROJECT_ROOT, 'extract_trails_xls.py'), [
-        path.join(PROJECT_ROOT, 'Hike Data BaseM.xls'),
-        path.join(PROJECT_ROOT, 'exported_data')
-      ]);
-      if (stderr) {
-        console.warn('[TRAILS] Python script warnings:', stderr);
-      }
-
-      const trailsData = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'exported_data/trails.json'), 'utf-8'));
-      const detailsData = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'exported_data/trail_details.json'), 'utf-8'));
-      const lookupData = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'exported_data/lookup.json'), 'utf-8'));
-
-      await loadData();
-      res.json({
-        success: true,
-        message: `Imported ${trailsData.trails.length} trails with ${Object.keys(detailsData).length} details`,
-        trailsCount: trailsData.trails.length,
-        detailsCount: Object.keys(detailsData).length,
-        difficulties: lookupData.difficulties?.length || 0,
-        stdout: stdout,
-      });
-    } catch (pyError) {
-      console.error('[TRAILS] Python script error:', pyError);
-      res.status(500).json({
-        success: false,
-        error: { message: 'Failed to run extraction script. Contact administrator.' }
-      });
-    }
-  } catch (error) {
-    console.error('[TRAILS] Error importing trails:', error);
-    res.status(500).json({ success: false, error: { message: 'Failed to import trail data' } });
   }
 });
 

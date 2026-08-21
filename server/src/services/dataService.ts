@@ -5,6 +5,7 @@ import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsD
 import { getCurrentDir } from '../utils/path.js';
 import { MONTH_ABBR, resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { generateEtag } from '../utils/etag.js';
+import { isSafeGpxFilename } from '../utils/gpxValidation.js';
 
 const __dirname = getCurrentDir(import.meta.url);
 
@@ -202,7 +203,7 @@ async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: st
   }
   if (gpxFileRemoved || gpxData === '') {
     const oldGpxFile = gpxIndex[trailId];
-    if (oldGpxFile) {
+    if (oldGpxFile && isSafeGpxFilename(oldGpxFile)) {
       try {
         await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile));
       } catch {
@@ -256,7 +257,7 @@ export async function deleteTrail(id: string): Promise<void> {
 
   // Remove uploaded GPX file if it exists
   const gpxPaths = new Set([path.join(GPX_UPLOAD_DIR, getGpxUploadFileName(id))]);
-  if (oldGpxFile) gpxPaths.add(path.join(GPX_UPLOAD_DIR, oldGpxFile));
+  if (oldGpxFile && isSafeGpxFilename(oldGpxFile)) gpxPaths.add(path.join(GPX_UPLOAD_DIR, oldGpxFile));
   for (const gpxPath of gpxPaths) {
     try {
       await fs.unlink(gpxPath);

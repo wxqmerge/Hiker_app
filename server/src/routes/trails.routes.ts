@@ -16,7 +16,7 @@ import {
 } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
-import { validateGpxContent } from '../utils/gpxValidation.js';
+import { validateGpxContent, isSafeGpxFilename } from '../utils/gpxValidation.js';
 import {
   whitelistTrailFields,
   whitelistTrailDetailFields,
@@ -32,6 +32,7 @@ const GPX_UPLOAD_DIR = path.join(__dirname, '../../../exported_data/gpx');
 const gpxUpload = multer({ dest: GPX_UPLOAD_DIR, limits: { fileSize: 5 * 1024 * 1024 } });
 
 async function resolveGpxPath(gpxFile: string): Promise<string | null> {
+  if (!isSafeGpxFilename(gpxFile)) return null;
   const uploadPath = path.join(GPX_UPLOAD_DIR, gpxFile);
   const originalPath = path.join(GPX_DIR, gpxFile);
   try {
@@ -132,7 +133,7 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
   }
 
   const oldGpxFile = existing.gpxFile;
-  if (oldGpxFile && oldGpxFile !== gpxFileName) {
+  if (oldGpxFile && oldGpxFile !== gpxFileName && isSafeGpxFilename(oldGpxFile)) {
     await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile)).catch(() => {});
   }
 

@@ -9,7 +9,7 @@ import { generateTrailHtml, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName } from '../utils/data';
 import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';
-import { downloadBlob, exportTrailTsv, createFileInput, sanitizeFilename, openHtmlInNewTab } from '../utils/io';
+import { downloadBlob, createFileInput, sanitizeFilename, openHtmlInNewTab } from '../utils/io';
 import { uploadGpxFile } from '../api/client';
 import { useGpxActions } from '../hooks/useGpxActions';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
@@ -341,36 +341,6 @@ export default function TrailDetail() {
     }
   };
 
-  const exportTrailAsTsv = () => {
-    const tsvTrail = {
-      id: trail.id,
-      name: getEditedValue('fullName') || getTrailName(trail),
-      fullName: getEditedValue('fullName') || getTrailName(trail),
-      distance: getEditedValue('distance'),
-      distanceExtended: getEditedValue('distanceExtended'),
-      elevationStart: getEditedValue('elevationStart'),
-      elevationMax: getEditedValue('elevationMax'),
-      difficulty: getEditedValue('difficulty') || 'Unknown',
-      parking: getEditedValue('parking') || '',
-      range: getEditedValue('range') || '',
-      notes: '',
-      seasonal: {
-        availableMonths: getEditedValue('availableMonths') || [],
-        bestSeason: getEditedValue('bestSeason') || '',
-      },
-      altNames: getEditedValue('altNames'),
-    };
-    const tsvDetail = {
-      fullDescription: getEditedValue('description') || '',
-      pros: getEditedValue('pros'),
-      others: getEditedValue('others'),
-      leaders: getEditedValue('leaders') || [],
-    };
-    const tsv = exportTrailTsv(tsvTrail, tsvDetail);
-    const safeName = sanitizeFilename(getTrailName(trail), 'trail');
-    downloadBlob(tsv, `${safeName}.tsv`, 'text/tab-separated-values');
-  };
-
   const updateField = (field, value) => {
     setEditedFields(prev => ({ ...prev, [field]: value }));
   };
@@ -461,18 +431,6 @@ export default function TrailDetail() {
             </button>
 
             <span className="text-gray-300">|</span>
-
-            <button
-              onClick={exportTrailAsTsv}
-              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-blue-700 hover:text-blue-900"
-              title={tt('Export this hike as TSV matching Excel format')}
-              aria-label="Export this hike as TSV"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              TSV
-            </button>
 
             <button
               onClick={copyReport}

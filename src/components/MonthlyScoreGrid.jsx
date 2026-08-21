@@ -4,7 +4,7 @@ import { MONTH_ABBR } from '../utils/constants';
 import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';
 import MonthGrid from './MonthGrid';
 
-export function computeScoreBreakdown(monthly, availableMonths, seasonal) {
+function computeScoreBreakdown(monthly, availableMonths, seasonal) {
   if (!monthly || monthly.length === 0) return [];
   const { hasQuarterData } = getSeasonalInfo(seasonal || {});
   const availSet = new Set(availableMonths);

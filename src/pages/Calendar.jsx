@@ -56,19 +56,23 @@ export default function Calendar() {
   } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
 
 
+  const scheduleStoreRef = useRef(scheduleStore);
+  scheduleStoreRef.current = scheduleStore;
+
   const applyScheduleChange = useCallback(async (monthKey, updater) => {
-    const newStore = { ...scheduleStore };
+    const newStore = { ...scheduleStoreRef.current };
     const current = newStore[monthKey] || {};
     newStore[monthKey] = updater(current);
     const serverData = storeToServerSchedule(newStore);
     try {
       await updateSchedule(serverData);
       setSchedule(serverData);
+      scheduleStoreRef.current = newStore;
     } catch (error) {
       console.error('[Calendar] Failed to save schedule:', error);
       showToast('Failed to save schedule to server: ' + error.message, 'error');
     }
-  }, [scheduleStore, showToast]);
+  }, [showToast]);
 
   const handleLeaderChange = useCallback(async (day, slotIdx, newLeader) => {
     await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader, year);
