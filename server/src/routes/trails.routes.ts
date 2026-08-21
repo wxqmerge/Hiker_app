@@ -12,6 +12,7 @@ import {
   updateTrailDetail,
   getGpxFileName,
   getGpxIndex,
+  getGpxUploadFileName,
 } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
@@ -119,9 +120,8 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
   // Ensure upload directory exists
   await fs.mkdir(GPX_UPLOAD_DIR, { recursive: true });
 
-  // Save with trail name (sanitized), not the original filename
-  const safeName = (existing.fullName || existing.name || req.params.id).replace(/[^a-zA-Z0-9]/g, '_');
-  const gpxFileName = `${safeName}.gpx`;
+  // Save using the canonical trail-ID filename
+  const gpxFileName = getGpxUploadFileName(req.params.id);
   const destPath = path.join(GPX_UPLOAD_DIR, gpxFileName);
   try {
     await fs.copyFile(req.file.path, destPath);
@@ -129,6 +129,11 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
   } catch (err) {
     await fs.unlink(req.file.path).catch(() => {});
     return res.status(500).json({ success: false, error: { message: `Could not save GPX file: ${(err as Error).message}` } });
+  }
+
+  const oldGpxFile = existing.gpxFile;
+  if (oldGpxFile && oldGpxFile !== gpxFileName) {
+    await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile)).catch(() => {});
   }
 
   // Update trail with gpxFile and extracted trailhead coordinates

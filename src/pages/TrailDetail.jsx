@@ -170,6 +170,8 @@ export default function TrailDetail() {
       webLink: trail.webLink || '',
       gpxFile: '',
       hasGpx: false,
+      trailHeadLat: trail.trailHeadLat,
+      trailHeadLon: trail.trailHeadLon,
       bestSeason: trail.seasonal?.bestSeason || '',
       availableMonths: trail.seasonal?.availableMonths || [],
       description: trailDetailsResult?.[id]?.fullDescription || '',
@@ -221,6 +223,8 @@ export default function TrailDetail() {
         tideStationId: String(editedFields.tideStationId || '').trim(),
         gpxFile: editedFields.gpxFile || '',
         hasGpx: !!editedFields.gpxFile,
+        trailHeadLat: editedFields.trailHeadLat ?? trail.trailHeadLat,
+        trailHeadLon: editedFields.trailHeadLon ?? trail.trailHeadLon,
         difficultyOrder: (trail.difficultyOrder ?? 99),
       };
       await saveTrail(newTrail);

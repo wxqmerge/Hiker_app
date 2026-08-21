@@ -194,9 +194,10 @@ export function getSchedule(): ScheduleData {
 async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: string, gpxFileRemoved?: boolean): Promise<boolean> {
   if (gpxData) {
     await fs.mkdir(GPX_UPLOAD_DIR, { recursive: true });
-    const gpxFilePath = path.join(GPX_UPLOAD_DIR, `${trailId}.gpx`);
+    const gpxFileName = getGpxUploadFileName(trailId);
+    const gpxFilePath = path.join(GPX_UPLOAD_DIR, gpxFileName);
     await fs.writeFile(gpxFilePath, gpxData, 'utf-8');
-    gpxIndex[trailId] = `${trailId}.gpx`;
+    gpxIndex[trailId] = gpxFileName;
     return true;
   }
   if (gpxFile) {
@@ -258,7 +259,7 @@ export async function deleteTrail(id: string): Promise<void> {
   }
 
   // Remove uploaded GPX file if it exists
-  const gpxPaths = new Set([path.join(GPX_UPLOAD_DIR, `${id}.gpx`)]);
+  const gpxPaths = new Set([path.join(GPX_UPLOAD_DIR, getGpxUploadFileName(id))]);
   if (oldGpxFile) gpxPaths.add(path.join(GPX_UPLOAD_DIR, oldGpxFile));
   for (const gpxPath of gpxPaths) {
     try {
@@ -372,6 +373,10 @@ export function getGpxIndex(): Record<string, string> {
 
 export function getGpxFileName(trailId: string): string | undefined {
   return gpxIndex[trailId];
+}
+
+export function getGpxUploadFileName(trailId: string): string {
+  return `${trailId}.gpx`;
 }
 
 export function getScheduleVersion(): string {
