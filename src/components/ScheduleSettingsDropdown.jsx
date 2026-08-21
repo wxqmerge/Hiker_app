@@ -1,12 +1,23 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { useTrailActions } from '../contexts/TrailActionsContext';
 import DropdownItem from './shared/DropdownItem';
+import { request } from '../api/client';
+import { downloadBlob } from '../utils/io';
 
 const TABS = [
   { id: 'schedule', label: 'Schedule' },
   { id: 'user', label: 'User' },
   { id: 'admin', label: 'Admin' },
+  { id: 'data', label: 'Data' },
+];
+
+const ALL_DATA_PATHS = [
+  '/api/trails',
+  '/api/trails/details',
+  '/api/lookup',
+  '/api/schedule',
+  '/api/schedule/group',
 ];
 
 export default function ScheduleSettingsDropdown() {
@@ -21,6 +32,21 @@ export default function ScheduleSettingsDropdown() {
   } = useScheduleSettings();
   const trailActions = useTrailActions();
   const [activeTab, setActiveTab] = useState('schedule');
+  const [viewer, setViewer] = useState(null);
+  const [viewerData, setViewerData] = useState('');
+  const [viewerLoading, setViewerLoading] = useState(false);
+  const [viewerError, setViewerError] = useState('');
+
+  const closeViewer = useCallback(() => setViewer(null), []);
+
+  useEffect(() => {
+    if (!viewer) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeViewer();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [viewer, closeViewer]);
 
   if (!fetchWeatherForAll) return null;
 
@@ -30,6 +56,39 @@ export default function ScheduleSettingsDropdown() {
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
     </div>
   );
+
+  const openViewer = async (title, paths) => {
+    const pathList = Array.isArray(paths) ? paths : [paths];
+    setViewer({ title, paths: pathList });
+    setViewerData('');
+    setViewerError('');
+    setViewerLoading(true);
+    try {
+      if (pathList.length === 1) {
+        const result = await request(pathList[0], { stripMetadata: true });
+        setViewerData(JSON.stringify(result, null, 2));
+      } else {
+        const results = await Promise.all(pathList.map((p) => request(p, { stripMetadata: true })));
+        setViewerData(JSON.stringify({
+          trails: results[0],
+          trailDetails: results[1],
+          lookup: results[2],
+          schedule: results[3],
+          group: results[4],
+        }, null, 2));
+      }
+    } catch (err) {
+      setViewerError(err.message || 'Failed to load data');
+    } finally {
+      setViewerLoading(false);
+    }
+  };
+
+  const downloadViewer = () => {
+    if (!viewer || !viewerData) return;
+    const safe = viewer.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    downloadBlob(viewerData, `${safe}.json`, 'application/json');
+  };
 
   const scheduleTab = (
     <div className="max-h-[70vh] overflow-y-auto">
@@ -177,6 +236,25 @@ export default function ScheduleSettingsDropdown() {
     <p className="px-3 py-2 text-sm text-gray-400">Admin actions unavailable</p>
   );
 
+  const dataTab = (
+    <div className="max-h-[70vh] overflow-y-auto py-1">
+      {section('Pull Up Data')}
+      <DropdownItem onClick={() => { close(); openViewer('All Data', ALL_DATA_PATHS); }}>Pull Up All Data</DropdownItem>
+      <DropdownItem onClick={() => { close(); openViewer('Trails', '/api/trails'); }}>Trails</DropdownItem>
+      <DropdownItem onClick={() => { close(); openViewer('Trail Details', '/api/trails/details'); }}>Trail Details</DropdownItem>
+      <DropdownItem onClick={() => { close(); openViewer('Lookup', '/api/lookup'); }}>Lookup</DropdownItem>
+      <DropdownItem onClick={() => { close(); openViewer('Schedule', '/api/schedule'); }}>Schedule</DropdownItem>
+      <DropdownItem onClick={() => { close(); openViewer('Group Config', '/api/schedule/group'); }}>Group Config</DropdownItem>
+      {trailActions && (
+        <>
+          {section('Download')}
+          <DropdownItem onClick={() => { close(); trailActions.userActions.exportZip(); }}>All Data ZIP</DropdownItem>
+          <DropdownItem onClick={() => { close(); trailActions.userActions.exportGpxZip(); }}>GPX ZIP</DropdownItem>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="relative">
       <button
@@ -213,6 +291,42 @@ export default function ScheduleSettingsDropdown() {
           {activeTab === 'schedule' && scheduleTab}
           {activeTab === 'user' && userTab}
           {activeTab === 'admin' && adminTab}
+          {activeTab === 'data' && dataTab}
+        </div>
+      )}
+      {viewer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" role="presentation" onClick={closeViewer}>
+          <div
+            className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-label={viewer.title}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
+              <h2 className="text-sm font-semibold text-gray-800">{viewer.title}</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={downloadViewer}
+                  disabled={!viewerData}
+                  className="text-xs px-2 py-1 rounded bg-green-600 text-white disabled:bg-gray-300"
+                >
+                  Download
+                </button>
+                <button
+                  onClick={closeViewer}
+                  className="text-xs px-2 py-1 rounded text-gray-600 hover:bg-gray-100"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="p-4 overflow-auto text-xs">
+              {viewerLoading && <p className="text-gray-500">Loading…</p>}
+              {viewerError && <p className="text-red-600">{viewerError}</p>}
+              {viewerData && <pre className="whitespace-pre-wrap break-words font-mono text-gray-800">{viewerData}</pre>}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -81,7 +81,7 @@ router.get('/gpx/:id', async (req, res) => {
   try {
     const content = await fs.readFile(gpxPath, 'utf-8');
     res.set('Content-Type', 'application/gpx+xml');
-    res.set('Cache-Control', 'public, max-age=604800');
+    res.set('Cache-Control', 'public, max-age=2592000');
     res.send(content);
   } catch {
     res.status(404).json({ success: false, error: { message: 'GPX file not found' } });
