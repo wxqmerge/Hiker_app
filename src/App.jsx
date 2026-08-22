@@ -30,6 +30,9 @@ function ApiKeySync() {
     const key = params.get('apikey');
     if (key) {
       storeApiKey(key);
+      params.delete('apikey');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname);
     }
   }, [search]);
   return null;
@@ -59,10 +62,9 @@ function App() {
   useEffect(() => {
     const apiBase = getApiBase();
 
-    if (apiBase) {
+    if (apiBase && /^https?:\/\//.test(apiBase)) {
       const host = new URL(apiBase).hostname;
-      const prefix = host.split('.')[0];
-      document.title = prefix;
+      document.title = host.split('.')[0];
     } else {
       document.title = 'hiker-app';
     }

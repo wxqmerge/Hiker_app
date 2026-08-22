@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { getCurrentDir } from '../utils/path.js';
 import { resolveScheduleMonthKey } from '../utils/monthUtils.js';
+import { etagMatches } from '../utils/etagCompare.js';
 
 const __dirname = getCurrentDir(import.meta.url);
 const PROJECT_ROOT = path.join(__dirname, '../../..');
@@ -37,12 +38,8 @@ router.post('/reload', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, re
 router.get('/', (req, res) => {
   const schedule = getSchedule();
   const version = getScheduleVersion();
-  const ifNoneMatch = req.headers['if-none-match'];
-  if (version && ifNoneMatch) {
-    const clientEtag = ifNoneMatch.replace(/^"|"$/g, '');
-    if (clientEtag === version) {
-      return res.status(304).end();
-    }
+  if (version && etagMatches(req.headers['if-none-match'] as string | undefined, version)) {
+    return res.status(304).end();
   }
   if (version) {
     res.set('ETag', version);
