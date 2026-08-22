@@ -15,7 +15,7 @@ import TrailActionButtons from './shared/TrailActionButtons';
 import LeaderEdit from './LeaderEdit';
 import { Icon } from './ui';
 
-const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange, hikeDate }) {
+const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMonths, leader, weather, onLeaderChange, hikeDate, earlyStart }) {
   const showToast = useToast();
   const [nameCopied, setNameCopied] = useState(false);
   const [showLeaderEdit, setShowLeaderEdit] = useState(false);
@@ -31,8 +31,10 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     const startMinute = 30;
     let startMinutes = startHour * 60 + startMinute;
     
-    // Check if early start (hikeDate is in the past? No, early start is a property of the schedule entry)
-    // For TrailCard, we don't have early start info directly, so assume 8:30 base
+    // Apply early start adjustment
+    if (earlyStart) {
+      startMinutes -= 30;
+    }
     
     const travelTime = parseInt(trail.range, 10) || 0;
     const hikeDuration = trail.durationMinutes;
@@ -41,7 +43,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     const hours = Math.floor(totalMinutes / 60) % 24;
     const minutes = totalMinutes % 60;
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
-  }, [trail.durationMinutes, trail.range]);
+  }, [trail.durationMinutes, trail.range, earlyStart]);
 
   const handleLeaderClick = useCallback((e) => {
     e.stopPropagation();
