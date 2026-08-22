@@ -9,16 +9,6 @@ export default function TrailStats({ trail, className = '', itemClassName = '', 
   const wrapperClass = inline ? `${className} contents` : className;
   return (
     <div className={wrapperClass}>
-      {/* Duration */}
-      {trail.duration && (
-        <div className={itemClassName}>
-          <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{trail.duration}</span>
-        </div>
-      )}
-
       {/* Distance */}
       <div className={itemClassName}>
         <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,6 +50,16 @@ export default function TrailStats({ trail, className = '', itemClassName = '', 
           <span className="truncate">
             {rideFormat === 'cost' ? (rideCost || `Range: ${trail.range}`) : `${trail.range} min${rideCost ? ` / ${rideCost}` : ''}`}
           </span>
+        </div>
+      )}
+
+      {/* Duration */}
+      {trail.duration && (
+        <div className={itemClassName}>
+          <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{trail.duration}</span>
         </div>
       )}
     </div>
