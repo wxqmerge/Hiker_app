@@ -31,9 +31,9 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     const startMinute = 30;
     let startMinutes = startHour * 60 + startMinute;
     
-    // Apply early start adjustment
+    // Apply early start adjustment - always 8am
     if (earlyStart) {
-      startMinutes -= 30;
+      startMinutes = 8 * 60; // 8:00am
     }
     
     const travelTime = parseInt(trail.range, 10) || 0;

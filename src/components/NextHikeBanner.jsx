@@ -68,9 +68,9 @@ function NextHikeCard({ hike, idx, weather }) {
     const startMinute = 30;
     let startMinutes = startHour * 60 + startMinute;
     
-    // Early start: 30 minutes earlier
+    // Early start: always 8am
     if (hike.earlyStart) {
-      startMinutes -= 30;
+      startMinutes = 8 * 60; // 8:00am
     }
     
     const travelTime = parseInt(trail.range, 10) || 0;
