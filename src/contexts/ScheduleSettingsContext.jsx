@@ -67,6 +67,10 @@ export function ScheduleSettingsProvider({ children }) {
       setScheduleStore(converted);
       lastSavedStoreRef.current = JSON.stringify(converted);
     }
+    // Intentionally keyed on scheduleData only: scheduleStore is read solely for the
+    // unsaved-edits guard above, not as a trigger. Adding it would re-run this effect
+    // on every local edit (the guard would no-op, but it's unnecessary churn).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleData]);
 
   useSchedulePolling(schedulePollingStore, 5000);

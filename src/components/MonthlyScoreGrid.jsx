@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { useMemo } from 'react';
 import { MONTH_ABBR } from '../utils/constants';
 import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';

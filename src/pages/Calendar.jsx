@@ -57,7 +57,9 @@ export default function Calendar() {
 
 
   const scheduleStoreRef = useRef(scheduleStore);
-  scheduleStoreRef.current = scheduleStore;
+  useEffect(() => {
+    scheduleStoreRef.current = scheduleStore;
+  }, [scheduleStore]);
 
   const applyScheduleChange = useCallback(async (monthKey, updater) => {
     const newStore = { ...scheduleStoreRef.current };

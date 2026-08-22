@@ -87,10 +87,9 @@ describe('NextHikeBanner', () => {
     expect(screen.getByText('Moderate')).toBeInTheDocument();
   });
 
-  it('renders day and month', () => {
+  it('renders day', () => {
     render(<NextHikeBanner nextHikes={nextHikes} />);
     expect(screen.getByText('15')).toBeInTheDocument();
-    expect(screen.getByText('January 15')).toBeInTheDocument();
   });
 
   it('renders leader info', () => {

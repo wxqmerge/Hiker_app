@@ -17,7 +17,7 @@ export function useWeatherFetch(target, fetchFn) {
       if (!cancelled) setWeather({ key: target.key, map: results });
     })();
     return () => { cancelled = true; };
-  }, [target]);
+  }, [target, fetchFn]);
 
   const weatherMap = useMemo(() => {
     if (!target || weather.key !== target.key) return {};

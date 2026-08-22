@@ -9,7 +9,7 @@ import { generateTrailHtml, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName } from '../utils/data';
 import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';
-import { downloadBlob, createFileInput, sanitizeFilename, openHtmlInNewTab } from '../utils/io';
+import { createFileInput, openHtmlInNewTab } from '../utils/io';
 import { uploadGpxFile } from '../api/client';
 import { useGpxActions } from '../hooks/useGpxActions';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
