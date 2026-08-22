@@ -24,6 +24,25 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
   const { title: tt } = useTooltips();
   const trailName = getTrailName(trail);
 
+  // Calculate ETC if we have duration and range
+  const etc = useMemo(() => {
+    if (!trail.durationMinutes || !trail.range) return null;
+    const startHour = 8;
+    const startMinute = 30;
+    let startMinutes = startHour * 60 + startMinute;
+    
+    // Check if early start (hikeDate is in the past? No, early start is a property of the schedule entry)
+    // For TrailCard, we don't have early start info directly, so assume 8:30 base
+    
+    const travelTime = parseInt(trail.range, 10) || 0;
+    const hikeDuration = trail.durationMinutes;
+    const totalMinutes = startMinutes + hikeDuration + (travelTime * 2);
+    
+    const hours = Math.floor(totalMinutes / 60) % 24;
+    const minutes = totalMinutes % 60;
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
+  }, [trail.durationMinutes, trail.range]);
+
   const handleLeaderClick = useCallback((e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -115,15 +134,15 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
            </span>
          </div>
          
-           {/* Stats Grid */}
-           <div className="grid grid-cols-2 gap-2 text-xs">
-             <TrailStats
-               trail={trail}
-               itemClassName="flex items-center gap-1 text-gray-700"
-               rideFormat="cost"
-             />
-              <div className="flex flex-col gap-1">
-                {weather && (
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-2 text-xs overflow-x-auto">
+              <TrailStats
+                trail={trail}
+                itemClassName="flex items-center gap-1 text-gray-700 whitespace-nowrap"
+                rideFormat="cost"
+              />
+               <div className="flex flex-col gap-1 overflow-x-auto">
+                 {weather && (
                   <>
                     <a
                       href={hasValidCoords(trail.trailHeadLat, trail.trailHeadLon) ? `https://forecast.weather.gov/MapClick.php?lon=${trail.trailHeadLon}&lat=${trail.trailHeadLat}` : undefined}
@@ -153,6 +172,12 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                         <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
                         <span>{weather.tideTime} · {weather.tide} ft</span>
                       </a>
+                    )}
+                    {etc && (
+                      <div className="flex items-center gap-1 text-gray-700">
+                        <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <span>ETC {etc}</span>
+                      </div>
                     )}
                   </>
                 )}
