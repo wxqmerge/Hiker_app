@@ -114,24 +114,18 @@ export default function Calendar() {
         findTrailById={findTrailById}
         year={year}
         selectedMonth={selectedMonth}
-        hasApiKey={hasApiKey}
-        dragData={dragData}
-        handleDragStart={handleDragStart}
-        handleDragEnd={handleDragEnd}
-        onLeaderChange={hasApiKey ? handleLeaderChange : undefined}
-        onRequestMove={hasApiKey ? (item) => setMoveSource({
-          hikeIndex: item.hikeIdx,
-          sourceDay: item.day,
-          sourceSlot: item.idx,
-          trailId: item.trailId,
-          earlyStart: item.earlyStart,
-          leader: item.leader,
-        }) : undefined}
+        hasApiKey={false}
+        dragData={null}
+        handleDragStart={() => {}}
+        handleDragEnd={() => {}}
+        onLeaderChange={undefined}
+        onRequestMove={undefined}
         tt={tt}
         weatherMap={dayWeatherMap}
       />
 
-      <MoveHikeModal
+      {/* MoveHikeModal disabled for viewing only */}
+      {/* <MoveHikeModal
         open={!!moveSource}
         source={moveSource}
         hikeDates={hikeDates}
@@ -141,7 +135,7 @@ export default function Calendar() {
         selectedMonth={selectedMonth}
         onMove={moveHike}
         onClose={() => setMoveSource(null)}
-      />
+      /> */}
 
       <SwapConfirmationModal
         pendingSwap={pendingSwap}
