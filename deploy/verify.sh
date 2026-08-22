@@ -510,7 +510,7 @@ if command -v curl &>/dev/null; then
         fail "HTTPS $HEALTH_CODE from /health (server)"
     fi
 
-    # --- Manifest Check ---
+    # --- Manifest Check (server) ---
     MANIFEST_RESPONSE=$(curl -sk --max-time 5 -H "X-App-Name: $APP_NAME" "http://localhost:$SERVER_PORT/manifest.webmanifest" 2>/dev/null)
     if [ -n "$MANIFEST_RESPONSE" ]; then
         MANIFEST_NAME=$(echo "$MANIFEST_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))" 2>/dev/null)
@@ -522,6 +522,32 @@ if command -v curl &>/dev/null; then
         fi
     else
         fail "Cannot fetch manifest from http://localhost:$SERVER_PORT/manifest.webmanifest"
+    fi
+
+    # --- Manifest Check (via nginx subpath) ---
+    MANIFEST_HTTPS=$(curl -sk --max-time 5 "https://$DOMAIN/$APP_NAME/manifest.webmanifest" 2>/dev/null)
+    if [ -n "$MANIFEST_HTTPS" ]; then
+        MANIFEST_HTTPS_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "https://$DOMAIN/$APP_NAME/manifest.webmanifest" 2>/dev/null)
+        MANIFEST_HTTPS_NAME=$(echo "$MANIFEST_HTTPS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))" 2>/dev/null)
+        MANIFEST_HTTPS_START=$(echo "$MANIFEST_HTTPS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('start_url',''))" 2>/dev/null)
+        if [ "$MANIFEST_HTTPS_CODE" = "200" ] && [ "$MANIFEST_HTTPS_NAME" = "$APP_NAME" ]; then
+            pass "Manifest via HTTPS ($MANIFEST_HTTPS_CODE, name='$APP_NAME')"
+            if [ "$MANIFEST_HTTPS_START" = "/$APP_NAME/" ]; then
+                pass "Manifest start_url is '/$APP_NAME/' (correct)"
+            else
+                fail "Manifest start_url is '$MANIFEST_HTTPS_START', expected '/$APP_NAME/'"
+                echo "  PWA will open wrong URL. Check server manifest route."
+            fi
+        elif [ "$MANIFEST_HTTPS_CODE" != "200" ]; then
+            fail "Manifest via HTTPS returns $MANIFEST_HTTPS_CODE (expected 200)"
+            echo "  Fix: check nginx 'location ~ /manifest.webmanifest' proxy"
+        else
+            fail "Manifest via HTTPS name is '$MANIFEST_HTTPS_NAME', expected '$APP_NAME'"
+            echo "  Fix: check nginx X-App-Name header for manifest proxy"
+        fi
+    else
+        fail "Cannot fetch manifest via HTTPS (https://$DOMAIN/$APP_NAME/manifest.webmanifest)"
+        echo "  PWA install will fail. Check nginx and server."
     fi
 
     # --- Redirect Check ---

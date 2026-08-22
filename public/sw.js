@@ -11,7 +11,7 @@
 //     schedule write, the cached schedule is invalidated.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const TIDE_CACHE = `hiker-tide-${VERSION}`;
@@ -102,6 +102,12 @@ self.addEventListener('fetch', (event) => {
     if (isTideUrl(url) || isWeatherUrl(url)) {
       event.respondWith(cacheExternal(request, url));
     }
+    return;
+  }
+
+  // Manifest must always be fetched fresh — never serve stale cached version
+  if (url.pathname.endsWith('/manifest.webmanifest')) {
+    event.respondWith(fetch(request));
     return;
   }
 
