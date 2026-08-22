@@ -109,7 +109,7 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-app.get('/manifest.webmanifest', (req, res) => {
+app.get(/manifest\.webmanifest$/, (req, res) => {
   const appName = String(req.headers['x-app-name'] || 'hiker');
   res.set('Content-Type', 'application/manifest+json');
   res.json({
