@@ -18,8 +18,15 @@ export default function NextHikeBanner({ nextHikes }) {
     (async () => {
       const weatherPromises = nextHikes.map((hike, idx) => {
         const trail = hike.trail;
-        if (trail?.trailHeadLat == null || trail?.trailHeadLon == null) return null;
-        return fetchWeatherAndTide(trail.trailHeadLat, trail.trailHeadLon, hike.date, trail.tideStationId || null)
+        const hasCoords = trail?.trailHeadLat != null && trail?.trailHeadLon != null;
+        const hasTide = !!trail?.tideStationId;
+        if (!hasCoords && !hasTide) return null;
+        return fetchWeatherAndTide(
+          hasCoords ? trail.trailHeadLat : null,
+          hasCoords ? trail.trailHeadLon : null,
+          hike.date,
+          trail.tideStationId || null
+        )
           .then(w => ({ idx, w }))
           .catch(() => null);
       });
@@ -84,7 +91,7 @@ function NextHikeCard({ hike, idx, weather }) {
                       <span>Leader: <span className="font-medium text-white">{hike.leader}</span></span>
                     </>
                   )}
-                  {weather && (
+                  {weather?.temp != null && (
                     <>
                       <span className="text-green-300">•</span>
                       <span title={`${weather.temp}°F, ${weather.rain}% rain`} aria-label={`Forecast: ${weather.temp}°F, ${weather.rain}% rain`} className={weather.rain >= 40 ? 'text-blue-200 font-medium' : ''}>
