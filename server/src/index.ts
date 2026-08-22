@@ -102,6 +102,7 @@ app.get('/health', (_req: Request, res: Response) => {
 
 app.get('/api/config', (_req, res) => {
   res.json({
+    appName: process.env.APP_NAME || 'hiker',
     scheduleName: process.env.SCHEDULE_NAME || 'default',
     hikeDays: process.env.HIKE_DAYS || '3,5',
   });

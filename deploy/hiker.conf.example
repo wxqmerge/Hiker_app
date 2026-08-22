@@ -48,10 +48,10 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Hiker app - serve frontend from /<SUBDOMAIN>/
-    location /<SUBDOMAIN>/ {
+    # Hiker app - serve frontend from /<APP_NAME>/
+    location /<APP_NAME>/ {
         root /var/www/html;
-        try_files $uri $uri/ /<SUBDOMAIN>/index.html;
+        try_files $uri $uri/ /<APP_NAME>/index.html;
     }
 
     # Return 404 for everything else

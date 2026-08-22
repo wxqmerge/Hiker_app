@@ -479,11 +479,10 @@ fi
 echo ""
 echo "--- HTTPS Check ---"
 if command -v curl &>/dev/null; then
-    # Use FRONTEND_URL if set, otherwise default to the domain root or subpath
+    # Use FRONTEND_URL if set, otherwise default to the domain root or app path
     if [ -z "$FRONTEND_URL" ]; then
         if [[ "$DOMAIN" == *".${PARENT_DOMAIN}" ]]; then
-            SUBDOMAIN=$(echo "$DOMAIN" | cut -d'.' -f1)
-            FRONTEND_URL="https://$PARENT_DOMAIN/$SUBDOMAIN/"
+            FRONTEND_URL="https://$PARENT_DOMAIN/$APP_NAME/"
         else
             FRONTEND_URL="https://$DOMAIN/"
         fi
@@ -558,8 +557,7 @@ echo "=== Summary ==="
 # Compute app URL for display
 if [ -z "$FRONTEND_URL" ]; then
     if [[ "$DOMAIN" == *".${PARENT_DOMAIN}" ]]; then
-        SUBDOMAIN=$(echo "$DOMAIN" | cut -d'.' -f1)
-        APP_URL="https://$PARENT_DOMAIN/$SUBDOMAIN/"
+        APP_URL="https://$PARENT_DOMAIN/$APP_NAME/"
     else
         APP_URL="https://$DOMAIN/"
     fi

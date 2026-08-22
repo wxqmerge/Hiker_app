@@ -322,7 +322,6 @@ sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload
 echo "[9/13] Generating nginx config..."
 NGINX_CONF="/etc/nginx/sites-available/$SERVICE"
 NGINX_ENABLED="/etc/nginx/sites-enabled/$SERVICE"
-SUBDOMAIN="$SERVICE"
 TEMPLATE="$DEPLOY_DIR/hiker.conf.example"
 
 # Remove existing symlink so nginx can pass tests without the cert
@@ -335,7 +334,7 @@ fi
 
 sed -e "s|<DOMAIN>|$FULL_DOMAIN|g" \
     -e "s|<PORT>|$SERVER_PORT|g" \
-    -e "s|<SUBDOMAIN>|$SUBDOMAIN|g" \
+    -e "s|<APP_NAME>|$APP_NAME|g" \
     "$TEMPLATE" | sudo tee "$NGINX_CONF" > /dev/null
 echo "  Config written to $NGINX_CONF (not enabled yet)."
 

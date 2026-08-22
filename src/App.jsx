@@ -66,7 +66,7 @@ function App() {
       const host = new URL(apiBase).hostname;
       document.title = host.split('.')[0];
     } else {
-      document.title = 'hiker-app';
+      document.title = 'hiker';
     }
   }, []);
 

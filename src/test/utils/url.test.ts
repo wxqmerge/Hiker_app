@@ -49,6 +49,24 @@ describe('getApiBase', () => {
     });
     expect(getApiBase()).toBe('https://sothh-dev.example.com');
   });
+
+  it('extracts app name from path for any prefix', () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { hostname: 'example.com', pathname: '/sothh-app/some/path' },
+      writable: true,
+      configurable: true,
+    });
+    expect(getApiBase()).toBe('https://sothh-app.example.com');
+  });
+
+  it('extracts hiker prefix from path', () => {
+    Object.defineProperty(globalThis, 'location', {
+      value: { hostname: 'example.com', pathname: '/hiker/some/path' },
+      writable: true,
+      configurable: true,
+    });
+    expect(getApiBase()).toBe('https://hiker.example.com');
+  });
 });
 
 describe('getGoogleAllTrailsSearchUrl', () => {

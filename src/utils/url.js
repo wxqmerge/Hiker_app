@@ -19,11 +19,7 @@ export function getApiBase() {
   if (hostname !== parentDomain) {
     return `https://${hostname}`;
   }
-  const match = path.match(/^\/([\w-]+)-dev(\/|$)/);
-  if (match) {
-    return `https://${match[1]}-dev.${parentDomain}`;
-  }
-  const pathMatch = path.match(/^\/([\w]+-[\w-]+)(\/|$)/);
+  const pathMatch = path.match(/^\/([\w][\w-]*)(\/|$)/);
   if (pathMatch) {
     return `https://${pathMatch[1]}.${parentDomain}`;
   }
