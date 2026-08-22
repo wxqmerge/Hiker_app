@@ -111,22 +111,23 @@ app.get('/api/config', (req, res) => {
 
 app.get(/manifest\.webmanifest$/, (req, res) => {
   const appName = String(req.headers['x-app-name'] || 'hiker');
+  const basePath = `/${appName}`;
   res.set('Content-Type', 'application/manifest+json');
   res.json({
     name: appName,
     short_name: appName,
     description: 'Trail schedule, hike planning, weather and tide predictions',
-    id: './',
-    start_url: './',
-    scope: './',
+    id: basePath,
+    start_url: `${basePath}/`,
+    scope: basePath,
     display: 'standalone',
     orientation: 'portrait-primary',
     background_color: '#ffffff',
     theme_color: '#1b4332',
     icons: [
-      { src: './icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: './icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: './icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: `${basePath}/icons/icon-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: `${basePath}/icons/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: `${basePath}/icons/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   });
 });
