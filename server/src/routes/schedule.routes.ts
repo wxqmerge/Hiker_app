@@ -150,7 +150,9 @@ router.get('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (
     try {
       const stat = await fs.promises.stat(filePath);
       if (!stat.isDirectory) {
-        await fs.promises.chmod(filePath, 0o666);
+        // 0o664: owner (deploy user) rw, group (www-data) rw, other r.
+        // Matches deploy/update.sh permissions. Group ownership is set by the deploy script.
+        await fs.promises.chmod(filePath, 0o664);
         results.push({ file, success: true });
       }
     } catch (error) {
