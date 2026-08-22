@@ -14,6 +14,8 @@ done
 DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
+# App name is the URL path prefix (underscores → hyphens)
+APP_NAME="${SERVICE//_/-}"
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
 
 ERRORS=0

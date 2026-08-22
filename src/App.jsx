@@ -17,7 +17,6 @@ const PageLazy = ({ children }) => (
   </Suspense>
 );
 import { ensureScheduleWritable, request } from './api/client.js';
-import { getApiBase } from './utils/url.js';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 import { setGroupConfig, getGroupName } from './utils/config';
@@ -60,14 +59,11 @@ function App() {
   }, [showToast]);
 
   useEffect(() => {
-    const apiBase = getApiBase();
-
-    if (apiBase && /^https?:\/\//.test(apiBase)) {
-      const host = new URL(apiBase).hostname;
-      document.title = host.split('.')[0];
-    } else {
+    request('/api/config').then(data => {
+      document.title = data?.appName || 'hiker';
+    }).catch(() => {
       document.title = 'hiker';
-    }
+    });
   }, []);
 
   useEffect(() => {

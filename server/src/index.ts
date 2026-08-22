@@ -100,9 +100,10 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-app.get('/api/config', (_req, res) => {
+app.get('/api/config', (req, res) => {
+  const appName = req.headers['x-app-name'] || 'hiker';
   res.json({
-    appName: process.env.APP_NAME || 'hiker',
+    appName: String(appName),
     scheduleName: process.env.SCHEDULE_NAME || 'default',
     hikeDays: process.env.HIKE_DAYS || '3,5',
   });
