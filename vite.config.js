@@ -27,6 +27,10 @@ export default defineConfig(({ mode }) => ({
         target: `http://localhost:${process.env.PORT || 3000}`, // eslint-disable-line no-undef
         changeOrigin: true,
       },
+      '/manifest.webmanifest': {
+        target: `http://localhost:${process.env.PORT || 3000}`, // eslint-disable-line no-undef
+        changeOrigin: true,
+      },
     },
   },
   test: {

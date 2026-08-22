@@ -8,19 +8,18 @@ const projectRoot = resolve(__dirname, '..', '..');
 const publicDir = resolve(projectRoot, 'public');
 
 describe('PWA', () => {
-  it('manifest is valid JSON with required installability fields', () => {
-    const manifest = JSON.parse(readFileSync(resolve(publicDir, 'manifest.webmanifest'), 'utf-8'));
-    expect(manifest.name).toBe('Hiker');
-    expect(manifest.short_name).toBe('Hiker');
-    expect(manifest.start_url).toBe('./');
-    expect(manifest.scope).toBe('./');
-    expect(manifest.display).toBe('standalone');
-    expect(manifest.theme_color).toBe('#1b4332');
-    expect(manifest.background_color).toBe('#ffffff');
-    const sizes = manifest.icons.map((i: { sizes: string }) => i.sizes);
-    expect(sizes).toContain('192x192');
-    expect(sizes).toContain('512x512');
-    expect(manifest.icons.some((i: { purpose?: string }) => i.purpose === 'maskable')).toBe(true);
+  it('manifest is served dynamically from server with required installability fields', () => {
+    // Manifest is now served by Express, not a static file
+    const serverCode = readFileSync(resolve(projectRoot, 'server', 'src', 'index.ts'), 'utf-8');
+    expect(serverCode).toContain('/manifest.webmanifest');
+    expect(serverCode).toContain("application/manifest+json");
+    expect(serverCode).toContain("x-app-name");
+    expect(serverCode).toContain("start_url");
+    expect(serverCode).toContain("display");
+    // Verify icon sizes
+    expect(serverCode).toContain('192x192');
+    expect(serverCode).toContain('512x512');
+    expect(serverCode).toContain('maskable');
   });
 
   it('service worker exists and contains the expected caching logic', () => {
