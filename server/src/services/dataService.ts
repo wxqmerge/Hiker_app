@@ -7,6 +7,48 @@ import { MONTH_ABBR, resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { generateEtag } from '../utils/etag.js';
 import { isSafeGpxFilename } from '../utils/gpxValidation.js';
 
+// Cache for GPX durations
+const durationCache = new Map<string, { minutes: number; formatted: string }>();
+
+async function extractDurationFromGpx(gpxPath: string): Promise<{ minutes: number; formatted: string } | null> {
+  if (durationCache.has(gpxPath)) {
+    return durationCache.get(gpxPath)!;
+  }
+  
+  try {
+    const content = await fs.readFile(gpxPath, 'utf-8');
+    // Extract all <time> elements from <trkpt>
+    const timePattern = /<trkpt[^>]*>[\s\S]*?<time>([^<]+)<\/time>/g;
+    const times: string[] = [];
+    let match;
+    while ((match = timePattern.exec(content)) !== null) {
+      times.push(match[1]);
+    }
+    
+    if (times.length < 2) {
+      return null;
+    }
+    
+    const firstTime = new Date(times[0]);
+    const lastTime = new Date(times[times.length - 1]);
+    const durationMs = lastTime.getTime() - firstTime.getTime();
+    const minutes = Math.max(0, Math.round(durationMs / 60000));
+    
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const formatted = hours > 0 
+      ? `${hours}h ${mins}m` 
+      : `${mins}m`;
+    
+    const result = { minutes, formatted };
+    durationCache.set(gpxPath, result);
+    return result;
+  } catch (error) {
+    console.warn(`[DATA] Could not extract duration from ${gpxPath}:`, (error as Error).message);
+    return null;
+  }
+}
+
 const __dirname = getCurrentDir(import.meta.url);
 
 const DATA_DIR = path.join(__dirname, '../../../exported_data');
@@ -156,6 +198,24 @@ export async function loadData(): Promise<void> {
 
   // Attach gpxFile to each trail
   trails = trails.map(t => ({ ...t, gpxFile: gpxIndex[t.id] || undefined }));
+
+  // Attach durations for trails with GPX
+  console.log('[DATA] Calculating hike durations from GPX files...');
+  const gpxDir = path.join(DATA_DIR, 'gpx');
+  for (const trail of trails) {
+    if (trail.gpxFile) {
+      const gpxPath = path.join(gpxDir, trail.gpxFile);
+      try {
+        const duration = await extractDurationFromGpx(gpxPath);
+        if (duration) {
+          (trail as any).durationMinutes = duration.minutes;
+          (trail as any).duration = duration.formatted;
+        }
+      } catch (error) {
+        // Skip trails with errors
+      }
+    }
+  }
 
   console.log(`[DATA] Loaded ${trails.length} trails, ${Object.keys(trailDetails).length} details, ${Object.keys(gpxIndex).length} GPX mappings`);
   console.log(`[DATA] Schedule months: ${Object.keys(schedule).join(', ') || '(none)'}`);
