@@ -109,6 +109,28 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+app.get('/manifest.webmanifest', (req, res) => {
+  const appName = String(req.headers['x-app-name'] || 'hiker');
+  res.set('Content-Type', 'application/manifest+json');
+  res.json({
+    name: appName,
+    short_name: appName,
+    description: 'Trail schedule, hike planning, weather and tide predictions',
+    id: './',
+    start_url: './',
+    scope: './',
+    display: 'standalone',
+    orientation: 'portrait-primary',
+    background_color: '#ffffff',
+    theme_color: '#1b4332',
+    icons: [
+      { src: './icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: './icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: './icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  });
+});
+
 app.use('/api/trails', trailsRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/lookup', lookupRouter);
