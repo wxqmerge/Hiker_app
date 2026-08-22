@@ -853,6 +853,17 @@ export default function TrailDetail() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Hike Duration (minutes)</label>
+                    <input
+                      type="number"
+                      value={getEditedValue('durationMinutes') != null ? getEditedValue('durationMinutes') : ''}
+                      onChange={(e) => updateField('durationMinutes', e.target.value ? parseInt(e.target.value, 10) : '')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                      placeholder="From GPX or manual"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Auto-calculated from GPX if available. Edit to override.</p>
+                  </div>
                 </div>
               </div>
 
@@ -1079,6 +1090,17 @@ export default function TrailDetail() {
                                   updateField('hasGpx', true);
                                   if (result.trailHeadLat != null) updateField('trailHeadLat', result.trailHeadLat);
                                   if (result.trailHeadLon != null) updateField('trailHeadLon', result.trailHeadLon);
+                                  if (result.duration) {
+                                    // Parse duration like "2h 46m" to minutes
+                                    const match = result.duration.match(/(\d+)h\s*(\d+)m/);
+                                    if (match) {
+                                      const minutes = parseInt(match[1]) * 60 + parseInt(match[2]);
+                                      updateField('durationMinutes', minutes);
+                                    } else {
+                                      const matchM = result.duration.match(/(\d+)m/);
+                                      if (matchM) updateField('durationMinutes', parseInt(matchM[1]));
+                                    }
+                                  }
                                   showToast('GPX uploaded successfully');
                                 } catch (err) {
                                   console.error('[TrailDetail] GPX upload error:', err);
