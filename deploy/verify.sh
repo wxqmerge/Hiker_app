@@ -244,25 +244,6 @@ else
     NEED_ENV=true
 fi
 
-# 5b. Client .env (Vite build-time vars)
-echo ""
-echo "--- Client .env ---"
-if [ -f ".env" ]; then
-    pass ".env exists"
-    if grep -q '^VITE_API_BASE=' .env; then
-        VITE_API=$(grep '^VITE_API_BASE=' .env | head -1 | cut -d= -f2- | tr -d '[:space:]')
-        if [ -n "$VITE_API" ]; then
-            pass "VITE_API_BASE is set ($VITE_API)"
-        else
-            warn "VITE_API_BASE is empty (auto-detect will be used)"
-        fi
-    else
-        warn "VITE_API_BASE not set (auto-detect will be used)"
-    fi
-else
-    warn ".env missing (client env vars not available)"
-fi
-
 # Check if server is actually responding locally
 if command -v curl &>/dev/null; then
     if curl -sk --max-time 2 "http://localhost:$SERVER_PORT/health" >/dev/null 2>&1; then
