@@ -60,6 +60,30 @@ function NextHikeCard({ hike, idx, weather }) {
   const handleWeather = useCallback(() => openWeatherForTrail(getGpx, hike.trailId), [hike.trailId]);
   const displayHikeName = getTrailName(hike.trail);
 
+  // Calculate Estimated Completion Time
+  const calculateETC = () => {
+    if (!trail.durationMinutes || !trail.range) return null;
+    
+    const startHour = 8;
+    const startMinute = 30;
+    let startMinutes = startHour * 60 + startMinute;
+    
+    // Early start: 30 minutes earlier
+    if (hike.earlyStart) {
+      startMinutes -= 30;
+    }
+    
+    const travelTime = parseInt(trail.range, 10) || 0;
+    const hikeDuration = trail.durationMinutes;
+    const totalMinutes = startMinutes + hikeDuration + (travelTime * 2);
+    
+    const hours = Math.floor(totalMinutes / 60) % 24;
+    const minutes = totalMinutes % 60;
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
+  };
+  
+  const etc = calculateETC();
+
   return (
           <div className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>
             <div className="p-5 md:p-7">
@@ -105,6 +129,12 @@ function NextHikeCard({ hike, idx, weather }) {
                       <span title={`Low tide ${weather.tideTime}: ${weather.tide} ft`} aria-label={`Low tide ${weather.tideTime}: ${weather.tide} ft`}>
                         Low tide {weather.tideTime} · {weather.tide} ft
                       </span>
+                    </>
+                  )}
+                  {etc && (
+                    <>
+                      <span className="text-green-300">•</span>
+                      <span className="font-medium text-white">ETC {etc}</span>
                     </>
                   )}
                 </div>
