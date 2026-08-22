@@ -14,6 +14,7 @@ done
 DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
+APP_NAME="${SERVICE//_/-}"
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
 
 ERRORS=0
@@ -482,7 +483,7 @@ if command -v curl &>/dev/null; then
     # Use FRONTEND_URL if set, otherwise default to the domain root or app path
     if [ -z "$FRONTEND_URL" ]; then
         if [[ "$DOMAIN" == *".${PARENT_DOMAIN}" ]]; then
-            FRONTEND_URL="https://$PARENT_DOMAIN/${SERVICE//_/-}/"
+            FRONTEND_URL="https://$PARENT_DOMAIN/$APP_NAME/"
         else
             FRONTEND_URL="https://$DOMAIN/"
         fi
@@ -528,6 +529,20 @@ if command -v curl &>/dev/null; then
         fail "HTTPS $HEALTH_CODE from /health (server)"
     fi
 
+    # --- Manifest Check ---
+    MANIFEST_RESPONSE=$(curl -sk --max-time 5 -H "X-App-Name: $APP_NAME" "http://localhost:$SERVER_PORT/manifest.webmanifest" 2>/dev/null)
+    if [ -n "$MANIFEST_RESPONSE" ]; then
+        MANIFEST_NAME=$(echo "$MANIFEST_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))" 2>/dev/null)
+        if [ "$MANIFEST_NAME" = "$APP_NAME" ]; then
+            pass "Manifest serves app name '$APP_NAME'"
+        else
+            fail "Manifest name is '$MANIFEST_NAME', expected '$APP_NAME'"
+            echo "  Fix: check X-App-Name header in nginx config"
+        fi
+    else
+        fail "Cannot fetch manifest from http://localhost:$SERVER_PORT/manifest.webmanifest"
+    fi
+
     # --- Redirect Check ---
     HTTP_REDIRECT=$(curl -sk --max-time 5 -s -o /dev/null -w "%{http_code}" "http://$DOMAIN/" 2>/dev/null | tr -d '[:space:]')
     if [[ "$HTTP_REDIRECT" =~ ^0+$ || -z "$HTTP_REDIRECT" ]]; then
@@ -557,7 +572,7 @@ echo "=== Summary ==="
 # Compute app URL for display
 if [ -z "$FRONTEND_URL" ]; then
     if [[ "$DOMAIN" == *".${PARENT_DOMAIN}" ]]; then
-        APP_URL="https://$PARENT_DOMAIN/${SERVICE//_/-}/"
+        APP_URL="https://$PARENT_DOMAIN/$APP_NAME/"
     else
         APP_URL="https://$DOMAIN/"
     fi

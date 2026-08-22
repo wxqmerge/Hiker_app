@@ -40,7 +40,7 @@ server {
     }
 
     # Proxy PWA manifest to Express (dynamic app name)
-    location = /manifest.webmanifest {
+    location ~ /manifest\.webmanifest$ {
         proxy_pass http://127.0.0.1:<PORT>;
         proxy_http_version 1.1;
         proxy_set_header Host $host;

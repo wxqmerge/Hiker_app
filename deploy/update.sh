@@ -44,6 +44,7 @@ DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Service name defaults to current directory name
 SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
+APP_NAME="${SERVICE//_/-}"
 DIR="$(pwd)"
 DEPLOY_USER="$(whoami)"
 SHARED_GROUP="www-data"
@@ -334,7 +335,7 @@ fi
 
 sed -e "s|<DOMAIN>|$FULL_DOMAIN|g" \
     -e "s|<PORT>|$SERVER_PORT|g" \
-    -e "s|<APP_NAME>|${SERVICE//_/-}|g" \
+    -e "s|<APP_NAME>|$APP_NAME|g" \
     "$TEMPLATE" | sudo tee "$NGINX_CONF" > /dev/null
 echo "  Config written to $NGINX_CONF (not enabled yet)."
 
