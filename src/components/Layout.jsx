@@ -2,7 +2,7 @@ import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import { usePageContext } from '../contexts/PageContext';
 import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
-import { ScheduleSettingsProvider } from '../contexts/ScheduleSettingsContext';
+import { ScheduleSettingsProvider, useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { TrailActionsProvider, useTrailActions } from '../contexts/TrailActionsContext';
 import { getGroupName } from '../utils/config';
 import { getTrailName } from '../utils/data';
@@ -52,6 +52,7 @@ function HeaderContent() {
     newTrailName, setNewTrailName,
     submitNewTrail,
   } = useTrailActions();
+  const { saveStatus } = useScheduleSettings();
   const groupName = getGroupName();
   const isSchedule = pathname === '/schedule';
   const isMainPage = pathname === '/' || pathname === '/browse' || pathname === '/schedule';
@@ -108,6 +109,15 @@ function HeaderContent() {
                 <span className="text-xs text-gray-400">v{APP_VERSION}</span>
               </nav>
               <div className="flex items-center gap-3 ml-4 min-w-0">
+                {saveStatus !== 'idle' && (
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700'
+                      : saveStatus === 'saved' ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save failed'}
+                  </span>
+                )}
                 <ScheduleSettingsDropdown />
                 {!isSchedule && pageContext && (
                   <span className="text-sm font-medium text-gray-600 truncate hidden sm:block">

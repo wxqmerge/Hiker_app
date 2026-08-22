@@ -92,7 +92,7 @@ describe('ScheduleBuilder', () => {
     renderSchedule();
     const settingsBtn = screen.getByTitle('Schedule settings');
     fireEvent.click(settingsBtn);
-    expect(screen.getByText('Clear All Data')).toBeInTheDocument();
+    expect(screen.getByText(/Clear All Data/)).toBeInTheDocument();
   });
 
   it('shows Debug Mode toggle', () => {

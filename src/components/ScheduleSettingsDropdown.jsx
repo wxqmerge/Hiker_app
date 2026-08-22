@@ -92,6 +92,7 @@ export default function ScheduleSettingsDropdown() {
 
   const scheduleTab = (
     <div className="max-h-[70vh] overflow-y-auto">
+      {section('Weather')}
       <button
         onClick={fetchWeatherForAll}
         disabled={fetchingWeather || !nextHikeDate}
@@ -106,6 +107,7 @@ export default function ScheduleSettingsDropdown() {
         </svg>
         {fetchingWeather ? 'Fetching Weather…' : !nextHikeDate ? 'No Upcoming Hike Date' : 'Fetch Weather for All'}
       </button>
+      {section('Publish')}
       <button onClick={handleExport} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" />
@@ -118,18 +120,20 @@ export default function ScheduleSettingsDropdown() {
         </svg>
         Export Quarterly Schedule
       </button>
+      {section('Import')}
       <button onClick={importFromExcel} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}>
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         Import SOTHH Schedule.xls {!hasApiKey && '(need API key)'}
       </button>
-      <button onClick={importScheduleTsv} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+      <button onClick={importScheduleTsv} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}>
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        Import Quarterly Schedule TSV
+        Import Quarterly Schedule TSV {!hasApiKey && '(need API key)'}
       </button>
+      {section('Maintenance')}
       <button onClick={openHistory} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -168,12 +172,15 @@ export default function ScheduleSettingsDropdown() {
       </button>
       <button
         onClick={clearSchedule}
-        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-2"
+        disabled={!hasApiKey}
+        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
+          hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'
+        }`}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
-        Clear All Data
+        Clear All Data {!hasApiKey && '(need API key)'}
       </button>
     </div>
   );
