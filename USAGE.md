@@ -20,7 +20,29 @@ The default view shows all trails. Use the filters at the top to narrow the list
 
 Click any trail card to see its full details (description, pros, cons, leader info, alternate names).
 
-### Trail Card Info
+## Next Hike Banner
+
+The green **Next Hike Banner** appears at the top of every page when you have an upcoming hike scheduled.
+
+### Banner Components
+- **Trail name** — Large, clear text
+- **Date tile** — Day of week + date (e.g., "Wed 24 Sep")
+- **Weather** — Temperature high/low, rain %
+- **Tide** — Low tide time for coastal hikes
+- **Difficulty** — Color-coded badge
+- **Early start indicator** — ⏰ icon
+- **Trail stats** — Distance, elevation, parking, ride cost, duration, ETC
+- **Action buttons** — Weather details, GPX, trailhead, etc.
+
+### Estimated Completion Time (ETC)
+ETC is calculated as:
+- Base start: 8:30am (8:00am for early start)
+- + Hike duration (from GPX)
+- + 2 × travel time (from range)
+
+Shown in banner info line and on all calendar trail cards.
+
+### Editing Trail Data
 
 Each card displays:
 - Full trail name (e.g., "Heart of the Forest")
@@ -29,6 +51,8 @@ Each card displays:
 - Elevation range (e.g., "650' - 850'")
 - Parking type (Discover, Nat'l Park/Golden, N/A, etc.)
 - Ride cost (e.g., "ride-$5") or range value
+- Hike duration (e.g., "2h 15m") - extracted from GPX if available
+- Estimated Completion Time (ETC) - calculated as 8:30am + duration + 2× travel, adjusted for early start
 - Available months (if seasonal)
 - Best season (if specified)
 
@@ -42,6 +66,7 @@ Click the **green pencil button** (bottom-right floating button) on the trail de
 **Distance & Elevation:**
 - Distance (miles), Distance Max (miles)
 - Elevation Gain min (ft), Elevation Max (ft)
+- Hike Duration (minutes) - auto-extracted from GPX, editable
 
 **Seasonal Information:**
 - Best Season (dropdown: All, Spring, Summer, Fall, Winter, and combinations)
@@ -83,6 +108,17 @@ Navigate to **Trail Manager** (`/trails`) to:
 - **API Key** — Set the admin API key for server-side operations
 
 To set the API key: enter it in the "API Key" field and click "Save Key". The key is stored in localStorage.
+
+## Calendar
+
+Navigate to **Calendar** (`/`) to view scheduled hikes.
+
+### Calendar View
+- Shows assigned hikes for selected month
+- View-only mode (no drag/drop)
+- Each card shows ETC and duration
+- Early start indicator ⏰
+- Day number badge
 
 ## Schedule Builder
 

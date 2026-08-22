@@ -12,7 +12,7 @@
 ```
 npm run dev:all        # Vite (5173) + Express (3000) concurrently
 npm run build:all      # Vite build + server TypeScript build
-npm run test:run       # Run all tests (694 tests, ~5s)
+npm run test:run       # Run all tests (684 tests, ~5s)
 npm run test:coverage  # Tests with V8 coverage
 npm run lint           # ESLint on src/ only
 ```

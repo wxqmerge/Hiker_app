@@ -7,7 +7,7 @@ A React web application for browsing Olympic Peninsula hiking trail data, with a
 - **Frontend**: React 19, Vite 8, React Router (BrowserRouter), Tailwind CSS 4
 - **Backend**: Express/TypeScript, Helmet, CORS, express-rate-limit, multer
 - **Data**: JSON files in `exported_data/`, shared TypeScript types
-- **Testing**: Vitest 4, jsdom, testing-library, fake-indexeddb (~157 tests)
+- **Testing**: Vitest 4, jsdom, testing-library, fake-indexeddb (684 tests)
 - **Shared Types**: `shared/types/` compiled via `scripts/compile-shared.js`
 
 ## Quick Start
@@ -99,6 +99,10 @@ Shared types in `shared/types/index.ts` are compiled to `shared/types/index.js` 
       "difficulty": "Easy",
       "parking": "Limited 2",
       "range": "76",
+      "durationMinutes": 135,
+      "duration": "2h 15m",
+      "gpxFile": "360-rd.gpx",
+      "hasGpx": true,
       "notes": "...",
       "seasonal": { "Jan": 0, "Feb": 0, "Mar": 1, ... },
       "difficultyOrder": 1

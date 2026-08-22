@@ -302,6 +302,15 @@ loadData() — reads all JSON files from exported_data/
     ├── lookup.json → LookupData
     └── schedule.json → ScheduleData
 
+loadData() also:
+    ├── Maps gpxFile from gpx_index.json to each trail
+    ├── Extracts duration from GPX files on load
+    │   ├── Parse <time> elements from <trkpt>
+    │   ├── Calculate last - first time
+    │   ├── Cache in durationCache Map
+    │   └── Attach durationMinutes + duration to trail
+    └── Returns trails with enriched data
+
 writeWithHealth(filePath, data) — atomic write with health tracking
     ├── fs.writeFile(path, JSON.stringify(data, null, 2))
     ├── Updates writeHealth: lastWriteTime, lastWriteSuccess, consecutiveFailures
