@@ -14,8 +14,6 @@ done
 DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
-# App name is the URL path prefix (underscores → hyphens)
-APP_NAME="${SERVICE//_/-}"
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
 
 ERRORS=0
@@ -484,7 +482,7 @@ if command -v curl &>/dev/null; then
     # Use FRONTEND_URL if set, otherwise default to the domain root or app path
     if [ -z "$FRONTEND_URL" ]; then
         if [[ "$DOMAIN" == *".${PARENT_DOMAIN}" ]]; then
-            FRONTEND_URL="https://$PARENT_DOMAIN/$APP_NAME/"
+            FRONTEND_URL="https://$PARENT_DOMAIN/${SERVICE//_/-}/"
         else
             FRONTEND_URL="https://$DOMAIN/"
         fi
@@ -559,7 +557,7 @@ echo "=== Summary ==="
 # Compute app URL for display
 if [ -z "$FRONTEND_URL" ]; then
     if [[ "$DOMAIN" == *".${PARENT_DOMAIN}" ]]; then
-        APP_URL="https://$PARENT_DOMAIN/$APP_NAME/"
+        APP_URL="https://$PARENT_DOMAIN/${SERVICE//_/-}/"
     else
         APP_URL="https://$DOMAIN/"
     fi
