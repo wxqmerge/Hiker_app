@@ -110,7 +110,12 @@ app.get('/api/config', (req, res) => {
 });
 
 app.get(/manifest\.webmanifest$/, (req, res) => {
-  const appName = String(req.headers['x-app-name'] || 'hiker');
+  // Derive app name from URL path (e.g. /sothh-dev/manifest.webmanifest → "sothh-dev")
+  // Fall back to X-App-Name header, then "hiker"
+  const pathMatch = req.path.match(/^\/([^/]+)\/manifest\.webmanifest$/);
+  const appName = pathMatch
+    ? pathMatch[1]
+    : String(req.headers['x-app-name'] || 'hiker');
   const basePath = `/${appName}`;
   res.set('Content-Type', 'application/manifest+json');
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
