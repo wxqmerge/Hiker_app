@@ -94,19 +94,19 @@ import { useNextHike } from '../../hooks/useNextHike';
         ]);
      });
  
-     it('skips to next day if current time is >= 12 PM', () => {
-       // Set time to Wed Jan 7, 2026, 1:00 PM (Hike is today, but should be skipped)
-       const date = new Date(2026, 0, 7, 13, 0);
-       vi.setSystemTime(date);
+      it('includes todays hike even after noon', () => {
+        // Set time to Wed Jan 7, 2026, 1:00 PM (Hike is today, should still show)
+        const date = new Date(2026, 0, 7, 13, 0);
+        vi.setSystemTime(date);
 
-        const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026 }));
+         const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026 }));
 
-        // Should find Jan 9 (Fri) and Feb 4 (Wed)
-       expect(result.current?.[0]?.day).toBe(9);
-       expect(result.current?.[0]?.monthIndex).toBe(0);
-       expect(result.current?.[1]?.day).toBe(4);
-       expect(result.current?.[1]?.monthIndex).toBe(1);
-     });
+         // Should find Jan 7 (today) and Jan 9 (Fri)
+        expect(result.current?.[0]?.day).toBe(7);
+        expect(result.current?.[0]?.monthIndex).toBe(0);
+        expect(result.current?.[1]?.day).toBe(9);
+        expect(result.current?.[1]?.monthIndex).toBe(0);
+      });
  
     it('finds a hike in the next month if current month is empty/passed', () => {
       // Set time to Jan 31, 2026, 10:00 AM

@@ -38,15 +38,13 @@ export function formatDateToISO(date = new Date()) {
 }
 
 /**
- * Get today's date at midnight, advancing to tomorrow if past noon.
- * Used for "next hike" calculations so afternoon users see tomorrow's hike.
+ * Get today's date at midnight.
+ * Used for "next hike" calculations.
  * @param {Date} [now] - Current time (defaults to new Date()).
  * @returns {Date}
  */
 export function getTodayHikeRef(now = new Date()) {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (now.getHours() >= 12) today.setDate(today.getDate() + 1);
-  return today;
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
 /**
