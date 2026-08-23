@@ -19,7 +19,7 @@
         var base = match ? '/' + match[1] : '';
         var link = document.createElement('link');
         link.rel = 'manifest';
-        link.href = base + '/manifest.webmanifest';
+        link.href = base + '/manifest.webmanifest?v=1';
         document.head.appendChild(link);
       })();
     </script>
