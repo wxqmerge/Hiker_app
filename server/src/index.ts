@@ -113,6 +113,9 @@ app.get(/manifest\.webmanifest$/, (req, res) => {
   const appName = String(req.headers['x-app-name'] || 'hiker');
   const basePath = `/${appName}`;
   res.set('Content-Type', 'application/manifest+json');
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   res.json({
     name: appName,
     short_name: appName,
