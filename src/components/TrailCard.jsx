@@ -176,7 +176,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                       </a>
                     )}
                     {etc && (
-                      <div className="flex items-center gap-1 text-gray-700">
+                      <div className="flex items-center gap-1 text-gray-700" title="Estimated Time to return to Sequim parking ± 1h">
                         <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         <span>ETC {etc}</span>
                       </div>
