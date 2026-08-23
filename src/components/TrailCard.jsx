@@ -24,9 +24,9 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
   const { title: tt } = useTooltips();
   const trailName = getTrailName(trail);
 
-  // Calculate ETC if we have duration and range
+  // Calculate ETC using 1.8 mph hiking speed
   const etc = useMemo(() => {
-    if (!trail.durationMinutes || !trail.range) return null;
+    if (!trail.distance || !trail.range) return null;
     const startHour = 8;
     const startMinute = 30;
     let startMinutes = startHour * 60 + startMinute;
@@ -37,13 +37,13 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     }
     
     const travelTime = parseInt(trail.range, 10) || 0;
-    const hikeDuration = trail.durationMinutes;
-    const totalMinutes = startMinutes + hikeDuration + (travelTime * 2);
+    const hikeMinutes = Math.round((trail.distance / 1.8) * 60);
+    const totalMinutes = startMinutes + hikeMinutes + (travelTime * 2);
     
     const hours = Math.floor(totalMinutes / 60) % 24;
     const minutes = totalMinutes % 60;
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
-  }, [trail.durationMinutes, trail.range, earlyStart]);
+  }, [trail.distance, trail.range, earlyStart]);
 
   const handleLeaderClick = useCallback((e) => {
     e.stopPropagation();

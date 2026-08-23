@@ -60,9 +60,9 @@ function NextHikeCard({ hike, idx, weather }) {
   const handleWeather = useCallback(() => openWeatherForTrail(getGpx, hike.trailId), [hike.trailId]);
   const displayHikeName = getTrailName(hike.trail);
 
-  // Calculate Estimated Completion Time
+  // Calculate Estimated Completion Time using 1.8 mph hiking speed
   const calculateETC = () => {
-    if (!trail.durationMinutes || !trail.range) return null;
+    if (!trail.distance || !trail.range) return null;
     
     const startHour = 8;
     const startMinute = 30;
@@ -74,8 +74,8 @@ function NextHikeCard({ hike, idx, weather }) {
     }
     
     const travelTime = parseInt(trail.range, 10) || 0;
-    const hikeDuration = trail.durationMinutes;
-    const totalMinutes = startMinutes + hikeDuration + (travelTime * 2);
+    const hikeMinutes = Math.round((trail.distance / 1.8) * 60);
+    const totalMinutes = startMinutes + hikeMinutes + (travelTime * 2);
     
     const hours = Math.floor(totalMinutes / 60) % 24;
     const minutes = totalMinutes % 60;
