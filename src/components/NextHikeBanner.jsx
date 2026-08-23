@@ -134,7 +134,7 @@ function NextHikeCard({ hike, idx, weather }) {
                   {etc && (
                     <>
                       <span className="text-green-300">•</span>
-                      <span className="font-medium text-white" title="Estimated Time to return to Sequim parking ± 1h">ETC {etc}</span>
+                      <span className="font-medium text-white" title="Estimated Time to return to Sequim parking ± 90min">ETC {etc}</span>
                     </>
                   )}
                 </div>
