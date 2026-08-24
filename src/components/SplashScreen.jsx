@@ -27,7 +27,7 @@ export default function SplashScreen({ onDismiss }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-gradient-to-br from-green-700 to-emerald-800 flex items-center justify-center p-6 cursor-pointer"
+      className="fixed inset-0 z-[100] bg-gradient-to-br from-green-700 to-emerald-800 flex items-start justify-start p-4 cursor-pointer"
       role="presentation"
       onClick={() => { markVisited(); onDismiss(); }}
     >
