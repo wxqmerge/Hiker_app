@@ -33,16 +33,16 @@ import { getDaysInMonth, createDate, formatDateToISO } from '../../utils/dateUti
      });
    });
  
-   describe('formatDateToISO', () => {
-      it('formats a specific date to YYYY-MM-DD', () => {
-        // Note: toISOString() uses UTC. For consistency in tests, we use a fixed UTC date.
-       const utcDate = new Date(Date.UTC(2026, 5, 15));
-       expect(formatDateToISO(utcDate)).toBe('2026-06-15');
-     });
- 
-     it('defaults to current date', () => {
-       const today = new Date().toISOString().slice(0, 10);
-       expect(formatDateToISO()).toBe(today);
-     });
-   });
+    describe('formatDateToISO', () => {
+       it('formats a specific date to YYYY-MM-DD (local time)', () => {
+        const localDate = new Date(2026, 5, 15);
+        expect(formatDateToISO(localDate)).toBe('2026-06-15');
+      });
+  
+      it('defaults to current date', () => {
+        const now = new Date();
+        const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        expect(formatDateToISO()).toBe(expected);
+      });
+    });
  });

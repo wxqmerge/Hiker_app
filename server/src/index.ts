@@ -146,33 +146,39 @@ app.use('/api/lookup', lookupRouter);
 app.use('/api/data', dataRouter);
 
 app.post('/api/cleanup/orphaned-details', requireAdminKey, async (_req, res) => {
-  const fs = await import('fs/promises');
-  const path = (await import('path')).default;
-  const __filename = (await import('url')).fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const DATA_DIR = path.join(__dirname, '../../exported_data');
+  try {
+    const fs = await import('fs/promises');
+    const path = (await import('path')).default;
+    const __filename = (await import('url')).fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const DATA_DIR = path.join(__dirname, '../../exported_data');
 
-  const trailsPath = path.join(DATA_DIR, 'trails.json');
-  const detailsPath = path.join(DATA_DIR, 'trail_details.json');
+    const trailsPath = path.join(DATA_DIR, 'trails.json');
+    const detailsPath = path.join(DATA_DIR, 'trail_details.json');
 
-  const trailsData = JSON.parse(await fs.readFile(trailsPath, 'utf-8'));
-  const trailIds = new Set((trailsData.trails || []).map((t: any) => t.id));
+    const trailsData = JSON.parse(await fs.readFile(trailsPath, 'utf-8'));
+    const trailIds = new Set((trailsData.trails || []).map((t: any) => t.id));
 
-  const details = JSON.parse(await fs.readFile(detailsPath, 'utf-8'));
-  const orphaned: string[] = [];
-  const cleaned: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(details)) {
-    if (trailIds.has(key)) {
-      cleaned[key] = value;
-    } else {
-      orphaned.push(key);
+    const details = JSON.parse(await fs.readFile(detailsPath, 'utf-8'));
+    const orphaned: string[] = [];
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(details)) {
+      if (trailIds.has(key)) {
+        cleaned[key] = value;
+      } else {
+        orphaned.push(key);
+      }
     }
-  }
-  if (orphaned.length > 0) {
-    await fs.writeFile(detailsPath, JSON.stringify(cleaned, null, 2) + '\n', 'utf-8');
-  }
+    if (orphaned.length > 0) {
+      const tmpPath = `${detailsPath}.tmp`;
+      await fs.writeFile(tmpPath, JSON.stringify(cleaned, null, 2) + '\n', 'utf-8');
+      await fs.rename(tmpPath, detailsPath);
+    }
 
-  res.json({ removed: orphaned.length, orphaned });
+    res.json({ removed: orphaned.length, orphaned });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: 'Cleanup failed: ' + (err as Error).message } });
+  }
 });
 
 app.get('/api/validate', async (_req, res) => {

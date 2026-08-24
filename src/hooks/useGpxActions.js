@@ -1,10 +1,19 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { getGpx } from '../api/client';
 import { downloadBlob, openGoogleMapsTrailhead, sanitizeFilename, shareGpxFile } from '../utils/io';
 import { getTrailName } from '../utils/data';
 
 export function useGpxActions(trail) {
   const [downloadingIds, setDownloadingIds] = useState(() => new Set());
+  const timersRef = useRef(new Set());
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach(t => clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
 
   const isDownloading = useCallback(
     (trailId) => downloadingIds.has(trailId),
@@ -24,14 +33,18 @@ export function useGpxActions(trail) {
         const safeName = sanitizeFilename(trailName || 'route');
         downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
       }
+    } catch (err) {
+      console.error('[useGpxActions] download failed:', err);
     } finally {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        timersRef.current.delete(timer);
         setDownloadingIds(prev => {
           const next = new Set(prev);
           next.delete(trailId);
           return next;
         });
       }, 1000);
+      timersRef.current.add(timer);
     }
   }, [downloadingIds]);
 
@@ -43,9 +56,13 @@ export function useGpxActions(trail) {
 
   const shareGpx = useCallback(async (trailId, trailName) => {
     if (!trailId) return;
-    const gpx = await getGpx(trailId);
-    if (gpx) {
-      shareGpxFile(gpx, trailName || 'route');
+    try {
+      const gpx = await getGpx(trailId);
+      if (gpx) {
+        shareGpxFile(gpx, trailName || 'route');
+      }
+    } catch (err) {
+      console.error('[useGpxActions] share failed:', err);
     }
   }, []);
 

@@ -2,6 +2,7 @@
 // Used by TrailCard and NextHikeBanner with different styling
 
 import { getRideCost } from '../../utils/report';
+import { clampHikeMinutes } from '../../utils/etc';
 
 export default function TrailStats({ trail, className = '', itemClassName = '', iconSize = 'w-3.5 h-3.5', rideFormat = 'range', inline = false }) {
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
@@ -65,9 +66,7 @@ export default function TrailStats({ trail, className = '', itemClassName = '', 
               const dist = Math.max(trail.distance || 0, trail.distanceExtended || 0);
               const gpx = trail.durationMinutes;
               if (gpx == null || gpx <= 0 || dist <= 0) return null;
-              const min = (dist / 2.2) * 60;
-              const max = (dist / 1.1) * 60;
-              return gpx >= min && gpx <= max ? <span className="text-xs opacity-60 ml-0.5">x</span> : null;
+              return clampHikeMinutes(dist, gpx).source === 'gpx' ? <span className="text-xs opacity-60 ml-0.5">x</span> : null;
             })()}
           </span>
         </div>

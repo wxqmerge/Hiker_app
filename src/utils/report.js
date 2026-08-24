@@ -1,4 +1,5 @@
 import { buildTrailLineParts } from './formatTrail';
+import { getTrailName } from './data';
 
 // Escape HTML special characters
 function esc(s) {
@@ -118,7 +119,7 @@ export function getRideCost(range) {
 
 // Generate HTML report for a single trail (same format as monthly report)
 export function generateTrailHtml(trail, trailDetails, dateStr) {
-  let title = trail.name;
+  let title = getTrailName(trail);
   let headerHtml = '';
   let formattedDate = '';
   if (dateStr) {
@@ -126,7 +127,7 @@ export function generateTrailHtml(trail, trailDetails, dateStr) {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     formattedDate = `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
-    title = `${formattedDate} — ${trail.name}`;
+    title = `${formattedDate} — ${getTrailName(trail)}`;
     const trailLine = buildTrailLineHtml(trail, false);
     headerHtml = `<div class="entry-header">${esc(formattedDate)}\t${trailLine}</div>`;
   }

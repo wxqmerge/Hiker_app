@@ -9,6 +9,7 @@ import { generateTrailHtml, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
 import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName } from '../utils/data';
 import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';
+import { clampHikeMinutes, getEtcBounds } from '../utils/etc';
 import { createFileInput, openHtmlInNewTab } from '../utils/io';
 import { uploadGpxFile } from '../api/client';
 import { useGpxActions } from '../hooks/useGpxActions';
@@ -129,7 +130,7 @@ export default function TrailDetail() {
     if (field === 'monthlyScore') {
       if (editedFields.monthlyScore !== undefined) return editedFields.monthlyScore;
       if (pop.monthlyScore && pop.monthlyScore.length > 0) return pop.monthlyScore;
-      const monthly = pop.monthly || [];
+      const monthly = getEditedValue('monthlyPopularity') || [];
       const availableMonths = getEditedValue('availableMonths') || [];
       return computeMonthlyScores(monthly, availableMonths, hasQuarterData);
     }
@@ -867,10 +868,8 @@ export default function TrailDetail() {
                       {(() => {
                         const dist = Math.max(Number(getEditedValue('distance')) || 0, Number(getEditedValue('distanceExtended')) || 0);
                         const gpx = Number(getEditedValue('durationMinutes')) || 0;
-                        const min = (dist / 2.2) * 60;
-                        const max = (dist / 1.1) * 60;
-                        const used = gpx > 0 ? Math.min(Math.max(gpx, min), max) : min;
-                        const source = gpx === 0 ? 'min' : gpx < min ? 'min' : gpx > max ? 'max' : 'gpx';
+                        const { minMinutes: min, maxMinutes: max } = getEtcBounds(dist);
+                        const { minutes: used, source } = clampHikeMinutes(dist, gpx);
                         return (
                           <div className="flex items-center gap-2">
                             <div className="text-xs text-gray-500 whitespace-nowrap pt-1">

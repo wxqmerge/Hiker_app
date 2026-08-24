@@ -14,7 +14,9 @@ export function extractDurationFromGpxContent(content: string): { minutes: numbe
   try {
     const firstTime = new Date(times[0]);
     const lastTime = new Date(times[times.length - 1]);
+    if (isNaN(firstTime.getTime()) || isNaN(lastTime.getTime())) return null;
     const durationMs = lastTime.getTime() - firstTime.getTime();
+    if (isNaN(durationMs)) return null;
     const minutes = Math.max(0, Math.round(durationMs / 60000));
 
     const hours = Math.floor(minutes / 60);

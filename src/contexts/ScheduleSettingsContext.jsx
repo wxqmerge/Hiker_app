@@ -80,7 +80,7 @@ export function ScheduleSettingsProvider({ children }) {
   // Close the settings dropdown when clicking outside (works on all pages)
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (showSettings && !e.target.closest('.relative')) {
+      if (showSettings && !e.target.closest('[data-settings-root]')) {
         setShowSettings(false);
       }
     };
@@ -89,21 +89,24 @@ export function ScheduleSettingsProvider({ children }) {
   }, [showSettings, setShowSettings]);
 
   // Save schedule to server (debounced 1s)
+  const savingRef = useRef(false);
   const saveScheduleToServer = useCallback(async () => {
+    if (savingRef.current) return;
     const currentStoreJson = JSON.stringify(scheduleStore);
     if (lastSavedStoreRef.current === currentStoreJson) {
       return;
     }
-    lastSavedStoreRef.current = currentStoreJson;
     const serverData = storeToServerSchedule(scheduleStore);
     const entryCount = Object.values(serverData).reduce((sum, entries) => sum + normalizeServerMonthEntries(entries).length, 0);
     if (entryCount === 0) {
       return;
     }
+    savingRef.current = true;
     try {
       setSaveStatus('saving');
       if (debugMode) console.log('[Schedule] Saving schedule:', entryCount, 'entries');
       const result = await updateSchedule(serverData);
+      lastSavedStoreRef.current = currentStoreJson;
       if (debugMode) console.log('[Schedule] Save successful, ETag:', result?.etag);
       setSaveStatus('saved');
       showToast('Schedule saved', 'success');
@@ -114,6 +117,8 @@ export function ScheduleSettingsProvider({ children }) {
       console.error('[Schedule] Failed to save schedule:', err);
       setSaveStatus('error');
       showToast('Failed to save schedule: ' + err.message, 'error');
+    } finally {
+      savingRef.current = false;
     }
   }, [scheduleStore, debugMode, showToast]);
 
@@ -342,12 +347,17 @@ export function ScheduleSettingsProvider({ children }) {
             if (monthIndex < 0) continue;
             const monthKey = getMonthKey(year, monthIndex);
             if (!serverData[monthKey]) serverData[monthKey] = [];
-            const existingDays = new Set(serverData[monthKey].map(e => e.day));
+            const existingDayTrails = new Map();
+            for (const e of serverData[monthKey]) {
+              if (!existingDayTrails.has(e.day)) existingDayTrails.set(e.day, new Set());
+              existingDayTrails.get(e.day).add(e.trail_id);
+            }
             for (const [day, entry] of Object.entries(entries)) {
               const dayNum = parseInt(day, 10);
-              if (!existingDays.has(dayNum) && entry.trail_id) {
-                serverData[monthKey].push({ day: dayNum, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
-              }
+              if (!entry.trail_id) continue;
+              const dayTrails = existingDayTrails.get(dayNum);
+              if (dayTrails && dayTrails.has(entry.trail_id)) continue;
+              serverData[monthKey].push({ day: dayNum, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
             }
             serverData[monthKey].sort((a, b) => a.day - b.day);
           }

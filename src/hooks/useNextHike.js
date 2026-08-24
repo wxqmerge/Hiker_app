@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { CURRENT_YEAR } from '../utils/constants';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
 import { serverScheduleToStore, getDayEntries } from '../utils/scheduleFormat';
 import { getDaysInMonth, createDate, getTodayHikeRef, getMonthKey } from '../utils/dateUtils';
@@ -10,7 +9,7 @@ import { useHikeDays } from './useHikeDays';
  * Scans configured hike days chronologically starting from today.
  * Returns up to `maxHikes` total hikes (default 2).
  */
-export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 2 }) {
+export function useNextHike({ trails, schedule, maxHikes = 2 }) {
 
   const scheduleStore = useMemo(() => serverScheduleToStore(schedule), [schedule]);
   const hikeDays = useHikeDays();
@@ -18,10 +17,11 @@ export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 
   return useMemo(() => {
     const allHikes = [];
     const today = getTodayHikeRef();
+    const baseYear = today.getFullYear();
 
-    // Scan up to 24 months to handle year rollover (e.g. Dec → Jan of next year).
+    // Scan up to 24 months from today to handle year rollover (e.g. Dec → Jan of next year).
     for (let offset = 0; offset < 24 && allHikes.length < maxHikes; offset++) {
-      const y = year + Math.floor(offset / 12);
+      const y = baseYear + Math.floor(offset / 12);
       const m = offset % 12;
       const monthData = scheduleStore[getMonthKey(y, m)] || {};
       const daysInMonth = getDaysInMonth(y, m);
@@ -51,5 +51,5 @@ export function useNextHike({ trails, schedule, year = CURRENT_YEAR, maxHikes = 
       }
     }
     return allHikes.length > 0 ? allHikes : null;
-  }, [scheduleStore, trails, year, maxHikes, hikeDays]);
+  }, [scheduleStore, trails, maxHikes, hikeDays]);
 }

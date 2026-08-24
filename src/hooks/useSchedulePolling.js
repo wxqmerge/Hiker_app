@@ -7,6 +7,7 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
   const etagRef = useRef(null);
   const serverVersionRef = useRef(null);
   const mountedRef = useRef(true);
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -15,7 +16,9 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
 
   const pollSchedule = useCallback(async () => {
     if (!mountedRef.current) return;
+    if (inFlightRef.current) return;
     if (typeof document !== 'undefined' && document.hidden) return;
+    inFlightRef.current = true;
 
     try {
       const headers = {};
@@ -57,6 +60,8 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
       }
     } catch {
       // Network error, ignore during polling
+    } finally {
+      inFlightRef.current = false;
     }
   }, [scheduleStore]);
 

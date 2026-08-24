@@ -194,7 +194,7 @@ export function TrailActionsProvider({ children }) {
           }
           const existing = trailDetails?.[trailId]?.popularity || {};
           await saveTrailDetail(trailId, {
-            popularity: { ...existing, monthly, monthlyScore: undefined },
+            popularity: { ...existing, monthly, monthlyScore: null },
           });
           updated++;
         }
@@ -328,7 +328,9 @@ export function TrailActionsProvider({ children }) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip';
+    input.style.display = 'none';
     input.onchange = async (e) => {
+      document.body.removeChild(input);
       const file = e.target.files[0];
       if (!file) return;
       askConfirm('Import all data from ZIP', 'Import all data from ZIP? This will overwrite matching JSON files on the server. 5 files will be checked.', async () => {
@@ -344,6 +346,7 @@ export function TrailActionsProvider({ children }) {
         }
       }, true);
     };
+    document.body.appendChild(input);
     input.click();
   }, [requireKey, askConfirm, showToast]);
 

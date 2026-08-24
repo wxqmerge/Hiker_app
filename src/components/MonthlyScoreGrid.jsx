@@ -38,7 +38,8 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
         if (!entry) return null;
         const { hikeCount, score, quarterBase, monthBase, scheduleBase } = entry;
         const intensity = Math.min(score / 9, 1);
-        const bg = score > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
+        const bgStyle = score > 0 ? { backgroundColor: `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` } : undefined;
+        const bgClass = score > 0 ? '' : 'bg-gray-100';
         const text = score > 0 ? 'text-green-800' : 'text-gray-400';
 
         const title = showBreakdown
@@ -48,7 +49,8 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
         return (
           <div
             key={idx}
-            className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium ${bg} ${text}`}
+            className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium ${bgClass} ${text}`}
+            style={bgStyle}
             title={title}
             role="img"
             aria-label={title}

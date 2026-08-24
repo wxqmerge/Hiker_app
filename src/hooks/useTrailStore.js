@@ -125,7 +125,10 @@ export function useTrailStore() {
 
   useEffect(() => {
     const unsub = subscribe();
-    return unsub;
+    return () => {
+      mountedRef.current = false;
+      unsub();
+    };
   }, [subscribe]);
 
   const saveTrail = useCallback(async (trail) => {

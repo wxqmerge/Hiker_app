@@ -132,14 +132,17 @@ export function getWriteHealth(): WriteHealth {
 }
 
 async function writeWithHealth(filePath: string, data: unknown): Promise<void> {
+  const tmpPath = `${filePath}.tmp`;
   try {
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+    await fs.writeFile(tmpPath, JSON.stringify(data, null, 2));
+    await fs.rename(tmpPath, filePath);
     writeHealth.lastWriteTime = new Date().toISOString();
     writeHealth.lastWriteSuccess = true;
     writeHealth.lastError = null;
     writeHealth.lastErrorTime = null;
     writeHealth.consecutiveFailures = 0;
   } catch (error) {
+    await fs.unlink(tmpPath).catch(() => {});
     writeHealth.lastWriteTime = new Date().toISOString();
     writeHealth.lastWriteSuccess = false;
     writeHealth.lastError = (error as Error).message;
@@ -155,8 +158,13 @@ async function loadFile<T>(filename: string, fallback: T): Promise<T> {
     const content = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(content);
   } catch (error) {
-    console.warn(`[DATA] Could not load ${filename}:`, (error as Error).message);
-    return fallback;
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') {
+      console.warn(`[DATA] ${filename} not found, using fallback`);
+      return fallback;
+    }
+    console.error(`[DATA] FATAL: could not load ${filename}:`, err.message);
+    throw new Error(`Failed to load ${filename}: ${err.message}`);
   }
 }
 

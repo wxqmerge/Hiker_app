@@ -225,7 +225,7 @@ export default function ScheduleSettingsDropdown() {
   );
 
   return (
-    <div className="relative">
+    <div className="relative" data-settings-root>
       <button
         onClick={() => setShowSettings(!showSettings)}
         className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
