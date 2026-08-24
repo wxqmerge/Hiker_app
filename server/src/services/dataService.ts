@@ -182,7 +182,6 @@ async function loadFile<T>(filename: string, fallback: T): Promise<T> {
 
 export async function loadData(): Promise<void> {
   console.log('[DATA] Loading trail data...');
-  console.log(`[DATA] Loading schedule from: ${getScheduleFile()}`);
 
   const trailsData: TrailsData = await loadFile('trails.json', { trails: [] });
   const rawTrails = Array.isArray(trailsData.trails) ? trailsData.trails : [];
