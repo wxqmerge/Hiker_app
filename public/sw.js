@@ -4,14 +4,15 @@
 // Caching strategy:
 //   - Static assets (JS/CSS/images/fonts): cache-first, populated on first fetch.
 //   - Navigation (SPA routes): network-first, falling back to cached index.html.
-//   - Same-origin API reads: network-first for schedule/config, cache-first for
-//     trails/details/lookup. Only GET requests to read-only endpoints are cached.
-//   - External tide/weather (NOAA/NWS): cache-first (tide is stable per date).
+//   - Same-origin API reads: cache-first for trails/details/lookup,
+//     network-first (5s timeout) for schedule/config/group.
+//   - External tides (NOAA): cache-first (stable per date).
+//   - External forecast (NWS): network-first with timeout.
 //   - Write endpoints (PUT/POST/DELETE) are never cached. After a successful
 //     schedule write, the cached schedule is invalidated.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v4';
+const VERSION = 'v5';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const TIDE_CACHE = `hiker-tide-${VERSION}`;
@@ -32,17 +33,20 @@ function stripBase(pathname) {
   return pathname;
 }
 
-// Read-only same-origin API endpoints safe to cache (GET, no API key required).
+// Read-only same-origin API endpoints: cache-first (stable data).
 const CACHE_FIRST_API = new Set([
   '/api/trails',
   '/api/trails/details',
   '/api/lookup',
+]);
+// Endpoints that change: network-first with cache fallback + timeout.
+const NETWORK_FIRST_API = new Set([
   '/api/schedule',
   '/api/schedule/group',
   '/api/config',
 ]);
 
-const WEATHER_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours, matches client NWS cache
+const NETWORK_TIMEOUT_MS = 5000; // 5s timeout before falling back to cache
 
 function isTideUrl(url) {
   return url.hostname === 'api.tidesandcurrents.noaa.gov';
@@ -96,8 +100,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.origin !== self.location.origin) {
-    if (isTideUrl(url) || isWeatherUrl(url)) {
-      event.respondWith(cacheExternal(request, url));
+    if (isTideUrl(url)) {
+      event.respondWith(cacheFirst(request, TIDE_CACHE));
+    } else if (isWeatherUrl(url)) {
+      event.respondWith(networkFirstWithTimeout(request, TIDE_CACHE));
     }
     return;
   }
@@ -111,6 +117,10 @@ self.addEventListener('fetch', (event) => {
   const path = stripBase(url.pathname);
   if (CACHE_FIRST_API.has(path)) {
     event.respondWith(cacheFirst(request, API_CACHE));
+    return;
+  }
+  if (NETWORK_FIRST_API.has(path)) {
+    event.respondWith(networkFirstWithTimeout(request, API_CACHE));
     return;
   }
   if (request.mode === 'navigate') {
@@ -130,11 +140,15 @@ async function cacheFirst(request, cacheName) {
   return res;
 }
 
-// Network-first with cache fallback. Caches successful network responses.
-async function networkFirst(request, cacheName) {
+// Network-first with timeout: if network doesn't respond within NETWORK_TIMEOUT_MS,
+// fall back to cache immediately instead of hanging.
+async function networkFirstWithTimeout(request, cacheName) {
   const cache = await caches.open(cacheName);
   try {
-    const res = await fetch(request);
+    const res = await Promise.race([
+      fetch(request),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), NETWORK_TIMEOUT_MS)),
+    ]);
     if (res.ok) cache.put(request, res.clone());
     return res;
   } catch {
@@ -161,27 +175,7 @@ async function handleNavigation(request) {
   }
 }
 
-// External tide/weather: cache-first. Weather entries expire after a TTL.
-async function cacheExternal(request, url) {
-  const cache = await caches.open(TIDE_CACHE);
-  const cached = await cache.match(request);
-  if (cached && (!isWeatherUrl(url) || isFresh(cached))) return cached;
-  try {
-    const res = await fetch(request);
-    if (res.ok) cache.put(request, res.clone());
-    return res;
-  } catch {
-    if (cached) return cached;
-    return offlineResponse();
-  }
-}
 
-function isFresh(res) {
-  const dateHeader = res.headers.get('date');
-  if (!dateHeader) return true;
-  const age = Date.now() - new Date(dateHeader).getTime();
-  return age >= 0 && age < WEATHER_TTL_MS;
-}
 
 // Remove cached schedule + config after a successful schedule write.
 function invalidateScheduleCache(origin) {
