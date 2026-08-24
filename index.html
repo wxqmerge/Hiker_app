@@ -11,18 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="Hiker" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
     <title>hiker-app</title>
-    <script>
-      // Inject manifest link with correct subpath
-      (function() {
-        var path = window.location.pathname;
-        var match = path.match(/^\/([^/]+)/);
-        var base = match ? '/' + match[1] : '';
-        var link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = base + '/manifest.webmanifest?v=1';
-        document.head.appendChild(link);
-      })();
-    </script>
+    <link rel="manifest" href="manifest.webmanifest" />
   </head>
   <body>
     <div id="root"></div>
