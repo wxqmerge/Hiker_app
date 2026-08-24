@@ -37,9 +37,6 @@ const CACHE_FIRST_API = new Set([
   '/api/trails',
   '/api/trails/details',
   '/api/lookup',
-]);
-// Endpoints that change more often: network-first with cache fallback.
-const NETWORK_FIRST_API = new Set([
   '/api/schedule',
   '/api/schedule/group',
   '/api/config',
@@ -114,10 +111,6 @@ self.addEventListener('fetch', (event) => {
   const path = stripBase(url.pathname);
   if (CACHE_FIRST_API.has(path)) {
     event.respondWith(cacheFirst(request, API_CACHE));
-    return;
-  }
-  if (NETWORK_FIRST_API.has(path)) {
-    event.respondWith(networkFirst(request, API_CACHE));
     return;
   }
   if (request.mode === 'navigate') {
