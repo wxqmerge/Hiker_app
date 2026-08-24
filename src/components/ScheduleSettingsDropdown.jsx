@@ -197,16 +197,15 @@ export default function ScheduleSettingsDropdown() {
         Open source hike planning and scheduling tool.
       </p>
       <div className="mb-3">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Banner Features</p>
-        <ul className="text-xs text-gray-600 space-y-0.5 list-disc list-inside">
-          <li>Weather forecast (temp, rain %)</li>
-          <li>Low tide predictions</li>
-          <li>ETC (estimated return time)</li>
-          <li>Difficulty & early start badges</li>
-          <li>GPX download / share</li>
-          <li>Trailhead directions</li>
-          <li>Trail stats (distance, elevation, ride)</li>
-        </ul>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Legend</p>
+        <dl className="text-xs text-gray-600 space-y-1">
+          <div><dt className="inline font-mono font-semibold">ETC</dt><dd className="inline"> — estimated return time to Sequim ± 90 min</dd></div>
+          <div><dt className="inline font-mono font-semibold">TH</dt><dd className="inline"> — trailhead (Google Maps directions)</dd></div>
+          <div><dt className="inline font-mono font-semibold">GPX</dt><dd className="inline"> — GPS track (download / share)</dd></div>
+          <div><dt className="inline font-mono font-semibold">◆</dt><dd className="inline"> — wilderness trail</dd></div>
+          <div><dt className="inline font-mono font-semibold">Tide</dt><dd className="inline"> — NOAA low tide prediction</dd></div>
+          <div><dt className="inline font-mono font-semibold">Early Start</dt><dd className="inline"> — departs 30 min earlier</dd></div>
+        </dl>
       </div>
       <a
         href="https://github.com/wxqmerge/Hiker_app"
