@@ -1,14 +1,27 @@
 #!/bin/bash
 # Update all app instances on the server
 # Run from: /var/www/html/
-# Usage: ./deploy/update-all.sh [--force|--force-critical]
+# Usage: ./deploy/update-all.sh [--force|--force-critical] [--audit]
 #
 # Detects each instance by git remote origin, then runs its
 # deploy/update.sh with any flags passed through.
+# --audit also runs npm_audit_fix-all.sh after all updates.
 # Works for any project that has a git repo and deploy/update.sh.
 
 BASE="/var/www/html"
-FLAGS="$@"
+RUN_AUDIT=false
+FLAGS=""
+
+for arg in "$@"; do
+    case $arg in
+        --audit)
+            RUN_AUDIT=true
+            ;;
+        *)
+            FLAGS="$FLAGS $arg"
+            ;;
+    esac
+done
 OK=0
 FAIL=0
 SKIP=0
@@ -82,6 +95,14 @@ done
 echo "========================================"
 echo "  Done: $OK OK, $FAIL failed, $SKIP skipped"
 echo "========================================"
+
+if [ "$RUN_AUDIT" = true ]; then
+    echo ""
+    echo "========================================"
+    echo "  Running npm audit fix --force"
+    echo "========================================"
+    bash "$SCRIPT_DIR/npm_audit_fix-all.sh"
+fi
 
 if [ "$FAIL" -gt 0 ]; then
     exit 1
