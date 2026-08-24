@@ -57,6 +57,7 @@ export_for_excel.json
 hiker_export.xlsx
 todo_add_trail.tsv
 todo.md
+prompt_Que.md
 deploy/hiker.conf
 exported_data
 
