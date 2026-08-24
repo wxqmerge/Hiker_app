@@ -14,6 +14,7 @@ export function getApiBase() {
   if (API_BASE) return API_BASE;
   if (typeof window === 'undefined') return '';
   const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return '';
   const path = window.location.pathname;
   const parentDomain = getParentDomain();
   if (hostname !== parentDomain) {
