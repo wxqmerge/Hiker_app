@@ -21,10 +21,10 @@ describe('MonthSelector', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('renders 36 month options', () => {
+  it('renders 25 month options (±1 year)', () => {
     render(<MonthSelector {...props} />);
     const select = screen.getByRole('combobox');
-    expect(select.options.length).toBe(36);
+    expect(select.options.length).toBe(25);
   });
 
   it('sets selected month key', () => {
@@ -46,12 +46,14 @@ describe('MonthSelector', () => {
     expect(select).toHaveAttribute('title', 'Select month');
   });
 
-  it('covers previous year through next year', () => {
+  it('covers ±1 year from current month', () => {
     render(<MonthSelector {...props} />);
     const select = screen.getByRole('combobox');
     const values = Array.from(select.options).map(option => option.value);
-    expect(values[0]).toBe(getMonthKey(CURRENT_YEAR - 1, 0));
-    expect(values[35]).toBe(getMonthKey(CURRENT_YEAR + 1, 11));
+    const now = new Date();
+    const startMonth = now.getMonth();
+    expect(values[0]).toBe(getMonthKey(CURRENT_YEAR - 1, startMonth));
+    expect(values[values.length - 1]).toBe(getMonthKey(CURRENT_YEAR + 1, startMonth));
   });
 
   it('includes the year in month labels', () => {

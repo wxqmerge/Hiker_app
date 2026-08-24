@@ -30,7 +30,7 @@ describe('ScheduleSettingsDropdown', () => {
     expect(screen.getByRole('tab', { name: 'Schedule' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'User' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Admin' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Data' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'About' })).toBeInTheDocument();
   });
 
   it('shows schedule actions by default', () => {
@@ -68,15 +68,11 @@ describe('ScheduleSettingsDropdown', () => {
     expect(screen.queryByText('Reload Schedule')).not.toBeInTheDocument();
   });
 
-  it('shows data actions in the Data tab', () => {
+  it('shows about info in the About tab', () => {
     renderMenu();
     fireEvent.click(screen.getByTitle('Schedule settings'));
-    fireEvent.click(screen.getByRole('tab', { name: 'Data' }));
-    expect(screen.getByText('Pull Up All Data')).toBeInTheDocument();
-    expect(screen.getByText('Trail Details')).toBeInTheDocument();
-    expect(screen.getByText('Lookup')).toBeInTheDocument();
-    expect(screen.getByText('Group Config')).toBeInTheDocument();
-    expect(screen.getByText('All Data ZIP')).toBeInTheDocument();
-    expect(screen.getByText('GPX ZIP')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'About' }));
+    expect(screen.getByText(/Open source/)).toBeInTheDocument();
+    expect(screen.getByText('View on GitHub')).toBeInTheDocument();
   });
 });
