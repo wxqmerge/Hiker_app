@@ -98,10 +98,16 @@ export function parseMonthKey(monthKey) {
 }
 
 export function getMonthRange() {
-  const startYear = CURRENT_YEAR - 1;
+  const now = new Date();
+  const startYear = now.getFullYear() - 1;
+  const startMonth = now.getMonth();
+  const endYear = now.getFullYear() + 1;
+  const endMonth = now.getMonth();
   const months = [];
-  for (let year = startYear; year <= startYear + 2; year += 1) {
+  for (let year = startYear; year <= endYear; year += 1) {
     for (let month = 0; month < 12; month += 1) {
+      if (year === startYear && month < startMonth) continue;
+      if (year === endYear && month > endMonth) continue;
       months.push({ year, month, key: getMonthKey(year, month) });
     }
   }
