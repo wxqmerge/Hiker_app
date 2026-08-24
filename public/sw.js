@@ -5,9 +5,9 @@
 //   - Static assets (JS/CSS/images/fonts): cache-first, populated on first fetch.
 //   - Navigation (SPA routes): network-first, falling back to cached index.html.
 //   - Same-origin API reads: cache-first for trails/details/lookup,
-//     network-first (5s timeout) for schedule/config/group.
+//     cache-first with background update for schedule/config/group.
 //   - External tides (NOAA): cache-first (stable per date).
-//   - External forecast (NWS): network-first with timeout.
+//   - External forecast (NWS): cache-first with background update.
 //   - Write endpoints (PUT/POST/DELETE) are never cached. After a successful
 //     schedule write, the cached schedule is invalidated.
 //   - API keys are never stored in cache names or cached payloads.
@@ -46,7 +46,7 @@ const NETWORK_FIRST_API = new Set([
   '/api/config',
 ]);
 
-const NETWORK_TIMEOUT_MS = 5000; // 5s timeout before falling back to cache
+
 
 function isTideUrl(url) {
   return url.hostname === 'api.tidesandcurrents.noaa.gov';
@@ -103,7 +103,7 @@ self.addEventListener('fetch', (event) => {
     if (isTideUrl(url)) {
       event.respondWith(cacheFirst(request, TIDE_CACHE));
     } else if (isWeatherUrl(url)) {
-      event.respondWith(networkFirstWithTimeout(request, TIDE_CACHE));
+      event.respondWith(cacheFirstBackground(request, TIDE_CACHE));
     }
     return;
   }
@@ -120,7 +120,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (NETWORK_FIRST_API.has(path)) {
-    event.respondWith(networkFirstWithTimeout(request, API_CACHE));
+    event.respondWith(cacheFirstBackground(request, API_CACHE));
     return;
   }
   if (request.mode === 'navigate') {
@@ -140,20 +140,28 @@ async function cacheFirst(request, cacheName) {
   return res;
 }
 
-// Network-first with timeout: if network doesn't respond within NETWORK_TIMEOUT_MS,
-// fall back to cache immediately instead of hanging.
-async function networkFirstWithTimeout(request, cacheName) {
+// Cache-first with background network update.
+// Serves cached response immediately, then updates cache from network in background.
+// If no cache exists, waits for network.
+async function cacheFirstBackground(request, cacheName) {
   const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  // Update cache from network in background (strip ETag to avoid 304)
+  const bgReq = new Request(request, { headers: new Headers(Object.fromEntries(
+    [...request.headers].filter(([k]) => k.toLowerCase() !== 'if-none-match')
+  ))});
+  fetch(bgReq).then((res) => {
+    if (res.ok) cache.put(request, res.clone());
+  }).catch(() => {});
+
+  if (cached) return cached;
+  // No cache yet — wait for network
   try {
-    const res = await Promise.race([
-      fetch(request),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), NETWORK_TIMEOUT_MS)),
-    ]);
+    const res = await fetch(request);
     if (res.ok) cache.put(request, res.clone());
     return res;
   } catch {
-    const cached = await cache.match(request);
-    if (cached) return cached;
     return offlineResponse();
   }
 }
