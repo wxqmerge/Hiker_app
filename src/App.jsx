@@ -20,7 +20,8 @@ import { ensureScheduleWritable, request } from './api/client.js';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 import { setGroupConfig, getGroupName } from './utils/config';
-import { storeApiKey } from './utils/apiKey';
+import { storeApiKey, hasStoredApiKey } from './utils/apiKey';
+import SplashScreen, { hasVisited } from './components/SplashScreen';
 
 function ApiKeySync() {
   const { search } = useLocation();
@@ -40,6 +41,7 @@ function ApiKeySync() {
 function App() {
   const showToast = useToast();
   const [isConfigLoaded, setIsConfigLoaded] = useState(!!getGroupName());
+  const [showSplash, setShowSplash] = useState(() => !hasStoredApiKey() && !hasVisited());
 
   useEffect(() => {
     request('/api/schedule/group').then(data => {
@@ -83,6 +85,7 @@ function App() {
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
+      {showSplash && <SplashScreen onDismiss={() => setShowSplash(false)} />}
       <ApiKeySync />
       <PageContextProvider>
         <MonthContextProvider>

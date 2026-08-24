@@ -23,6 +23,11 @@ describe('ScheduleBuilder', () => {
     </MemoryRouter>
   );
 
+  const openScheduleTab = () => {
+    fireEvent.click(screen.getByTitle('Schedule settings'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
+  };
+
   it('renders settings button', () => {
     renderSchedule();
     expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
@@ -40,8 +45,7 @@ describe('ScheduleBuilder', () => {
 
   it('renders Export Monthly HTML in settings menu', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
   });
 
@@ -62,43 +66,37 @@ describe('ScheduleBuilder', () => {
 
   it('opens settings menu', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
   });
 
   it('shows Export Quarterly Schedule button', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     expect(screen.getByText('Export Quarterly Schedule')).toBeInTheDocument();
   });
 
   it('shows Import SOTHH Schedule.xls button', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     expect(screen.getByText(/Import SOTHH Schedule\.xls/)).toBeInTheDocument();
   });
 
   it('shows Import Quarterly Schedule TSV button', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     expect(screen.getByText(/Import Quarterly Schedule TSV/)).toBeInTheDocument();
   });
 
   it('shows Clear All Data button', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     expect(screen.getByText(/Clear All Data/)).toBeInTheDocument();
   });
 
   it('shows Debug Mode toggle', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     expect(screen.getByText(/Debug Mode/)).toBeInTheDocument();
   });
 
@@ -149,15 +147,13 @@ describe('ScheduleBuilder', () => {
 
   it('shows debug mode toggle in settings', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     expect(screen.getByText(/Debug Mode/)).toBeInTheDocument();
   });
 
   it('toggles debug mode', () => {
     renderSchedule();
-    const settingsBtn = screen.getByTitle('Schedule settings');
-    fireEvent.click(settingsBtn);
+    openScheduleTab();
     const debugBtn = screen.getByText(/Debug Mode/);
     fireEvent.click(debugBtn);
     expect(debugBtn).toHaveTextContent(/ON|OFF/);

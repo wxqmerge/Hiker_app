@@ -33,9 +33,17 @@ describe('ScheduleSettingsDropdown', () => {
     expect(screen.getByRole('tab', { name: 'About' })).toBeInTheDocument();
   });
 
-  it('shows schedule actions by default', () => {
+  it('shows about info by default', () => {
     renderMenu();
     fireEvent.click(screen.getByTitle('Schedule settings'));
+    expect(screen.getByText(/Open source/)).toBeInTheDocument();
+    expect(screen.getByText('View on GitHub')).toBeInTheDocument();
+  });
+
+  it('shows schedule actions in the Schedule tab', () => {
+    renderMenu();
+    fireEvent.click(screen.getByTitle('Schedule settings'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
     expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
     expect(screen.getByText(/Clear All Data/)).toBeInTheDocument();
   });
