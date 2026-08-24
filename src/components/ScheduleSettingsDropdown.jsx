@@ -196,6 +196,18 @@ export default function ScheduleSettingsDropdown() {
       <p className="text-xs text-gray-500 mb-3">
         Open source hike planning and scheduling tool.
       </p>
+      <div className="mb-3">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Banner Features</p>
+        <ul className="text-xs text-gray-600 space-y-0.5 list-disc list-inside">
+          <li>Weather forecast (temp, rain %)</li>
+          <li>Low tide predictions</li>
+          <li>ETC (estimated return time)</li>
+          <li>Difficulty & early start badges</li>
+          <li>GPX download / share</li>
+          <li>Trailhead directions</li>
+          <li>Trail stats (distance, elevation, ride)</li>
+        </ul>
+      </div>
       <a
         href="https://github.com/wxqmerge/Hiker_app"
         target="_blank"
