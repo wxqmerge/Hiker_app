@@ -202,6 +202,7 @@ export default function ScheduleSettingsDropdown() {
           <div><dt className="inline font-mono font-semibold">ETC</dt><dd className="inline"> — estimated return time to Sequim ± 90 min</dd></div>
           <div><dt className="inline font-mono font-semibold">TH</dt><dd className="inline"> — trailhead (Google Maps directions)</dd></div>
           <div><dt className="inline font-mono font-semibold">GPX</dt><dd className="inline"> — GPS track (download / share)</dd></div>
+          <div><dt className="inline font-mono font-semibold">Get Maps</dt><dd className="inline"> — links to a navigation app (Organic Maps / GPXSee) that opens GPX files offline</dd></div>
           <div><dt className="inline font-mono font-semibold">◆</dt><dd className="inline"> — wilderness trail</dd></div>
           <div><dt className="inline font-mono font-semibold">Tide</dt><dd className="inline"> — NOAA low tide prediction</dd></div>
           <div><dt className="inline font-mono font-semibold">Early Start</dt><dd className="inline"> — departs 30 min earlier</dd></div>
