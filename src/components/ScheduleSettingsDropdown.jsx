@@ -189,7 +189,7 @@ export default function ScheduleSettingsDropdown() {
   );
 
   const aboutTab = (
-    <div className="max-h-[70vh] overflow-y-auto py-3 px-4">
+    <div className="max-h-[84vh] overflow-y-auto py-3 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <p className="text-lg font-semibold text-gray-800 mb-2">
         Hiker Trail App v{APP_VERSION}
       </p>
