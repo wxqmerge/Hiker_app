@@ -193,7 +193,9 @@ export async function loadData(): Promise<void> {
 
   trailDetails = await loadFile('trail_details.json', {});
   lookup = await loadFile('lookup.json', { difficulties: [], parkingLevels: {} });
-  schedule = normalizeSchedule(await loadFile(getScheduleFile(), {}));
+  const scheduleFile = getScheduleFile();
+  schedule = normalizeSchedule(await loadFile(scheduleFile, {}));
+  console.log(`[DATA] Loaded schedule: ${scheduleFile} (${Object.keys(schedule).length} months)`);
   gpxIndex = await loadFile('gpx_index.json', {});
 
   // Attach gpxFile to each trail
