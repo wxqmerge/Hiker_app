@@ -21,7 +21,8 @@ import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 import { setGroupConfig, getGroupName } from './utils/config';
 import { storeApiKey, hasStoredApiKey } from './utils/apiKey';
-import SplashScreen, { hasVisited } from './components/SplashScreen';
+import SplashScreen from './components/SplashScreen';
+import { hasVisited } from './utils/visited';
 
 function ApiKeySync() {
   const { search } = useLocation();

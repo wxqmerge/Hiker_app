@@ -3,7 +3,6 @@ import {
   MONTH_NAMES,
   MONTH_ABBR,
   MONTH_ABBR_TO_FULL,
-  MONTH_FULL_TO_ABBR,
   DAY_NAMES,
   DEFAULT_FILTERS,
   DIFFICULTY_COLORS,
@@ -42,17 +41,6 @@ describe('constants', () => {
 
     it('has 12 entries', () => {
       expect(Object.keys(MONTH_ABBR_TO_FULL).length).toBe(12);
-    });
-  });
-
-  describe('MONTH_FULL_TO_ABBR', () => {
-    it('maps all full names to abbreviations', () => {
-      expect(MONTH_FULL_TO_ABBR['January']).toBe('Jan');
-      expect(MONTH_FULL_TO_ABBR['December']).toBe('Dec');
-    });
-
-    it('has 12 entries', () => {
-      expect(Object.keys(MONTH_FULL_TO_ABBR).length).toBe(12);
     });
   });
 

@@ -1,15 +1,7 @@
 import { useEffect } from 'react';
+import { markVisited } from '../utils/visited';
 
 const APP_VERSION = __APP_VERSION;
-const VISITED_KEY = 'hiker-has-visited';
-
-export function hasVisited() {
-  return localStorage.getItem(VISITED_KEY) === '1';
-}
-
-export function markVisited() {
-  localStorage.setItem(VISITED_KEY, '1');
-}
 
 export default function SplashScreen({ onDismiss }) {
   useEffect(() => {

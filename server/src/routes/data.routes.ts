@@ -6,7 +6,7 @@ import multer from 'multer';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
 import { validateGpxContent } from '../utils/gpxValidation.js';
-import { loadData, getScheduleFile, getTrails, getGpxIndex } from '../services/dataService.js';
+import { loadData, getScheduleFile, getTrails, getGpxIndex, setGpxIndex } from '../services/dataService.js';
 import { getCurrentDir } from '../utils/path.js';
 
 const __dirname = getCurrentDir(import.meta.url);
@@ -181,6 +181,8 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
     }
   }
   await fs.writeFile(path.join(DATA_DIR, 'gpx_index.json'), JSON.stringify(validGpxIndex, null, 2));
+  // Sync in-memory index so it matches the cleaned file on disk
+  setGpxIndex(validGpxIndex);
 
   const result: any = { success: true, imported, reconciled };
   if (skippedScheduleNames.length > 0) {

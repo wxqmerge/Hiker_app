@@ -12,6 +12,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { getTrailName } from '../utils/data';
 import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR_TO_FULL } from '../utils/constants';
 import { getHikeDays, getDayName, getGroupName } from '../utils/config';
+import { useHikeDays } from '../hooks/useHikeDays';
 import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth, getMonthKey } from '../utils/dateUtils';
 import { serverScheduleToStore, storeToServerSchedule, getDayEntries, normalizeServerMonthEntries } from '../utils/scheduleFormat';
 import { generateReportHtml } from '../utils/report';
@@ -34,6 +35,7 @@ export function ScheduleSettingsProvider({ children }) {
   const showToast = useToast();
   const { title: tt } = useTooltips();
   const year = selectedYear;
+  const hikeDays = useHikeDays();
 
   const [showSettings, setShowSettings] = useState(false);
   const [scheduleStore, setScheduleStore] = useState({});
@@ -208,20 +210,25 @@ export function ScheduleSettingsProvider({ children }) {
 
   const nextHikeDate = useMemo(() => {
     const today = getTodayHikeRef();
-    const hikeDays = getHikeDays();
     let earliest = null;
-    for (let m = 0; m < 12; m += 1) {
-      const monthData = scheduleStore[getMonthKey(year, m)] || {};
+    // Scan 24 months from today to handle year rollover (e.g. Dec -> Jan).
+    const startYear = today.getFullYear();
+    const startMonth = today.getMonth();
+    for (let offset = 0; offset < 24; offset += 1) {
+      const totalMonth = startMonth + offset;
+      const y = startYear + Math.floor(totalMonth / 12);
+      const m = totalMonth % 12;
+      const monthData = scheduleStore[getMonthKey(y, m)] || {};
       Object.keys(monthData).forEach(dayStr => {
         const day = parseInt(dayStr, 10);
-        const date = createDate(year, m, day);
+        const date = createDate(y, m, day);
         if (date >= today && hikeDays.includes(date.getDay()) && (!earliest || date < earliest)) {
           earliest = date;
         }
       });
     }
     return earliest;
-  }, [scheduleStore, year]);
+  }, [scheduleStore, hikeDays]);
 
   const fetchWeatherForAll = useCallback(async () => {
     if (fetchingWeather) return;
@@ -325,7 +332,10 @@ export function ScheduleSettingsProvider({ children }) {
             showToast('Import failed: ' + (result.error?.message || 'Unknown error'), 'error');
             return;
           }
-          const serverData = storeToServerSchedule(scheduleStore);
+          // Merge into the latest server schedule (not the possibly-stale local store)
+          // so we don't clobber entries added by others since the local copy loaded.
+          const latestServer = await getSchedule();
+          const serverData = storeToServerSchedule(serverScheduleToStore(latestServer));
           const excelData = result.schedule || {};
           for (const [month, entries] of Object.entries(excelData)) {
             const monthIndex = MONTH_NAMES.indexOf(month);
@@ -361,7 +371,7 @@ export function ScheduleSettingsProvider({ children }) {
       },
       onCleanup: () => setShowSettings(false),
     });
-  }, [scheduleStore, setSelectedMonth, showToast, year]);
+  }, [setSelectedMonth, showToast, year]);
 
   const importScheduleTsv = useCallback(() => {
     createFileInput({

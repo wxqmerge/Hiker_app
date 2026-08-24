@@ -10,6 +10,7 @@ import { DIFFICULTY_COLORS } from '../utils/constants';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
 import { getSeasonalInfo, sumMonthlyScores } from '../utils/score.js';
+import { calculateETC } from '../utils/etc';
 import TrailStats from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
 import LeaderEdit from './LeaderEdit';
@@ -24,26 +25,12 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
   const { title: tt } = useTooltips();
   const trailName = getTrailName(trail);
 
-  // Calculate ETC using 1.8 mph hiking speed
-  const etc = useMemo(() => {
-    if (!trail.distance || !trail.range) return null;
-    const startHour = 8;
-    const startMinute = 30;
-    let startMinutes = startHour * 60 + startMinute;
-    
-    // Apply early start adjustment
-    if (earlyStart) {
-      startMinutes -= 30;
-    }
-    
-    const travelTime = parseInt(trail.range, 10) || 0;
-    const hikeMinutes = Math.round((trail.distance / 1.8) * 60);
-    const totalMinutes = startMinutes + hikeMinutes + (travelTime * 2);
-    
-    const hours = Math.floor(totalMinutes / 60) % 24;
-    const minutes = totalMinutes % 60;
-    return `${hours}:${minutes.toString().padStart(2, '0')}`;
-  }, [trail.distance, trail.range, earlyStart]);
+  // Calculate ETC: use the actual GPX track duration when available,
+  // otherwise estimate from the longest route distance at 2 mph.
+  const etc = useMemo(
+    () => calculateETC(Math.max(trail.distance, trail.distanceExtended || 0), trail.range, earlyStart, trail.durationMinutes),
+    [trail.distance, trail.distanceExtended, trail.range, earlyStart, trail.durationMinutes]
+  );
 
   const handleLeaderClick = useCallback((e) => {
     e.stopPropagation();
@@ -175,13 +162,13 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                         <span>{weather.tideTime} · {weather.tide} ft</span>
                       </a>
                     )}
-                    {etc && (
-                      <div className="flex items-center gap-1 text-gray-700" title="Estimated Time to return to Sequim parking ± 90min">
-                        <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        <span>ETC {etc}</span>
-                      </div>
-                    )}
                   </>
+                )}
+                {etc && (
+                  <div className="flex items-center gap-1 text-gray-700" title="Estimated Time to return to Sequim parking ± 90min">
+                    <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <span>ETC {etc}</span>
+                  </div>
                 )}
                {leader && !onLeaderChange ? (
                   <div className="flex items-center gap-1 text-gray-700">

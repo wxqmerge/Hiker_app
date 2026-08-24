@@ -90,7 +90,7 @@ export default function TrailDetail() {
   const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
 
   const trailDetailsResult = useMemo(() => getTrailDetailsById(trailDetails, id), [trailDetails, id]);
-  const { handleGpxShare } = useGpxActions(trail);
+  const { handleGpxShare, handleGpxDownload } = useGpxActions(trail);
 
   const availableMonthsFromSeasonal = useMemo(() => getAvailableMonthsFromSeasonal(trail?.seasonal), [trail]);
 
@@ -135,6 +135,7 @@ export default function TrailDetail() {
     }
     if (field === 'gpxData') return (editedFields.gpxData ?? trail.gpxData) || '';
     if (field === 'tideStationId') return editedFields.tideStationId ?? trail.tideStationId;
+    if (field === 'durationMinutes') return editedFields.durationMinutes ?? trail.durationMinutes;
 
     return null;
   };
@@ -855,13 +856,42 @@ export default function TrailDetail() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Hike Duration (minutes)</label>
-                    <input
-                      type="number"
-                      value={getEditedValue('durationMinutes') != null ? getEditedValue('durationMinutes') : ''}
-                      onChange={(e) => updateField('durationMinutes', e.target.value ? parseInt(e.target.value, 10) : '')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                      placeholder="From GPX or manual"
-                    />
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="number"
+                        value={getEditedValue('durationMinutes') != null ? getEditedValue('durationMinutes') : ''}
+                        onChange={(e) => updateField('durationMinutes', e.target.value ? parseInt(e.target.value, 10) : '')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                        placeholder="From GPX or manual"
+                      />
+                      {(() => {
+                        const dist = Math.max(Number(getEditedValue('distance')) || 0, Number(getEditedValue('distanceExtended')) || 0);
+                        const gpx = Number(getEditedValue('durationMinutes')) || 0;
+                        const min = (dist / 2.2) * 60;
+                        const max = (dist / 1.1) * 60;
+                        const used = gpx > 0 ? Math.min(Math.max(gpx, min), max) : min;
+                        const source = gpx === 0 ? 'min' : gpx < min ? 'min' : gpx > max ? 'max' : 'gpx';
+                        return (
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs text-gray-500 whitespace-nowrap pt-1">
+                              <div>min: {min.toFixed(0)}m</div>
+                              <div>max: {max.toFixed(0)}m</div>
+                              <div>gpx: {gpx || '—'}m</div>
+                              <div className={source === 'gpx' ? 'text-green-600 font-medium' : ''}>
+                                → {used.toFixed(0)}m ({source})
+                              </div>
+                            </div>
+                            <button
+                              onClick={handleGpxDownload}
+                              className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 whitespace-nowrap"
+                              title="Download GPX file"
+                            >
+                              .gpx
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </div>
                     <p className="text-xs text-gray-500 mt-1">Auto-calculated from GPX if available. Edit to override.</p>
                   </div>
                 </div>

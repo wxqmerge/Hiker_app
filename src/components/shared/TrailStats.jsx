@@ -15,8 +15,8 @@ export default function TrailStats({ trail, className = '', itemClassName = '', 
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
         <span>
-          {trail.distance?.toFixed(1) || 'N/A'} mi
-          {trail.distanceExtended && ` / ${trail.distanceExtended.toFixed(1)} mi`}
+          {trail.distance != null ? Number(trail.distance).toFixed(1) : 'N/A'} mi
+          {trail.distanceExtended != null && ` / ${Number(trail.distanceExtended).toFixed(1)} mi`}
         </span>
       </div>
 
@@ -59,7 +59,17 @@ export default function TrailStats({ trail, className = '', itemClassName = '', 
           <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>{trail.duration}</span>
+          <span>
+            {trail.duration}
+            {(() => {
+              const dist = Math.max(trail.distance || 0, trail.distanceExtended || 0);
+              const gpx = trail.durationMinutes;
+              if (gpx == null || gpx <= 0 || dist <= 0) return null;
+              const min = (dist / 2.2) * 60;
+              const max = (dist / 1.1) * 60;
+              return gpx >= min && gpx <= max ? <span className="text-xs opacity-60 ml-0.5">x</span> : null;
+            })()}
+          </span>
         </div>
       )}
     </div>

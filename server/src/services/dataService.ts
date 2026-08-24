@@ -6,6 +6,7 @@ import { getCurrentDir } from '../utils/path.js';
 import { MONTH_ABBR, resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { generateEtag } from '../utils/etag.js';
 import { isSafeGpxFilename } from '../utils/gpxValidation.js';
+import { extractDurationFromGpxContent } from '../utils/gpxDuration.js';
 
 // Cache for GPX durations
 const durationCache = new Map<string, { minutes: number; formatted: string }>();
@@ -17,31 +18,10 @@ async function extractDurationFromGpx(gpxPath: string): Promise<{ minutes: numbe
   
   try {
     const content = await fs.readFile(gpxPath, 'utf-8');
-    // Extract all <time> elements from <trkpt>
-    const timePattern = /<trkpt[^>]*>[\s\S]*?<time>([^<]+)<\/time>/g;
-    const times: string[] = [];
-    let match;
-    while ((match = timePattern.exec(content)) !== null) {
-      times.push(match[1]);
+    const result = extractDurationFromGpxContent(content);
+    if (result) {
+      durationCache.set(gpxPath, result);
     }
-    
-    if (times.length < 2) {
-      return null;
-    }
-    
-    const firstTime = new Date(times[0]);
-    const lastTime = new Date(times[times.length - 1]);
-    const durationMs = lastTime.getTime() - firstTime.getTime();
-    const minutes = Math.max(0, Math.round(durationMs / 60000));
-    
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    const formatted = hours > 0 
-      ? `${hours}h ${mins}m` 
-      : `${mins}m`;
-    
-    const result = { minutes, formatted };
-    durationCache.set(gpxPath, result);
     return result;
   } catch (error) {
     console.warn(`[DATA] Could not extract duration from ${gpxPath}:`, (error as Error).message);
@@ -255,6 +235,7 @@ async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: st
     const gpxFileName = getGpxUploadFileName(trailId);
     const gpxFilePath = path.join(GPX_UPLOAD_DIR, gpxFileName);
     await fs.writeFile(gpxFilePath, gpxData, 'utf-8');
+    durationCache.delete(gpxFilePath);
     gpxIndex[trailId] = gpxFileName;
     return true;
   }
@@ -265,6 +246,7 @@ async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: st
   if (gpxFileRemoved || gpxData === '') {
     const oldGpxFile = gpxIndex[trailId];
     if (oldGpxFile && isSafeGpxFilename(oldGpxFile)) {
+      durationCache.delete(path.join(GPX_UPLOAD_DIR, oldGpxFile));
       try {
         await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile));
       } catch {
@@ -427,6 +409,10 @@ export async function updateSchedule(newSchedule: ScheduleData): Promise<void> {
 
 export function getGpxIndex(): Record<string, string> {
   return { ...gpxIndex };
+}
+
+export function setGpxIndex(index: Record<string, string>): void {
+  gpxIndex = index;
 }
 
 export function getGpxFileName(trailId: string): string | undefined {

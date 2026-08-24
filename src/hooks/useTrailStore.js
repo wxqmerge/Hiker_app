@@ -209,7 +209,20 @@ export function useTrailStore() {
       await api.updateTrailDetail(id, { ...existing, ...detail });
     }
 
-    setState([...importedTrails], JSON.parse(JSON.stringify(importedDetails)), false, _lookup, _schedule);
+    // Upsert imported trails into the existing local list (preserve unimported trails)
+    const trailMap = new Map(_trails.map(t => [t.id, t]));
+    for (const trail of importedTrails) {
+      trailMap.set(trail.id, trail);
+    }
+    const mergedTrails = [...trailMap.values()];
+
+    // Field-level merge imported details into existing (preserve unimported details)
+    const mergedDetails = { ..._trailDetails };
+    for (const [id, detail] of Object.entries(importedDetails)) {
+      mergedDetails[id] = { ...mergedDetails[id], ...detail };
+    }
+
+    setState(mergedTrails, mergedDetails, false, _lookup, _schedule);
   }, []);
 
   return {

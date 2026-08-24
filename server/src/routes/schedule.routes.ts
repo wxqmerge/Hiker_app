@@ -7,6 +7,7 @@ import { withErrorTag } from '../middleware/error.middleware.js';
 import { validateXlsBuffer, processXlsImport } from '../utils/xlsImport.js';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { getCurrentDir } from '../utils/path.js';
 import { resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { etagMatches } from '../utils/etagCompare.js';
@@ -89,6 +90,8 @@ router.post('/history/restore', requireAdminKey, withErrorTag('SCHEDULE')(async 
 }));
  
 router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, res) => {
+  // Unique temp filename per request to avoid concurrent import races.
+  const tmpPath = path.join(PROJECT_ROOT, `tmp_upload_${crypto.randomUUID()}.xls`);
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
@@ -98,7 +101,6 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
       return res.status(400).json({ success: false, error: { message: 'Invalid file format. Only XLS files are accepted.' } });
     }
 
-    const tmpPath = path.join(PROJECT_ROOT, 'tmp_upload.xls');
     fs.writeFileSync(tmpPath, req.file.buffer);
 
     const trailsPath = path.join(PROJECT_ROOT, 'exported_data/trails.json');
@@ -130,7 +132,7 @@ router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, r
   } catch (error) {
     console.error('[SCHEDULE] Error importing XLS:', error);
     try {
-      fs.unlinkSync(path.join(PROJECT_ROOT, 'tmp_upload.xls'));
+      fs.unlinkSync(tmpPath);
     } catch { /* ignore */ }
     res.status(500).json({ success: false, error: { message: 'Failed to import Excel file' } });
   }

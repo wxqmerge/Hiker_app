@@ -34,7 +34,9 @@ export default function MonthlyScoreGrid({ monthly, availableMonths = [], season
       months={MONTH_ABBR}
       className="flex gap-1.5 flex-wrap"
       renderMonth={(month, idx) => {
-        const { hikeCount, score, quarterBase, monthBase, scheduleBase } = scores[idx];
+        const entry = scores[idx];
+        if (!entry) return null;
+        const { hikeCount, score, quarterBase, monthBase, scheduleBase } = entry;
         const intensity = Math.min(score / 9, 1);
         const bg = score > 0 ? `rgba(34, 197, 94, ${0.15 + intensity * 0.7})` : 'bg-gray-100';
         const text = score > 0 ? 'text-green-800' : 'text-gray-400';
@@ -74,7 +76,9 @@ export function ScoreBreakdownRow({ monthly, availableMonths = [], seasonal }) {
     <MonthGrid
       months={MONTH_ABBR}
       renderMonth={(month, idx) => {
-        const { score, quarterBase, monthBase, scheduleBase } = scores[idx];
+        const entry = scores[idx];
+        if (!entry) return null;
+        const { score, quarterBase, monthBase, scheduleBase } = entry;
         return (
           <div key={idx} className="flex flex-col items-center min-w-[40px]">
             <span className="text-[9px] text-gray-400 leading-tight">

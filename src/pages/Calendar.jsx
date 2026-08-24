@@ -8,11 +8,9 @@ import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
-import MoveHikeModal from '../components/MoveHikeModal';
 import { updateSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
-import { updateLeader } from '../utils/scheduleActions';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { useScheduleWeather } from '../hooks/useScheduleWeather';
@@ -33,7 +31,6 @@ export default function Calendar() {
   const hasSyncedInitialMonth = useRef(false);
   const hasApiKey = useApiKey();
   const [pendingSwap, setPendingSwap] = useState(null);
-  const [moveSource, setMoveSource] = useState(null);
 
   const dayWeatherMap = useScheduleWeather({ schedule: scheduleData, selectedMonth, trails, year });
 
@@ -46,13 +43,10 @@ export default function Calendar() {
 
   const {
     assignedHikes,
-    hikeDates,
     findTrailById,
     trailIndexToId,
     dragData,
     setDragData,
-    handleDragStart,
-    handleDragEnd,
   } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
 
 
@@ -76,14 +70,9 @@ export default function Calendar() {
     }
   }, [showToast]);
 
-  const handleLeaderChange = useCallback(async (day, slotIdx, newLeader) => {
-    await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader, year);
-  }, [selectedMonth, scheduleStore, year]);
-
   const {
     confirmSwap,
     cancelSwap,
-    moveHike,
   } = useScheduleDragDrop({
     scheduleStore,
     selectedMonth,
@@ -124,18 +113,7 @@ export default function Calendar() {
         weatherMap={dayWeatherMap}
       />
 
-      {/* MoveHikeModal disabled for viewing only */}
-      {/* <MoveHikeModal
-        open={!!moveSource}
-        source={moveSource}
-        hikeDates={hikeDates}
-        assignedHikes={assignedHikes}
-        findTrailById={findTrailById}
-        year={year}
-        selectedMonth={selectedMonth}
-        onMove={moveHike}
-        onClose={() => setMoveSource(null)}
-      /> */}
+      {/* Move functionality is disabled in the Calendar view (viewing only). */}
 
       <SwapConfirmationModal
         pendingSwap={pendingSwap}

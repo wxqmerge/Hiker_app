@@ -17,10 +17,6 @@ export const MONTH_ABBR_TO_FULL = Object.fromEntries(
   MONTH_ABBR.map((abbr, i) => [abbr, MONTH_NAMES[i]])
 );
 
-export const MONTH_FULL_TO_ABBR = Object.fromEntries(
-  MONTH_NAMES.map((name, i) => [name, MONTH_ABBR[i]])
-);
-
 export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const DEFAULT_FILTERS = {

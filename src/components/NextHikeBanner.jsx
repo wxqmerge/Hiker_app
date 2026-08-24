@@ -4,6 +4,7 @@ import { DAY_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getTrailName } from '../utils/data';
 import { openWeatherForTrail, fetchWeatherAndTide } from '../utils/io';
 import { getGpx } from '../api/client';
+import { calculateETC } from '../utils/etc';
 import { useGpxActions } from '../hooks/useGpxActions';
 import TrailStats from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
@@ -60,29 +61,9 @@ function NextHikeCard({ hike, idx, weather }) {
   const handleWeather = useCallback(() => openWeatherForTrail(getGpx, hike.trailId), [hike.trailId]);
   const displayHikeName = getTrailName(hike.trail);
 
-  // Calculate Estimated Completion Time using 1.8 mph hiking speed
-  const calculateETC = () => {
-    if (!trail.distance || !trail.range) return null;
-    
-    const startHour = 8;
-    const startMinute = 30;
-    let startMinutes = startHour * 60 + startMinute;
-    
-    // Early start: 30 minutes earlier
-    if (hike.earlyStart) {
-      startMinutes -= 30;
-    }
-    
-    const travelTime = parseInt(trail.range, 10) || 0;
-    const hikeMinutes = Math.round((trail.distance / 1.8) * 60);
-    const totalMinutes = startMinutes + hikeMinutes + (travelTime * 2);
-    
-    const hours = Math.floor(totalMinutes / 60) % 24;
-    const minutes = totalMinutes % 60;
-    return `${hours}:${minutes.toString().padStart(2, '0')}`;
-  };
-  
-  const etc = calculateETC();
+  // Calculate Estimated Completion Time: use the actual GPX track duration when
+  // available, otherwise estimate from the longest route distance at 2 mph.
+  const etc = calculateETC(Math.max(trail.distance, trail.distanceExtended || 0), trail.range, hike.earlyStart, trail.durationMinutes);
 
   return (
           <div className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>

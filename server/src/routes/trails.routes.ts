@@ -22,36 +22,9 @@ import {
   whitelistTrailDetailFields,
 } from '../middleware/validation.middleware.js';
 import { extractFirstCoordinateFromGpx } from '../utils/gpxCoord.js';
+import { extractDurationFromGpxContent } from '../utils/gpxDuration.js';
 import { sendWithEtag } from '../utils/etag.js';
 import { getCurrentDir } from '../utils/path.js';
-
-function extractDurationFromGpx(content: string): { minutes: number; formatted: string } | null {
-  const timePattern = /<trkpt[^>]*>[\s\S]*?<time>([^<]+)<\/time>/g;
-  const times: string[] = [];
-  let match;
-  while ((match = timePattern.exec(content)) !== null) {
-    times.push(match[1]);
-  }
-  
-  if (times.length < 2) return null;
-  
-  try {
-    const firstTime = new Date(times[0]);
-    const lastTime = new Date(times[times.length - 1]);
-    const durationMs = lastTime.getTime() - firstTime.getTime();
-    const minutes = Math.max(0, Math.round(durationMs / 60000));
-    
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    const formatted = hours > 0 
-      ? `${hours}h ${mins}m` 
-      : `${mins}m`;
-    
-    return { minutes, formatted };
-  } catch {
-    return null;
-  }
-}
 
 const __dirname = getCurrentDir(import.meta.url);
 const GPX_DIR = path.join(__dirname, '../../../GPX');
@@ -168,7 +141,7 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
   // Update trail with gpxFile and extracted trailhead coordinates
   const whitelisted = whitelistTrailFields(req.body);
   const coord = extractFirstCoordinateFromGpx(content);
-  const duration = extractDurationFromGpx(content);
+  const duration = extractDurationFromGpxContent(content);
   const trailUpdates: any = {
     gpxFile: gpxFileName,
     hasGpx: true,

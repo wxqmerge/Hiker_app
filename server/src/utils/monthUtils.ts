@@ -4,10 +4,6 @@ export const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June
 
 const YEAR_MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-export function isYearMonthKey(key: string): boolean {
-  return YEAR_MONTH_KEY.test(key);
-}
-
 export function resolveScheduleMonthKey(key: string, defaultYear: number = new Date().getFullYear()): string | null {
   if (typeof key !== 'string') return null;
   const trimmed = key.trim();
