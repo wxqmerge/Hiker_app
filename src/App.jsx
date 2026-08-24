@@ -42,7 +42,10 @@ function ApiKeySync() {
 function App() {
   const showToast = useToast();
   const [isConfigLoaded, setIsConfigLoaded] = useState(!!getGroupName());
-  const [showSplash, setShowSplash] = useState(() => !hasStoredApiKey() && !hasVisited());
+  const [showSplash, setShowSplash] = useState(() => {
+    if (new URLSearchParams(window.location.search).has('apikey')) return false;
+    return !hasStoredApiKey() && !hasVisited();
+  });
 
   useEffect(() => {
     request('/api/schedule/group').then(data => {
