@@ -23,7 +23,7 @@ export default function ScheduleSettingsDropdown() {
     handleReload, clearSchedule,
   } = useScheduleSettings();
   const trailActions = useTrailActions();
-  const [activeTab, setActiveTab] = useState('schedule');
+  const [activeTab, setActiveTab] = useState('about');
 
   if (!fetchWeatherForAll) return null;
 
