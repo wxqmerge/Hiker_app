@@ -538,22 +538,16 @@ export function ScheduleSettingsProvider({ children }) {
         return;
       }
 
-      // Merge imported month entries into the selected year while preserving other years.
+      // Overwrite imported month entries in the selected year, preserving other months.
       const current = await getSchedule();
       const merged = { ...current };
       for (const [month, entries] of Object.entries(schedule)) {
         const monthIndex = MONTH_NAMES.indexOf(month);
         if (monthIndex < 0) continue;
         const monthKey = getMonthKey(year, monthIndex);
-        const existing = Array.isArray(merged[monthKey]) ? [...merged[monthKey]] : [];
-        const existingDays = new Set(existing.map(e => e.day));
-        for (const entry of entries) {
-          if (!existingDays.has(entry.day) && entry.trail_id) {
-            existing.push(entry);
-          }
-        }
-        existing.sort((a, b) => a.day - b.day || a.slot - b.slot);
-        merged[monthKey] = existing;
+        const valid = entries.filter(e => e.trail_id);
+        valid.sort((a, b) => a.day - b.day || a.slot - b.slot);
+        merged[monthKey] = valid;
       }
       const result = await updateSchedule(merged);
       if (!result.success) {
