@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [react()],
   server: {
     port: 5173,
+    allowedHosts: ['browse.localhost'],
     proxy: {
       '/api': {
         target: `http://localhost:${process.env.PORT || 3000}`, // eslint-disable-line no-undef
