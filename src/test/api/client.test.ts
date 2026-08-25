@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { request, getTrails, getGpx, uploadGpxFile, updateTrail, deleteTrail, getTrailDetails, updateTrailDetail, getLookup, getSchedule, updateSchedule, importScheduleFromXls, getScheduleHistory, restoreSchedule, ensureScheduleWritable, reloadSchedule, exportDataZip, importDataZip } from '../../api/client';
+import { request, getTrails, getGpx, uploadGpxFile, updateTrail, deleteTrail, getTrailDetails, updateTrailDetail, getLookup, getSchedule, updateSchedule, getScheduleHistory, restoreSchedule, ensureScheduleWritable, reloadSchedule, exportDataZip, importDataZip } from '../../api/client';
 
 vi.mock('../../utils/url', () => ({
   getApiBase: () => 'http://test.local',
@@ -378,24 +378,6 @@ describe('uploadGpxFile', () => {
     await uploadGpxFile('trail-1', file);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/trails/gpx/trail-1'),
-      expect.objectContaining({ method: 'POST' })
-    );
-  });
-});
-
-describe('importScheduleFromXls', () => {
-  it('sends POST request with FormData', async () => {
-    (globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ success: true }),
-      headers: { get: () => null },
-      status: 200,
-    });
-    const { importScheduleFromXls } = await import('../../api/client');
-    const file = new File(['test'], 'test.xls', { type: 'application/vnd.ms-excel' });
-    await importScheduleFromXls(file);
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/schedule/import-xls'),
       expect.objectContaining({ method: 'POST' })
     );
   });

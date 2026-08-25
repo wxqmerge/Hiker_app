@@ -4,7 +4,7 @@ import { DAY_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getTrailName } from '../utils/data';
 import { openWeatherForTrail, fetchWeatherAndTide } from '../utils/io';
 import { getGpx } from '../api/client';
-import { calculateETC } from '../utils/etc';
+import { calculateETC, normalizeStartOffset, START_OFFSET_OPTIONS } from '../utils/etc';
 import { useGpxActions } from '../hooks/useGpxActions';
 import TrailStats from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
@@ -78,9 +78,15 @@ function NextHikeCard({ hike, idx, weather }) {
                     <span className={`px-3 py-1 rounded-full text-base font-medium ${DIFFICULTY_COLORS[trail.difficulty] || 'bg-gray-100 text-gray-800'}`}>
                       {trail.difficulty}
                     </span>
-                    {hike.earlyStart && (
-                      <span className="px-3 py-1 rounded-full text-base font-medium bg-orange-500 text-white">Early Start</span>
-                    )}
+                    {(() => {
+                      const offset = normalizeStartOffset(hike.earlyStart);
+                      if (offset === 0) return null;
+                      const opt = START_OFFSET_OPTIONS.find(o => o.value === offset);
+                      const label = opt ? opt.label : `${offset > 0 ? '+' : ''}${offset}m`;
+                      return (
+                        <span className={`px-3 py-1 rounded-full text-base font-medium ${offset > 0 ? 'bg-green-700' : 'bg-orange-500'} text-white`}>{label}</span>
+                      );
+                    })()}
                   </div>
                 </div>
                 <Link

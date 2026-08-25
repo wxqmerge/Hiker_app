@@ -66,7 +66,7 @@ function normalizeEntry(entry: any): any {
     day,
     slot: entry.slot !== undefined ? (typeof entry.slot === 'string' ? parseInt(entry.slot, 10) : entry.slot) : 0,
     trail_id: String(entry.trail_id || ''),
-    early_start: !!entry.early_start,
+    early_start: entry.early_start === true ? -30 : entry.early_start === false || entry.early_start == null ? 0 : Number(entry.early_start) || 0,
     leader: String(entry.leader || ''),
   };
 }
@@ -86,7 +86,7 @@ function normalizeSchedule(schedule: any): ScheduleData {
       const entries = value.map(normalizeEntry).filter((e): e is NonNullable<typeof e> => e !== null);
       if (entries.length > 0) result[monthKey] = entries;
     }
-    // Case 2: Dict of day→entry (import_schedule_xls.py format)
+    // Case 2: Dict of day→entry
     else if (value && typeof value === 'object' && !('day' in value)) {
       const entries: any[] = [];
       for (const [dayStr, dayEntry] of Object.entries(value)) {

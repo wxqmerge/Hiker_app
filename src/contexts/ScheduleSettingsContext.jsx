@@ -15,9 +15,10 @@ import { getHikeDays, getDayName, getGroupName, slotLetter } from '../utils/conf
 import { useHikeDays } from '../hooks/useHikeDays';
 import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth, getMonthKey } from '../utils/dateUtils';
 import { serverScheduleToStore, storeToServerSchedule, getDayEntries, normalizeServerMonthEntries } from '../utils/scheduleFormat';
+import { extractStartOffset } from '../utils/etc';
 import { generateReportHtml } from '../utils/report';
 import { downloadBlob, createFileInput, fetchWeatherAndTide, openHtmlInNewTab } from '../utils/io';
-import { importScheduleFromXls, updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule } from '../api/client';
+import { updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule } from '../api/client';
 
 const ScheduleSettingsContext = createContext({});
 
@@ -30,7 +31,7 @@ async function loadSchedule() {
 
 export function ScheduleSettingsProvider({ children }) {
   const { trails, schedule: scheduleData, trailDetails } = useTrails();
-  const { selectedMonth, setSelectedMonth, selectedYear } = useMonthContext();
+  const { selectedMonth, selectedYear } = useMonthContext();
   const hasApiKey = useApiKey();
   const showToast = useToast();
   const { title: tt } = useTooltips();
@@ -328,62 +329,6 @@ export function ScheduleSettingsProvider({ children }) {
     }
   }, [scheduleStore, trails, showToast]);
 
-  const importFromExcel = useCallback(() => {
-    createFileInput({
-      accept: '.xls,.xlsx',
-      onFile: async (file) => {
-        try {
-          const result = await importScheduleFromXls(file);
-          if (!result.success) {
-            showToast('Import failed: ' + (result.error?.message || 'Unknown error'), 'error');
-            return;
-          }
-          // Merge into the latest server schedule (not the possibly-stale local store)
-          // so we don't clobber entries added by others since the local copy loaded.
-          const latestServer = await getSchedule();
-          const serverData = storeToServerSchedule(serverScheduleToStore(latestServer));
-          const excelData = result.schedule || {};
-          for (const [month, entries] of Object.entries(excelData)) {
-            const monthIndex = MONTH_NAMES.indexOf(month);
-            if (monthIndex < 0) continue;
-            const monthKey = getMonthKey(year, monthIndex);
-            if (!serverData[monthKey]) serverData[monthKey] = [];
-            const existingDayTrails = new Map();
-            for (const e of serverData[monthKey]) {
-              if (!existingDayTrails.has(e.day)) existingDayTrails.set(e.day, new Set());
-              existingDayTrails.get(e.day).add(e.trail_id);
-            }
-            for (const [day, entry] of Object.entries(entries)) {
-              const dayNum = parseInt(day, 10);
-              if (!entry.trail_id) continue;
-              const dayTrails = existingDayTrails.get(dayNum);
-              if (dayTrails && dayTrails.has(entry.trail_id)) continue;
-              serverData[monthKey].push({ day: dayNum, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
-            }
-            serverData[monthKey].sort((a, b) => a.day - b.day);
-          }
-          await updateSchedule(serverData);
-          if (result.months.length > 0) {
-            const firstMonth = MONTH_NAMES.indexOf(result.months[0]);
-            if (firstMonth >= 0) setSelectedMonth(firstMonth);
-          }
-          let msg = `Imported ${result.matched} hikes across ${result.months.length} month(s): ${result.months.join(', ')}.\n`;
-          if (result.unmatched > 0) {
-            msg += `\n${result.unmatched} hike(s) could not be matched to a trail.\n`;
-            if (result.unmatchedDetails?.length) {
-              msg += 'Unmatched: ' + result.unmatchedDetails.slice(0, 5).map(u => u.hike).join(', ');
-              if (result.unmatched > 5) msg += '...';
-            }
-          }
-          showToast(msg, 'success');
-        } catch (err) {
-          showToast('Import error: ' + err.message, 'error');
-        }
-      },
-      onCleanup: () => setShowSettings(false),
-    });
-  }, [setSelectedMonth, showToast, year]);
-
   const importScheduleTsv = useCallback(() => {
     createFileInput({
       accept: '.tsv,.txt',
@@ -546,9 +491,9 @@ export function ScheduleSettingsProvider({ children }) {
               trail = bestMatch;
             }
             if (trail) {
-              const hasEarlyStart = /\(early start\)/i.test(hikeName);
+              const startOffset = extractStartOffset(hikeName);
               const slot = cg.slot ?? 0;
-              schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: hasEarlyStart ? -30 : 0 });
+              schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: startOffset });
               matchedCount++;
             } else {
               console.log('[TSV Import] Unmatched:', hikeName);
@@ -771,7 +716,7 @@ export function ScheduleSettingsProvider({ children }) {
     assignedHikes, hikeDates, findTrailById, trailIndexToId,
     fetchWeatherForAll,
     handleExport, exportExcelSchedule,
-    importFromExcel, importScheduleTsv,
+    importScheduleTsv,
     openHistory, closeHistory,
     verifyServerSchedule,
     handleReload, clearSchedule, doClearSchedule,

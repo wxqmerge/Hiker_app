@@ -1,13 +1,10 @@
 import { Router } from 'express';
-import multer from 'multer';
 import { getSchedule, updateSchedule, loadData, getScheduleHistory, restoreScheduleByTimestamp, getScheduleVersion } from '../services/dataService.js';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { ScheduleSchema, RestoreTimestampSchema } from '../middleware/validation.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
-import { validateXlsBuffer, processXlsImport } from '../utils/xlsImport.js';
 import fs from 'fs';
 import path from 'path';
-import crypto from 'crypto';
 import { getCurrentDir } from '../utils/path.js';
 import { etagMatches } from '../utils/etagCompare.js';
 
@@ -22,8 +19,6 @@ router.get('/group', (_req, res) => {
     hikeDays: process.env.HIKE_DAYS || '3,5'
   });
 });
-
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 } });
 
 router.post('/reload', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
   await loadData();
@@ -81,55 +76,6 @@ router.post('/history/restore', requireAdminKey, withErrorTag('SCHEDULE')(async 
   res.json({ success: true, schedule: restored });
 }));
  
-router.post('/import-xls', requireAdminKey, upload.single('file'), async (req, res) => {
-  // Unique temp filename per request to avoid concurrent import races.
-  const tmpPath = path.join(PROJECT_ROOT, `tmp_upload_${crypto.randomUUID()}.xls`);
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
-    }
-
-    if (!validateXlsBuffer(req.file.buffer)) {
-      return res.status(400).json({ success: false, error: { message: 'Invalid file format. Only XLS files are accepted.' } });
-    }
-
-    fs.writeFileSync(tmpPath, req.file.buffer);
-
-    const trailsPath = path.join(PROJECT_ROOT, 'exported_data/trails.json');
-
-    try {
-      const result = await processXlsImport(
-        tmpPath,
-        path.join(PROJECT_ROOT, 'import_schedule_xls.py'),
-        trailsPath
-      );
-      await loadData();
-      res.json(result);
-    } catch (pyError) {
-      const err = pyError as Error & { stderr?: string };
-      console.error('[SCHEDULE] Python script failed:', err.stderr || err.message);
-      if (err.stderr?.includes('No module named')) {
-        return res.status(500).json({
-          success: false,
-          error: { message: 'Python dependency missing. Contact administrator.' }
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        error: { message: 'Python script failed. Contact administrator.' }
-      });
-    } finally {
-      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
-    }
-  } catch (error) {
-    console.error('[SCHEDULE] Error importing XLS:', error);
-    try {
-      fs.unlinkSync(tmpPath);
-    } catch { /* ignore */ }
-    res.status(500).json({ success: false, error: { message: 'Failed to import Excel file' } });
-  }
-});
-
 router.get('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
   const dataDir = path.join(PROJECT_ROOT, 'exported_data');
   const files = await fs.promises.readdir(dataDir);

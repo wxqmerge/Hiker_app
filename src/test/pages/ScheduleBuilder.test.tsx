@@ -76,12 +76,6 @@ describe('ScheduleBuilder', () => {
     expect(screen.getByText('Export Quarterly Schedule')).toBeInTheDocument();
   });
 
-  it('shows Import SOTHH Schedule.xls button', () => {
-    renderSchedule();
-    openScheduleTab();
-    expect(screen.getByText(/Import SOTHH Schedule\.xls/)).toBeInTheDocument();
-  });
-
   it('shows Import Quarterly Schedule TSV button', () => {
     renderSchedule();
     openScheduleTab();

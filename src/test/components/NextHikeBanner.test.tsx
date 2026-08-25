@@ -100,7 +100,7 @@ describe('NextHikeBanner', () => {
   it('renders early start badge', () => {
     const hikesWithEarly = [{ ...nextHikes[0], earlyStart: true }];
     render(<NextHikeBanner nextHikes={hikesWithEarly} />);
-    expect(screen.getByText('Early Start')).toBeInTheDocument();
+    expect(screen.getByText('8:00 AM (30m early)')).toBeInTheDocument();
   });
 
   it('renders distance', () => {

@@ -147,16 +147,6 @@ export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
   });
 }
 
-export async function importScheduleFromXls(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  return request('/api/schedule/import-xls', {
-    method: 'POST',
-    body: formData,
-    apiKey: true,
-  });
-}
-
 export async function getScheduleHistory() {
   return request('/api/schedule/history');
 }

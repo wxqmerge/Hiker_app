@@ -38,6 +38,22 @@ export function normalizeStartOffset(earlyStart) {
   return Number(earlyStart) || 0;
 }
 
+/**
+ * Extract start offset (minutes from 8:30) from a hike name string.
+ * Handles: "(Early Start)" → -30, "(Late Start)" → +30,
+ *         "(30m early)" → -30, "(60m late)" → +60, etc.
+ * Returns 0 if no start marker found.
+ */
+export function extractStartOffset(hikeName) {
+  if (!hikeName) return 0;
+  const s = hikeName.toLowerCase();
+  if (/\(early start\)/.test(s)) return -30;
+  if (/\(late start\)/.test(s)) return 30;
+  const m = s.match(/\((\d+)m\s+(early|late)\)/);
+  if (m) return m[2] === 'early' ? -parseInt(m[1], 10) : parseInt(m[1], 10);
+  return 0;
+}
+
 export function calculateETC(distance, range, earlyStart, durationMinutes) {
   const travel = Math.max(range || 0, 0);
   const offset = normalizeStartOffset(earlyStart);

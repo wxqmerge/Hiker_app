@@ -281,7 +281,7 @@ export default function ScheduleBuilder() {
                                       <span className="text-base font-semibold text-gray-900 truncate">
                                         {displayHikeName}
                                       </span>
-                                       {earlyStart !== 0 && <span className="text-orange-500 text-sm" title={`Start offset: ${earlyStart > 0 ? '+' : ''}${earlyStart}m`}>{earlyStart > 0 ? `+${earlyStart}m` : `${earlyStart}m`}</span>}
+                                       {earlyStart !== 0 && <span className={`text-sm font-bold ${earlyStart > 0 ? 'text-green-700' : 'text-orange-500'}`} title={`Start offset: ${earlyStart > 0 ? '+' : ''}${earlyStart}m`}>{earlyStart > 0 ? `+${earlyStart}m` : `${earlyStart}m`}</span>}
                                      </div>
                                       {!trailId && (
                                        <div className="text-xs text-gray-400 italic mt-0.5">
