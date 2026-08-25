@@ -127,7 +127,7 @@ describe('ScheduledCards', () => {
       assignedHikes: { 1: [{ trail_id: 'trail-1', early_start: true, leader: null }] },
     };
     render(<ScheduledCards {...hikeProps} />);
-    expect(screen.getByText('⏰')).toBeInTheDocument();
+    expect(screen.getByText('8:00 AM (30m early)')).toBeInTheDocument();
   });
 
   it('renders leader info', () => {

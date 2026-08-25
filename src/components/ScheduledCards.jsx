@@ -3,6 +3,7 @@ import { MONTH_NAMES } from '../utils/constants';
 import TrailCard from './TrailCard';
 import { createDate, getHikeDaysForMonth } from '../utils/dateUtils';
 import { getDayLabel } from '../utils/config';
+import { normalizeStartOffset, START_OFFSET_OPTIONS } from '../utils/etc';
 import { useHikeDays } from '../hooks/useHikeDays';
 
 export default function ScheduledCards({
@@ -107,11 +108,17 @@ export default function ScheduledCards({
                   {item.day}
                   <span className="text-[8px]">{getDayLabel(createDate(year, selectedMonth, item.day).getDay())}</span>
                 </div>
-                  {item.earlyStart && (
-                    <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center" title="Early Start" role="img" aria-label="Early start">
-                     ⏰
-                    </div>
-                  )}
+                  {(() => {
+                    const offset = normalizeStartOffset(item.earlyStart);
+                    if (offset === 0) return null;
+                    const opt = START_OFFSET_OPTIONS.find(o => o.value === offset);
+                    const label = opt ? opt.label : `${offset > 0 ? '+' : ''}${offset}m`;
+                    return (
+                      <div className={`absolute top-2 left-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded ${offset > 0 ? 'bg-green-700' : 'bg-orange-500'}`} title={label} role="img" aria-label={label}>
+                        {label}
+                      </div>
+                    );
+                  })()}
                   {onRequestMove && (
                     <button
                       type="button"
