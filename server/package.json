@@ -1,6 +1,6 @@
 {
   "name": "hiker-server",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "Hiker Trail App - Node.js/Express backend",
   "type": "module",
   "main": "dist/index.js",
