@@ -16,8 +16,9 @@ import { router as trailsRouter } from './routes/trails.routes.js';
 import { router as scheduleRouter } from './routes/schedule.routes.js';
 import { router as lookupRouter } from './routes/lookup.routes.js';
 import { router as dataRouter } from './routes/data.routes.js';
-import { getWriteHealth, serverVersion, waitForDataReady } from './services/dataService.js';
+import { getWriteHealth, serverVersion, waitForDataReady, getScheduleFile } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
+import { DATA_DIR, HISTORY_DIR } from './utils/paths.js';
 import { requireAdminKey } from './middleware/auth.middleware.js';
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -151,9 +152,6 @@ app.post('/api/cleanup/orphaned-details', requireAdminKey, async (_req, res) => 
   try {
     const fs = await import('fs/promises');
     const path = (await import('path')).default;
-    const __filename = (await import('url')).fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const DATA_DIR = path.join(__dirname, '../../exported_data');
 
     const trailsPath = path.join(DATA_DIR, 'trails.json');
     const detailsPath = path.join(DATA_DIR, 'trail_details.json');
@@ -186,9 +184,6 @@ app.post('/api/cleanup/orphaned-details', requireAdminKey, async (_req, res) => 
 app.get('/api/validate', async (_req, res) => {
   const fs = await import('fs/promises');
   const path = (await import('path')).default;
-  const __filename = (await import('url')).fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const DATA_DIR = path.join(__dirname, '../../exported_data');
 
     const MONTH_KEYS = new Set(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
     const YEAR_MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -281,7 +276,7 @@ app.get('/api/validate', async (_req, res) => {
 
     // schedule.json
     {
-      const filePath = path.join(DATA_DIR, `schedule_${process.env.SCHEDULE_NAME || 'default'}.json`);
+      const filePath = path.join(DATA_DIR, getScheduleFile());
       try {
         const content = await fs.readFile(filePath, 'utf-8');
         const parsed = JSON.parse(content);
@@ -310,16 +305,16 @@ app.get('/api/validate', async (_req, res) => {
             }
           }
         }
-        addResult(`schedule_${process.env.SCHEDULE_NAME || 'default'}.json`, issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
+        addResult(getScheduleFile(), issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
       } catch (err) {
-        addResult(`schedule_${process.env.SCHEDULE_NAME || 'default'}.json`, false, { error: (err as Error).message });
+        addResult(getScheduleFile(), false, { error: (err as Error).message });
       }
     }
 
 
   // schedule_history/*.json
   try {
-    const historyDir = path.join(DATA_DIR, 'schedule_history');
+    const historyDir = HISTORY_DIR;
     const files = await fs.readdir(historyDir);
     const historyFiles = files.filter(f => f.startsWith('schedule_') && f.endsWith('.json'));
     for (const filename of historyFiles) {

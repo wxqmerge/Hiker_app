@@ -1,4 +1,5 @@
 import { getTrailName } from './data';
+import { formatDateCompact } from './dateUtils';
 
 // Sanitize a string for use as a filename
 export function sanitizeFilename(name, fallback = 'file') {
@@ -249,7 +250,7 @@ export async function fetchTideHeightAt(stationId, targetDate, hour = 10) {
   if (!stationId || !targetDate) return null;
   try {
     const d = new Date(targetDate);
-    const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    const dateStr = formatDateCompact(d);
     const res = await fetch(
       `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&interval=hilo&begin_date=${dateStr}&end_date=${dateStr}&station=${stationId}&time_zone=lst_ldt&units=english&format=json`
     );

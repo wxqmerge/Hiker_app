@@ -10,8 +10,8 @@ import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { setSchedule } from '../hooks/useTrailStore';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTrailName } from '../utils/data';
-import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR_TO_FULL } from '../utils/constants';
-import { getHikeDays, getDayName, getGroupName } from '../utils/config';
+import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR, MONTH_ABBR_TO_FULL } from '../utils/constants';
+import { getHikeDays, getDayName, getGroupName, slotLetter } from '../utils/config';
 import { useHikeDays } from '../hooks/useHikeDays';
 import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth, getMonthKey } from '../utils/dateUtils';
 import { serverScheduleToStore, storeToServerSchedule, getDayEntries, normalizeServerMonthEntries } from '../utils/scheduleFormat';
@@ -493,13 +493,13 @@ export function ScheduleSettingsProvider({ children }) {
       const trailIdLookup = new Map();
       const stopWords = new Set(['to', 'from', 'via', 'the', 'of', 'and', 'at', 'on', 'in', 'up', 'down', 'off', 'by', 'for', 'with']);
       for (const trail of trails) {
-        const fullName = getTrailName(trail).toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+        const fullName = getTrailName(trail).replace(/\s*\([^)]*\)\s*/g, ' ').toLowerCase().replace(/[^a-z0-9\s/]/g, '').trim();
         trailLookup.set(fullName, trail);
         const idSlug = trail.id.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
         trailIdLookup.set(idSlug, trail);
         if (trail.altNames) {
           for (const alt of trail.altNames) {
-            const altNorm = alt.toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+            const altNorm = alt.replace(/\s*\([^)]*\)\s*/g, ' ').toLowerCase().replace(/[^a-z0-9\s/]/g, '').trim();
             if (altNorm && !trailLookup.has(altNorm)) trailLookup.set(altNorm, trail);
           }
         }
@@ -528,7 +528,7 @@ export function ScheduleSettingsProvider({ children }) {
           if (!isNaN(dayNum) && hikeName && currentMonth) {
             if (!schedule[currentMonth]) schedule[currentMonth] = [];
             // Fast match using pre-built lookup
-            const hikeNorm = hikeName.replace(/\s*\(?Early Start\)?\s*/gi, '').trim().toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+            const hikeNorm = hikeName.replace(/\s*\([^)]*\)\s*/g, ' ').trim().toLowerCase().replace(/[^a-z0-9\s/]/g, '').trim();
             let trail = trailLookup.get(hikeNorm) || trailIdLookup.get(hikeNorm.replace(/[^a-z0-9\s]/g, ' ').trim());
             // Fallback: word-level matching
             if (!trail) {
@@ -612,7 +612,7 @@ export function ScheduleSettingsProvider({ children }) {
     const maxEntriesPerDow = {};
 
     for (const monthAbbr of quarter.months) {
-      const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthAbbr);
+      const monthIndex = MONTH_ABBR.indexOf(monthAbbr);
       const daysInMonth = getDaysInMonth(qYear, monthIndex);
       const monthKey = getMonthKey(qYear, monthIndex);
       const monthData = scheduleStore[monthKey] || {};
@@ -662,7 +662,7 @@ export function ScheduleSettingsProvider({ children }) {
       const name = getDayName(dow);
       const count = dayCounts[dow] || 1;
       for (let slot = 0; slot < count; slot++) {
-        dayLabels.push({ dow, slot, label: count > 1 ? `${name} ${String.fromCharCode(65 + slot)}` : name });
+        dayLabels.push({ dow, slot, label: count > 1 ? `${name} ${slotLetter(slot)}` : name });
       }
     }
 

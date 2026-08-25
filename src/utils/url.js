@@ -1,3 +1,5 @@
+import { formatDateCompact } from './dateUtils';
+
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 function getParentDomain() {
@@ -36,7 +38,7 @@ export function getGoogleAllTrailsSearchUrl(trailName) {
 export function getNoaaTideUrl(stationId, date) {
   let url = `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${stationId}`;
   if (date) {
-    const bdate = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+    const bdate = formatDateCompact(date);
     url += `&bdate=${bdate}`;
   }
   return url;

@@ -24,11 +24,7 @@ import {
 import { extractFirstCoordinateFromGpx } from '../utils/gpxCoord.js';
 import { extractDurationFromGpxContent } from '../utils/gpxDuration.js';
 import { sendWithEtag } from '../utils/etag.js';
-import { getCurrentDir } from '../utils/path.js';
-
-const __dirname = getCurrentDir(import.meta.url);
-const GPX_DIR = path.join(__dirname, '../../../GPX');
-const GPX_UPLOAD_DIR = path.join(__dirname, '../../../exported_data/gpx');
+import { GPX_DIR, GPX_UPLOAD_DIR } from '../utils/paths.js';
 
 const gpxUpload = multer({ dest: GPX_UPLOAD_DIR, limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -108,15 +104,10 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
   } catch (err) {
     return res.status(500).json({ success: false, error: { message: `Could not read uploaded GPX file: ${(err as Error).message}` } });
   }
-  if (!validateGpxContent(content)) {
+  const validationError = validateGpxContent(content);
+  if (validationError) {
     await fs.unlink(req.file.path).catch(() => {});
-    if (content.length < 100) {
-      return res.status(400).json({ success: false, error: { message: `GPX file too small (${content.length} bytes) - likely corrupted` } });
-    }
-    if (!content.includes('<?xml') || !content.includes('<gpx')) {
-      return res.status(400).json({ success: false, error: { message: 'Invalid GPX file - missing XML header or GPX root element' } });
-    }
-    return res.status(400).json({ success: false, error: { message: 'Invalid GPX file - no GPS coordinates found (needs trkpt, wpt, or rtept)' } });
+    return res.status(400).json({ success: false, error: { message: validationError } });
   }
 
   // Ensure upload directory exists
@@ -152,7 +143,7 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
     trailUpdates.trailHeadLon = coord.lon;
   }
   await updateTrail((existing ? { ...existing, ...whitelisted, ...trailUpdates } : { ...whitelisted, id: req.params.id, ...trailUpdates }) as any);
-  res.json({ success: true, gpxFile: gpxFileName, trailHeadLat: coord?.lat ?? null, trailHeadLon: coord?.lon ?? null, duration: duration?.formatted ?? null });
+  res.json({ success: true, gpxFile: gpxFileName, trailHeadLat: coord?.lat ?? null, trailHeadLon: coord?.lon ?? null, duration: duration?.formatted ?? null, durationMinutes: duration?.minutes ?? null });
 }));
 
 router.post('/resync-gpx-coords', requireAdminKey, withErrorTag('TRAILS')(async (_req, res) => {

@@ -52,7 +52,7 @@ interface ScheduleEntry {
   day: number;
   slot?: number;
   trail_id: string;
-  early_start?: boolean;
+  early_start?: number | boolean;
   leader?: string;
 }
 

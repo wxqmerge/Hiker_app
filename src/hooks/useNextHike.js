@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { findTrailById as findTrailByIdUtil } from '../utils/data';
-import { serverScheduleToStore, getDayEntries } from '../utils/scheduleFormat';
+import { getDayEntries } from '../utils/scheduleFormat';
 import { getDaysInMonth, createDate, getTodayHikeRef, getMonthKey } from '../utils/dateUtils';
 import { normalizeStartOffset } from '../utils/etc';
 import { useHikeDays } from './useHikeDays';
+import { useScheduleStore } from './useScheduleStore';
 
 /**
  * Compute the next upcoming hike(s) from schedule data.
@@ -12,7 +13,7 @@ import { useHikeDays } from './useHikeDays';
  */
 export function useNextHike({ trails, schedule, maxHikes = 2 }) {
 
-  const scheduleStore = useMemo(() => serverScheduleToStore(schedule), [schedule]);
+  const scheduleStore = useScheduleStore(schedule);
   const hikeDays = useHikeDays();
 
   return useMemo(() => {

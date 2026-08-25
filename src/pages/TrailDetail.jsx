@@ -1119,16 +1119,8 @@ export default function TrailDetail() {
                                   updateField('hasGpx', true);
                                   if (result.trailHeadLat != null) updateField('trailHeadLat', result.trailHeadLat);
                                   if (result.trailHeadLon != null) updateField('trailHeadLon', result.trailHeadLon);
-                                  if (result.duration) {
-                                    // Parse duration like "2h 46m" to minutes
-                                    const match = result.duration.match(/(\d+)h\s*(\d+)m/);
-                                    if (match) {
-                                      const minutes = parseInt(match[1]) * 60 + parseInt(match[2]);
-                                      updateField('durationMinutes', minutes);
-                                    } else {
-                                      const matchM = result.duration.match(/(\d+)m/);
-                                      if (matchM) updateField('durationMinutes', parseInt(matchM[1]));
-                                    }
+                                  if (result.durationMinutes != null) {
+                                    updateField('durationMinutes', result.durationMinutes);
                                   }
                                   showToast('GPX uploaded successfully');
                                 } catch (err) {

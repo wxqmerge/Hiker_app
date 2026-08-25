@@ -79,7 +79,7 @@ export function getHikeDaysLabel() {
     const name = getDayName(day);
     const count = counts[day];
     if (count > 1) {
-      return Array.from({ length: count }, (_, i) => `${name} ${String.fromCharCode(65 + i)}`).join(' / ');
+      return Array.from({ length: count }, (_, i) => `${name} ${slotLetter(i)}`).join(' / ');
     }
     return `${name} Dates`;
   }
@@ -88,7 +88,7 @@ export function getHikeDaysLabel() {
     const name = getDayName(d);
     const count = counts[d];
     if (count > 1) {
-      return Array.from({ length: count }, (_, i) => `${name} ${String.fromCharCode(65 + i)}`).join('/');
+      return Array.from({ length: count }, (_, i) => `${name} ${slotLetter(i)}`).join('/');
     }
     return name;
   }).join(' / ');
@@ -97,11 +97,20 @@ export function getHikeDaysLabel() {
 }
 
   /**
+   * Get the slot letter for a given slot index.
+   * @param {number} slot - Slot index (0-based).
+   * @returns {string} Single letter (0 -> 'A', 1 -> 'B', etc.)
+   */
+  export function slotLetter(slot) {
+    return String.fromCharCode(65 + (slot || 0));
+  }
+
+  /**
    * Get the day label for a given day index.
-  * @param {number} dow - Day of week (0-6).
-  * @returns {string} Single character label (e.g., 3 -> 'W', 1 -> 'M').
-  */
- export function getDayLabel(dow) {
+   * @param {number} dow - Day of week (0-6).
+   * @returns {string} Single character label (e.g., 3 -> 'W', 1 -> 'M').
+   */
+  export function getDayLabel(dow) {
    const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
    return labels[dow] || '';
  }

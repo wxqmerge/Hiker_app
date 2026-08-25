@@ -24,7 +24,7 @@ import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { updateLeader } from '../utils/scheduleActions';
-import { getDayName, getHikeDaysLabel } from '../utils/config';
+import { getDayName, getHikeDaysLabel, slotLetter } from '../utils/config';
 import { START_OFFSET_OPTIONS, normalizeStartOffset } from '../utils/etc';
 
 export default function ScheduleBuilder() {
@@ -275,7 +275,7 @@ export default function ScheduleBuilder() {
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       {hasMultipleSlots && (
                                         <span className="text-[10px] font-bold bg-gray-200 px-1.5 py-0.5 rounded text-gray-600 uppercase">
-                                          {String.fromCharCode(65 + slotIdx)}
+                                          {slotLetter(slotIdx)}
                                         </span>
                                       )}
                                       <span className="text-base font-semibold text-gray-900 truncate">

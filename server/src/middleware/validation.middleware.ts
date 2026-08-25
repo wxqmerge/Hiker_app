@@ -18,7 +18,7 @@ export const ScheduleEntrySchema = z.object({
   day: z.number().int().positive(),
   slot: z.number().int().nonnegative().default(0),
   trail_id: z.string().default(''),
-  early_start: z.boolean().default(false),
+  early_start: z.union([z.boolean(), z.number()]).default(0),
   leader: z.string().default(''),
 });
 

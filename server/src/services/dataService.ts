@@ -2,11 +2,11 @@ import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
 import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsData } from '@shared/types/index.js';
-import { getCurrentDir } from '../utils/path.js';
 import { MONTH_ABBR, resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { generateEtag } from '../utils/etag.js';
 import { isSafeGpxFilename } from '../utils/gpxValidation.js';
 import { extractDurationFromGpxContent } from '../utils/gpxDuration.js';
+import { DATA_DIR, HISTORY_DIR } from '../utils/paths.js';
 
 // Cache for GPX durations
 const durationCache = new Map<string, { minutes: number; formatted: string }>();
@@ -29,9 +29,6 @@ async function extractDurationFromGpx(gpxPath: string): Promise<{ minutes: numbe
   }
 }
 
-const __dirname = getCurrentDir(import.meta.url);
-
-const DATA_DIR = path.join(__dirname, '../../../exported_data');
 export function getScheduleFile() {
   return `schedule_${process.env.SCHEDULE_NAME || 'default'}.json`;
 }
@@ -328,7 +325,6 @@ export async function updateTrailDetail(id: string, detail: TrailDetail): Promis
   await writeWithHealth(path.join(DATA_DIR, 'trail_details.json'), trailDetails);
 }
 
-const HISTORY_DIR = path.join(DATA_DIR, 'schedule_history');
 const MAX_HISTORY = 10;
 
 async function ensureHistoryDir(): Promise<void> {

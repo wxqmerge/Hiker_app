@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { useTooltips } from '../hooks/useTooltips';
 import { useNextHike } from '../hooks/useNextHike';
@@ -10,7 +10,8 @@ import NextHikeBanner from '../components/NextHikeBanner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
 import { updateSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
-import { serverScheduleToStore, storeToServerSchedule } from '../utils/scheduleFormat';
+import { storeToServerSchedule } from '../utils/scheduleFormat';
+import { useScheduleStore } from '../hooks/useScheduleStore';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { useScheduleWeather } from '../hooks/useScheduleWeather';
@@ -24,7 +25,7 @@ export default function Calendar() {
   const { selectedMonth, selectedYear, setSelectedMonthKey } = useMonthContext();
   const year = selectedYear;
 
-  const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
+  const scheduleStore = useScheduleStore(scheduleData);
 
   const nextHikes = useNextHike({ trails, schedule: scheduleData, year });
 

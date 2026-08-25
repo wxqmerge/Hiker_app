@@ -98,6 +98,15 @@ export function parseMonthKey(monthKey) {
   return { year, month: month - 1 };
 }
 
+/**
+ * Format a date as YYYYMMDD (compact, no separators).
+ * @param {Date} date
+ * @returns {string}
+ */
+export function formatDateCompact(date) {
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function getMonthRange() {
   const now = new Date();
   const startYear = now.getFullYear() - 1;

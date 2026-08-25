@@ -3,12 +3,12 @@ import { MONTH_NAMES } from '../utils/constants';
 import { getMonthRange } from '../utils/dateUtils';
 import { useMonthSlotStats } from '../hooks/useMonthSlotStats';
 import { useTrails } from '../hooks/useTrails';
-import { serverScheduleToStore } from '../utils/scheduleFormat';
+import { useScheduleStore } from '../hooks/useScheduleStore';
 import Selector from './Selector';
 
 export default function MonthSelector({ selectedMonthKey, onChange, title }) {
   const { trails, schedule: scheduleData, loading } = useTrails();
-  const scheduleStore = useMemo(() => serverScheduleToStore(scheduleData), [scheduleData]);
+  const scheduleStore = useScheduleStore(scheduleData);
   const months = useMemo(() => getMonthRange(), []);
   const years = useMemo(() => Array.from(new Set(months.map(({ year }) => year))), [months]);
   const monthSlotStats = useMonthSlotStats({ trails, scheduleStore, years });

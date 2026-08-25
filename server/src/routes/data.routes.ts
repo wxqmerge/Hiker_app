@@ -7,12 +7,7 @@ import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
 import { validateGpxContent } from '../utils/gpxValidation.js';
 import { loadData, getScheduleFile, getTrails, getGpxIndex, setGpxIndex } from '../services/dataService.js';
-import { getCurrentDir } from '../utils/path.js';
-
-const __dirname = getCurrentDir(import.meta.url);
-const DATA_DIR = path.join(__dirname, '../../../exported_data');
-const GPX_UPLOAD_DIR = path.join(DATA_DIR, 'gpx');
-const TMP_DIR = path.join(__dirname, '../../../tmp');
+import { DATA_DIR, GPX_UPLOAD_DIR, TMP_DIR, HISTORY_DIR } from '../utils/paths.js';
 
 // Ensure tmp directory exists
 await fs.mkdir(TMP_DIR, { recursive: true });
@@ -34,7 +29,7 @@ async function collectFiles(): Promise<Map<string, Buffer>> {
     }
   }
   // schedule_history/*.json
-  const historyDir = path.join(DATA_DIR, 'schedule_history');
+  const historyDir = HISTORY_DIR;
   try {
     const entries = await fs.readdir(historyDir);
     for (const name of entries.filter(n => n.endsWith('.json'))) {
@@ -142,8 +137,9 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
     // Validate GPX files
     if (ext === '.gpx') {
       const gpxContent = content.toString('utf-8');
-      if (!validateGpxContent(gpxContent)) {
-        console.warn(`[DATA] Skipping invalid GPX: ${name}`);
+      const gpxError = validateGpxContent(gpxContent);
+      if (gpxError) {
+        console.warn(`[DATA] Skipping invalid GPX: ${name} - ${gpxError}`);
         continue;
       }
     }

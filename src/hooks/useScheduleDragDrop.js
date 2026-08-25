@@ -1,7 +1,7 @@
 import { DAY_NAMES } from '../utils/constants';
 import { getTrailName } from '../utils/data';
 import { getDayEntries, setDayEntry, clearDayEntry } from '../utils/scheduleFormat';
-import { getMonthKey } from '../utils/dateUtils';
+import { getMonthKey, createDate } from '../utils/dateUtils';
 
 /**
  * Shared drag-and-drop swap logic for ScheduleBuilder and Calendar.
@@ -73,8 +73,8 @@ export function useScheduleDragDrop({
       const targetTrail = findTrailById(targetEntry.trail_id);
       const sourceTrailName = sourceTrail ? getTrailName(sourceTrail) : trailId;
       const targetTrailName = targetTrail ? getTrailName(targetTrail) : targetEntry.trail_id;
-      const sourceDayOfWeek = hasSource ? new Date(year, selectedMonth, sourceDay).getDay() : null;
-      const targetDayOfWeek = new Date(year, selectedMonth, targetDay).getDay();
+      const sourceDayOfWeek = hasSource ? createDate(year, selectedMonth, sourceDay).getDay() : null;
+      const targetDayOfWeek = createDate(year, selectedMonth, targetDay).getDay();
       const sourceDayLabel = sourceDayOfWeek !== null ? `${DAY_NAMES[sourceDayOfWeek]} ${sourceDay}` : 'Available Hikes';
       const targetDayLabel = `${DAY_NAMES[targetDayOfWeek]} ${targetDay}`;
 

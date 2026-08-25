@@ -9,7 +9,6 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { getCurrentDir } from '../utils/path.js';
-import { resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { etagMatches } from '../utils/etagCompare.js';
 
 const __dirname = getCurrentDir(import.meta.url);
@@ -53,14 +52,7 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
   if (!result.success) {
     return res.status(400).json({ success: false, error: { message: 'Invalid schedule data', details: result.error.issues } });
   }
-  // Normalize month keys: legacy month names use the current year; YYYY-MM keys are preserved.
-  const normalized: Record<string, any[]> = {};
-  for (const [key, entries] of Object.entries(result.data)) {
-    const monthKey = resolveScheduleMonthKey(key);
-    if (!monthKey) continue;
-    normalized[monthKey] = entries;
-  }
-  const entryCount = Object.values(normalized).reduce((n: number, entries: any) => n + entries.length, 0);
+  const entryCount = Object.values(result.data).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
   console.log('[SCHEDULE] PUT schedule -', entryCount, 'entries');
   const oldSchedule = getSchedule();
   const oldCount = Object.values(oldSchedule).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
@@ -69,7 +61,7 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
     console.warn('[SCHEDULE] Refusing to save empty schedule without confirmation');
     return res.status(400).json({ success: false, error: { message: 'Refusing to save an empty schedule. Use an explicit clear action to confirm.' } });
   }
-  await updateSchedule(normalized as typeof result.data);
+  await updateSchedule(result.data);
   const newVersion = getScheduleVersion();
   console.log('[SCHEDULE] Save complete, new version:', newVersion.substring(0, 8));
   res.json({ success: true, etag: newVersion });

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal, Button } from './ui';
-import { getDayName } from '../utils/config';
+import { getDayName, slotLetter } from '../utils/config';
 import { createDate } from '../utils/dateUtils';
 import { getTrailName } from '../utils/data';
 
@@ -13,7 +13,7 @@ function MoveHikeForm({ source, hikeDates, assignedHikes, findTrailById, year, s
 
   const slotLabel = (day, slot) => {
     const hasMultipleSlots = hikeDates.filter((s) => s.day === day).length > 1;
-    return hasMultipleSlots ? ` ${String.fromCharCode(65 + slot)}` : '';
+    return hasMultipleSlots ? ` ${slotLetter(slot)}` : '';
   };
 
   const sourceDayLabel = source.sourceDay === null || source.sourceDay === undefined
