@@ -21,12 +21,12 @@ describe('useScheduleData', () => {
     it('reads entries from correct slot for Wednesday (slot 0)', () => {
       const store = {
         [getMonthKey(2026, 6)]: {
-          '1': [{ trail_id: 'trail-1', early_start: false, leader: 'Alice' }],
+          '1': [{ trail_id: 'trail-1', early_start: 0, leader: 'Alice' }],
         },
       };
       const { result } = renderScheduleHook(store);
       expect(result.current.assignedHikes['1']).toEqual([
-        { trail_id: 'trail-1', early_start: false, leader: 'Alice' },
+        { trail_id: 'trail-1', early_start: 0, leader: 'Alice' },
       ]);
     });
 
@@ -34,15 +34,15 @@ describe('useScheduleData', () => {
       const store = {
         [getMonthKey(2026, 6)]: {
           '3': [
-            { trail_id: 'trail-1', early_start: false, leader: 'Alice' },
-            { trail_id: 'trail-2', early_start: false, leader: 'Bob' },
+            { trail_id: 'trail-1', early_start: 0, leader: 'Alice' },
+            { trail_id: 'trail-2', early_start: 0, leader: 'Bob' },
           ],
         },
       };
       const { result } = renderScheduleHook(store);
       expect(result.current.assignedHikes['3'][1]).toEqual({
         trail_id: 'trail-2',
-        early_start: false,
+        early_start: 0,
         leader: 'Bob',
       });
     });
@@ -55,7 +55,7 @@ describe('useScheduleData', () => {
     it('handles null trail_id in entry', () => {
       const store = {
         [getMonthKey(2026, 6)]: {
-          '1': [{ trail_id: null, early_start: false, leader: '' }],
+          '1': [{ trail_id: null, early_start: 0, leader: '' }],
         },
       };
       const { result } = renderScheduleHook(store);
@@ -65,12 +65,12 @@ describe('useScheduleData', () => {
     it('normalizes object-shaped day entries', () => {
       const store = {
         [getMonthKey(2026, 6)]: {
-          '1': { trail_id: 'trail-1', early_start: true, leader: 'Alice' },
+          '1': { trail_id: 'trail-1', early_start: -30, leader: 'Alice' },
         },
       };
       const { result } = renderScheduleHook(store);
       expect(result.current.assignedHikes['1']).toEqual([
-        { trail_id: 'trail-1', early_start: true, leader: 'Alice' },
+        { trail_id: 'trail-1', early_start: -30, leader: 'Alice' },
       ]);
     });
 
@@ -82,7 +82,7 @@ describe('useScheduleData', () => {
       };
       const { result } = renderScheduleHook(store);
       expect(result.current.assignedHikes['1']).toEqual([
-        { trail_id: 'trail-1', early_start: false, leader: '' },
+        { trail_id: 'trail-1', early_start: 0, leader: '' },
       ]);
     });
   });

@@ -35,6 +35,20 @@ export function getGroupName() {
   return groupConfig.name;
 }
 
+const GROUP_URLS = {
+  ramblers: 'https://mondayramblers.bravesites.com/hike-schedule-descriptions-',
+  sothh: 'https://sites.google.com/view/overthehillhikers/hike-descriptions_1',
+};
+
+/**
+ * Get the schedule descriptions URL for the current group.
+ * @returns {string|null}
+ */
+export function getGroupUrl() {
+  const name = (groupConfig.name || '').toLowerCase();
+  return GROUP_URLS[name] || null;
+}
+
 /**
  * Get the configured hike days from environment variables.
  * @returns {number[]} Array of unique hike days.

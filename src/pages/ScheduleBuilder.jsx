@@ -25,6 +25,7 @@ import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { updateLeader } from '../utils/scheduleActions';
 import { getDayName, getHikeDaysLabel } from '../utils/config';
+import { START_OFFSET_OPTIONS, normalizeStartOffset } from '../utils/etc';
 
 export default function ScheduleBuilder() {
   const { trails, loading, lookup, schedule: scheduleData } = useTrails();
@@ -92,13 +93,13 @@ export default function ScheduleBuilder() {
     updateScheduleFn: updateMonthSchedule,
   });
 
-  const toggleEarlyStart = (day, slotIdx) => {
+  const setStartOffset = (day, slotIdx, offset) => {
     const monthKey = getMonthKey(year, selectedMonth);
     const monthData = scheduleStore[monthKey] || {};
     const entry = getDayEntries(monthData, day)[slotIdx];
     if (!entry?.trail_id) return;
 
-    updateMonthSchedule(monthKey, prev => setDayEntry(prev, day, slotIdx, { ...entry, early_start: !entry.early_start }));
+    updateMonthSchedule(monthKey, prev => setDayEntry(prev, day, slotIdx, { ...entry, early_start: offset }));
   };
 
 
@@ -226,9 +227,9 @@ export default function ScheduleBuilder() {
                       const slotIdx = slot.slot;
                       const dayOfWeek = createDate(year, selectedMonth, day).getDay();
 
-                        const entry = assignedHikes[day]?.[slotIdx] || { trail_id: null, early_start: false, leader: '' };
+                        const entry = assignedHikes[day]?.[slotIdx] || { trail_id: null, early_start: 0, leader: '' };
                         const trailId = entry.trail_id;
-                        const earlyStart = entry.early_start;
+                        const earlyStart = normalizeStartOffset(entry.early_start);
                         const leader = entry.leader;
                          const trail = findTrailById(trailId);
                          const displayHikeName = trail ? getTrailName(trail) : trailId;
@@ -280,7 +281,7 @@ export default function ScheduleBuilder() {
                                       <span className="text-base font-semibold text-gray-900 truncate">
                                         {displayHikeName}
                                       </span>
-                                      {earlyStart && <span className="text-orange-500 text-sm" title="Early Start">⏰</span>}
+                                       {earlyStart !== 0 && <span className="text-orange-500 text-sm" title={`Start offset: ${earlyStart > 0 ? '+' : ''}${earlyStart}m`}>{earlyStart > 0 ? `+${earlyStart}m` : `${earlyStart}m`}</span>}
                                      </div>
                                       {!trailId && (
                                        <div className="text-xs text-gray-400 italic mt-0.5">
@@ -325,18 +326,19 @@ export default function ScheduleBuilder() {
                                 )}
                               </div>
                           </div>
-                           {trailId && (
-                             <div className="flex items-center gap-1 ml-3">
-                               <label className="flex items-center gap-1 cursor-pointer" title={tt('Toggle early start (affects hike description)')}>
-                                  <input
-                                    type="checkbox"
-                                     checked={!!earlyStart}
-                                     onChange={() => toggleEarlyStart(day, slotIdx)}
-                                     className="w-4 h-4 text-orange-500 rounded"
-                                     aria-label="Toggle early start"
-                                  />
-                                 <span className="text-xs text-gray-500">ES</span>
-                               </label>
+                            {trailId && (
+                              <div className="flex items-center gap-1 ml-3">
+                                <select
+                                  value={normalizeStartOffset(earlyStart)}
+                                  onChange={(e) => setStartOffset(day, slotIdx, Number(e.target.value))}
+                                  className="text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
+                                  title={tt('Start time offset')}
+                                  aria-label="Start time offset"
+                                >
+                                  {START_OFFSET_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </select>
                                {trail?.hasGpx && (
                                  <>
                                      <button

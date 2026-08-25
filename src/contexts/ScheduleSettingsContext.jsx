@@ -61,10 +61,11 @@ export function ScheduleSettingsProvider({ children }) {
 
   // Load server schedule into local store on mount.
   // Skip sync if the user has unsaved local edits to avoid overwriting them.
+  // On first load (lastSavedStoreRef is null), always sync.
   useEffect(() => {
     if (scheduleData && Object.keys(scheduleData).length > 0) {
       const currentJson = JSON.stringify(scheduleStore);
-      if (currentJson !== lastSavedStoreRef.current) return;
+      if (lastSavedStoreRef.current !== null && currentJson !== lastSavedStoreRef.current) return;
       const converted = serverScheduleToStore(scheduleData);
       setScheduleStore(converted);
       lastSavedStoreRef.current = JSON.stringify(converted);
@@ -496,6 +497,12 @@ export function ScheduleSettingsProvider({ children }) {
         trailLookup.set(fullName, trail);
         const idSlug = trail.id.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
         trailIdLookup.set(idSlug, trail);
+        if (trail.altNames) {
+          for (const alt of trail.altNames) {
+            const altNorm = alt.toLowerCase().replace(/[^a-z0-9\s/]/g, '').replace(/\s*\([^)]*\)/g, '').trim();
+            if (altNorm && !trailLookup.has(altNorm)) trailLookup.set(altNorm, trail);
+          }
+        }
       }
 
       const schedule = {};
@@ -541,7 +548,7 @@ export function ScheduleSettingsProvider({ children }) {
             if (trail) {
               const hasEarlyStart = /\(early start\)/i.test(hikeName);
               const slot = cg.slot ?? 0;
-              schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: hasEarlyStart });
+              schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: hasEarlyStart ? -30 : 0 });
               matchedCount++;
             } else {
               console.log('[TSV Import] Unmatched:', hikeName);
@@ -625,7 +632,8 @@ export function ScheduleSettingsProvider({ children }) {
             if (!hikesByDay[key]) hikesByDay[key] = [];
             const trail = findTrailById(entry.trail_id);
             let trailName = trail ? getTrailName(trail) : entry.trail_id;
-            if (entry.early_start) trailName += ' (Early Start)';
+            const esOffset = entry.early_start === true ? -30 : (entry.early_start === false || entry.early_start == null ? 0 : Number(entry.early_start) || 0);
+            if (esOffset !== 0) trailName += esOffset < 0 ? ` (${Math.abs(esOffset)}m early)` : ` (${esOffset}m late)`;
             hikesByDay[key].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
           });
         }
@@ -735,13 +743,14 @@ export function ScheduleSettingsProvider({ children }) {
       const dowNum = date.getDay();
       const hikesForThisDow = (hikesPerDowExport[dowNum] || 1);
       return Array.from({ length: hikesForThisDow }, (_, slot) => {
-        const entry = assignedHikes[day]?.[slot] || { trail_id: null, early_start: false };
-        const { trail_id: trailId, early_start: earlyStart } = entry;
+        const entry = assignedHikes[day]?.[slot] || { trail_id: null, early_start: 0 };
+        const { trail_id: trailId, early_start: rawEarlyStart } = entry;
+        const earlyStart = rawEarlyStart === true ? -30 : (rawEarlyStart === false || rawEarlyStart == null ? 0 : Number(rawEarlyStart) || 0);
         const dayOfWeek = DAY_NAMES[dowNum];
         const dateStr = `${dayOfWeek}, ${month} ${day}`;
-        if (!trailId) return { dateStr, trail: null, trailDetails: null, earlyStart: false };
+        if (!trailId) return { dateStr, trail: null, trailDetails: null, earlyStart: 0 };
         const trail = findTrailById(trailId);
-        if (!trail) return { dateStr, trail: null, trailDetails: null, earlyStart: false };
+        if (!trail) return { dateStr, trail: null, trailDetails: null, earlyStart: 0 };
         return { dateStr, trail, trailDetails, earlyStart };
       });
     });

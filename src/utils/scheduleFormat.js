@@ -16,17 +16,19 @@ export function resolveScheduleMonthKey(key, defaultYear = CURRENT_YEAR) {
 }
 
 function emptyEntry() {
-  return { trail_id: null, early_start: false, leader: '' };
+  return { trail_id: null, early_start: 0, leader: '' };
 }
 
 function normalizeEntry(entry) {
   if (typeof entry === 'string') {
-    return { trail_id: entry || null, early_start: false, leader: '' };
+    return { trail_id: entry || null, early_start: 0, leader: '' };
   }
   if (entry && typeof entry === 'object') {
+    const raw = entry.early_start;
+    const earlyStart = raw === true ? -30 : raw === false || raw == null ? 0 : Number(raw) || 0;
     return {
       trail_id: entry.trail_id || null,
-      early_start: !!entry.early_start,
+      early_start: earlyStart,
       leader: entry.leader || '',
     };
   }
@@ -124,7 +126,7 @@ export function storeToServerSchedule(store) {
         if (entry?.trail_id) {
           const dayNum = parseInt(day, 10);
           if (!isNaN(dayNum) && dayNum > 0) {
-            serverData[monthKey].push({ day: dayNum, slot, trail_id: entry.trail_id, early_start: !!entry.early_start, leader: entry.leader || '' });
+            serverData[monthKey].push({ day: dayNum, slot, trail_id: entry.trail_id, early_start: entry.early_start || 0, leader: entry.leader || '' });
           }
         }
       });

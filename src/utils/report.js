@@ -50,7 +50,11 @@ function buildTrailLineHtml(trail, earlyStart) {
   const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
 
   let line = esc(`${name}◆︎`);
-  if (earlyStart) line += ' <span class="early-start">(Early Start)</span>';
+  const offset = earlyStart === true ? -30 : (earlyStart === false || earlyStart == null ? 0 : Number(earlyStart) || 0);
+  if (offset !== 0) {
+    const label = offset < 0 ? `${Math.abs(offset)}m early` : `${offset}m late`;
+    line += ` <span class="early-start">(${label})</span>`;
+  }
   line += `  ${esc(difficulty)}\t${esc(distanceText)} / ${esc(elevationText)}\t${esc(parking)}`;
   if (rideCost) line += `\t${esc(rideCost)}`;
 

@@ -58,21 +58,21 @@ describe('useScheduleDragDrop', () => {
 
   it('moveHike moves a scheduled hike to an empty slot', () => {
     const result = useScheduleDragDrop(baseDeps);
-    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: false, leader: '' }, 5, 0);
+    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: 0, leader: '' }, 5, 0);
     expect(updateScheduleFn).toHaveBeenCalled();
   });
 
   it('moveHike offers a swap when the target slot is occupied', () => {
     scheduleStore[monthKey] = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
     const result = useScheduleDragDrop(baseDeps);
-    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: false, leader: '' }, 8, 0);
+    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: 0, leader: '' }, 8, 0);
     expect(setPendingSwap).toHaveBeenCalledTimes(1);
   });
 
   it('moveHike does nothing without API key', () => {
     const deps = { ...baseDeps, hasApiKey: false };
     const result = useScheduleDragDrop(deps);
-    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: false, leader: '' }, 5, 0);
+    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: 0, leader: '' }, 5, 0);
     expect(updateScheduleFn).not.toHaveBeenCalled();
   });
 
@@ -122,7 +122,7 @@ describe('useScheduleDragDrop', () => {
       targetSlot: 0,
       targetEntry: { trail_id: 'trail-2' },
       trailId: 'trail-1',
-      earlyStart: false,
+      earlyStart: 0,
       leader: '',
     };
     const deps = { ...baseDeps, pendingSwap };
@@ -170,7 +170,7 @@ describe('useScheduleDragDrop', () => {
     const deps = { ...baseDeps, dragData: { hikeIndex: 1, sourceDay: null, sourceSlot: null } };
     const result = useScheduleDragDrop(deps);
     result.handleDropOnDate(8, 0);
-    expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-2', early_start: false, leader: '' }]);
+    expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-2', early_start: 0, leader: '' }]);
   });
 
   it('offers swap when target is object-shaped', () => {
@@ -179,7 +179,7 @@ describe('useScheduleDragDrop', () => {
     const result = useScheduleDragDrop(deps);
     result.handleDropOnDate(8, 0);
     expect(setPendingSwap).toHaveBeenCalledTimes(1);
-    expect(setPendingSwap.mock.calls[0][0].targetEntry).toEqual({ trail_id: 'trail-2', early_start: false, leader: '' });
+    expect(setPendingSwap.mock.calls[0][0].targetEntry).toEqual({ trail_id: 'trail-2', early_start: 0, leader: '' });
   });
 
   it('confirmSwap normalizes source and target to arrays', () => {
@@ -189,22 +189,22 @@ describe('useScheduleDragDrop', () => {
       sourceSlot: 0,
       targetDay: 8,
       targetSlot: 0,
-      targetEntry: { trail_id: 'trail-2', early_start: false, leader: '' },
+      targetEntry: { trail_id: 'trail-2', early_start: 0, leader: '' },
       trailId: 'trail-1',
-      earlyStart: false,
+      earlyStart: 0,
       leader: '',
     };
     const deps = { ...baseDeps, pendingSwap };
     const result = useScheduleDragDrop(deps);
     result.confirmSwap();
-    expect(scheduleStore[monthKey]['1']).toEqual([{ trail_id: 'trail-2', early_start: false, leader: '' }]);
-    expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-1', early_start: false, leader: '' }]);
+    expect(scheduleStore[monthKey]['1']).toEqual([{ trail_id: 'trail-2', early_start: 0, leader: '' }]);
+    expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-1', early_start: 0, leader: '' }]);
   });
 
   it('removeHike normalizes object-shaped entries to empty arrays', () => {
     scheduleStore[monthKey] = { 1: { trail_id: 'trail-1' } };
     const result = useScheduleDragDrop(baseDeps);
     result.removeHike(1, 0);
-    expect(scheduleStore[monthKey]['1']).toEqual([{ trail_id: null, early_start: false, leader: '' }]);
+    expect(scheduleStore[monthKey]['1']).toEqual([{ trail_id: null, early_start: 0, leader: '' }]);
   });
 });

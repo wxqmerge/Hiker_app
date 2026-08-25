@@ -44,7 +44,7 @@ import { useNextHike } from '../../hooks/useNextHike';
             trail: mockTrails[0],
             trailId: 'trail-1',
             leader: '',
-            earlyStart: false,
+            earlyStart: 0,
           },
           {
             day: 9,
@@ -55,7 +55,7 @@ import { useNextHike } from '../../hooks/useNextHike';
             trail: mockTrails[1],
             trailId: 'trail-2',
             leader: '',
-            earlyStart: false,
+            earlyStart: 0,
           }
         ]);
      });
@@ -78,7 +78,7 @@ import { useNextHike } from '../../hooks/useNextHike';
             trail: mockTrails[1],
             trailId: 'trail-2',
             leader: '',
-            earlyStart: false,
+            earlyStart: 0,
           },
           {
             day: 4,
@@ -89,7 +89,7 @@ import { useNextHike } from '../../hooks/useNextHike';
             trail: mockTrails[0],
             trailId: 'trail-1',
             leader: '',
-            earlyStart: false,
+            earlyStart: 0,
           }
         ]);
      });

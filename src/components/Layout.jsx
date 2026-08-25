@@ -4,7 +4,7 @@ import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
 import { ScheduleSettingsProvider, useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { TrailActionsProvider, useTrailActions } from '../contexts/TrailActionsContext';
-import { getGroupName } from '../utils/config';
+import { getGroupName, getGroupUrl } from '../utils/config';
 import { getTrailName } from '../utils/data';
 import { useTrails } from '../hooks/useTrails';
 import { useEffect, useMemo } from 'react';
@@ -39,6 +39,29 @@ function PageContextSetter() {
   }, [pathname, trails, setPageContext]);
 
   return null;
+}
+
+function GroupBadge({ name }) {
+  const url = getGroupUrl();
+  const label = name;
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-lg font-black text-green-800 uppercase tracking-tight flex-shrink-0 hover:underline"
+        title={`Open ${label} schedule descriptions`}
+      >
+        {label}
+      </a>
+    );
+  }
+  return (
+    <span className="text-lg font-black text-green-800 uppercase tracking-tight flex-shrink-0">
+      {label}
+    </span>
+  );
 }
 
 function HeaderContent() {
@@ -125,9 +148,7 @@ function HeaderContent() {
                   </span>
                 )}
                 {groupName && (
-                  <span className="text-lg font-black text-green-800 uppercase tracking-tight flex-shrink-0">
-                    {groupName}
-                  </span>
+                  <GroupBadge name={groupName} />
                 )}
                  {isMainPage && (
                   <span className="text-xs text-gray-500 whitespace-nowrap">

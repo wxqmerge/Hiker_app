@@ -54,7 +54,7 @@ describe('generateReportHtml', () => {
   });
 
   it('generates valid HTML document', () => {
-    const entries = [{ dateStr: '2024-01-15', trail: mockTrail, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: '2024-01-15', trail: mockTrail, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('<html lang="en">');
@@ -63,14 +63,14 @@ describe('generateReportHtml', () => {
   });
 
   it('includes trail info in entry', () => {
-    const entries = [{ dateStr: '2024-01-15', trail: mockTrail, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: '2024-01-15', trail: mockTrail, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).toContain('Mount Rainier');
     expect(html).toContain('2024-01-15');
   });
 
   it('renders trail header line in bold', () => {
-    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Title');
     expect(html).toContain('entry-header');
     expect(html).toContain('Mount Rainier');
@@ -83,14 +83,14 @@ describe('generateReportHtml', () => {
       dateStr: 'Fri, Jun 12',
       trail: mockTrail,
       trailDetails: { 'trail-1': { fullDescription: 'Beautiful trail.' } },
-      earlyStart: false,
+      earlyStart: 0,
     }];
     const html = generateReportHtml(entries, 'Title');
     expect(html).toContain('Beautiful trail.');
   });
 
   it('renders web link as clickable blue anchor', () => {
-    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Title');
     expect(html).toContain('<a href="https://example.com/rainier"');
     expect(html).toContain('target="_blank"');
@@ -98,32 +98,32 @@ describe('generateReportHtml', () => {
   });
 
   it('renders TBD for missing trail', () => {
-    const entries = [{ dateStr: 'Wed, Jun 10', trail: null, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: 'Wed, Jun 10', trail: null, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Title');
     expect(html).toContain('TBD');
   });
 
-  it('includes (Early Start) when earlyStart is true', () => {
-    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: true }];
+  it('includes (30m early) when earlyStart is -30', () => {
+    const entries = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: -30 }];
     const html = generateReportHtml(entries, 'Title');
-    expect(html).toContain('(Early Start)');
+    expect(html).toContain('(30m early)');
   });
 
   it('includes early start marker', () => {
-    const entries = [{ dateStr: '2024-01-15', trail: mockTrail, trailDetails: null, earlyStart: true }];
+    const entries = [{ dateStr: '2024-01-15', trail: mockTrail, trailDetails: null, earlyStart: -30 }];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).toContain('early-start');
   });
 
   it('includes description', () => {
-    const entries = [{ dateStr: '2024-01-15', trail: mockTrail, trailDetails: { 'trail-1': { fullDescription: 'A beautiful trail' } }, earlyStart: false }];
+    const entries = [{ dateStr: '2024-01-15', trail: mockTrail, trailDetails: { 'trail-1': { fullDescription: 'A beautiful trail' } }, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).toContain('A beautiful trail');
   });
 
   it('includes web link', () => {
     const trailWithLink = { ...mockTrail, webLink: 'https://example.com' };
-    const entries = [{ dateStr: '2024-01-15', trail: trailWithLink, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: '2024-01-15', trail: trailWithLink, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).toContain('entry-link');
     expect(html).toContain('https://example.com');
@@ -131,13 +131,13 @@ describe('generateReportHtml', () => {
 
   it('includes GPX availability', () => {
     const trailWithGpx = { ...mockTrail, hasGpx: true };
-    const entries = [{ dateStr: '2024-01-15', trail: trailWithGpx, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: '2024-01-15', trail: trailWithGpx, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).toContain('GPX: available');
   });
 
   it('handles TBD entry', () => {
-    const entries = [{ dateStr: '2024-01-15', trail: null, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: '2024-01-15', trail: null, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).toContain('TBD');
   });
@@ -147,7 +147,7 @@ describe('generateReportHtml', () => {
       dateStr: 'Fri, Jun 12',
       trail: mockTrail,
       trailDetails: { 'trail-1': { fullDescription: 'Use & enjoy <the> trail.' } },
-      earlyStart: false,
+      earlyStart: 0,
     }];
     const html = generateReportHtml(entries, 'Title');
     expect(html).toContain('&amp;');
@@ -156,7 +156,7 @@ describe('generateReportHtml', () => {
 
   it('escapes HTML special characters', () => {
     const trailWithSpecial = { ...mockTrail, fullName: 'Test <Trail> & "Full"' };
-    const entries = [{ dateStr: '2024-01-15', trail: trailWithSpecial, trailDetails: null, earlyStart: false }];
+    const entries = [{ dateStr: '2024-01-15', trail: trailWithSpecial, trailDetails: null, earlyStart: 0 }];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).not.toContain('<Trail>');
     expect(html).toContain('&lt;Trail&gt;');
@@ -164,8 +164,8 @@ describe('generateReportHtml', () => {
 
   it('handles multiple entries', () => {
     const entries = [
-      { dateStr: '2024-01-15', trail: mockTrail, trailDetails: null, earlyStart: false },
-      { dateStr: '2024-01-22', trail: mockTrail, trailDetails: null, earlyStart: false },
+      { dateStr: '2024-01-15', trail: mockTrail, trailDetails: null, earlyStart: 0 },
+      { dateStr: '2024-01-22', trail: mockTrail, trailDetails: null, earlyStart: 0 },
     ];
     const html = generateReportHtml(entries, 'Test Schedule');
     expect(html).toContain('2024-01-15');
