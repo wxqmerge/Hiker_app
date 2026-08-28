@@ -1,5 +1,5 @@
 import { getTrailName } from './data';
-import { formatDateCompact } from './dateUtils';
+import { formatDateCompact, formatDateToISO } from './dateUtils';
 
 // Sanitize a string for use as a filename
 export function sanitizeFilename(name, fallback = 'file') {
@@ -50,6 +50,23 @@ function isValidCoordinate(value) {
 
 export function hasValidCoords(lat, lon) {
   return isValidCoordinate(lat) && isValidCoordinate(lon);
+}
+
+// NOAA/NWS coverage box (continental US). Coordinates strictly inside this box
+// use the NWS forecast; coordinates outside fall back to Open-Meteo.
+const NOAA_BOX = { minLat: 25, maxLat: 48, minLon: -124, maxLon: -66 };
+
+/**
+ * Whether a coordinate falls inside the NOAA/NWS coverage box.
+ * @param {number|string} lat
+ * @param {number|string} lon
+ * @returns {boolean}
+ */
+export function isNoaaRegion(lat, lon) {
+  if (!hasValidCoords(lat, lon)) return false;
+  const la = Number(lat);
+  const lo = Number(lon);
+  return la > NOAA_BOX.minLat && la < NOAA_BOX.maxLat && lo > NOAA_BOX.minLon && lo < NOAA_BOX.maxLon;
 }
 
 // Open NWS weather forecast page for a coordinate
@@ -141,6 +158,36 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
   };
 }
 
+/**
+ * Fetch Open-Meteo forecast for a date from coordinates.
+ * Returns { temp, rain, om: true } or null.
+ *   temp  — high temperature in °F for the day
+ *   rain  — max precipitation probability (0–100) for the day
+ *   om    — true, so the UI can tag the rain % with an "OM" source marker
+ */
+export async function fetchOpenMeteoForDate(lat, lon, targetDate) {
+  if (!hasValidCoords(lat, lon) || !targetDate) return null;
+  const dateStr = formatDateToISO(targetDate);
+  const url =
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&daily=temperature_2m_max,precipitation_probability_max` +
+    `&temperature_unit=fahrenheit&timezone=auto` +
+    `&start_date=${dateStr}&end_date=${dateStr}`;
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'Hiker-App' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const daily = data?.daily;
+    if (!daily || !Array.isArray(daily.time) || daily.time.length === 0) return null;
+    const temp = daily.temperature_2m_max?.[0];
+    if (temp == null) return null;
+    const rain = daily.precipitation_probability_max?.[0];
+    return { temp: Math.round(temp), rain: rain ?? 0, om: true };
+  } catch {
+    return null;
+  }
+}
+
 // Fetch GPX for a trail, extract first coordinate, and open weather forecast page
 export async function openWeatherForTrail(getGpxFn, trailId) {
   const gpx = await getGpxFn(trailId);
@@ -189,7 +236,11 @@ export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
   try {
     const hasCoords = hasValidCoords(lat, lon);
     const tasks = [];
-    if (hasCoords) tasks.push(fetchNwsForecastForDate(lat, lon, targetDate));
+    if (hasCoords) {
+      tasks.push(isNoaaRegion(lat, lon)
+        ? fetchNwsForecastForDate(lat, lon, targetDate)
+        : fetchOpenMeteoForDate(lat, lon, targetDate));
+    }
     if (stationId) tasks.push(fetchTideHeightAt(stationId, targetDate));
     if (tasks.length === 0) return null;
 

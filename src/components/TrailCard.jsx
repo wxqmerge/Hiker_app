@@ -138,14 +138,14 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex items-center gap-1 ${weather.rain >= 40 ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-600`}
-                      title={weather.temp != null ? `Forecast: ${weather.temp}°F, ${weather.rain}% rain — open weather` : undefined}
-                      aria-label={weather.temp != null ? `Forecast for ${trailName}: ${weather.temp}°F, ${weather.rain}% rain` : `Open weather for ${trailName}`}
+                      title={weather.temp != null ? `Forecast: ${weather.temp}°F, ${weather.rain}% rain${weather.om ? ' (Open-Meteo)' : ''} — open weather` : undefined}
+                      aria-label={weather.temp != null ? `Forecast for ${trailName}: ${weather.temp}°F, ${weather.rain}% rain${weather.om ? ' (Open-Meteo)' : ''}` : `Open weather for ${trailName}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
                       <span>
                         {weather.temp != null && `${weather.temp}°`}
-                        {weather.rain >= 1 && ` · ${weather.rain}%`}
+                        {weather.rain >= 1 && ` · ${weather.rain}%${weather.om ? ' OM' : ''}`}
                       </span>
                     </a>
                     {weather.tide != null && (

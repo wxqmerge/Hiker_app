@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchWeatherAndTide, clearNwsCache, openWeatherUrl, hasValidCoords } from '../../utils/io';
+import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchOpenMeteoForDate, fetchWeatherAndTide, clearNwsCache, openWeatherUrl, hasValidCoords, isNoaaRegion } from '../../utils/io';
 
 describe('sanitizeFilename', () => {
   it('replaces non-alphanumeric characters with underscores', () => {
@@ -381,6 +381,94 @@ describe('fetchNwsForecastForDate', () => {
   });
 });
 
+describe('isNoaaRegion', () => {
+  it('returns true for coordinates inside the continental US box', () => {
+    expect(isNoaaRegion(47.6, -122.3)).toBe(true); // Seattle
+    expect(isNoaaRegion(40.7, -74.0)).toBe(true);  // NYC
+    expect(isNoaaRegion(34.0, -118.2)).toBe(true); // LA
+  });
+
+  it('returns false for coordinates outside the box', () => {
+    expect(isNoaaRegion(49.0, -123.0)).toBe(false); // north of 48N
+    expect(isNoaaRegion(24.0, -80.0)).toBe(false);  // south of 25N
+    expect(isNoaaRegion(45.0, -60.0)).toBe(false);  // east of -66
+    expect(isNoaaRegion(45.0, -130.0)).toBe(false); // west of -124
+  });
+
+  it('returns false for invalid coordinates', () => {
+    expect(isNoaaRegion(null, -122.3)).toBe(false);
+    expect(isNoaaRegion(47.6, undefined)).toBe(false);
+    expect(isNoaaRegion(Number.NaN, -122.3)).toBe(false);
+  });
+});
+
+describe('fetchOpenMeteoForDate', () => {
+  const lat = 49.0; // outside NOAA box (north of 48N)
+  const lon = -123.0;
+  const targetDate = new Date(2026, 7, 14); // Aug 14, 2026
+
+  const stubFetch = (payload: unknown, ok = true) => {
+    const fn = vi.fn(async () => ({ ok, json: async () => payload }));
+    vi.stubGlobal('fetch', fn);
+    return fn;
+  };
+
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns temp, rain, and the om flag from the daily forecast', async () => {
+    stubFetch({
+      daily: {
+        time: ['2026-08-14'],
+        temperature_2m_max: [67.2],
+        precipitation_probability_max: [33],
+      },
+    });
+    const result = await fetchOpenMeteoForDate(lat, lon, targetDate);
+    expect(result).toEqual({ temp: 67, rain: 33, om: true });
+  });
+
+  it('includes the target date and fahrenheit unit in the request URL', async () => {
+    const fn = stubFetch({
+      daily: { time: ['2026-08-14'], temperature_2m_max: [60], precipitation_probability_max: [10] },
+    });
+    await fetchOpenMeteoForDate(lat, lon, targetDate);
+    const url = fn.mock.calls[0][0] as string;
+    expect(url).toContain('api.open-meteo.com');
+    expect(url).toContain('latitude=49');
+    expect(url).toContain('longitude=-123');
+    expect(url).toContain('start_date=2026-08-14');
+    expect(url).toContain('end_date=2026-08-14');
+    expect(url).toContain('temperature_unit=fahrenheit');
+  });
+
+  it('returns null when the response is not ok', async () => {
+    stubFetch({}, false);
+    const result = await fetchOpenMeteoForDate(lat, lon, targetDate);
+    expect(result).toBeNull();
+  });
+
+  it('returns null when there is no daily data', async () => {
+    stubFetch({ daily: { time: [], temperature_2m_max: [], precipitation_probability_max: [] } });
+    const result = await fetchOpenMeteoForDate(lat, lon, targetDate);
+    expect(result).toBeNull();
+  });
+
+  it('returns null when fetch throws', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network'); }));
+    const result = await fetchOpenMeteoForDate(lat, lon, targetDate);
+    expect(result).toBeNull();
+  });
+
+  it('does not request weather when coordinates are invalid', async () => {
+    const fetchFn = vi.fn();
+    vi.stubGlobal('fetch', fetchFn);
+    await expect(fetchOpenMeteoForDate(null, lon, targetDate)).resolves.toBeNull();
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
 describe('fetchWeatherAndTide', () => {
   const targetDate = new Date(2026, 7, 14);
   const lat = 47.6;
@@ -423,6 +511,37 @@ describe('fetchWeatherAndTide', () => {
     const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
     expect(urls).not.toContainEqual(expect.stringContaining('api.weather.gov'));
     expect(urls).toContainEqual(expect.stringContaining('station=9447130'));
+  });
+
+  it('uses NWS for coordinates inside the NOAA box', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal('fetch', fetchFn);
+    await fetchWeatherAndTide(47.6, -122.3, targetDate, null); // Seattle (inside box)
+    const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
+    expect(urls).toContainEqual(expect.stringContaining('api.weather.gov'));
+    expect(urls).not.toContainEqual(expect.stringContaining('open-meteo'));
+  });
+
+  it('uses Open-Meteo for coordinates outside the NOAA box', async () => {
+    const fetchFn = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ daily: { time: ['2026-08-14'], temperature_2m_max: [60], precipitation_probability_max: [10] } }),
+    }));
+    vi.stubGlobal('fetch', fetchFn);
+    await fetchWeatherAndTide(49.0, -123.0, targetDate, null); // north of 48N (outside box)
+    const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
+    expect(urls).toContainEqual(expect.stringContaining('open-meteo'));
+    expect(urls).not.toContainEqual(expect.stringContaining('api.weather.gov'));
+  });
+
+  it('tags Open-Meteo weather with the om flag', async () => {
+    const fetchFn = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ daily: { time: ['2026-08-14'], temperature_2m_max: [60], precipitation_probability_max: [10] } }),
+    }));
+    vi.stubGlobal('fetch', fetchFn);
+    const result = await fetchWeatherAndTide(49.0, -123.0, targetDate, null);
+    expect(result).toEqual({ temp: 60, rain: 10, om: true });
   });
 });
 
