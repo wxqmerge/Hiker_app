@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getGroupName, getHikeDays, getHikeDaysLabel, getDayName, getDayLabel, setGroupConfig, getMaxHikesPerDay, getHikesPerDow, getHikeSlotsForDow } from '../../utils/config';
+import { getGroupName, getHikeDays, getHikeDaysLabel, getDayName, getDayLabel, setGroupConfig, getMaxHikesPerDay } from '../../utils/config';
 
 describe('config utilities', () => {
   beforeEach(() => {
@@ -62,32 +62,6 @@ describe('config utilities', () => {
     it('clamps values above 7 to 7', () => {
       setGroupConfig({ maxHikesPerDay: 99 });
       expect(getMaxHikesPerDay()).toBe(7);
-    });
-  });
-
-  describe('getHikesPerDow / getHikeSlotsForDow', () => {
-    it('returns 0 for a non-hike day', () => {
-      setGroupConfig({ hikeDays: '3,5' });
-      expect(getHikesPerDow(0)).toBe(0);
-      expect(getHikeSlotsForDow(0)).toEqual([]);
-    });
-
-    it('returns 1 for a single-occurrence hike day', () => {
-      setGroupConfig({ hikeDays: '3,5' });
-      expect(getHikesPerDow(3)).toBe(1);
-      expect(getHikeSlotsForDow(3)).toEqual([0]);
-    });
-
-    it('caps slots at maxHikesPerDay', () => {
-      setGroupConfig({ hikeDays: '3,3,3,3', maxHikesPerDay: 3 });
-      expect(getHikesPerDow(3)).toBe(3);
-      expect(getHikeSlotsForDow(3)).toEqual([0, 1, 2]);
-    });
-
-    it('respects a lower maxHikesPerDay', () => {
-      setGroupConfig({ hikeDays: '3,3,3', maxHikesPerDay: 2 });
-      expect(getHikesPerDow(3)).toBe(2);
-      expect(getHikeSlotsForDow(3)).toEqual([0, 1]);
     });
   });
 

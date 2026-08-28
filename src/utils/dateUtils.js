@@ -49,20 +49,14 @@ export function getTodayHikeRef(now = new Date()) {
 }
 
 /**
- * Get all days in a month that are hike days (based on config).
- * @param {number} year
- * @param {number} month - 0-indexed
+ * Count how many times each day-of-week appears in a hike-days list.
  * @param {number[]} hikeDays - Array of day-of-week numbers (0-6).
- * @returns {number[]} Array of day numbers (1-based).
+ * @returns {Object<number, number>} Map of dow -> occurrence count.
  */
-export function getHikeDaysForMonth(year, month, hikeDays) {
-  const daysInMonth = getDaysInMonth(year, month);
-  const hikeDates = [];
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = createDate(year, month, day);
-    if (hikeDays.includes(date.getDay())) hikeDates.push(day);
-  }
-  return hikeDates;
+export function countPerDow(hikeDays) {
+  const counts = {};
+  hikeDays.forEach(d => { counts[d] = (counts[d] || 0) + 1; });
+  return counts;
 }
 
 /**
@@ -78,8 +72,7 @@ export function getHikeDaysForMonth(year, month, hikeDays) {
 export function getHikeSlotsForMonth(year, month, hikeDays, maxPerDay = 3) {
   const daysInMonth = getDaysInMonth(year, month);
   const dates = [];
-  const hikesPerDow = {};
-  hikeDays.forEach(d => { hikesPerDow[d] = (hikesPerDow[d] || 0) + 1; });
+  const hikesPerDow = countPerDow(hikeDays);
   for (let day = 1; day <= daysInMonth; day++) {
     const date = createDate(year, month, day);
     const dayOfWeek = date.getDay();
@@ -89,6 +82,23 @@ export function getHikeSlotsForMonth(year, month, hikeDays, maxPerDay = 3) {
     }
   }
   return dates;
+}
+
+/**
+ * Get all days in a month that are hike days (based on config).
+ * A day is a hike day if it has at least one slot, so this is derived from
+ * getHikeSlotsForMonth (the slot cap never removes a day, only extra slots).
+ * @param {number} year
+ * @param {number} month - 0-indexed
+ * @param {number[]} hikeDays - Array of day-of-week numbers (0-6).
+ * @returns {number[]} Array of day numbers (1-based), sorted ascending.
+ */
+export function getHikeDaysForMonth(year, month, hikeDays) {
+  const days = new Set();
+  for (const { day } of getHikeSlotsForMonth(year, month, hikeDays)) {
+    days.add(day);
+  }
+  return [...days].sort((a, b) => a - b);
 }
 
 export function getMonthKey(year, month) {

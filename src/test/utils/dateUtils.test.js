@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDaysInMonth, createDate, formatDateToISO, getHikeSlotsForMonth } from '../../utils/dateUtils';
+import { getDaysInMonth, createDate, formatDateToISO, getHikeSlotsForMonth, getHikeDaysForMonth, countPerDow } from '../../utils/dateUtils';
  
  describe('dateUtils', () => {
    describe('getDaysInMonth', () => {
@@ -65,6 +65,31 @@ import { getDaysInMonth, createDate, formatDateToISO, getHikeSlotsForMonth } fro
         const slots = getHikeSlotsForMonth(2026, 0, [3, 3, 3], 3);
         const wednesdays = slots.filter(s => s.day === 7).map(s => s.slot).sort();
         expect(wednesdays).toEqual([0, 1, 2]);
+      });
+    });
+
+    describe('getHikeDaysForMonth', () => {
+      it('returns hike days for a month', () => {
+        // 2026-01: Wednesdays 7,14,21,28; Fridays 2,9,16,23,30
+        expect(getHikeDaysForMonth(2026, 0, [3, 5])).toEqual([2, 7, 9, 14, 16, 21, 23, 28, 30]);
+      });
+
+      it('returns unique days even when a day-of-week repeats', () => {
+        expect(getHikeDaysForMonth(2026, 0, [3, 3, 3])).toEqual([7, 14, 21, 28]);
+      });
+    });
+
+    describe('countPerDow', () => {
+      it('counts occurrences per day-of-week', () => {
+        expect(countPerDow([3, 5])).toEqual({ 3: 1, 5: 1 });
+      });
+
+      it('counts repeated days', () => {
+        expect(countPerDow([3, 3, 3])).toEqual({ 3: 3 });
+      });
+
+      it('returns an empty object for empty input', () => {
+        expect(countPerDow([])).toEqual({});
       });
     });
   });

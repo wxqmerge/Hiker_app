@@ -11,9 +11,9 @@ import { setSchedule } from '../hooks/useTrailStore';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTrailName } from '../utils/data';
 import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR, MONTH_ABBR_TO_FULL } from '../utils/constants';
-import { getHikeDays, getDayName, getGroupName, slotLetter } from '../utils/config';
+import { getHikeDays, getDayName, getGroupName, slotLetter, getMaxHikesPerDay } from '../utils/config';
 import { useHikeDays } from '../hooks/useHikeDays';
-import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth, getMonthKey } from '../utils/dateUtils';
+import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth, getMonthKey, countPerDow } from '../utils/dateUtils';
 import { serverScheduleToStore, storeToServerSchedule, getDayEntries, normalizeServerMonthEntries } from '../utils/scheduleFormat';
 import { extractStartOffset } from '../utils/etc';
 import { generateReportHtml } from '../utils/report';
@@ -585,12 +585,17 @@ export function ScheduleSettingsProvider({ children }) {
       }
     }
 
-    // A/B based on actual entries per date, not config slot indices
-    const configuredDayCounts = {};
-    hikeDays.forEach(d => configuredDayCounts[d] = (configuredDayCounts[d] || 0) + 1);
+    // A/B based on actual entries per date, not config slot indices.
+    // Cap at maxHikesPerDay so the export matches the UI (which renders at most
+    // maxHikesPerDay slots per day-of-week).
+    const maxPerDay = getMaxHikesPerDay();
+    const configuredDayCounts = countPerDow(hikeDays);
     const dayCounts = { ...maxEntriesPerDow };
     for (const [d, c] of Object.entries(configuredDayCounts)) {
       if (!(d in dayCounts)) dayCounts[d] = c;
+    }
+    for (const d of Object.keys(dayCounts)) {
+      dayCounts[d] = Math.min(dayCounts[d], maxPerDay);
     }
     const uniqueDays = Object.keys(dayCounts).map(Number).sort((a, b) => a - b);
 
@@ -681,12 +686,12 @@ export function ScheduleSettingsProvider({ children }) {
     const title = `Over-the-Hill Hike Descriptions -- ${month}, ${year}`;
     const hikeDays = getHikeDays();
     const hikeDatesExport = getHikeDaysForMonth(year, selectedMonth, hikeDays);
-    const hikesPerDowExport = {};
-    hikeDays.forEach(d => { hikesPerDowExport[d] = (hikesPerDowExport[d] || 0) + 1; });
+    const maxPerDay = getMaxHikesPerDay();
+    const hikesPerDowExport = countPerDow(hikeDays);
     const entries = hikeDatesExport.flatMap(day => {
       const date = createDate(year, selectedMonth, day);
       const dowNum = date.getDay();
-      const hikesForThisDow = (hikesPerDowExport[dowNum] || 1);
+      const hikesForThisDow = Math.min(hikesPerDowExport[dowNum] || 1, maxPerDay);
       return Array.from({ length: hikesForThisDow }, (_, slot) => {
         const entry = assignedHikes[day]?.[slot] || { trail_id: null, early_start: 0 };
         const { trail_id: trailId, early_start: rawEarlyStart } = entry;

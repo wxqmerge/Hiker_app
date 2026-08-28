@@ -72,27 +72,6 @@ export function getMaxHikesPerDay() {
 }
 
 /**
- * Get the number of hike slots configured for a given day-of-week,
- * capped at the per-day maximum.
- * @param {number} dow - Day of week (0-6).
- * @returns {number} Slot count (0 if the day is not a hike day).
- */
-export function getHikesPerDow(dow) {
-  const days = getHikeDays();
-  const count = days.filter(d => d === dow).length;
-  return Math.min(count, getMaxHikesPerDay());
-}
-
-/**
- * Get the slot indices (0-based) available for a given day-of-week.
- * @param {number} dow - Day of week (0-6).
- * @returns {number[]} e.g. [0, 1, 2] for a day with 3 hikes.
- */
-export function getHikeSlotsForDow(dow) {
-  return Array.from({ length: getHikesPerDow(dow) }, (_, i) => i);
-}
-
-/**
  * Get a human-readable label for the configured hike days.
  * @returns {string} Label like "Wed/Fri Dates" or "Monday A/Monday B".
  */
