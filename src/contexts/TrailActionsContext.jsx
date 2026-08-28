@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useToast } from '../hooks/useToast';
@@ -8,7 +8,7 @@ import { getGpx, getSchedule, updateSchedule, request, exportDataZip, importData
 import { getTrailName } from '../utils/data';
 import { getGroupName } from '../utils/config';
 import { formatDateToISO } from '../utils/dateUtils';
-import { getStoredApiKey, storeApiKey } from '../utils/apiKey';
+import { getStoredApiKey, storeApiKey, subscribeApiKeyChange } from '../utils/apiKey';
 import { useApiKey } from '../hooks/useApiKey';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -20,6 +20,7 @@ export function TrailActionsProvider({ children }) {
   const navigate = useNavigate();
 
   const [apiKey, setApiKey] = useState(getStoredApiKey());
+  const userEditedKeyRef = useRef(false);
   const [validating, setValidating] = useState(false);
   const [newTrailForm, setNewTrailForm] = useState(false);
   const [newTrailName, setNewTrailName] = useState('');
@@ -27,6 +28,21 @@ export function TrailActionsProvider({ children }) {
   const [pendingTsvChoice, setPendingTsvChoice] = useState(null);
 
   const hasApiKey = useApiKey();
+
+  // Keep the apiKey field in sync with the stored key. ApiKeySync (in App) stores
+  // a ?apikey= URL value in a post-render effect, which runs after this provider
+  // mounts — so the initial useState snapshot is stale. Without this, the field
+  // shows empty and clicking Save would clear the freshly-stored key. We skip the
+  // sync while the user is actively editing the field.
+  useEffect(() => {
+    const sync = () => {
+      if (!userEditedKeyRef.current) setApiKey(getStoredApiKey());
+    };
+    const unsubscribe = subscribeApiKeyChange(sync);
+    sync();
+    return unsubscribe;
+  }, []);
+
   const requireKey = useCallback((msg) => {
     if (!hasApiKey) {
       showToast(msg, 'error');
@@ -41,8 +57,15 @@ export function TrailActionsProvider({ children }) {
 
   const saveApiKey = useCallback(() => {
     storeApiKey(apiKey);
+    userEditedKeyRef.current = false;
     showToast('API key saved!', 'success');
   }, [apiKey, showToast]);
+
+  // Marks the field as user-edited so the auto-sync above doesn't clobber input.
+  const handleApiKeyChange = useCallback((value) => {
+    userEditedKeyRef.current = true;
+    setApiKey(value);
+  }, []);
 
   const handleValidateDatabase = useCallback(async () => {
     setValidating(true);
@@ -408,7 +431,7 @@ export function TrailActionsProvider({ children }) {
 
   const value = {
     apiKey,
-    setApiKey,
+    setApiKey: handleApiKeyChange,
     saveApiKey,
     hasApiKey,
     requireKey,
