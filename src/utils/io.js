@@ -54,7 +54,7 @@ export function hasValidCoords(lat, lon) {
 
 // NOAA/NWS coverage box (continental US). Coordinates strictly inside this box
 // use the NWS forecast; coordinates outside fall back to Open-Meteo.
-const NOAA_BOX = { minLat: 25, maxLat: 48, minLon: -124, maxLon: -66 };
+const NOAA_BOX = { minLat: 25, maxLat: 48.2, minLon: -124, maxLon: -66 };
 
 /**
  * Whether a coordinate falls inside the NOAA/NWS coverage box.

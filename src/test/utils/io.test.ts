@@ -386,10 +386,12 @@ describe('isNoaaRegion', () => {
     expect(isNoaaRegion(47.6, -122.3)).toBe(true); // Seattle
     expect(isNoaaRegion(40.7, -74.0)).toBe(true);  // NYC
     expect(isNoaaRegion(34.0, -118.2)).toBe(true); // LA
+    expect(isNoaaRegion(48.058, -123.789)).toBe(true); // Storm King, WA (north tip)
   });
 
   it('returns false for coordinates outside the box', () => {
-    expect(isNoaaRegion(49.0, -123.0)).toBe(false); // north of 48N
+    expect(isNoaaRegion(49.0, -123.0)).toBe(false); // north of 48.2N
+    expect(isNoaaRegion(48.2, -123.0)).toBe(false); // exactly at the 48.2N boundary
     expect(isNoaaRegion(24.0, -80.0)).toBe(false);  // south of 25N
     expect(isNoaaRegion(45.0, -60.0)).toBe(false);  // east of -66
     expect(isNoaaRegion(45.0, -130.0)).toBe(false); // west of -124
@@ -403,7 +405,7 @@ describe('isNoaaRegion', () => {
 });
 
 describe('fetchOpenMeteoForDate', () => {
-  const lat = 49.0; // outside NOAA box (north of 48N)
+  const lat = 49.0; // outside NOAA box (north of 48.2N)
   const lon = -123.0;
   const targetDate = new Date(2026, 7, 14); // Aug 14, 2026
 
@@ -548,7 +550,7 @@ describe('fetchWeatherAndTide', () => {
     const within7 = new Date(2026, 7, 14); // Aug 14 (4 days ahead)
     const fetchFn = vi.fn(async () => ({ ok: true, json: async () => omPayload }));
     vi.stubGlobal('fetch', fetchFn);
-    await fetchWeatherAndTide(49.0, -123.0, within7, null); // north of 48N (outside box)
+    await fetchWeatherAndTide(49.0, -123.0, within7, null); // north of 48.2N (outside box)
     const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
     expect(urls).toContainEqual(expect.stringContaining('open-meteo'));
     expect(urls).not.toContainEqual(expect.stringContaining('api.weather.gov'));
