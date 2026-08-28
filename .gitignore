@@ -27,6 +27,7 @@ deploy/.env
 .env
 .env_sothh
 .env_ramblers
+.env_travel
 # Shared build artifacts
 shared/types/*.js.map
 shared/types/*.d.ts
@@ -48,6 +49,7 @@ shared/types/*.d.ts.map
 
 # Exported data (never committed)
 exported_data/
+travel_data/
 
 # Python cache
 __pycache__/
