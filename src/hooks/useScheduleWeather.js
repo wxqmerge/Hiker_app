@@ -36,7 +36,7 @@ export function useScheduleWeather({ schedule, selectedMonth, trails, year = CUR
   const fetchFn = useCallback(async (t) => {
     const results = {};
     await Promise.allSettled(Object.entries(t.days).map(async ([day, info]) => {
-      const dayResults = info.inForecastRange
+      const dayResults = info.isTodayOrFuture
         ? await fetchWeatherForCoords(info.trailCoords, info.date)
         : await fetchTideForCoords(info.trailCoords, info.date);
       if (Object.keys(dayResults).length > 0) results[day] = dayResults;

@@ -34,12 +34,12 @@ export function useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, 
     }
     if (ids.length === 0) return null;
 
-    const { trailCoords, inForecastRange } = buildWeatherTarget(date, ids, trails, today);
-    return { key: `${year}:${selectedMonth}:${day}`, date, trailCoords, inForecastRange };
+    const { trailCoords, isTodayOrFuture } = buildWeatherTarget(date, ids, trails, today);
+    return { key: `${year}:${selectedMonth}:${day}`, date, trailCoords, isTodayOrFuture };
   }, [schedule, selectedMonth, selectedDay, trailIds, trails, year]);
 
   const fetchFn = useCallback(async (t) => {
-    return t.inForecastRange
+    return t.isTodayOrFuture
       ? await fetchWeatherForCoords(t.trailCoords, t.date)
       : await fetchTideForCoords(t.trailCoords, t.date);
   }, []);

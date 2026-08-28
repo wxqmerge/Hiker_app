@@ -49,6 +49,19 @@ export function getTodayHikeRef(now = new Date()) {
 }
 
 /**
+ * Whether a date falls within the next 7 days (today through 6 days ahead).
+ * This is the NWS forecast range; dates beyond it fall back to Open-Meteo.
+ * @param {Date} date
+ * @param {Date} [now] - Reference "now" (defaults to new Date()).
+ * @returns {boolean}
+ */
+export function isWithin7Days(date, now = new Date()) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const daysAhead = Math.round((date - today) / MS_PER_DAY);
+  return daysAhead >= 0 && daysAhead <= 6;
+}
+
+/**
  * Count how many times each day-of-week appears in a hike-days list.
  * @param {number[]} hikeDays - Array of day-of-week numbers (0-6).
  * @returns {Object<number, number>} Map of dow -> occurrence count.

@@ -1,5 +1,5 @@
 import { getTrailName } from './data';
-import { formatDateCompact, formatDateToISO } from './dateUtils';
+import { formatDateCompact, formatDateToISO, isWithin7Days } from './dateUtils';
 
 // Sanitize a string for use as a filename
 export function sanitizeFilename(name, fallback = 'file') {
@@ -237,7 +237,10 @@ export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
     const hasCoords = hasValidCoords(lat, lon);
     const tasks = [];
     if (hasCoords) {
-      tasks.push(isNoaaRegion(lat, lon)
+      // NWS only covers the next 7 days inside the NOAA box. Everything else
+      // (out-of-box sites, or in-box sites beyond 7 days) uses Open-Meteo.
+      const useNws = isNoaaRegion(lat, lon) && isWithin7Days(targetDate);
+      tasks.push(useNws
         ? fetchNwsForecastForDate(lat, lon, targetDate)
         : fetchOpenMeteoForDate(lat, lon, targetDate));
     }

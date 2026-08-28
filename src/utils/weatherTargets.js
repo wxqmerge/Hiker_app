@@ -6,9 +6,11 @@ export function getTodayMidnight(now = new Date()) {
   return createDate(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-export function isWithinForecastRange(date, today = getTodayMidnight()) {
+// Weather is fetched for any today-or-future date: NWS covers the next 7 days,
+// Open-Meteo covers dates beyond that. Past dates get tide only (no forecast).
+export function isTodayOrFuture(date, today = getTodayMidnight()) {
   const daysAhead = Math.round((date - today) / MS_PER_DAY);
-  return daysAhead >= 0 && daysAhead <= 6;
+  return daysAhead >= 0;
 }
 
 export function getTrailIdsFromEntries(entries) {
@@ -19,6 +21,6 @@ export function buildWeatherTarget(date, trailIds, trails, today = getTodayMidni
   return {
     date,
     trailCoords: buildTrailCoords(trailIds, trails),
-    inForecastRange: isWithinForecastRange(date, today),
+    isTodayOrFuture: isTodayOrFuture(date, today),
   };
 }

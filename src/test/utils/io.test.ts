@@ -513,35 +513,57 @@ describe('fetchWeatherAndTide', () => {
     expect(urls).toContainEqual(expect.stringContaining('station=9447130'));
   });
 
-  it('uses NWS for coordinates inside the NOAA box', async () => {
+  // Source selection depends on the 7-day window, so pin "now" with fake timers.
+  const omPayload = { daily: { time: ['2026-08-20'], temperature_2m_max: [60], precipitation_probability_max: [10] } };
+
+  it('uses NWS for in-box coordinates within 7 days', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 10)); // Aug 10, 2026
+    const within7 = new Date(2026, 7, 14); // Aug 14 (4 days ahead)
     const fetchFn = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
     vi.stubGlobal('fetch', fetchFn);
-    await fetchWeatherAndTide(47.6, -122.3, targetDate, null); // Seattle (inside box)
+    await fetchWeatherAndTide(47.6, -122.3, within7, null); // Seattle (inside box)
     const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
     expect(urls).toContainEqual(expect.stringContaining('api.weather.gov'));
     expect(urls).not.toContainEqual(expect.stringContaining('open-meteo'));
+    vi.useRealTimers();
   });
 
-  it('uses Open-Meteo for coordinates outside the NOAA box', async () => {
-    const fetchFn = vi.fn(async () => ({
-      ok: true,
-      json: async () => ({ daily: { time: ['2026-08-14'], temperature_2m_max: [60], precipitation_probability_max: [10] } }),
-    }));
+  it('uses Open-Meteo for in-box coordinates beyond 7 days', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 10)); // Aug 10, 2026
+    const beyond7 = new Date(2026, 7, 20); // Aug 20 (10 days ahead)
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => omPayload }));
     vi.stubGlobal('fetch', fetchFn);
-    await fetchWeatherAndTide(49.0, -123.0, targetDate, null); // north of 48N (outside box)
+    await fetchWeatherAndTide(47.6, -122.3, beyond7, null); // Seattle (inside box, >7 days)
     const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
     expect(urls).toContainEqual(expect.stringContaining('open-meteo'));
     expect(urls).not.toContainEqual(expect.stringContaining('api.weather.gov'));
+    vi.useRealTimers();
+  });
+
+  it('uses Open-Meteo for out-of-box coordinates within 7 days', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 10)); // Aug 10, 2026
+    const within7 = new Date(2026, 7, 14); // Aug 14 (4 days ahead)
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => omPayload }));
+    vi.stubGlobal('fetch', fetchFn);
+    await fetchWeatherAndTide(49.0, -123.0, within7, null); // north of 48N (outside box)
+    const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
+    expect(urls).toContainEqual(expect.stringContaining('open-meteo'));
+    expect(urls).not.toContainEqual(expect.stringContaining('api.weather.gov'));
+    vi.useRealTimers();
   });
 
   it('tags Open-Meteo weather with the om flag', async () => {
-    const fetchFn = vi.fn(async () => ({
-      ok: true,
-      json: async () => ({ daily: { time: ['2026-08-14'], temperature_2m_max: [60], precipitation_probability_max: [10] } }),
-    }));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 10)); // Aug 10, 2026
+    const beyond7 = new Date(2026, 7, 20); // Aug 20 (10 days ahead)
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => omPayload }));
     vi.stubGlobal('fetch', fetchFn);
-    const result = await fetchWeatherAndTide(49.0, -123.0, targetDate, null);
+    const result = await fetchWeatherAndTide(47.6, -122.3, beyond7, null); // in-box but >7 days → OM
     expect(result).toEqual({ temp: 60, rain: 10, om: true });
+    vi.useRealTimers();
   });
 });
 

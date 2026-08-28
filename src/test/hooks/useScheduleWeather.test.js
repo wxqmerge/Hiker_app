@@ -75,7 +75,7 @@ describe('useScheduleWeather', () => {
     fetchWeatherAndTide.mockImplementation(async () => ({ temp: 70, rain: 10 }));
   });
 
-  it('does not fetch weather for days beyond 7 days out', () => {
+  it('does not fetch weather when the trail has no coordinates', () => {
     const future = new Date(now);
     future.setDate(future.getDate() + 10);
     renderHook(() => useScheduleWeather({
@@ -86,19 +86,18 @@ describe('useScheduleWeather', () => {
     expect(fetchWeatherAndTide).not.toHaveBeenCalled();
   });
 
-  it('fetches tide only for days beyond 7 days out', async () => {
+  it('fetches weather for days beyond 7 days out', async () => {
     const future = new Date(now);
     future.setDate(future.getDate() + 10);
     const { result } = renderHook(() => useScheduleWeather({
       schedule: { [MONTH_ABBR[future.getMonth()]]: { [future.getDate()]: [{ trail_id: 'trail-1' }] } },
       selectedMonth: future.getMonth(),
-      trails: [{ id: 'trail-1', tideStationId: '9447130' }],
+      trails: [{ id: 'trail-1', trailHeadLat: 47.6, trailHeadLon: -122.3 }],
     }));
     await waitFor(() => {
-      expect(result.current[String(future.getDate())]).toEqual({ 'trail-1': { tide: 2.5, tideTime: '9:30a' } });
+      expect(result.current[String(future.getDate())]).toEqual({ 'trail-1': { temp: 70, rain: 10 } });
     });
-    expect(fetchWeatherAndTide).not.toHaveBeenCalled();
-    expect(fetchTideForCoords).toHaveBeenCalledWith({ 'trail-1': { lat: null, lon: null, stationId: '9447130' } }, expect.any(Date));
+    expect(fetchWeatherAndTide).toHaveBeenCalledWith(47.6, -122.3, expect.any(Date), null);
   });
 
   it('does not fetch weather for past days', () => {
