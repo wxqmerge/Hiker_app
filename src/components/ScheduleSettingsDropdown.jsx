@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { useTrailActions } from '../contexts/TrailActionsContext';
 import DropdownItem from './shared/DropdownItem';
+import PwaInstall from './PwaInstall';
 
 const APP_VERSION = __APP_VERSION;
 
@@ -215,6 +216,7 @@ export default function ScheduleSettingsDropdown() {
         </svg>
         View on GitHub
       </a>
+      <PwaInstall />
     </div>
   );
 

@@ -2,14 +2,10 @@ import { getDevicePlatform } from '../utils/device';
 
 export default function GPXHelp({ variant = 'light' }) {
   const platform = getDevicePlatform();
-  let link = "";
+  let link = "https://www.gpxsee.org/";
 
-  if (platform === 'windows') {
-    link = "https://www.gpxsee.org/";
-  } else if (platform === 'mobile') {
+  if (platform === 'android' || platform === 'ios') {
     link = "https://organicmaps.app/";
-  } else {
-    link = "https://www.gpxsee.org/";
   }
 
   const styles = {
