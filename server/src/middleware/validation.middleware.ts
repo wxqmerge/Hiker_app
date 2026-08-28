@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+// --- Slot cap (derived from MAX_HIKES_PER_DAY, default 3) ---
+// Enforces the per-day slot limit at the API write boundary. Slots are 0-based,
+// so a group allowing N hikes/day accepts slot indices 0..N-1.
+const maxHikesPerDay = Math.min(7, Math.max(1, parseInt(process.env.MAX_HIKES_PER_DAY || '3', 10) || 3));
+const MAX_SLOT = maxHikesPerDay - 1;
+
 // --- Trail field whitelist ---
 export const TRAIL_FIELDS = new Set([
   'name', 'fullName', 'distance', 'distanceExtended',
@@ -16,7 +22,7 @@ export const TRAIL_DETAIL_FIELDS = new Set([
 // --- Schedule entry schema ---
 export const ScheduleEntrySchema = z.object({
   day: z.number().int().positive(),
-  slot: z.number().int().nonnegative().default(0),
+  slot: z.number().int().nonnegative().max(MAX_SLOT).default(0),
   trail_id: z.string().default(''),
   early_start: z.union([z.boolean(), z.number()]).default(0),
   leader: z.string().default(''),

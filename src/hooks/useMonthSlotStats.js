@@ -1,16 +1,17 @@
 import { useMemo } from 'react';
-import { useHikeDays } from './useHikeDays';
+import { useHikeDays, useMaxHikesPerDay } from './useHikeDays';
 import { getHikeSlotsForMonth, getMonthKey } from '../utils/dateUtils';
 import { normalizeDayEntries } from '../utils/scheduleFormat';
 
 export function useMonthSlotStats({ trails, scheduleStore, years = [] }) {
   const hikeDays = useHikeDays();
+  const maxHikesPerDay = useMaxHikesPerDay();
   return useMemo(() => {
     const trailIdSet = new Set(trails.map(t => t.id));
     const stats = {};
     years.forEach(year => {
       for (let idx = 0; idx < 12; idx += 1) {
-        const total = getHikeSlotsForMonth(year, idx, hikeDays).length;
+        const total = getHikeSlotsForMonth(year, idx, hikeDays, maxHikesPerDay).length;
         let filled = 0;
         const monthData = scheduleStore[getMonthKey(year, idx)] || {};
         Object.values(monthData).forEach(val => {
@@ -21,5 +22,5 @@ export function useMonthSlotStats({ trails, scheduleStore, years = [] }) {
       }
     });
     return stats;
-  }, [scheduleStore, years, trails, hikeDays]);
+  }, [scheduleStore, years, trails, hikeDays, maxHikesPerDay]);
 }

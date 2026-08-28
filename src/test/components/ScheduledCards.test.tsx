@@ -153,6 +153,21 @@ describe('ScheduledCards', () => {
     expect(screen.getByText('Assigned Hikes (2)')).toBeInTheDocument();
   });
 
+  it('handles three hikes on same day (slots A/B/C)', () => {
+    const hikeProps = {
+      ...props,
+      assignedHikes: {
+        1: [
+          { trail_id: 'trail-1', early_start: false, leader: null },
+          { trail_id: 'trail-1', early_start: false, leader: null },
+          { trail_id: 'trail-1', early_start: false, leader: null },
+        ],
+      },
+    };
+    render(<ScheduledCards {...hikeProps} />);
+    expect(screen.getByText('Assigned Hikes (3)')).toBeInTheDocument();
+  });
+
   it('skips entries without trail_id', () => {
     const hikeProps = {
       ...props,

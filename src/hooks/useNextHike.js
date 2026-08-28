@@ -9,9 +9,9 @@ import { useScheduleStore } from './useScheduleStore';
 /**
  * Compute the next upcoming hike(s) from schedule data.
  * Scans configured hike days chronologically starting from today.
- * Returns up to `maxHikes` total hikes (default 2).
+ * Returns up to `maxHikes` total hikes (default 3, matching the per-day slot cap).
  */
-export function useNextHike({ trails, schedule, maxHikes = 2 }) {
+export function useNextHike({ trails, schedule, maxHikes = 3 }) {
 
   const scheduleStore = useScheduleStore(schedule);
   const hikeDays = useHikeDays();

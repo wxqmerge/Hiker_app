@@ -52,7 +52,8 @@ function App() {
       if (data && data.name && data.hikeDays) {
         setGroupConfig({
           name: data.name,
-          hikeDays: data.hikeDays
+          hikeDays: data.hikeDays,
+          maxHikesPerDay: data.maxHikesPerDay
         });
       } else {
         showToast('Server configuration missing', 'error');

@@ -5,6 +5,7 @@ import { getMonthKey } from '../../utils/dateUtils';
 
 vi.mock('../../utils/config', () => ({
   getHikeDays: vi.fn(() => [1]),
+  getMaxHikesPerDay: vi.fn(() => 3),
   getConfigVersion: vi.fn(() => 0),
   subscribeConfigChange: vi.fn(() => () => {}),
 }));

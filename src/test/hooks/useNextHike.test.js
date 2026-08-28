@@ -27,38 +27,58 @@ import { useNextHike } from '../../hooks/useNextHike';
      vi.useRealTimers();
    });
  
-     it('finds the next 2 hikes', () => {
-       // Set time to Tue Jan 6, 2026, 10:00 AM
-       const date = new Date(2026, 0, 6, 10, 0);
-       vi.setSystemTime(date);
+      it('finds the next 3 hikes by default', () => {
+        // Set time to Tue Jan 6, 2026, 10:00 AM
+        const date = new Date(2026, 0, 6, 10, 0);
+        vi.setSystemTime(date);
 
-        const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026 }));
+         const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026 }));
 
-         expect(result.current).toEqual([
-          {
-            day: 7,
-            monthIndex: 0,
-            year: 2026,
-            monthKey: '2026-01',
-            date: expect.any(Date),
-            trail: mockTrails[0],
-            trailId: 'trail-1',
-            leader: '',
-            earlyStart: 0,
-          },
-          {
-            day: 9,
-            monthIndex: 0,
-            year: 2026,
-            monthKey: '2026-01',
-            date: expect.any(Date),
-            trail: mockTrails[1],
-            trailId: 'trail-2',
-            leader: '',
-            earlyStart: 0,
-          }
-        ]);
-     });
+          expect(result.current).toEqual([
+           {
+             day: 7,
+             monthIndex: 0,
+             year: 2026,
+             monthKey: '2026-01',
+             date: expect.any(Date),
+             trail: mockTrails[0],
+             trailId: 'trail-1',
+             leader: '',
+             earlyStart: 0,
+           },
+           {
+             day: 9,
+             monthIndex: 0,
+             year: 2026,
+             monthKey: '2026-01',
+             date: expect.any(Date),
+             trail: mockTrails[1],
+             trailId: 'trail-2',
+             leader: '',
+             earlyStart: 0,
+           },
+           {
+             day: 4,
+             monthIndex: 1,
+             year: 2026,
+             monthKey: '2026-02',
+             date: expect.any(Date),
+             trail: mockTrails[0],
+             trailId: 'trail-1',
+             leader: '',
+             earlyStart: 0,
+           }
+         ]);
+      });
+
+      it('respects an explicit maxHikes limit', () => {
+        const date = new Date(2026, 0, 6, 10, 0);
+        vi.setSystemTime(date);
+
+        const { result } = renderHook(() => useNextHike({ trails: mockTrails, schedule: mockSchedule, year: 2026, maxHikes: 2 }));
+
+        expect(result.current.map(h => h.day)).toEqual([7, 9]);
+      });
 
  
      it('finds the next 2 hike dates when Wednesday passed', () => {

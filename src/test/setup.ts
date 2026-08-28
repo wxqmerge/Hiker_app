@@ -173,7 +173,7 @@ beforeEach(() => {
 
 // Reset shared config between tests
 beforeEach(() => {
-  setGroupConfig({ name: 'Test Group', hikeDays: '3,5' });
+  setGroupConfig({ name: 'Test Group', hikeDays: '3,5', maxHikesPerDay: 3 });
 });
 
 // Mock window.location

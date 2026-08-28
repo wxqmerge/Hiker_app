@@ -27,6 +27,17 @@ import { updateLeader } from '../utils/scheduleActions';
 import { getDayName, getHikeDaysLabel, slotLetter } from '../utils/config';
 import { START_OFFSET_OPTIONS, normalizeStartOffset } from '../utils/etc';
 
+// Distinct color per day-of-week so all 7 days are visually distinguishable.
+const DAY_COLORS = {
+  0: 'text-red-600',      // Sunday
+  1: 'text-blue-600',     // Monday
+  2: 'text-green-600',    // Tuesday
+  3: 'text-cyan-600',     // Wednesday
+  4: 'text-indigo-600',   // Thursday
+  5: 'text-purple-600',   // Friday
+  6: 'text-amber-600',    // Saturday
+};
+
 export default function ScheduleBuilder() {
   const { trails, loading, lookup, schedule: scheduleData } = useTrails();
   const trailDetails = useTrailDetails();
@@ -220,7 +231,7 @@ export default function ScheduleBuilder() {
                   </span>
                 )}
               </div>
-              <div className="p-4">
+              <div className="p-4 max-h-[calc(100vh-14rem)] overflow-y-auto">
                 <div className="space-y-3">
                     {hikeDates.map((slot) => {
                       const day = slot.day;
@@ -261,14 +272,12 @@ export default function ScheduleBuilder() {
                           aria-label={trailId ? `Day ${day}, ${getDayName(dayOfWeek)}: ${displayHikeName}` : `Empty slot on day ${day}, ${getDayName(dayOfWeek)}`}
                         >
                            <div className="flex items-start gap-3">
-                             <div className="text-center flex-shrink-0">
-                                 <div className={`text-2xl font-bold ${
-                                  dayOfWeek === 3 ? 'text-blue-600' : dayOfWeek === 5 ? 'text-purple-600' : 'text-gray-600'
-                                 }`}>
-                                   {day}
-                                 </div>
-                                 <div className="text-xs text-gray-500">{getDayName(dayOfWeek)}</div>
-                               </div>
+                              <div className="text-center flex-shrink-0">
+                                  <div className={`text-2xl font-bold ${DAY_COLORS[dayOfWeek] || 'text-gray-600'}`}>
+                                    {day}
+                                  </div>
+                                  <div className="text-xs text-gray-500">{getDayName(dayOfWeek)}</div>
+                                </div>
                               <div className="flex-1 min-w-0">
                                 {displayHikeName ? (
                                   <>

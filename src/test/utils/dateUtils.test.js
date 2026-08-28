@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDaysInMonth, createDate, formatDateToISO } from '../../utils/dateUtils';
+import { getDaysInMonth, createDate, formatDateToISO, getHikeSlotsForMonth } from '../../utils/dateUtils';
  
  describe('dateUtils', () => {
    describe('getDaysInMonth', () => {
@@ -39,10 +39,32 @@ import { getDaysInMonth, createDate, formatDateToISO } from '../../utils/dateUti
         expect(formatDateToISO(localDate)).toBe('2026-06-15');
       });
   
-      it('defaults to current date', () => {
+       it('defaults to current date', () => {
         const now = new Date();
         const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         expect(formatDateToISO()).toBe(expected);
       });
+     });
+
+    describe('getHikeSlotsForMonth', () => {
+      it('emits one slot per hike day by default', () => {
+        // 2026-01: Wednesdays are 7,14,21,28; Fridays are 2,9,16,23,30
+        const slots = getHikeSlotsForMonth(2026, 0, [3, 5]);
+        expect(slots.filter(s => s.slot === 0).length).toBe(9);
+        expect(slots.every(s => s.slot === 0)).toBe(true);
+      });
+
+      it('caps slots at maxPerDay', () => {
+        // 4 occurrences of Wednesday but maxPerDay=2 → only slots 0,1
+        const slots = getHikeSlotsForMonth(2026, 0, [3, 3, 3, 3], 2);
+        const wednesdays = slots.filter(s => s.day === 7);
+        expect(wednesdays.map(s => s.slot).sort()).toEqual([0, 1]);
+      });
+
+      it('emits up to 3 slots for a 3-occurrence day', () => {
+        const slots = getHikeSlotsForMonth(2026, 0, [3, 3, 3], 3);
+        const wednesdays = slots.filter(s => s.day === 7).map(s => s.slot).sort();
+        expect(wednesdays).toEqual([0, 1, 2]);
+      });
     });
- });
+  });

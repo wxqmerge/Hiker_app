@@ -35,7 +35,12 @@ Excel → python extract_trails_xls.py → exported_data/*.json
 All writes go to `exported_data/` JSON files via `dataService.ts` — **not IndexedDB**. There is no client-side storage.
 
 ### Config (Server Is Source of Truth)
-**Single build shared across deployments** (sothh, ramblers). The client does NOT read config from env vars at build time. Instead, the server exposes `/api/config` (`{ scheduleName, hikeDays }`) and the client fetches it at runtime. Server reads only root `.env` — `server/.env` is ignored (local-only, never committed).
+**Single build shared across deployments** (sothh, ramblers). The client does NOT read config from env vars at build time. Instead, the server exposes `/api/config` (`{ scheduleName, hikeDays, maxHikesPerDay }`) and the client fetches it at runtime. Server reads only root `.env` — `server/.env` is ignored (local-only, never committed).
+
+**Full-week / multi-slot scheduling**: hikes can be scheduled on **any of the 7 days** with **up to `MAX_HIKES_PER_DAY` slots per day** (default `3`, slots A/B/C).
+- `HIKE_DAYS` — comma-separated day-of-week numbers `0`–`6` (0=Sun). Repeat a day to give it multiple slots, e.g. `HIKE_DAYS=3,3,3` = Wednesday ×3. For all 7 days: `HIKE_DAYS=0,1,2,3,4,5,6`.
+- `MAX_HIKES_PER_DAY` — integer `1`–`7` (default `3`). Caps the number of slots rendered per day-of-week and the `slot` index accepted at the API write boundary (`slot` 0..N-1).
+- The data model is already multi-slot (`ScheduleEntry.slot` is an unbounded non-negative int); no migration needed. Existing groups (sothh `3,5`, ramblers `1,1`) are unaffected because their per-day count (≤2) is below the default cap.
 
 ### Shared Types Compilation
 `server/package.json` build script runs 4 steps in order:
@@ -51,7 +56,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - Trail ID lookup falls back: `"360-rd"` → `"360"` (first segment)
 - Schedule `findTrailById` uses 3-tier matching: exact → case-insensitive → slug word matching
 - **API Base URL**: `getApiBase()` auto-detects from URL — subdomain (`sothh-dev.example.com`) or path (`example.com/sothh-dev`). All `fetch()` calls must use this or `request()` wrapper. Never hardcode `/api/` paths in production code.
-- **`/api/config`**: Returns `{ scheduleName, hikeDays }` — client should not hardcode these values.
+- **`/api/config`**: Returns `{ scheduleName, hikeDays, maxHikesPerDay }` — client should not hardcode these values. `/api/schedule/group` returns the same three fields.
 
 ## Dev Server Gotchas
 - Dev: Vite proxies `/api` and `/health` to `localhost:3000`

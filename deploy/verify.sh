@@ -72,13 +72,16 @@ echo "  Frontend URL: $FRONTEND_URL"
 if [ -f "server/.env" ]; then
     SCHED_NAME=$(grep '^SCHEDULE_NAME=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
     HIKE_DAYS=$(grep '^HIKE_DAYS=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    MAX_HIKES=$(grep '^MAX_HIKES_PER_DAY=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
     NODE_ENV_VAL=$(grep '^NODE_ENV=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
     echo "  Schedule Group: ${SCHED_NAME:-default}"
     echo "  Hike Days:      ${HIKE_DAYS:-3,5}"
+    echo "  Max Hikes/Day:  ${MAX_HIKES:-3}"
     echo "  Node Env:       ${NODE_ENV_VAL:-development}"
 else
     echo "  Schedule Group: default"
     echo "  Hike Days:      3,5"
+    echo "  Max Hikes/Day:  3"
     echo "  Node Env:       development"
 fi
 echo ""
@@ -212,6 +215,7 @@ if [ -f "server/.env" ]; then
     check_env_var "ADMIN_API_KEY" true "(none - required)"
     check_env_var "SCHEDULE_NAME" false "default"
     check_env_var "HIKE_DAYS" false "3,5"
+    check_env_var "MAX_HIKES_PER_DAY" false "3"
     check_env_var "NODE_ENV" false "development"
     check_env_var "CORS_ORIGINS" false "* (any origin)"
 
@@ -223,6 +227,19 @@ if [ -f "server/.env" ]; then
                 pass "HIKE_DAYS format valid ($HIKE_VAL)"
             else
                 fail "HIKE_DAYS invalid format: '$HIKE_VAL' (expected comma-separated 0-6, e.g. 3,5)"
+                NEED_ENV=true
+            fi
+        fi
+    fi
+
+    # Validate MAX_HIKES_PER_DAY format: integer 1-7
+    if grep -q '^MAX_HIKES_PER_DAY=' server/.env; then
+        MAX_HIKES_VAL=$(grep '^MAX_HIKES_PER_DAY=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
+        if [ -n "$MAX_HIKES_VAL" ]; then
+            if echo "$MAX_HIKES_VAL" | grep -qE '^[1-7]$'; then
+                pass "MAX_HIKES_PER_DAY format valid ($MAX_HIKES_VAL)"
+            else
+                fail "MAX_HIKES_PER_DAY invalid format: '$MAX_HIKES_VAL' (expected integer 1-7)"
                 NEED_ENV=true
             fi
         fi

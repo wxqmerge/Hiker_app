@@ -50,4 +50,30 @@ describe('MoveHikeModal', () => {
     expect(props.onMove).toHaveBeenCalledWith(source, 8, 0);
     expect(props.onClose).toHaveBeenCalled();
   });
+
+  it('shows slot letters B/C for a day with 3 slots', () => {
+    // Jan 1 and Jan 8, 2024 are both Mondays. Day 1 has 3 slots (A/B/C); source is day 1 slot 0 (A), so it is excluded.
+    const threeSlotProps = {
+      ...props,
+      hikeDates: [
+        { day: 1, slot: 0 },
+        { day: 1, slot: 1 },
+        { day: 1, slot: 2 },
+        { day: 8, slot: 0 },
+      ],
+      assignedHikes: {
+        1: [
+          { trail_id: 'trail-1', early_start: false, leader: '' },
+          { trail_id: 'trail-2', early_start: false, leader: '' },
+          { trail_id: 'trail-1', early_start: false, leader: '' },
+        ],
+        8: [{ trail_id: 'trail-2', early_start: false, leader: '' }],
+      },
+    };
+    render(<MoveHikeModal {...threeSlotProps} />);
+    expect(screen.getByRole('option', { name: /Monday 1 B/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Monday 1 C/ })).toBeInTheDocument();
+    // Day 8 has a single slot, so no letter suffix.
+    expect(screen.getByRole('option', { name: /Monday 8/ })).toBeInTheDocument();
+  });
 });

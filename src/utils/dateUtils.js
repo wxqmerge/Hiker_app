@@ -67,13 +67,15 @@ export function getHikeDaysForMonth(year, month, hikeDays) {
 
 /**
  * Get hike dates with slot info for a month.
- * Returns [{ day, slot }] accounting for multiple hikes per dow.
+ * Returns [{ day, slot }] accounting for multiple hikes per dow, capped at
+ * `maxPerDay` slots per day-of-week (default 3).
  * @param {number} year
  * @param {number} month - 0-indexed
  * @param {number[]} hikeDays - Array of day-of-week numbers (0-6).
+ * @param {number} [maxPerDay=3] - Maximum slots rendered per day-of-week.
  * @returns {{day: number, slot: number}[]}
  */
-export function getHikeSlotsForMonth(year, month, hikeDays) {
+export function getHikeSlotsForMonth(year, month, hikeDays, maxPerDay = 3) {
   const daysInMonth = getDaysInMonth(year, month);
   const dates = [];
   const hikesPerDow = {};
@@ -81,7 +83,7 @@ export function getHikeSlotsForMonth(year, month, hikeDays) {
   for (let day = 1; day <= daysInMonth; day++) {
     const date = createDate(year, month, day);
     const dayOfWeek = date.getDay();
-    const hikesForThisDow = hikesPerDow[dayOfWeek] || 0;
+    const hikesForThisDow = Math.min(hikesPerDow[dayOfWeek] || 0, maxPerDay);
     for (let s = 0; s < hikesForThisDow; s++) {
       dates.push({ day, slot: s });
     }

@@ -107,6 +107,7 @@ app.get('/api/config', (req, res) => {
     appName: String(appName),
     scheduleName: process.env.SCHEDULE_NAME || 'default',
     hikeDays: process.env.HIKE_DAYS || '3,5',
+    maxHikesPerDay: parseInt(process.env.MAX_HIKES_PER_DAY || '3', 10) || 3,
   });
 });
 

@@ -86,8 +86,8 @@ done
 
 echo ""
 echo "--- Environment ---"
-printf "%-20s %12s %10s %12s %8s %8s\n" "Instance" "Group" "HikeDays" "NodeEnv" "Port" "API Key"
-printf "%-20s %12s %10s %12s %8s %8s\n" "--------------------" "------------" "----------" "------------" "--------" "--------"
+printf "%-20s %12s %10s %8s %12s %8s %8s\n" "Instance" "Group" "HikeDays" "MaxHikes" "NodeEnv" "Port" "API Key"
+printf "%-20s %12s %10s %8s %12s %8s %8s\n" "--------------------" "------------" "----------" "--------" "------------" "--------" "--------"
 
 declare -A PORTS
 
@@ -99,17 +99,19 @@ for dir in "$BASE"/*/; do
     name=$(basename "$dir")
     SCHED_NAME=$(grep '^SCHEDULE_NAME=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
     HIKE_DAYS=$(grep '^HIKE_DAYS=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    MAX_HIKES=$(grep '^MAX_HIKES_PER_DAY=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
     NODE_ENV_VAL=$(grep '^NODE_ENV=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
     PORT_VAL=$(grep '^PORT=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
     API_KEY=$(grep '^ADMIN_API_KEY=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
 
     [ -z "$SCHED_NAME" ] && SCHED_NAME="-"
     [ -z "$HIKE_DAYS" ] && HIKE_DAYS="-"
+    [ -z "$MAX_HIKES" ] && MAX_HIKES="3"
     [ -z "$NODE_ENV_VAL" ] && NODE_ENV_VAL="-"
     [ -z "$PORT_VAL" ] && PORT_VAL="-"
     [ -n "$API_KEY" ] && API_KEY="set" || API_KEY="none"
 
-    printf "%-20s %12s %10s %12s %8s %8s\n" "$name" "$SCHED_NAME" "$HIKE_DAYS" "$NODE_ENV_VAL" "$PORT_VAL" "$API_KEY"
+    printf "%-20s %12s %10s %8s %12s %8s %8s\n" "$name" "$SCHED_NAME" "$HIKE_DAYS" "$MAX_HIKES" "$NODE_ENV_VAL" "$PORT_VAL" "$API_KEY"
     if [ "$PORT_VAL" != "-" ]; then
         PORTS["$PORT_VAL"]+="$name "
     fi

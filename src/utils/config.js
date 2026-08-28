@@ -1,6 +1,7 @@
 let groupConfig = {
   name: null,
-  hikeDays: null
+  hikeDays: null,
+  maxHikesPerDay: 3
 };
 
 let configVersion = 0;
@@ -60,24 +61,57 @@ export function getHikeDays() {
 }
 
 /**
+ * Get the maximum number of hikes allowed per day (slot cap).
+ * Defaults to 3 when not configured. Clamped to 1..7.
+ * @returns {number}
+ */
+export function getMaxHikesPerDay() {
+  const raw = Number(groupConfig.maxHikesPerDay);
+  if (!Number.isFinite(raw) || raw < 1) return 3;
+  return Math.min(7, Math.floor(raw));
+}
+
+/**
+ * Get the number of hike slots configured for a given day-of-week,
+ * capped at the per-day maximum.
+ * @param {number} dow - Day of week (0-6).
+ * @returns {number} Slot count (0 if the day is not a hike day).
+ */
+export function getHikesPerDow(dow) {
+  const days = getHikeDays();
+  const count = days.filter(d => d === dow).length;
+  return Math.min(count, getMaxHikesPerDay());
+}
+
+/**
+ * Get the slot indices (0-based) available for a given day-of-week.
+ * @param {number} dow - Day of week (0-6).
+ * @returns {number[]} e.g. [0, 1, 2] for a day with 3 hikes.
+ */
+export function getHikeSlotsForDow(dow) {
+  return Array.from({ length: getHikesPerDow(dow) }, (_, i) => i);
+}
+
+/**
  * Get a human-readable label for the configured hike days.
  * @returns {string} Label like "Wed/Fri Dates" or "Monday A/Monday B".
  */
 export function getHikeDaysLabel() {
   if (!groupConfig.hikeDays) return 'Loading...';
   const days = getHikeDays();
-  
+
   if (days.length === 0) return 'No Hike Days';
 
+  const maxPerDay = getMaxHikesPerDay();
   const counts = {};
   days.forEach(d => counts[d] = (counts[d] || 0) + 1);
-  
+
   const uniqueDays = Object.keys(counts).map(Number).sort((a, b) => a - b);
-  
+
   if (uniqueDays.length === 1) {
     const day = uniqueDays[0];
     const name = getDayName(day);
-    const count = counts[day];
+    const count = Math.min(counts[day], maxPerDay);
     if (count > 1) {
       return Array.from({ length: count }, (_, i) => `${name} ${slotLetter(i)}`).join(' / ');
     }
@@ -86,7 +120,7 @@ export function getHikeDaysLabel() {
 
   const labels = uniqueDays.map(d => {
     const name = getDayName(d);
-    const count = counts[d];
+    const count = Math.min(counts[d], maxPerDay);
     if (count > 1) {
       return Array.from({ length: count }, (_, i) => `${name} ${slotLetter(i)}`).join('/');
     }

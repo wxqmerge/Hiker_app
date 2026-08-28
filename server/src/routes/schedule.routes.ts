@@ -5,18 +5,16 @@ import { ScheduleSchema, RestoreTimestampSchema } from '../middleware/validation
 import { withErrorTag } from '../middleware/error.middleware.js';
 import fs from 'fs';
 import path from 'path';
-import { getCurrentDir } from '../utils/path.js';
 import { etagMatches } from '../utils/etagCompare.js';
-
-const __dirname = getCurrentDir(import.meta.url);
-const PROJECT_ROOT = path.join(__dirname, '../../..');
+import { DATA_DIR } from '../utils/paths.js';
 
 const router = Router();
 
 router.get('/group', (_req, res) => {
-  res.json({ 
+  res.json({
     name: process.env.SCHEDULE_NAME || 'default',
-    hikeDays: process.env.HIKE_DAYS || '3,5'
+    hikeDays: process.env.HIKE_DAYS || '3,5',
+    maxHikesPerDay: parseInt(process.env.MAX_HIKES_PER_DAY || '3', 10) || 3
   });
 });
 
@@ -77,7 +75,7 @@ router.post('/history/restore', requireAdminKey, withErrorTag('SCHEDULE')(async 
 }));
  
 router.get('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
-  const dataDir = path.join(PROJECT_ROOT, 'exported_data');
+  const dataDir = DATA_DIR;
   const files = await fs.promises.readdir(dataDir);
   const results: Array<{ file: string; success: boolean; error?: string }> = [];
 
