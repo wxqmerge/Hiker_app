@@ -49,7 +49,12 @@ function isValidCoordinate(value) {
 }
 
 export function hasValidCoords(lat, lon) {
-  return isValidCoordinate(lat) && isValidCoordinate(lon);
+  if (!isValidCoordinate(lat) || !isValidCoordinate(lon)) return false;
+  const latNum = Number(lat);
+  const lonNum = Number(lon);
+  if (latNum === 0 && lonNum === 0) return false;
+  if (Math.abs(latNum) > 90 || Math.abs(lonNum) > 180) return false;
+  return true;
 }
 
 // NOAA/NWS coverage box (continental US). Coordinates strictly inside this box
