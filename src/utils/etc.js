@@ -15,9 +15,10 @@ export function getEtcBounds(distance) {
   const dist = Math.max(distance || 0, 0);
   const minSpeed = getMinSpeedMph();
   const maxSpeed = getMaxSpeedMph();
+  const [slow, fast] = [minSpeed, maxSpeed].sort((a, b) => a - b);
   return {
-    minMinutes: (dist / minSpeed) * 60,
-    maxMinutes: (dist / maxSpeed) * 60,
+    minMinutes: (dist / fast) * 60,
+    maxMinutes: (dist / slow) * 60,
   };
 }
 
