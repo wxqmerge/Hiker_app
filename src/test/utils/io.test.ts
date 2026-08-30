@@ -250,10 +250,10 @@ describe('fetchTideHeightAt', () => {
       return f;
     })();
     const url = fn.mock.calls[0][0] as string;
+    expect(url).toContain('/api/tide-proxy');
     expect(url).toContain(`station=${stationId}`);
     expect(url).toContain('begin_date=20260815');
     expect(url).toContain('end_date=20260815');
-    expect(url).toContain('interval=hilo');
   });
 
   it('returns null when stationId is missing', async () => {
@@ -495,7 +495,7 @@ describe('fetchWeatherAndTide', () => {
     vi.stubGlobal('fetch', fetchFn);
     await fetchWeatherAndTide(lat, lon, targetDate, '9447130');
     const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
-    expect(urls).toContainEqual(expect.stringContaining('datagetter'));
+    expect(urls).toContainEqual(expect.stringContaining('/api/tide-proxy'));
     expect(urls).toContainEqual(expect.stringContaining('station=9447130'));
   });
 

@@ -114,6 +114,28 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+app.get('/api/tide-proxy', async (req, res) => {
+  const station = String(req.query.station || '');
+  const beginDate = String(req.query.begin_date || '');
+  const endDate = String(req.query.end_date || '');
+  if (!station || !beginDate || !endDate) {
+    res.status(400).json({ error: 'station, begin_date, and end_date are required' });
+    return;
+  }
+  const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&interval=hilo&begin_date=${beginDate}&end_date=${endDate}&station=${station}&time_zone=lst_ldt&units=english&format=json`;
+  try {
+    const upstream = await fetch(url);
+    if (!upstream.ok) {
+      res.status(upstream.status).json({ error: 'Upstream error' });
+      return;
+    }
+    const data = await upstream.json();
+    res.json(data);
+  } catch {
+    res.status(502).json({ error: 'Failed to fetch from NOAA' });
+  }
+});
+
 app.get(/manifest\.webmanifest$/, (req, res) => {
   // Derive app name from URL path (e.g. /sothh-dev/manifest.webmanifest → "sothh-dev")
   // Fall back to X-App-Name header, then "hiker"

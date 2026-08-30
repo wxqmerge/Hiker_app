@@ -315,8 +315,9 @@ export async function fetchTideHeightAt(stationId, targetDate, hour = 10) {
   try {
     const d = new Date(targetDate);
     const dateStr = formatDateCompact(d);
+    const { getApiBase } = await import('./url');
     const res = await fetch(
-      `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&interval=hilo&begin_date=${dateStr}&end_date=${dateStr}&station=${stationId}&time_zone=lst_ldt&units=english&format=json`
+      `${getApiBase()}/api/tide-proxy?station=${stationId}&begin_date=${dateStr}&end_date=${dateStr}`
     );
     if (!res.ok) return null;
     const data = await res.json();
