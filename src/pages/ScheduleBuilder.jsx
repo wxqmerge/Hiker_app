@@ -93,9 +93,9 @@ export default function ScheduleBuilder() {
 
   const filteredHikes = useMemo(() => {
     const filtered = filterTrails(hikeTrailMap, filters, trailDetails);
-    const sorted = sortTrails(filtered, filters, trailDetails);
+    const sorted = sortTrails(filtered, filters, trailDetails, weatherMap);
     return sorted;
-  }, [hikeTrailMap, filters, trailDetails]);
+  }, [hikeTrailMap, filters, trailDetails, weatherMap]);
 
   const {
     confirmSwap,

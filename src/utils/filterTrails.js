@@ -85,9 +85,9 @@ export function filterTrails(items, filters, trailDetails) {
 }
 
 // Sort logic shared by browse and schedule modes
-export function sortTrails(items, filters, trailDetails) {
+export function sortTrails(items, filters, trailDetails, weatherMap) {
   const sorted = [...items];
-  
+
   if (filters.sortBy === 'name') {
     sorted.sort((a, b) => {
       const ta = a.trail || a;
@@ -141,7 +141,21 @@ export function sortTrails(items, filters, trailDetails) {
       if (aWild !== bWild) return aWild - bWild;
       return getTrailName(ta).localeCompare(getTrailName(tb));
     });
+  } else if (filters.sortBy === 'rain') {
+    // Lowest forecast rain first; trails without weather data sink to the bottom.
+    const getRain = (item) => {
+      const t = item.trail || item;
+      const w = weatherMap?.[t.id];
+      if (!w || w.rain == null) return Infinity;
+      return w.rain;
+    };
+    sorted.sort((a, b) => {
+      const ra = getRain(a);
+      const rb = getRain(b);
+      if (ra !== rb) return ra - rb;
+      return getTrailName(a.trail || a).localeCompare(getTrailName(b.trail || b));
+    });
   }
-  
+
   return sorted;
 }

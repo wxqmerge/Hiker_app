@@ -201,6 +201,29 @@ describe('sortTrails', () => {
     expect(result[3].id).toBe('trail-4');
   });
 
+  it('sorts by rain ascending with no-weather trails last', () => {
+    const filters = { ...mockFilters, sortBy: 'rain' };
+    const weatherMap = {
+      'trail-1': { temp: 60, rain: 80 },
+      'trail-2': { temp: 70, rain: 10 },
+      'trail-3': { temp: 55, rain: 40 },
+      // trail-4 has no weather data → should sink to the bottom
+    };
+    const result = sortTrails(mockTrails, filters, null, weatherMap);
+    expect(result[0].id).toBe('trail-2'); // rain 10
+    expect(result[1].id).toBe('trail-3'); // rain 40
+    expect(result[2].id).toBe('trail-1'); // rain 80
+    expect(result[3].id).toBe('trail-4'); // no data
+  });
+
+  it('rain sort without a weatherMap puts all trails last (stable by name)', () => {
+    const filters = { ...mockFilters, sortBy: 'rain' };
+    const result = sortTrails(mockTrails, filters, null, undefined);
+    // All have no data → tie-break alphabetically by name
+    expect(result[0].fullName).toBe('◆ Wilderness Peak');
+    expect(result[3].fullName).toBe('Stevens Ridge');
+  });
+
   it('returns sorted copy without mutating original', () => {
     const original = [...mockTrails];
     sortTrails(mockTrails, mockFilters);
