@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { DAY_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getTrailName } from '../utils/data';
-import { openWeatherForTrail, fetchWeatherAndTide } from '../utils/io';
+import { openWeatherForTrail, fetchWeatherAndTide, hasValidCoords } from '../utils/io';
 import { getGpx } from '../api/client';
 import { calculateETC, normalizeStartOffset, START_OFFSET_OPTIONS } from '../utils/etc';
 import { useGpxActions } from '../hooks/useGpxActions';
@@ -19,7 +19,7 @@ export default function NextHikeBanner({ nextHikes }) {
     (async () => {
       const weatherPromises = nextHikes.map((hike, idx) => {
         const trail = hike.trail;
-        const hasCoords = trail?.trailHeadLat != null && trail?.trailHeadLon != null;
+        const hasCoords = hasValidCoords(trail?.trailHeadLat, trail?.trailHeadLon);
         const hasTide = !!trail?.tideStationId;
         if (!hasCoords && !hasTide) return null;
         return fetchWeatherAndTide(

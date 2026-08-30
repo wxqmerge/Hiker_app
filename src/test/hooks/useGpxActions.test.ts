@@ -11,6 +11,7 @@ vi.mock('../../utils/io', () => ({
   openGoogleMapsTrailhead: vi.fn(),
   sanitizeFilename: vi.fn(s => String(s).replace(/[^a-zA-Z0-9_-]/g, '_')),
   shareGpxFile: vi.fn(),
+  hasValidCoords: vi.fn((lat, lon) => lat != null && lon != null && !(lat === 0 && lon === 0)),
 }));
 
 import { getGpx } from '../../api/client';

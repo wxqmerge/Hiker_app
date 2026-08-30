@@ -3,7 +3,7 @@
 
 import { getRideCost } from '../../utils/report';
 import { clampHikeMinutes } from '../../utils/etc';
-import { formatDistance, formatElevation, getDistanceUnit, getElevationUnit } from '../../utils/units';
+import { formatDistance, formatElevation } from '../../utils/units';
 
 export default function TrailStats({ trail, className = '', itemClassName = '', iconSize = 'w-3.5 h-3.5', rideFormat = 'range', inline = false }) {
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;

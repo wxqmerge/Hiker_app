@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { getGpx } from '../api/client';
-import { downloadBlob, openGoogleMapsTrailhead, sanitizeFilename, shareGpxFile } from '../utils/io';
+import { downloadBlob, openGoogleMapsTrailhead, sanitizeFilename, shareGpxFile, hasValidCoords } from '../utils/io';
 import { getTrailName } from '../utils/data';
 
 export function useGpxActions(trail) {
@@ -49,7 +49,7 @@ export function useGpxActions(trail) {
   }, [downloadingIds]);
 
   const openTrailhead = useCallback((trailObj) => {
-    if (trailObj?.trailHeadLat != null && trailObj?.trailHeadLon != null) {
+    if (hasValidCoords(trailObj?.trailHeadLat, trailObj?.trailHeadLon)) {
       openGoogleMapsTrailhead(trailObj.trailHeadLat, trailObj.trailHeadLon);
     }
   }, []);

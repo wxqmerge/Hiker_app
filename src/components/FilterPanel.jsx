@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { MONTH_NAMES } from '../utils/constants';
+import { MONTH_NAMES, DEFAULT_FILTERS } from '../utils/constants';
 import { useTooltips } from '../hooks/useTooltips';
 import { getDistanceUnit, getElevationUnit } from '../utils/units';
 import DualRangeSlider from './DualRangeSlider';
@@ -40,8 +40,8 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
 
   const hasActiveFilters =
     filters.search ||
-    filters.distance.min > 0 || filters.distance.max < 20 ||
-    filters.elevation.min > 0 || filters.elevation.max < 5000 ||
+    filters.distance.min !== DEFAULT_FILTERS.distance.min || filters.distance.max !== DEFAULT_FILTERS.distance.max ||
+    filters.elevation.min !== DEFAULT_FILTERS.elevation.min || filters.elevation.max !== DEFAULT_FILTERS.elevation.max ||
     filters.difficulties.length > 0 ||
     filters.months.length > 0 ||
     filters.wilderness ||

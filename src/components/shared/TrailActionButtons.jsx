@@ -22,7 +22,7 @@ export default function TrailActionButtons({ trail, hikeDate, variant = 'link', 
     }
     if (onWeather) {
       onWeather();
-    } else if (trail.trailHeadLat != null && trail.trailHeadLon != null) {
+    } else if (hasValidCoords(trail.trailHeadLat, trail.trailHeadLon)) {
       openWeatherUrl(trail.trailHeadLat, trail.trailHeadLon);
     }
   };

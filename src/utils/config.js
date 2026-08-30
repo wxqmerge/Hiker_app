@@ -1,3 +1,5 @@
+import { countPerDow } from './dateUtils';
+
 let groupConfig = {
   name: null,
   hikeDays: null,
@@ -60,7 +62,7 @@ export function setUnitSystem(unitSystem) {
   groupConfig = { ...groupConfig, unitSystem };
   try {
     localStorage.setItem('hiker_unit_system', unitSystem);
-  } catch (e) {
+  } catch {
     // ignore
   }
   notifyConfigChange();
@@ -72,7 +74,7 @@ try {
   if (stored === 'imperial' || stored === 'metric') {
     groupConfig = { ...groupConfig, unitSystem: stored };
   }
-} catch (e) {
+} catch {
   // ignore
 }
 
@@ -122,8 +124,7 @@ export function getHikeDaysLabel() {
   if (days.length === 0) return 'No Hike Days';
 
   const maxPerDay = getMaxHikesPerDay();
-  const counts = {};
-  days.forEach(d => counts[d] = (counts[d] || 0) + 1);
+  const counts = countPerDow(days);
 
   const uniqueDays = Object.keys(counts).map(Number).sort((a, b) => a - b);
 

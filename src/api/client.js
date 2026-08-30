@@ -24,7 +24,9 @@ export async function request(path, options = {}) {
     const error = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
     const errMsg = error.error?.message || `HTTP ${res.status}`;
     if (options.throwOnError !== false) {
-      throw new Error(errMsg);
+      const err = new Error(errMsg);
+      err.status = res.status;
+      throw err;
     }
     return { error: errMsg, status: res.status };
   }
@@ -66,7 +68,7 @@ export async function getGpx(trailId) {
     gpxCache.set(trailId, result);
     return result;
   } catch (err) {
-    if (err.message.includes('HTTP 404')) {
+    if (err.status === 404) {
       gpxCache.set(trailId, null);
       return null;
     }

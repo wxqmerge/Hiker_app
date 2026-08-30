@@ -10,6 +10,7 @@ import { useSchedulePolling } from '../hooks/useSchedulePolling';
 import { setSchedule } from '../hooks/useTrailStore';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTrailName } from '../utils/data';
+import { normalizeStartOffset } from '../utils/etc';
 import { MONTH_NAMES, DAY_NAMES, MONTH_ABBR, MONTH_ABBR_TO_FULL } from '../utils/constants';
 import { getHikeDays, getDayName, getGroupName, slotLetter, getMaxHikesPerDay } from '../utils/config';
 import { useHikeDays } from '../hooks/useHikeDays';
@@ -17,7 +18,7 @@ import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth, getMo
 import { serverScheduleToStore, storeToServerSchedule, getDayEntries, normalizeServerMonthEntries } from '../utils/scheduleFormat';
 import { extractStartOffset } from '../utils/etc';
 import { generateReportHtml } from '../utils/report';
-import { downloadBlob, createFileInput, fetchWeatherAndTide, openHtmlInNewTab } from '../utils/io';
+import { downloadBlob, createFileInput, fetchWeatherAndTide, openHtmlInNewTab, hasValidCoords } from '../utils/io';
 import { updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule } from '../api/client';
 
 const ScheduleSettingsContext = createContext({});
@@ -245,7 +246,7 @@ export function ScheduleSettingsProvider({ children }) {
     let successCount = 0;
     let failCount = 0;
     const concurrency = 5;
-    const items = hikeTrailMap.filter(item => item.trail?.trailHeadLat != null && item.trail?.trailHeadLon != null);
+    const items = hikeTrailMap.filter(item => hasValidCoords(item.trail?.trailHeadLat, item.trail?.trailHeadLon));
     for (let i = 0; i < items.length; i += concurrency) {
       const batch = items.slice(i, i + concurrency);
       await Promise.allSettled(batch.map(async (item) => {
@@ -577,7 +578,7 @@ export function ScheduleSettingsProvider({ children }) {
             if (!hikesByDay[key]) hikesByDay[key] = [];
             const trail = findTrailById(entry.trail_id);
             let trailName = trail ? getTrailName(trail) : entry.trail_id;
-            const esOffset = entry.early_start === true ? -30 : (entry.early_start === false || entry.early_start == null ? 0 : Number(entry.early_start) || 0);
+            const esOffset = normalizeStartOffset(entry.early_start);
             if (esOffset !== 0) trailName += esOffset < 0 ? ` (${Math.abs(esOffset)}m early)` : ` (${esOffset}m late)`;
             hikesByDay[key].push({ month: monthAbbr, day, trailName, leader: entry.leader || '' });
           });
@@ -694,8 +695,8 @@ export function ScheduleSettingsProvider({ children }) {
       const hikesForThisDow = Math.min(hikesPerDowExport[dowNum] || 1, maxPerDay);
       return Array.from({ length: hikesForThisDow }, (_, slot) => {
         const entry = assignedHikes[day]?.[slot] || { trail_id: null, early_start: 0 };
-        const { trail_id: trailId, early_start: rawEarlyStart } = entry;
-        const earlyStart = rawEarlyStart === true ? -30 : (rawEarlyStart === false || rawEarlyStart == null ? 0 : Number(rawEarlyStart) || 0);
+        const { trail_id: trailId } = entry;
+        const earlyStart = normalizeStartOffset(entry.early_start);
         const dayOfWeek = DAY_NAMES[dowNum];
         const dateStr = `${dayOfWeek}, ${month} ${day}`;
         if (!trailId) return { dateStr, trail: null, trailDetails: null, earlyStart: 0 };

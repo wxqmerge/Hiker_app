@@ -17,12 +17,14 @@ describe('FilterPanel', () => {
 
   const baseFilters = {
     search: '',
-    distance: { min: 0, max: 20 },
-    elevation: { min: 0, max: 5000 },
+    distance: { min: 0, max: 100 },
+    elevation: { min: 0, max: 15000 },
     difficulties: [],
     months: [],
     sortBy: 'name',
     wilderness: false,
+    gpx: 'all',
+    tide: 'all',
   };
 
   const mockSetFilters = vi.fn();
@@ -41,8 +43,8 @@ describe('FilterPanel', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
     expect(screen.getByText('Dist')).toBeInTheDocument();
     expect(screen.getByText('Elev')).toBeInTheDocument();
-    expect(screen.getByText('0mi – 20mi')).toBeInTheDocument();
-    expect(screen.getByText('0ft – 5000ft')).toBeInTheDocument();
+    expect(screen.getByText('0mi – 100mi')).toBeInTheDocument();
+    expect(screen.getByText('0ft – 15000ft')).toBeInTheDocument();
   });
 
   it('renders elevation slider', () => {
@@ -158,11 +160,11 @@ describe('FilterPanel', () => {
 
   it('displays current distance range value', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
-    expect(screen.getByText('0mi – 20mi')).toBeInTheDocument();
+    expect(screen.getByText('0mi – 100mi')).toBeInTheDocument();
   });
 
   it('displays current elevation range value', () => {
     render(<FilterPanel filters={baseFilters} setFilters={mockSetFilters} lookup={mockLookup} resetFilters={vi.fn()} />);
-    expect(screen.getByText('0ft – 5000ft')).toBeInTheDocument();
+    expect(screen.getByText('0ft – 15000ft')).toBeInTheDocument();
   });
 });

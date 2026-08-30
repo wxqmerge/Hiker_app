@@ -7,20 +7,20 @@ const maxHikesPerDay = Math.min(7, Math.max(1, parseInt(process.env.MAX_HIKES_PE
 const MAX_SLOT = maxHikesPerDay - 1;
 
 // --- Trail field whitelist ---
-export const TRAIL_FIELDS = new Set([
+const TRAIL_FIELDS = new Set([
   'name', 'fullName', 'distance', 'distanceExtended',
   'elevationStart', 'elevationMax', 'difficulty',
   'parking', 'range', 'notes', 'altNames', 'difficultyOrder',
   'seasonal', 'webLink', 'tideStationId', 'gpxData', 'hasGpx', 'gpxFile', 'trailHeadLat', 'trailHeadLon',
 ]);
 
-export const TRAIL_DETAIL_FIELDS = new Set([
+const TRAIL_DETAIL_FIELDS = new Set([
   'fullDescription', 'pros', 'others', 'leaders',
   'popularity',
 ]);
 
 // --- Schedule entry schema ---
-export const ScheduleEntrySchema = z.object({
+const ScheduleEntrySchema = z.object({
   day: z.number().int().positive(),
   slot: z.number().int().nonnegative().max(MAX_SLOT).default(0),
   trail_id: z.string().default(''),

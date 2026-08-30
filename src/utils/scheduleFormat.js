@@ -1,5 +1,6 @@
 import { MONTH_NAMES, MONTH_ABBR, CURRENT_YEAR } from './constants';
 import { getMonthKey } from './dateUtils';
+import { normalizeStartOffset } from './etc';
 
 const YEAR_MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -24,8 +25,7 @@ function normalizeEntry(entry) {
     return { trail_id: entry || null, early_start: 0, leader: '' };
   }
   if (entry && typeof entry === 'object') {
-    const raw = entry.early_start;
-    const earlyStart = raw === true ? -30 : raw === false || raw == null ? 0 : Number(raw) || 0;
+    const earlyStart = normalizeStartOffset(entry.early_start);
     return {
       trail_id: entry.trail_id || null,
       early_start: earlyStart,

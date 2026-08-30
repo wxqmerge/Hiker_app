@@ -1,10 +1,8 @@
 import { buildTrailCoords } from './io';
-import { createDate, MS_PER_DAY } from './dateUtils';
+import { MS_PER_DAY, getTodayHikeRef } from './dateUtils';
 import { normalizeDayEntries } from './scheduleFormat';
 
-export function getTodayMidnight(now = new Date()) {
-  return createDate(now.getFullYear(), now.getMonth(), now.getDate());
-}
+export const getTodayMidnight = getTodayHikeRef;
 
 // Weather is fetched for any today-or-future date: NWS covers the next 7 days,
 // Open-Meteo covers dates beyond that. Past dates get tide only (no forecast).

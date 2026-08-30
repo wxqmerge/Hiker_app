@@ -1,5 +1,7 @@
 import { buildTrailLineParts } from './formatTrail';
 import { getTrailName } from './data';
+import { normalizeStartOffset } from './etc';
+import { DAY_NAMES, MONTH_ABBR } from './constants';
 
 // Escape HTML special characters
 function esc(s) {
@@ -50,7 +52,7 @@ function buildTrailLineHtml(trail, earlyStart) {
   const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
 
   let line = esc(`${name}◆︎`);
-  const offset = earlyStart === true ? -30 : (earlyStart === false || earlyStart == null ? 0 : Number(earlyStart) || 0);
+  const offset = normalizeStartOffset(earlyStart);
   if (offset !== 0) {
     const label = offset < 0 ? `${Math.abs(offset)}m early` : `${offset}m late`;
     line += ` <span class="early-start">(${label})</span>`;
@@ -128,9 +130,7 @@ export function generateTrailHtml(trail, trailDetails, dateStr) {
   let formattedDate = '';
   if (dateStr) {
     const date = dateStr instanceof Date ? dateStr : new Date(dateStr);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    formattedDate = `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+    formattedDate = `${DAY_NAMES[date.getDay()]}, ${MONTH_ABBR[date.getMonth()]} ${date.getDate()}`;
     title = `${formattedDate} — ${getTrailName(trail)}`;
     const trailLine = buildTrailLineHtml(trail, false);
     headerHtml = `<div class="entry-header">${esc(formattedDate)}\t${trailLine}</div>`;

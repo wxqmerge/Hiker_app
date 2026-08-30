@@ -67,15 +67,4 @@ export function formatElevation(feet) {
   return `${Math.round(value)} ${unit}`;
 }
 
-/**
- * Format an elevation change for display.
- * @param {number} feet - Elevation change in feet (positive = up, negative = down).
- * @returns {string} Formatted elevation change with unit and sign.
- */
-export function formatElevationChange(feet) {
-  const value = Number(convertElevation(feet));
-  const unit = getElevationUnit();
-  if (isNaN(value)) return `— ${unit}`;
-  const sign = value >= 0 ? '+' : '';
-  return `${sign}${Math.round(value)} ${unit}`;
-}
+
