@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => ({
     __APP_VERSION: JSON.stringify(pkg.version),
   },
   plugins: [react()],
+  build: {
+    modulePreload: false,
+  },
   server: {
     port: 5173,
     allowedHosts: ['browse.localhost'],
