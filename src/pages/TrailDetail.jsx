@@ -16,6 +16,7 @@ import { useGpxActions } from '../hooks/useGpxActions';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../utils/url.js';
 import { hasStoredApiKey } from '../utils/apiKey';
+import { formatDistance, formatElevation, getDistanceUnit, getElevationUnit } from '../utils/units';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MonthlyScoreGrid, { ScoreBreakdownRow } from '../components/MonthlyScoreGrid.jsx';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -507,10 +508,10 @@ export default function TrailDetail() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
                 <p className="text-2xl font-bold text-gray-800">
-                  {getEditedValue('distance') != null ? Number(getEditedValue('distance')).toFixed(1) : 'N/A'}
-                  {getEditedValue('distanceExtended') != null && ` / ${Number(getEditedValue('distanceExtended')).toFixed(1)}`}
+                  {getEditedValue('distance') != null ? formatDistance(getEditedValue('distance')) : 'N/A'}
+                  {getEditedValue('distanceExtended') != null && ` / ${formatDistance(getEditedValue('distanceExtended'))}`}
                 </p>
-                <p className="text-sm text-gray-500">miles</p>
+                <p className="text-sm text-gray-500">{getDistanceUnit()}</p>
               </div>
 
               <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -518,7 +519,7 @@ export default function TrailDetail() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
                 <p className="text-xl font-bold text-gray-800">
-                  {getEditedValue('elevationStart') != null ? getEditedValue('elevationStart').toLocaleString() : 'N/A'} ft - {getEditedValue('elevationMax') != null ? getEditedValue('elevationMax').toLocaleString() : 'N/A'} ft
+                  {getEditedValue('elevationStart') != null ? formatElevation(getEditedValue('elevationStart')) : 'N/A'} - {getEditedValue('elevationMax') != null ? formatElevation(getEditedValue('elevationMax')) : 'N/A'}
                 </p>
                 <p className="text-sm text-gray-500">elevation gain</p>
               </div>
@@ -818,7 +819,7 @@ export default function TrailDetail() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Distance & Elevation</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Distance (miles)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Distance ({getDistanceUnit()})</label>
                     <input
                       type="number"
                       step="0.1"
@@ -828,7 +829,7 @@ export default function TrailDetail() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Distance Max (miles)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Distance Max ({getDistanceUnit()})</label>
                     <input
                       type="number"
                       step="0.1"
@@ -838,7 +839,7 @@ export default function TrailDetail() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Elevation Gain min (ft)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Elevation Gain min ({getElevationUnit()})</label>
                     <input
                       type="number"
                       value={getEditedValue('elevationStart') != null ? getEditedValue('elevationStart') : ''}
@@ -847,7 +848,7 @@ export default function TrailDetail() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Elevation Max (ft)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Elevation Max ({getElevationUnit()})</label>
                     <input
                       type="number"
                       value={getEditedValue('elevationMax') != null ? getEditedValue('elevationMax') : ''}

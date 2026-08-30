@@ -51,13 +51,13 @@ export function useScheduleDragDrop({
     setPendingSwap(null);
   };
 
-  const performMove = (source, targetDay, targetSlot) => {
+  const performMove = (source, targetDay, targetSlot, duplicate = false) => {
     if (hasApiKey === false) return false;
 
     const { hikeIndex, sourceDay, sourceSlot, trailId: sourceTrailId, earlyStart: sourceEarlyStart, leader: sourceLeader } = source;
     const trailId = sourceTrailId || trailIndexToId[hikeIndex];
 
-    if (sourceDay === targetDay && sourceSlot === targetSlot) return false;
+    if (!duplicate && sourceDay === targetDay && sourceSlot === targetSlot) return false;
     if (!trailId) return false;
 
     const monthKey = getMonthKey(year, selectedMonth);
@@ -68,7 +68,7 @@ export function useScheduleDragDrop({
     const sourceEntries = hasSource ? getDayEntries(monthData, sourceDay) : [];
     const sourceEntry = sourceEntries[sourceSlot] || null;
 
-    if (targetEntry && targetEntry.trail_id) {
+    if (!duplicate && targetEntry && targetEntry.trail_id) {
       const sourceTrail = findTrailById(trailId);
       const targetTrail = findTrailById(targetEntry.trail_id);
       const sourceTrailName = sourceTrail ? getTrailName(sourceTrail) : trailId;
@@ -101,7 +101,7 @@ export function useScheduleDragDrop({
 
     updateScheduleFn(monthKey, prev => {
       let next = prev;
-      if (hasSource) {
+      if (hasSource && !duplicate) {
         next = clearDayEntry(next, sourceDay, sourceSlot);
       }
       next = setDayEntry(next, targetDay, targetSlot, { trail_id: trailId, early_start: earlyStart, leader });
@@ -118,7 +118,7 @@ export function useScheduleDragDrop({
   };
 
   const moveHike = (source, targetDay, targetSlot) => {
-    performMove(source, targetDay, targetSlot);
+    performMove(source, targetDay, targetSlot, source?.duplicate || false);
   };
 
   const handleDropOnAvailable = (sourceDay, sourceSlot) => {

@@ -110,7 +110,7 @@ describe('NextHikeBanner', () => {
 
   it('renders elevation', () => {
     render(<NextHikeBanner nextHikes={nextHikes} />);
-    expect(screen.getByText("1,000' - 2,000'")).toBeInTheDocument();
+    expect(screen.getByText('1000 ft - 2000 ft')).toBeInTheDocument();
   });
 
   it('renders parking info', () => {

@@ -70,6 +70,19 @@ export default function ScheduleBuilder() {
   const [moveSource, setMoveSource] = useState(null);
   const { isDownloading, downloadGpx, openTrailhead } = useGpxActions();
 
+  const scheduledMap = useMemo(() => {
+    const map = {};
+    Object.entries(assignedHikes).forEach(([day, entries]) => {
+      (Array.isArray(entries) ? entries : [entries]).forEach((entry) => {
+        if (entry?.trail_id) {
+          if (!map[entry.trail_id]) map[entry.trail_id] = [];
+          map[entry.trail_id].push(Number(day));
+        }
+      });
+    });
+    return map;
+  }, [assignedHikes]);
+
   const updateMonthSchedule = useCallback((monthKey, updater) => {
     setScheduleStore(prev => {
       const current = prev[monthKey] || {};
@@ -114,44 +127,50 @@ export default function ScheduleBuilder() {
   };
 
 
-   const hikeCards = useMemo(() => {
-      return filteredHikes.reduce((cards, item) => {
-        const trail = item.trail;
-        if (!trail) return cards;
-        cards.push(
-         <div
-            key={`${trail.id}-${item.hikeIndex}`}
-            draggable
-             onDragStart={() => handleDragStart(item.hikeIndex, null, null, trail.id, false, '')}
-            onDragEnd={handleDragEnd}
-            className="cursor-grab active:cursor-grabbing"
-            title={tt('Drag to schedule on a date')}
-            aria-label={`Drag ${getTrailName(trail)} to schedule on a date`}
-          >
-            <div className="relative">
-               <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} weather={weatherMap[trail.id]} />
-            {debugMode && (
-              <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
-                {item.hikeIndex}
-              </div>
-            )}
-            {hasApiKey && (
-              <button
-                type="button"
-                onClick={() => setMoveSource({ hikeIndex: item.hikeIndex, sourceDay: null, sourceSlot: null, trailId: trail.id, earlyStart: false, leader: '' })}
-                className="absolute bottom-2 right-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-2 py-1 rounded"
-                title={tt('Move to another date')}
-                aria-label={`Move ${getTrailName(trail)} to another date`}
-              >
-                Move
-              </button>
-            )}
-          </div>
-        </div>
-      );
-      return cards;
-    }, []);
-  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, weatherMap, hasApiKey]);
+    const hikeCards = useMemo(() => {
+       return filteredHikes.reduce((cards, item) => {
+         const trail = item.trail;
+         if (!trail) return cards;
+         const scheduledDays = scheduledMap[trail.id];
+         cards.push(
+          <div
+             key={`${trail.id}-${item.hikeIndex}`}
+             draggable
+              onDragStart={() => handleDragStart(item.hikeIndex, null, null, trail.id, false, '')}
+             onDragEnd={handleDragEnd}
+             className="cursor-grab active:cursor-grabbing"
+             title={tt('Drag to schedule on a date')}
+             aria-label={`Drag ${getTrailName(trail)} to schedule on a date`}
+           >
+             <div className="relative">
+                <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} weather={weatherMap[trail.id]} />
+             {debugMode && (
+               <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+                 {item.hikeIndex}
+               </div>
+             )}
+             {scheduledDays && scheduledDays.length > 0 && (
+               <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full" title={`Scheduled: ${scheduledDays.join(', ')}`}>
+                 {scheduledDays.length === 1 ? `Day ${scheduledDays[0]}` : `${scheduledDays.length} dates`}
+               </div>
+             )}
+             {hasApiKey && (
+               <button
+                 type="button"
+                 onClick={() => setMoveSource({ hikeIndex: item.hikeIndex, sourceDay: null, sourceSlot: null, trailId: trail.id, earlyStart: false, leader: '' })}
+                 className="absolute bottom-2 right-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-2 py-1 rounded"
+                 title={tt('Move to another date')}
+                 aria-label={`Move ${getTrailName(trail)} to another date`}
+               >
+                 Move
+               </button>
+             )}
+           </div>
+         </div>
+       );
+       return cards;
+     }, []);
+  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, weatherMap, hasApiKey, scheduledMap]);
 
   if (loading) {
     return <LoadingSpinner message="Loading trails..." />;
@@ -403,12 +422,20 @@ export default function ScheduleBuilder() {
                                   </a>
                                 )}
                                 <button
-                                  onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader })}
+                                  onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: false })}
                                   className="text-blue-600 hover:text-blue-800 transition-colors text-xs font-medium"
                                   title={tt('Move to another date')}
                                   aria-label={`Move ${displayHikeName || 'hike'} to another date`}
                                 >
                                   Move
+                                </button>
+                                <button
+                                  onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: true })}
+                                  className="text-green-600 hover:text-green-800 transition-colors text-xs font-medium"
+                                  title={tt('Duplicate to another date')}
+                                  aria-label={`Duplicate ${displayHikeName || 'hike'} to another date`}
+                                >
+                                  Copy
                                 </button>
                                 <button
                                   onClick={() => removeHike(day, slotIdx)}
@@ -433,6 +460,7 @@ export default function ScheduleBuilder() {
         <MoveHikeModal
           open={!!moveSource}
           source={moveSource}
+          duplicate={moveSource?.duplicate || false}
           hikeDates={hikeDates}
           assignedHikes={assignedHikes}
           findTrailById={findTrailById}

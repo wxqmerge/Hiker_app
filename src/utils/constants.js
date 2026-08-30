@@ -21,8 +21,8 @@ export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const DEFAULT_FILTERS = {
   search: '',
-  distance: { min: 0, max: 20 },
-  elevation: { min: 0, max: 5000 },
+  distance: { min: 0, max: 100 },
+  elevation: { min: 0, max: 15000 },
   difficulties: [],
   months: [],
   sortBy: 'name',

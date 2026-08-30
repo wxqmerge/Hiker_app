@@ -1,7 +1,11 @@
 let groupConfig = {
   name: null,
   hikeDays: null,
-  maxHikesPerDay: 3
+  maxHikesPerDay: 3,
+  minSpeedMph: 2.2,
+  maxSpeedMph: 1.1,
+  isBikeTrip: false,
+  unitSystem: 'imperial'
 };
 
 let configVersion = 0;
@@ -34,6 +38,42 @@ export function setGroupConfig(config) {
  */
 export function getGroupName() {
   return groupConfig.name;
+}
+
+export function getMinSpeedMph() {
+  return groupConfig.minSpeedMph ?? 2.2;
+}
+
+export function getMaxSpeedMph() {
+  return groupConfig.maxSpeedMph ?? 1.1;
+}
+
+export function isBikeTrip() {
+  return groupConfig.isBikeTrip ?? false;
+}
+
+export function getUnitSystem() {
+  return groupConfig.unitSystem ?? 'imperial';
+}
+
+export function setUnitSystem(unitSystem) {
+  groupConfig = { ...groupConfig, unitSystem };
+  try {
+    localStorage.setItem('hiker_unit_system', unitSystem);
+  } catch (e) {
+    // ignore
+  }
+  notifyConfigChange();
+}
+
+// Load persisted unit system on module init
+try {
+  const stored = localStorage.getItem('hiker_unit_system');
+  if (stored === 'imperial' || stored === 'metric') {
+    groupConfig = { ...groupConfig, unitSystem: stored };
+  }
+} catch (e) {
+  // ignore
 }
 
 const GROUP_URLS = {

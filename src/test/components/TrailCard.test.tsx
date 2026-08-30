@@ -36,7 +36,7 @@ describe('TrailCard', () => {
 
   it('renders elevation', () => {
     renderWithRouter();
-    expect(screen.getByText("2,000' - 4,000'")).toBeInTheDocument();
+    expect(screen.getByText('2000 ft - 4000 ft')).toBeInTheDocument();
   });
 
   it('renders parking', () => {
@@ -103,14 +103,14 @@ describe('TrailCard', () => {
   it('shows N/A for missing distance', () => {
     const trailNoDistance = { ...baseTrail, distance: null, distanceExtended: null };
     renderWithRouter(trailNoDistance);
-    expect(screen.getByText('N/A mi')).toBeInTheDocument();
+    expect(screen.getByText('N/A')).toBeInTheDocument();
   });
 
   it('renders elevation with null values', () => {
     const trailNoElevation = { ...baseTrail, elevationStart: null, elevationMax: null };
     renderWithRouter(trailNoElevation);
-    // When elevationStart is null, toLocaleString returns undefined which renders as empty
-    expect(screen.getByText(/'/)).toBeInTheDocument();
+    // When both elevation values are null, only 'N/A' is rendered (no dash)
+    expect(screen.getByText('N/A')).toBeInTheDocument();
   });
 
   it('handles active state styling', () => {

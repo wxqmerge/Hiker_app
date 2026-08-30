@@ -4,12 +4,14 @@ import { getDayName, slotLetter } from '../utils/config';
 import { createDate } from '../utils/dateUtils';
 import { getTrailName } from '../utils/data';
 
-function MoveHikeForm({ source, hikeDates, assignedHikes, findTrailById, year, selectedMonth, onMove, onClose }) {
+function MoveHikeForm({ source, hikeDates, assignedHikes, findTrailById, year, selectedMonth, onMove, onClose, duplicate = false }) {
   const [target, setTarget] = useState('');
 
   const sourceTrail = findTrailById(source.trailId);
   const sourceName = sourceTrail ? getTrailName(sourceTrail) : source.trailId;
-  const options = hikeDates.filter(({ day, slot }) => !(day === source.sourceDay && slot === source.sourceSlot));
+  const options = duplicate
+    ? hikeDates
+    : hikeDates.filter(({ day, slot }) => !(day === source.sourceDay && slot === source.sourceSlot));
 
   const slotLabel = (day, slot) => {
     const hasMultipleSlots = hikeDates.filter((s) => s.day === day).length > 1;
@@ -20,6 +22,8 @@ function MoveHikeForm({ source, hikeDates, assignedHikes, findTrailById, year, s
     ? 'Available Hikes'
     : `${getDayName(createDate(year, selectedMonth, source.sourceDay).getDay())} ${source.sourceDay}${slotLabel(source.sourceDay, source.sourceSlot)}`;
 
+  const actionLabel = duplicate ? 'Duplicate' : 'Move';
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!target) return;
@@ -29,13 +33,15 @@ function MoveHikeForm({ source, hikeDates, assignedHikes, findTrailById, year, s
   };
 
   return (
-    <Modal open onClose={onClose} title={`Move ${sourceName}`}>
+    <Modal open onClose={onClose} title={`${actionLabel} ${sourceName}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-sm text-gray-700">
-          Currently on <strong>{sourceDayLabel}</strong>.
+          {duplicate
+            ? <>Currently on <strong>{sourceDayLabel}</strong>. Copy to another date (original stays).</>
+            : <>Currently on <strong>{sourceDayLabel}</strong>.</>}
         </p>
         <label className="block text-sm text-gray-700">
-          <span className="font-medium">Move to</span>
+          <span className="font-medium">{duplicate ? 'Copy to' : 'Move to'}</span>
           <select
             required
             value={target}
@@ -58,14 +64,14 @@ function MoveHikeForm({ source, hikeDates, assignedHikes, findTrailById, year, s
         </label>
         <div className="flex gap-3 justify-end">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={!target}>Move</Button>
+          <Button type="submit" disabled={!target}>{actionLabel}</Button>
         </div>
       </form>
     </Modal>
   );
 }
 
-export default function MoveHikeModal({ open, source, ...props }) {
+export default function MoveHikeModal({ open, source, duplicate = false, ...props }) {
   if (!open || !source) return null;
-  return <MoveHikeForm key={`${source.sourceDay ?? 'available'}:${source.sourceSlot ?? 0}`} source={source} {...props} />;
+  return <MoveHikeForm key={`${source.sourceDay ?? 'available'}:${source.sourceSlot ?? 0}:${duplicate ? 'dup' : 'move'}`} source={source} duplicate={duplicate} {...props} />;
 }

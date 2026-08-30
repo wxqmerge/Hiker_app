@@ -11,6 +11,7 @@ import SwapConfirmationModal from '../components/SwapConfirmationModal';
 import { updateSchedule } from '../api/client';
 import { setSchedule } from '../hooks/useTrailStore';
 import { storeToServerSchedule } from '../utils/scheduleFormat';
+import { getMonthKey } from '../utils/dateUtils';
 import { useScheduleStore } from '../hooks/useScheduleStore';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
@@ -36,11 +37,26 @@ export default function Calendar() {
   const dayWeatherMap = useScheduleWeather({ schedule: scheduleData, selectedMonth, trails, year });
 
   useEffect(() => {
-    if (!hasSyncedInitialMonth.current && nextHikes && nextHikes.length > 0 && !loading) {
-      hasSyncedInitialMonth.current = true;
+    if (hasSyncedInitialMonth.current || loading) return;
+    hasSyncedInitialMonth.current = true;
+
+    if (nextHikes && nextHikes.length > 0) {
       setSelectedMonthKey(nextHikes[0].monthKey);
+      return;
     }
-  }, [loading, nextHikes, setSelectedMonthKey]);
+
+    // No upcoming hikes — if current month is empty, advance to next month
+    const currentMonthKey = getMonthKey(year, selectedMonth);
+    const currentEntries = scheduleStore[currentMonthKey];
+    const hasCurrentHikes = currentEntries && Object.values(currentEntries).some(
+      (val) => Array.isArray(val) ? val.some(e => e?.trail_id) : val?.trail_id
+    );
+    if (!hasCurrentHikes) {
+      const nextMonth = (selectedMonth + 1) % 12;
+      const nextYear = selectedMonth === 11 ? year + 1 : year;
+      setSelectedMonthKey(getMonthKey(nextYear, nextMonth));
+    }
+  }, [loading, nextHikes, selectedMonth, year, scheduleStore, setSelectedMonthKey]);
 
   const {
     assignedHikes,

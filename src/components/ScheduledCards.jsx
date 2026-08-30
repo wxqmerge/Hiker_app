@@ -18,6 +18,7 @@ export default function ScheduledCards({
   handleDragEnd,
   onLeaderChange,
   onRequestMove,
+  onRequestDuplicate,
   tt,
   weatherMap,
 }) {
@@ -120,15 +121,28 @@ export default function ScheduledCards({
                     );
                   })()}
                   {onRequestMove && (
-                    <button
-                      type="button"
-                      onClick={() => onRequestMove(item)}
-                      className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-2 py-1 rounded"
-                      title={tt('Move to another date')}
-                      aria-label={`Move ${item.trail.fullName || item.trail.name} to another date`}
-                    >
-                      Move
-                    </button>
+                    <div className="absolute bottom-2 right-2 flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onRequestMove(item)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-2 py-1 rounded"
+                        title={tt('Move to another date')}
+                        aria-label={`Move ${item.trail.fullName || item.trail.name} to another date`}
+                      >
+                        Move
+                      </button>
+                      {onRequestDuplicate && (
+                        <button
+                          type="button"
+                          onClick={() => onRequestDuplicate(item)}
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-2 py-1 rounded"
+                          title={tt('Duplicate to another date')}
+                          aria-label={`Duplicate ${item.trail.fullName || item.trail.name} to another date`}
+                        >
+                          Copy
+                        </button>
+                      )}
+                    </div>
                   )}
               </div>
             </div>

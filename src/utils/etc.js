@@ -1,7 +1,7 @@
 const START_HOUR = 8;
 const START_MINUTE = 30;
-const MIN_SPEED_MPH = 2.2;
-const MAX_SPEED_MPH = 1.1;
+
+import { getMinSpeedMph, getMaxSpeedMph } from './config';
 
 export const START_OFFSET_OPTIONS = [
   { value: 0, label: '8:30 AM' },
@@ -13,9 +13,11 @@ export const START_OFFSET_OPTIONS = [
 
 export function getEtcBounds(distance) {
   const dist = Math.max(distance || 0, 0);
+  const minSpeed = getMinSpeedMph();
+  const maxSpeed = getMaxSpeedMph();
   return {
-    minMinutes: (dist / MIN_SPEED_MPH) * 60,
-    maxMinutes: (dist / MAX_SPEED_MPH) * 60,
+    minMinutes: (dist / minSpeed) * 60,
+    maxMinutes: (dist / maxSpeed) * 60,
   };
 }
 

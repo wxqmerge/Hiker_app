@@ -53,7 +53,10 @@ function App() {
         setGroupConfig({
           name: data.name,
           hikeDays: data.hikeDays,
-          maxHikesPerDay: data.maxHikesPerDay ?? 3
+          maxHikesPerDay: data.maxHikesPerDay ?? 3,
+          minSpeedMph: data.minSpeedMph ?? 2.2,
+          maxSpeedMph: data.maxSpeedMph ?? 1.1,
+          isBikeTrip: data.isBikeTrip ?? false
         });
       } else {
         showToast('Server configuration missing', 'error');

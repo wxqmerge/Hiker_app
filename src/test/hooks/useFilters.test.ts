@@ -12,8 +12,8 @@ describe('useFilters', () => {
   it('returns default filters on init', () => {
     const { result } = renderHook(() => useFilters(mockTrails));
     expect(result.current.filters.search).toBe('');
-    expect(result.current.filters.distance).toEqual({ min: 0, max: 20 });
-    expect(result.current.filters.elevation).toEqual({ min: 0, max: 5000 });
+    expect(result.current.filters.distance).toEqual({ min: 0, max: 100 });
+    expect(result.current.filters.elevation).toEqual({ min: 0, max: 15000 });
     expect(result.current.filters.difficulties).toEqual([]);
     expect(result.current.filters.months).toEqual([]);
     expect(result.current.filters.sortBy).toBe('name');

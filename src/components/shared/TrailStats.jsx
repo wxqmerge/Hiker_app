@@ -3,6 +3,7 @@
 
 import { getRideCost } from '../../utils/report';
 import { clampHikeMinutes } from '../../utils/etc';
+import { formatDistance, formatElevation, getDistanceUnit, getElevationUnit } from '../../utils/units';
 
 export default function TrailStats({ trail, className = '', itemClassName = '', iconSize = 'w-3.5 h-3.5', rideFormat = 'range', inline = false }) {
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
@@ -16,8 +17,8 @@ export default function TrailStats({ trail, className = '', itemClassName = '', 
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
         <span>
-          {trail.distance != null ? Number(trail.distance).toFixed(1) : 'N/A'} mi
-          {trail.distanceExtended != null && ` / ${Number(trail.distanceExtended).toFixed(1)} mi`}
+          {trail.distance != null ? formatDistance(trail.distance) : 'N/A'}
+          {trail.distanceExtended != null && ` / ${formatDistance(trail.distanceExtended)}`}
         </span>
       </div>
 
@@ -27,8 +28,8 @@ export default function TrailStats({ trail, className = '', itemClassName = '', 
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
         <span>
-          {trail.elevationStart?.toLocaleString() || 'N/A'}'
-          {trail.elevationMax && ` - ${trail.elevationMax.toLocaleString()}'`}
+          {trail.elevationStart != null ? formatElevation(trail.elevationStart) : 'N/A'}
+          {trail.elevationMax != null && ` - ${formatElevation(trail.elevationMax)}`}
         </span>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { useTrailActions } from '../contexts/TrailActionsContext';
+import { getUnitSystem, setUnitSystem } from '../utils/config';
 import DropdownItem from './shared/DropdownItem';
 import PwaInstall from './PwaInstall';
 
@@ -126,8 +127,27 @@ export default function ScheduleSettingsDropdown() {
     </div>
   );
 
+  const unitSystem = getUnitSystem();
   const userTab = trailActions ? (
     <div className="max-h-[70vh] overflow-y-auto py-1">
+      {section('Display')}
+      <div className="px-3 py-2">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Units</label>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setUnitSystem('imperial')}
+            className={`flex-1 px-2 py-1 text-xs rounded ${unitSystem === 'imperial' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            Imperial (mi/ft)
+          </button>
+          <button
+            onClick={() => setUnitSystem('metric')}
+            className={`flex-1 px-2 py-1 text-xs rounded ${unitSystem === 'metric' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            Metric (km/m)
+          </button>
+        </div>
+      </div>
       {section('Trail')}
       <DropdownItem onClick={() => { close(); trailActions.userActions.newTrail(); }}>New Trail</DropdownItem>
       {section('Export')}

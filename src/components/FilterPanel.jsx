@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { MONTH_NAMES } from '../utils/constants';
 import { useTooltips } from '../hooks/useTooltips';
+import { getDistanceUnit, getElevationUnit } from '../utils/units';
 import DualRangeSlider from './DualRangeSlider';
 import PillButton from './shared/PillButton';
 import { Button, Icon } from './ui';
@@ -77,30 +78,30 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
           aria-label="Search trails by name"
         />
 
-       {/* Distance */}
-        <DualRangeSlider
-          min={0}
-          max={20}
-          step={0.5}
-          value={filters.distance}
-          onChange={(distance) => setFilters({ ...filters, distance })}
-          unit="mi"
-          tooltip="Trail distance range in miles"
-          label="Dist"
-        />
+        {/* Distance */}
+         <DualRangeSlider
+           min={0}
+           max={100}
+           step={0.5}
+           value={filters.distance}
+           onChange={(distance) => setFilters({ ...filters, distance })}
+           unit={getDistanceUnit()}
+           tooltip={`Trail distance range in ${getDistanceUnit() === 'mi' ? 'miles' : 'km'}`}
+           label="Dist"
+         />
 
-        {/* Elevation */}
-        <div className="w-px h-10 bg-gray-300 mx-2" />
-        <DualRangeSlider
-          min={0}
-          max={5000}
-          step={100}
-          value={filters.elevation}
-          onChange={(elevation) => setFilters({ ...filters, elevation })}
-          unit="ft"
-          tooltip="Trail elevation range in feet"
-          label="Elev"
-        />
+         {/* Elevation */}
+         <div className="w-px h-10 bg-gray-300 mx-2" />
+         <DualRangeSlider
+           min={0}
+           max={15000}
+           step={100}
+           value={filters.elevation}
+           onChange={(elevation) => setFilters({ ...filters, elevation })}
+           unit={getElevationUnit()}
+           tooltip={`Trail elevation range in ${getElevationUnit() === 'ft' ? 'feet' : 'meters'}`}
+           label="Elev"
+         />
 
        {/* Difficulty */}
         <div className="flex gap-1.5">

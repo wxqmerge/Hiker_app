@@ -62,6 +62,10 @@ todo.md
 prompt_Que.md
 deploy/hiker.conf
 exported_data
+travel_data/
+travel.md
+Booklet.pdf
+server/.env.backup_*
 
 # Temp upload directory
 tmp/
