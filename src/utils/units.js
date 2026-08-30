@@ -49,8 +49,9 @@ export function getElevationUnit() {
  * @returns {string} Formatted distance with unit.
  */
 export function formatDistance(miles) {
-  const value = convertDistance(miles);
+  const value = Number(convertDistance(miles));
   const unit = getDistanceUnit();
+  if (isNaN(value)) return `— ${unit}`;
   return `${value.toFixed(1)} ${unit}`;
 }
 
@@ -60,8 +61,9 @@ export function formatDistance(miles) {
  * @returns {string} Formatted elevation with unit.
  */
 export function formatElevation(feet) {
-  const value = convertElevation(feet);
+  const value = Number(convertElevation(feet));
   const unit = getElevationUnit();
+  if (isNaN(value)) return `— ${unit}`;
   return `${Math.round(value)} ${unit}`;
 }
 
@@ -71,8 +73,9 @@ export function formatElevation(feet) {
  * @returns {string} Formatted elevation change with unit and sign.
  */
 export function formatElevationChange(feet) {
-  const value = convertElevation(feet);
+  const value = Number(convertElevation(feet));
   const unit = getElevationUnit();
+  if (isNaN(value)) return `— ${unit}`;
   const sign = value >= 0 ? '+' : '';
   return `${sign}${Math.round(value)} ${unit}`;
 }
