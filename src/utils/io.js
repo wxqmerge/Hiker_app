@@ -170,8 +170,13 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
  *   rain  — max precipitation probability (0–100) for the day
  *   om    — true, so the UI can tag the rain % with an "OM" source marker
  */
+const OPEN_METEO_MAX_DAYS = 16;
+
 export async function fetchOpenMeteoForDate(lat, lon, targetDate) {
   if (!hasValidCoords(lat, lon) || !targetDate) return null;
+  const now = new Date();
+  const diffDays = Math.floor((new Date(targetDate) - now) / (1000 * 60 * 60 * 24));
+  if (diffDays > OPEN_METEO_MAX_DAYS) return null;
   const dateStr = formatDateToISO(targetDate);
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
