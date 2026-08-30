@@ -52,7 +52,7 @@ export default function ScheduleBuilder() {
   const {
     scheduleStore, setScheduleStore,
     saveStatus, weatherMap, debugMode,
-    hikeTrailMap,
+    hikeTrailMap, fetchWeatherForAll,
   } = useScheduleSettings();
 
   const {
@@ -200,6 +200,7 @@ export default function ScheduleBuilder() {
               resetFilters={() => setFilters({ ...DEFAULT_FILTERS })}
               totalCount={trails.length}
               filteredCount={filteredHikes.length}
+              onRainSort={fetchWeatherForAll}
             />
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">

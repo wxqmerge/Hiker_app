@@ -6,7 +6,7 @@ import DualRangeSlider from './DualRangeSlider';
 import PillButton from './shared/PillButton';
 import { Button, Icon } from './ui';
 
-export default function FilterPanel({ filters, setFilters, lookup, resetFilters, totalCount, filteredCount }) {
+export default function FilterPanel({ filters, setFilters, lookup, resetFilters, totalCount, filteredCount, onRainSort }) {
   const { title: tt } = useTooltips();
   const [collapsed, setCollapsed] = useState(false);
   const difficulties = lookup?.difficulties || [];
@@ -127,7 +127,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
             <PillButton active={filters.sortBy === 'elevation-down'} onClick={() => setSortBy('elevation-down')} title={tt('Sort by elevation (high to low)')} ariaLabel="Sort by elevation, high to low" ariaPressed={filters.sortBy === 'elevation-down'}>Elev ↓</PillButton>
             <PillButton active={filters.sortBy === 'distance-up'} onClick={() => setSortBy('distance-up')} title={tt('Sort by distance (shortest first)')} ariaLabel="Sort by distance, shortest first" ariaPressed={filters.sortBy === 'distance-up'}>Dist ↑</PillButton>
             <PillButton active={filters.sortBy === 'distance-down'} onClick={() => setSortBy('distance-down')} title={tt('Sort by distance (longest first)')} ariaLabel="Sort by distance, longest first" ariaPressed={filters.sortBy === 'distance-down'}>Dist ↓</PillButton>
-            <PillButton color="blue" active={filters.sortBy === 'rain'} onClick={() => setSortBy('rain')} title={tt('Sort by forecast rain (driest first, no data last)')} ariaLabel="Sort by forecast rain, driest first" ariaPressed={filters.sortBy === 'rain'}>☔ Rain</PillButton>
+            <PillButton color="blue" active={filters.sortBy === 'rain'} onClick={() => { setSortBy('rain'); onRainSort?.(); }} title={tt('Sort by forecast rain (driest first, no data last) · fetches weather')} ariaLabel="Sort by forecast rain, driest first" ariaPressed={filters.sortBy === 'rain'}>☔ Rain</PillButton>
             <PillButton active={filters.wilderness} onClick={toggleWilderness} title={tt('Filter wilderness trails')} ariaLabel="Filter wilderness trails" ariaPressed={filters.wilderness}>◆</PillButton>
             <PillButton active={filters.sortBy === 'not-wilderness'} onClick={() => setSortBy('not-wilderness')} title={tt('Sort non-wilderness trails first')} ariaLabel="Sort non-wilderness trails first" ariaPressed={filters.sortBy === 'not-wilderness'}>◆ off</PillButton>
         </div>
