@@ -4,6 +4,7 @@ import { useTooltips } from '../hooks/useTooltips';
 import { useNextHike } from '../hooks/useNextHike';
 import { useApiKey } from '../hooks/useApiKey';
 import { useMonthContext } from '../contexts/MonthContext';
+import { useDayContext } from '../contexts/DayContext';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
@@ -24,6 +25,7 @@ export default function Calendar() {
   const showToast = useToast();
 
   const { selectedMonth, selectedYear, setSelectedMonthKey } = useMonthContext();
+  const { setSelectedDay } = useDayContext();
   const year = selectedYear;
 
   const scheduleStore = useScheduleStore(scheduleData);
@@ -42,6 +44,7 @@ export default function Calendar() {
 
     if (nextHikes && nextHikes.length > 0) {
       setSelectedMonthKey(nextHikes[0].monthKey);
+      setSelectedDay(String(nextHikes[0].day));
       return;
     }
 
@@ -56,7 +59,7 @@ export default function Calendar() {
       const nextYear = selectedMonth === 11 ? year + 1 : year;
       setSelectedMonthKey(getMonthKey(nextYear, nextMonth));
     }
-  }, [loading, nextHikes, selectedMonth, year, scheduleStore, setSelectedMonthKey]);
+  }, [loading, nextHikes, selectedMonth, year, scheduleStore, setSelectedMonthKey, setSelectedDay]);
 
   const {
     assignedHikes,
