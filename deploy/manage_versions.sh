@@ -111,6 +111,38 @@ EOF
         systemctl start "$VERSION"
         echo "  Service started: $VERSION"
 
+        # 4. Add nginx location block
+        NGINX_CONF="/etc/nginx/sites-enabled/mysite.conf"
+        if [ -f "$NGINX_CONF" ]; then
+            if grep -q "location /${VERSION}/" "$NGINX_CONF"; then
+                echo "  [SKIP] Nginx location block already exists for /${VERSION}/"
+            else
+                cp "$NGINX_CONF" "${NGINX_CONF}.bak"
+                TEMP_FILE=$(mktemp)
+                awk -v ver="$VERSION" '
+                    /listen 443 ssl/ && !done {
+                        print "    location /" ver "/ {"
+                        print "        alias /var/www/html/" ver "/dist/;"
+                        print "        try_files $uri $uri/ /" ver "/index.html;"
+                        print "    }"
+                        print ""
+                        done=1
+                    }
+                    { print }
+                ' "$NGINX_CONF" > "$TEMP_FILE"
+                mv "$TEMP_FILE" "$NGINX_CONF"
+                if ! nginx -t 2>&1; then
+                    echo "  [ERROR] Nginx config invalid! Restoring backup..."
+                    mv "${NGINX_CONF}.bak" "$NGINX_CONF"
+                    exit 1
+                fi
+                rm -f "${NGINX_CONF}.bak"
+                echo "  Added nginx location block for /${VERSION}/"
+            fi
+        else
+            echo "  [WARN] Nginx config not found: $NGINX_CONF"
+        fi
+
         echo "------------------------------------------------------------"
         echo "SUCCESS: Instance $VERSION is configured."
         echo "  Path:      /$VERSION/"
@@ -132,6 +164,27 @@ EOF
 
         # 2. Remove instance directory
         rm -rf "$INSTANCES_DIR/$VERSION"
+
+        # 3. Remove nginx location block
+        NGINX_CONF="/etc/nginx/sites-enabled/mysite.conf"
+        if [ -f "$NGINX_CONF" ] && grep -q "location /${VERSION}/" "$NGINX_CONF"; then
+            cp "$NGINX_CONF" "${NGINX_CONF}.bak"
+            TEMP_FILE=$(mktemp)
+            awk -v ver="$VERSION" '
+                $0 ~ "^    location /" ver "/ \\{$" { skip=1; next }
+                skip && $0 ~ "^    \\}$" { skip=0; next }
+                skip { next }
+                { print }
+            ' "$NGINX_CONF" > "$TEMP_FILE"
+            mv "$TEMP_FILE" "$NGINX_CONF"
+            if ! nginx -t 2>&1; then
+                echo "  [ERROR] Nginx config invalid! Restoring backup..."
+                mv "${NGINX_CONF}.bak" "$NGINX_CONF"
+                exit 1
+            fi
+            rm -f "${NGINX_CONF}.bak"
+            echo "  Removed nginx location block for /${VERSION}/"
+        fi
 
         echo "SUCCESS: Instance $VERSION removed."
         ;;
