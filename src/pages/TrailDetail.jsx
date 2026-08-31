@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import GPXHelp from '../components/GPXHelp';
 import MonthGrid from '../components/MonthGrid';
 import { useTrails } from '../hooks/useTrails';
@@ -87,9 +87,17 @@ export default function TrailDetail() {
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [duplicateId, setDuplicateId] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pendingNavigate, setPendingNavigate] = useState(null);
 
   const trail = useMemo(() => findTrailById(trails, id), [trails, id]);
   const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
+
+  useEffect(() => {
+    if (pendingNavigate && trails.find(t => t.id === pendingNavigate)) {
+      navigate(`/trail/${pendingNavigate}`);
+      setPendingNavigate(null);
+    }
+  }, [trails, pendingNavigate, navigate]);
 
   const trailDetailsResult = useMemo(() => getTrailDetailsById(trailDetails, id), [trailDetails, id]);
   const { handleGpxShare, handleGpxDownload } = useGpxActions(trail);
@@ -251,7 +259,7 @@ export default function TrailDetail() {
       setEditedFields({});
       setIsDuplicate(false);
       setIsEditMode(false);
-      navigate(`/trail/${newId}`);
+      setPendingNavigate(newId);
       return;
     }
 
