@@ -333,15 +333,21 @@ export default function ScheduleBuilder() {
                                           {leader || 'Set Leader'}
                                         </button>
                                         {leaderEdit && leaderEdit.day === day && leaderEdit.slotIdx === slotIdx && (
-                                          <LeaderEdit
-                                            initialLeader={leader}
-                                            tt={tt}
+                                            <LeaderEdit
+                                              initialLeader={leader}
+                                              tt={tt}
                                               onSave={async (newLeader) => {
-                                                await updateLeader(scheduleStore, selectedMonth, day, slotIdx, newLeader, year);
+                                                const monthKey = getMonthKey(year, selectedMonth);
+                                                const current = scheduleStore[monthKey] || {};
+                                                const existingEntry = getDayEntries(current, day)[slotIdx] || { trail_id: null, early_start: false, leader: '' };
+                                                const updated = setDayEntry(current, day, slotIdx, { ...existingEntry, leader: newLeader });
+                                                const newStore = { ...scheduleStore, [monthKey]: updated };
+                                                setScheduleStore(newStore);
+                                                await updateLeader(newStore, selectedMonth, day, slotIdx, newLeader, year);
                                                 setLeaderEdit(null);
                                               }}
-                                            onCancel={() => setLeaderEdit(null)}
-                                          />
+                                              onCancel={() => setLeaderEdit(null)}
+                                            />
                                         )}
                                   </>
                                 ) : trailId ? (
