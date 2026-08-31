@@ -291,7 +291,7 @@ export default function ScheduleBuilder() {
                         const day = Number(dayStr);
                         const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
                         for (const entry of list) {
-                          if (entry?.leader === leader && entry?.trail_id) {
+                          if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
                             const trail = trails.find(t => t.id === entry.trail_id);
                             if (trail) {
                               const date = createDate(year, selectedMonth, day);
