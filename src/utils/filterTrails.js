@@ -21,6 +21,9 @@ export function filterTrails(items, filters, trailDetails) {
   const searchLower = filters.search?.trim()
     ? filters.search.toLowerCase().replace(/[^a-z0-9]/g, '')
     : null;
+  const deepLower = filters.searchDeep?.trim()
+    ? filters.searchDeep.toLowerCase().replace(/[^a-z0-9]/g, '')
+    : null;
   return items.filter(item => {
     const t = item.trail || item;
 
@@ -36,6 +39,20 @@ export function filterTrails(items, filters, trailDetails) {
       ].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]/g, '');
 
       if (!searchText.includes(searchLower)) return false;
+    }
+
+    if (deepLower) {
+      const rawId = t.id || t.trail?.id;
+      const details = rawId && trailDetails ? getTrailDetailsById(trailDetails, rawId) : null;
+      const detail = details ? details[rawId] : null;
+      const deepText = [
+        t.name,
+        t.fullName,
+        ...(t.altNames || []),
+        detail?.fullDescription || '',
+      ].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      if (!deepText.includes(deepLower)) return false;
     }
 
     if (t.distance != null) {

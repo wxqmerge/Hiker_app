@@ -40,6 +40,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
 
   const hasActiveFilters =
     filters.search ||
+    filters.searchDeep ||
     filters.distance.min !== DEFAULT_FILTERS.distance.min || filters.distance.max !== DEFAULT_FILTERS.distance.max ||
     filters.elevation.min !== DEFAULT_FILTERS.elevation.min || filters.elevation.max !== DEFAULT_FILTERS.elevation.max ||
     filters.difficulties.length > 0 ||
@@ -76,6 +77,15 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
           className="w-52 px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500"
           title={tt('Filter trails by name')}
           aria-label="Search trails by name"
+        />
+        <input
+          type="text"
+          placeholder="Deep search (name, desc, alt-names)..."
+          value={filters.searchDeep}
+          onChange={(e) => setFilters({ ...filters, searchDeep: e.target.value })}
+          className="w-52 px-3 py-1.5 border border-purple-300 rounded text-sm focus:ring-purple-500 focus:border-purple-500"
+          title={tt('Search name, description, and alternate names')}
+          aria-label="Deep search trails by name, description, and alternate names"
         />
 
         {/* Distance */}
