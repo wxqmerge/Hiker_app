@@ -127,14 +127,11 @@ export function getRideCost(range) {
 export function generateTrailHtml(trail, trailDetails, dateStr) {
   let title = getTrailName(trail);
   let headerHtml = '';
-  let formattedDate = '';
-  if (dateStr) {
-    const date = dateStr instanceof Date ? dateStr : new Date(dateStr);
-    formattedDate = `${DAY_NAMES[date.getDay()]}, ${MONTH_ABBR[date.getMonth()]} ${date.getDate()}`;
-    title = `${formattedDate} — ${getTrailName(trail)}`;
-    const trailLine = buildTrailLineHtml(trail, false);
-    headerHtml = `<div class="entry-header">${esc(formattedDate)}\t${trailLine}</div>`;
-  }
+  const date = dateStr ? (dateStr instanceof Date ? dateStr : new Date(dateStr)) : new Date();
+  const formattedDate = `${DAY_NAMES[date.getDay()]}, ${MONTH_ABBR[date.getMonth()]} ${date.getDate()}`;
+  title = `${formattedDate} — ${getTrailName(trail)}`;
+  const trailLine = buildTrailLineHtml(trail, false);
+  headerHtml = `<div class="entry-header">${esc(formattedDate)}\t${trailLine}</div>`;
 
   let html = `<!DOCTYPE html>
 <html lang="en">
@@ -157,13 +154,9 @@ export function generateTrailHtml(trail, trailDetails, dateStr) {
 <h1>${esc(title)}</h1>
 `;
 
-  if (dateStr) {
-    html += `<div class="entry">${headerHtml}`;
-    html += buildTrailDetailsHtml(trail, trailDetails, 'compact');
-    html += `</div>`;
-  } else {
-    html += buildTrailDetailsHtml(trail, trailDetails, 'compact');
-  }
+  html += `<div class="entry">${headerHtml}`;
+  html += buildTrailDetailsHtml(trail, trailDetails, 'compact');
+  html += `</div>`;
 
   html += `</body></html>`;
   return html;
