@@ -11,6 +11,9 @@ import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useTooltips } from '../hooks/useTooltips';
 import { getSeasonalInfo, sumMonthlyScores } from '../utils/score.js';
 import { calculateETC } from '../utils/etc';
+import { useMonthContext } from '../contexts/MonthContext';
+import { useDayContext } from '../contexts/DayContext';
+import { createDate } from '../utils/dateUtils';
 import TrailStats from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
 import LeaderEdit from './LeaderEdit';
@@ -38,14 +41,18 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     if (onLeaderChange) setShowLeaderEdit(true);
   }, [onLeaderChange]);
 
+  const { selectedMonth, selectedYear } = useMonthContext();
+  const { selectedDay } = useDayContext();
+
   const handleCopy = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
 
     const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-    const html = generateTrailHtml(trail, detailsForTrail, hikeDate);
+    const date = hikeDate || createDate(selectedYear, selectedMonth, parseInt(selectedDay) || 1);
+    const html = generateTrailHtml(trail, detailsForTrail, date);
     openHtmlInNewTab(html);
-  }, [trail, trailDetails, hikeDate]);
+  }, [trail, trailDetails, hikeDate, selectedMonth, selectedYear, selectedDay]);
 
   const handleCopyName = useCallback(async (e) => {
     e.preventDefault();
