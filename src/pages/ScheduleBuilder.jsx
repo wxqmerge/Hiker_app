@@ -268,15 +268,58 @@ export default function ScheduleBuilder() {
                <h3 className="text-sm font-semibold text-gray-800">
                   {MONTH_NAMES[selectedMonth]} {year} — {getHikeDaysLabel()}
                 </h3>
-                {saveStatus !== 'idle' && (
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                    saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700'
-                      : saveStatus === 'saved' ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save failed'}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {saveStatus !== 'idle' && (
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                      saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700'
+                        : saveStatus === 'saved' ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save failed'}
+                    </span>
+                  )}
+                  <select
+                    className="text-xs border border-gray-300 rounded px-1.5 py-0.5 bg-white"
+                    value=""
+                    onChange={(e) => {
+                      const leader = e.target.value;
+                      if (!leader) return;
+                      const monthKey = getMonthKey(year, selectedMonth);
+                      const monthData = scheduleStore[monthKey] || {};
+                      const entries = [];
+                      for (const [dayStr, dayEntries] of Object.entries(monthData)) {
+                        const day = Number(dayStr);
+                        const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
+                        for (const entry of list) {
+                          if (entry?.leader === leader && entry?.trail_id) {
+                            const trail = trails.find(t => t.id === entry.trail_id);
+                            if (trail) {
+                              const date = createDate(year, selectedMonth, day);
+                              entries.push({
+                                dateStr: `${DAY_NAMES[date.getDay()]}, ${MONTH_NAMES[selectedMonth]} ${day}`,
+                                trail,
+                                trailDetails,
+                                earlyStart: entry.early_start || false,
+                              });
+                            }
+                          }
+                        }
+                      }
+                      entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                      const title = `${leader} — ${MONTH_NAMES[selectedMonth]} ${year}`;
+                      openHtmlInNewTab(generateReportHtml(entries, title));
+                    }}
+                    title={tt('Generate report for a leader')}
+                  >
+                    <option value="">Leader Report</option>
+                    {[...new Set(
+                      Object.values(assignedHikes).flatMap(e => Array.isArray(e) ? e : [e])
+                        .map(e => e?.leader).filter(Boolean)
+                    )].sort().map(leader => (
+                      <option key={leader} value={leader}>{leader}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="p-4 max-h-[calc(100vh-14rem)] overflow-y-auto">
                 <div className="space-y-3">
