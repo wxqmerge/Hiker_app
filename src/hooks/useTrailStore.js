@@ -132,66 +132,82 @@ export function useTrailStore() {
   }, [subscribe]);
 
   const saveTrail = useCallback(async (trail) => {
+    const prevTrails = _trails;
+    const idx = _trails.findIndex(t => t.id === trail.id);
+    let newTrails;
+    if (idx >= 0) {
+      newTrails = _trails.map(t => t.id === trail.id ? trail : t);
+    } else {
+      newTrails = [..._trails, trail].sort((a, b) => getTrailName(a).localeCompare(getTrailName(b)));
+    }
+    setTrails(newTrails);
     try {
       await api.updateTrail(trail);
-      const idx = _trails.findIndex(t => t.id === trail.id);
-      let newTrails;
-      if (idx >= 0) {
-        newTrails = _trails.map(t => t.id === trail.id ? trail : t);
-      } else {
-        newTrails = [..._trails, trail].sort((a, b) => getTrailName(a).localeCompare(getTrailName(b)));
-      }
-      setTrails(newTrails);
       return trail;
     } catch (error) {
       console.error('[useTrailStore] saveTrail error:', error);
+      setTrails(prevTrails);
       throw error;
     }
   }, []);
 
   const saveTrailDetail = useCallback(async (trailId, detail) => {
+    const prevDetails = _trailDetails;
+    const existing = _trailDetails[trailId] || {};
+    const newDetails = { ..._trailDetails, [trailId]: { ...existing, ...detail } };
+    setTrailDetails(newDetails);
     try {
-      const existing = _trailDetails[trailId] || {};
       await api.updateTrailDetail(trailId, { ...existing, ...detail });
-      const newDetails = { ..._trailDetails, [trailId]: { ...existing, ...detail } };
-      setTrailDetails(newDetails);
     } catch (error) {
       console.error('[useTrailStore] saveTrailDetail error:', error);
+      setTrailDetails(prevDetails);
       throw error;
     }
   }, []);
 
   const deleteTrail = useCallback(async (trailId) => {
+    const prevTrails = _trails;
+    const prevDetails = _trailDetails;
+    const prevSchedule = _schedule;
+
+    const newTrails = _trails.filter(t => t.id !== trailId);
+    const newDetails = { ..._trailDetails };
+    delete newDetails[trailId];
+
+    let newSchedule = _schedule;
+    if (newSchedule) {
+      newSchedule = { ...newSchedule };
+      for (const month of Object.keys(newSchedule)) {
+        const entries = newSchedule[month];
+        if (!Array.isArray(entries)) continue;
+        const filtered = entries.filter(entry => entry?.trail_id !== trailId);
+        if (filtered.length === 0) {
+          delete newSchedule[month];
+        } else if (filtered.length !== entries.length) {
+          newSchedule[month] = filtered;
+        }
+      }
+    }
+
+    _trails = newTrails;
+    _trailsVer++;
+    _trailDetails = newDetails;
+    _detailsVer++;
+    _schedule = newSchedule;
+    _scheduleVer++;
+    notifySubscribers('all');
+
     try {
       await api.deleteTrail(trailId);
-      const newTrails = _trails.filter(t => t.id !== trailId);
-      const newDetails = { ..._trailDetails };
-      delete newDetails[trailId];
-
-      let newSchedule = _schedule;
-      if (newSchedule) {
-        newSchedule = { ...newSchedule };
-        for (const month of Object.keys(newSchedule)) {
-          const entries = newSchedule[month];
-          if (!Array.isArray(entries)) continue;
-          const filtered = entries.filter(entry => entry?.trail_id !== trailId);
-          if (filtered.length === 0) {
-            delete newSchedule[month];
-          } else if (filtered.length !== entries.length) {
-            newSchedule[month] = filtered;
-          }
-        }
-        _schedule = newSchedule;
-        _scheduleVer++;
-      }
-
-      _trails = newTrails;
-      _trailsVer++;
-      _trailDetails = newDetails;
-      _detailsVer++;
-      notifySubscribers('all');
     } catch (error) {
       console.error('[useTrailStore] deleteTrail error:', error);
+      _trails = prevTrails;
+      _trailsVer++;
+      _trailDetails = prevDetails;
+      _detailsVer++;
+      _schedule = prevSchedule;
+      _scheduleVer++;
+      notifySubscribers('all');
       throw error;
     }
   }, []);
