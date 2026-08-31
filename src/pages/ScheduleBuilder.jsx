@@ -26,6 +26,8 @@ import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { updateLeader } from '../utils/scheduleActions';
 import { getDayName, getHikeDaysLabel, slotLetter } from '../utils/config';
 import { START_OFFSET_OPTIONS, normalizeStartOffset } from '../utils/etc';
+import { generateReportHtml } from '../utils/report';
+import { openHtmlInNewTab } from '../utils/io';
 
 // Distinct color per day-of-week so all 7 days are visually distinguishable.
 const DAY_COLORS = {
@@ -203,10 +205,29 @@ export default function ScheduleBuilder() {
               onRainSort={fetchWeatherForAll}
             />
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-800">
                   Available Hikes ({filteredHikes.length})
                 </h3>
+                {filteredHikes.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const entries = filteredHikes.map(item => ({
+                        dateStr: `${MONTH_NAMES[selectedMonth]} ${year}`,
+                        trail: item.trail,
+                        trailDetails: trailDetails,
+                        earlyStart: false,
+                      }));
+                      const title = `${MONTH_NAMES[selectedMonth]} ${year} — Filtered Hikes`;
+                      openHtmlInNewTab(generateReportHtml(entries, title));
+                    }}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                    title={tt('Generate report of filtered hikes')}
+                  >
+                    Report
+                  </button>
+                )}
               </div>
                <div
                  className="p-4"
