@@ -65,7 +65,6 @@ describe('ScheduleSettingsDropdown', () => {
     renderMenu();
     fireEvent.click(screen.getByTitle('Schedule settings'));
     fireEvent.click(screen.getByRole('tab', { name: 'Admin' }));
-    expect(screen.getByText('Import Hike TSV')).toBeInTheDocument();
     expect(screen.getByText('Import All JSON')).toBeInTheDocument();
     expect(screen.getByText('Import ZIP')).toBeInTheDocument();
     expect(screen.getByText('Import Schedule JSON')).toBeInTheDocument();

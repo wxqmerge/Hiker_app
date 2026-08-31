@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect, u
 import { useNavigate } from 'react-router-dom';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useToast } from '../hooks/useToast';
-import { createFileInput, createImportFileInput, downloadBlob, parseTrailTsv, sanitizeFilename } from '../utils/io';
+import { createFileInput, createImportFileInput, downloadBlob, sanitizeFilename } from '../utils/io';
 import { getGpx, getSchedule, updateSchedule, request, exportDataZip, importDataZip, resyncGpxCoords } from '../api/client';
 import { getTrailName } from '../utils/data';
 import { getGroupName } from '../utils/config';
@@ -25,7 +25,7 @@ export function TrailActionsProvider({ children }) {
   const [newTrailForm, setNewTrailForm] = useState(false);
   const [newTrailName, setNewTrailName] = useState('');
   const [pendingConfirm, setPendingConfirm] = useState(null);
-  const [pendingTsvChoice, setPendingTsvChoice] = useState(null);
+
 
   const hasApiKey = useApiKey();
 
@@ -121,57 +121,7 @@ export function TrailActionsProvider({ children }) {
     }
   }, [newTrailName, trails, saveTrail, navigate, showToast]);
 
-  const doImportHikeTsv = useCallback(async (parsedTrail, parsedDetail, targetTrail) => {
-    const generateId = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'new-trail';
-    let newId = targetTrail?.id || generateId(parsedTrail.fullName);
-    let counter = 1;
-    while (trails.find(t => t.id === newId) && !targetTrail) {
-      newId = generateId(parsedTrail.fullName) + '-' + counter++;
-    }
-    const saved = targetTrail
-      ? await saveTrail({ ...parsedTrail, id: targetTrail.id })
-      : await saveTrail({
-          ...parsedTrail,
-          id: newId,
-        });
-    const savedId = saved.id || targetTrail?.id;
-    const detailToSave = {};
-    if (parsedDetail.fullDescription) detailToSave.fullDescription = parsedDetail.fullDescription;
-    if (parsedDetail.pros != null) detailToSave.pros = parsedDetail.pros;
-    if (parsedDetail.others != null) detailToSave.others = parsedDetail.others;
-    if (parsedDetail.leaders?.length) detailToSave.leaders = parsedDetail.leaders;
-    if (Object.keys(detailToSave).length > 0) {
-      await saveTrailDetail(savedId, detailToSave);
-    }
-    showToast(`Trail "${saved.fullName}" imported successfully!`, 'success');
-    navigate(`/trail/${savedId}?edit=true`);
-  }, [trails, saveTrail, saveTrailDetail, navigate, showToast]);
 
-  const handleImportHikeTsv = useCallback(() => {
-    createFileInput({
-      accept: '.tsv,.txt',
-      onFile: async (file) => {
-        const text = await file.text();
-        try {
-          const { trail: parsedTrail, detail: parsedDetail } = parseTrailTsv(text);
-          if (!parsedTrail.fullName) {
-            const lines = text.split('\n');
-            const preview = lines.slice(0, 5).map((l, i) => `  ${i}: ${l.substring(0, 60)}`).join('\n');
-            showToast(`Import failed: Trail Name is required (row 0, col 0 is empty).\nFirst 5 rows:\n${preview}`, 'error');
-            return;
-          }
-          const existingByName = trails.find(t => t.fullName === parsedTrail.fullName);
-          if (existingByName) {
-            setPendingTsvChoice({ parsedTrail, parsedDetail, existingByName });
-            return;
-          }
-          await doImportHikeTsv(parsedTrail, parsedDetail, null);
-        } catch (err) {
-          showToast('Import failed: ' + (err.message || 'Invalid TSV format'), 'error');
-        }
-      },
-    });
-  }, [trails, doImportHikeTsv, showToast]);
 
   const exportMonthlyTsv = useCallback(() => {
     const header = ['Trail ID', 'Trail Name', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -411,7 +361,6 @@ export function TrailActionsProvider({ children }) {
   }, [requireKey, showToast]);
 
   const adminActions = useMemo(() => ({
-    importHikeTsv: handleImportHikeTsv,
     importAllJson: importAllDataJson,
     importZip: importAllDataZip,
     importScheduleJson,
@@ -419,7 +368,7 @@ export function TrailActionsProvider({ children }) {
     cleanupOrphanedDetails,
     validateData,
     resyncCoords,
-  }), [handleImportHikeTsv, importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords]);
+  }), [importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords]);
 
   const userActions = useMemo(() => ({
     newTrail: startNewTrail,
@@ -464,38 +413,6 @@ export function TrailActionsProvider({ children }) {
           await onConfirm();
         }}
         onCancel={() => setPendingConfirm(null)}
-      />
-      <ConfirmDialog
-        open={!!pendingTsvChoice}
-        title="Trail already exists"
-        message={pendingTsvChoice ? `Trail "${pendingTsvChoice.parsedTrail.fullName}" already exists.` : ''}
-        actions={pendingTsvChoice ? [
-          {
-            label: 'Update',
-            onClick: async () => {
-              const { parsedTrail, parsedDetail, existingByName } = pendingTsvChoice;
-              setPendingTsvChoice(null);
-              await doImportHikeTsv(parsedTrail, parsedDetail, existingByName);
-            },
-          },
-          {
-            label: 'Create copy',
-            variant: 'secondary',
-            onClick: async () => {
-              const { parsedTrail, parsedDetail } = pendingTsvChoice;
-              parsedTrail.fullName = `${parsedTrail.fullName} (copy)`;
-              parsedTrail.name = `${parsedTrail.name || parsedTrail.fullName} (copy)`;
-              setPendingTsvChoice(null);
-              await doImportHikeTsv(parsedTrail, parsedDetail, null);
-            },
-          },
-          {
-            label: 'Cancel',
-            variant: 'secondary',
-            onClick: () => setPendingTsvChoice(null),
-          },
-        ] : undefined}
-        onCancel={() => setPendingTsvChoice(null)}
       />
     </TrailActionsContext.Provider>
   );
