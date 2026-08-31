@@ -134,7 +134,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                  {weather && (
                   <>
                     <a
-                      href={hasValidCoords(trail.trailHeadLat, trail.trailHeadLon) ? (weather.om ? `https://www.visualcrossing.com/weather-history/${trail.trailHeadLat},${trail.trailHeadLon}/us/${(hikeDate || new Date()).toISOString().slice(0, 10)}` : `https://forecast.weather.gov/MapClick.php?lon=${trail.trailHeadLon}&lat=${trail.trailHeadLat}`) : undefined}
+                      href={hasValidCoords(trail.trailHeadLat, trail.trailHeadLon) ? `https://forecast.weather.gov/MapClick.php?lon=${trail.trailHeadLon}&lat=${trail.trailHeadLat}` : undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex items-center gap-1 ${weather.rain >= 40 ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-600`}
