@@ -324,6 +324,49 @@ export default function ScheduleBuilder() {
                       <option key={leader} value={leader}>{leader}</option>
                     ))}
                   </select>
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                    title={tt('Open a report tab for every leader')}
+                    onClick={() => {
+                      const quarterStart = Math.floor(selectedMonth / 3) * 3;
+                      const quarterMonths = [quarterStart, quarterStart + 1, quarterStart + 2];
+                      const qNum = Math.floor(selectedMonth / 3) + 1;
+                      const leaders = [...new Set(
+                        Object.values(assignedHikes).flatMap(e => Array.isArray(e) ? e : [e])
+                          .map(e => e?.leader).filter(Boolean)
+                      )].sort();
+                      for (const leader of leaders) {
+                        const entries = [];
+                        for (const m of quarterMonths) {
+                          const monthKey = getMonthKey(year, m);
+                          const monthData = scheduleStore[monthKey] || {};
+                          for (const [dayStr, dayEntries] of Object.entries(monthData)) {
+                            const day = Number(dayStr);
+                            const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
+                            for (const entry of list) {
+                              if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
+                                const trail = trails.find(t => t.id === entry.trail_id);
+                                if (trail) {
+                                  const date = createDate(year, m, day);
+                                  entries.push({
+                                    dateStr: `${DAY_NAMES[date.getDay()]}, ${MONTH_NAMES[m]} ${day}`,
+                                    trail,
+                                    trailDetails,
+                                    earlyStart: entry.early_start || false,
+                                  });
+                                }
+                              }
+                            }
+                          }
+                        }
+                        entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                        openHtmlInNewTab(generateReportHtml(entries, `${leader} — Q${qNum} ${year}`));
+                      }
+                    }}
+                  >
+                    All
+                  </button>
                 </div>
               </div>
               <div className="p-4 max-h-[calc(100vh-14rem)] overflow-y-auto">
