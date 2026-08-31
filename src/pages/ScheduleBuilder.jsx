@@ -284,29 +284,34 @@ export default function ScheduleBuilder() {
                     onChange={(e) => {
                       const leader = e.target.value;
                       if (!leader) return;
-                      const monthKey = getMonthKey(year, selectedMonth);
-                      const monthData = scheduleStore[monthKey] || {};
+                      const quarterStart = Math.floor(selectedMonth / 3) * 3;
+                      const quarterMonths = [quarterStart, quarterStart + 1, quarterStart + 2];
                       const entries = [];
-                      for (const [dayStr, dayEntries] of Object.entries(monthData)) {
-                        const day = Number(dayStr);
-                        const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
-                        for (const entry of list) {
-                          if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
-                            const trail = trails.find(t => t.id === entry.trail_id);
-                            if (trail) {
-                              const date = createDate(year, selectedMonth, day);
-                              entries.push({
-                                dateStr: `${DAY_NAMES[date.getDay()]}, ${MONTH_NAMES[selectedMonth]} ${day}`,
-                                trail,
-                                trailDetails,
-                                earlyStart: entry.early_start || false,
-                              });
+                      for (const m of quarterMonths) {
+                        const monthKey = getMonthKey(year, m);
+                        const monthData = scheduleStore[monthKey] || {};
+                        for (const [dayStr, dayEntries] of Object.entries(monthData)) {
+                          const day = Number(dayStr);
+                          const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
+                          for (const entry of list) {
+                            if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
+                              const trail = trails.find(t => t.id === entry.trail_id);
+                              if (trail) {
+                                const date = createDate(year, m, day);
+                                entries.push({
+                                  dateStr: `${DAY_NAMES[date.getDay()]}, ${MONTH_NAMES[m]} ${day}`,
+                                  trail,
+                                  trailDetails,
+                                  earlyStart: entry.early_start || false,
+                                });
+                              }
                             }
                           }
                         }
                       }
                       entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                      const title = `${leader} — ${MONTH_NAMES[selectedMonth]} ${year}`;
+                      const qNum = Math.floor(selectedMonth / 3) + 1;
+                      const title = `${leader} — Q${qNum} ${year}`;
                       openHtmlInNewTab(generateReportHtml(entries, title));
                     }}
                     title={tt('Generate report for a leader')}
