@@ -28,6 +28,8 @@ import { getDayName, getHikeDaysLabel, slotLetter } from '../utils/config';
 import { START_OFFSET_OPTIONS, normalizeStartOffset } from '../utils/etc';
 import { generateReportHtml } from '../utils/report';
 import { openHtmlInNewTab } from '../utils/io';
+import { useDayContext } from '../contexts/DayContext';
+import { DAY_NAMES } from '../utils/constants';
 
 // Distinct color per day-of-week so all 7 days are visually distinguishable.
 const DAY_COLORS = {
@@ -47,6 +49,7 @@ export default function ScheduleBuilder() {
   const { filters, setFilters } = useFilters(trails, trailDetails);
   const { title: tt } = useTooltips();
   const { selectedMonth, selectedYear } = useMonthContext();
+  const { selectedDay } = useDayContext();
   const hasApiKey = useApiKey();
   const [pendingSwap, setPendingSwap] = useState(null);
   const year = selectedYear;
@@ -213,13 +216,16 @@ export default function ScheduleBuilder() {
                   <button
                     type="button"
                     onClick={() => {
+                      const day = parseInt(selectedDay) || 1;
+                      const date = createDate(year, selectedMonth, day);
+                      const dateStr = `${DAY_NAMES[date.getDay()]}, ${MONTH_NAMES[selectedMonth]} ${day}`;
                       const entries = filteredHikes.map(item => ({
-                        dateStr: `${MONTH_NAMES[selectedMonth]} ${year}`,
+                        dateStr,
                         trail: item.trail,
                         trailDetails: trailDetails,
                         earlyStart: false,
                       }));
-                      const title = `${MONTH_NAMES[selectedMonth]} ${year} — Filtered Hikes`;
+                      const title = `${dateStr} — Filtered Hikes`;
                       openHtmlInNewTab(generateReportHtml(entries, title));
                     }}
                     className="text-xs font-medium text-blue-600 hover:text-blue-800"
