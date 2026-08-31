@@ -13,6 +13,9 @@ import { clampHikeMinutes, getEtcBounds } from '../utils/etc';
 import { createFileInput, openHtmlInNewTab } from '../utils/io';
 import { uploadGpxFile } from '../api/client';
 import { useGpxActions } from '../hooks/useGpxActions';
+import { useMonthContext } from '../contexts/MonthContext';
+import { useDayContext } from '../contexts/DayContext';
+import { createDate } from '../utils/dateUtils';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../utils/url.js';
 import { hasStoredApiKey } from '../utils/apiKey';
@@ -356,8 +359,12 @@ export default function TrailDetail() {
     setEditedFields(prev => ({ ...prev, [field]: value }));
   };
 
+  const { selectedMonth, selectedYear } = useMonthContext();
+  const { selectedDay } = useDayContext();
+
   const copyReport = () => {
-    const html = generateTrailHtml(trail, trailDetailsResult, hikeDate);
+    const date = hikeDate || createDate(selectedYear, selectedMonth, parseInt(selectedDay) || 1);
+    const html = generateTrailHtml(trail, trailDetailsResult, date);
     openHtmlInNewTab(html);
   };
 
