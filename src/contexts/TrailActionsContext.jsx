@@ -155,7 +155,9 @@ export function TrailActionsProvider({ children }) {
         try {
           const { trail: parsedTrail, detail: parsedDetail } = parseTrailTsv(text);
           if (!parsedTrail.fullName) {
-            showToast('Import failed: Trail Name is required.', 'error');
+            const lines = text.split('\n');
+            const preview = lines.slice(0, 5).map((l, i) => `  ${i}: ${l.substring(0, 60)}`).join('\n');
+            showToast(`Import failed: Trail Name is required (row 0, col 0 is empty).\nFirst 5 rows:\n${preview}`, 'error');
             return;
           }
           const existingByName = trails.find(t => t.fullName === parsedTrail.fullName);
