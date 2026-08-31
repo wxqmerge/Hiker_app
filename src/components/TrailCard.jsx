@@ -49,10 +49,10 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
     e.stopPropagation();
 
     const detailsForTrail = getTrailDetailsById(trailDetails, trail.id);
-    const date = hikeDate || createDate(selectedYear, selectedMonth, parseInt(selectedDay) || 1);
+    const date = createDate(selectedYear, selectedMonth, parseInt(selectedDay) || 1);
     const html = generateTrailHtml(trail, detailsForTrail, date);
     openHtmlInNewTab(html);
-  }, [trail, trailDetails, hikeDate, selectedMonth, selectedYear, selectedDay]);
+  }, [trail, trailDetails, selectedMonth, selectedYear, selectedDay]);
 
   const handleCopyName = useCallback(async (e) => {
     e.preventDefault();
