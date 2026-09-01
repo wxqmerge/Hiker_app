@@ -640,30 +640,33 @@ export function ScheduleSettingsProvider({ children }) {
     rows.push(pad(headerRow, numCols));
 
     // Include ALL dates that fall on a configured hike day-of-week,
-    // with blanks where there are no hikes yet.
+    // grouped by slot index (row 0 = 1st Wed + 1st Fri, row 1 = 2nd Wed + 2nd Fri, etc.)
     for (const month of quarter.months) {
       const mIdx = MONTH_ABBR.indexOf(month);
       const daysInMonth = getDaysInMonth(qYear, mIdx);
       const monthKey = getMonthKey(qYear, mIdx);
       const monthData = scheduleStore[monthKey] || {};
 
-      // Find all days in this month that fall on a hike day-of-week
-      const hikeDays = [];
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = createDate(qYear, mIdx, day);
-        if (uniqueDays.includes(date.getDay())) hikeDays.push(day);
+      // For each day-of-week, collect all dates in this month (sorted)
+      const datesByDow = {};
+      for (const dow of uniqueDays) {
+        datesByDow[dow] = [];
+        for (let day = 1; day <= daysInMonth; day++) {
+          if (createDate(qYear, mIdx, day).getDay() === dow) {
+            datesByDow[dow].push(day);
+          }
+        }
       }
 
-      let firstRow = true;
-      for (const day of hikeDays) {
-        const date = createDate(qYear, mIdx, day);
-        const dow = date.getDay();
-        const entries = getDayEntries(monthData, day);
-        const row = [firstRow ? month : ''];
-        firstRow = false;
+      // Max slot count across all day-of-weeks
+      const maxSlots = Math.max(...Object.values(datesByDow).map(arr => arr.length), 1);
 
+      for (let slot = 0; slot < maxSlots; slot++) {
+        const row = [slot === 0 ? month : ''];
         for (const dl of dayLabels) {
-          if (dl.dow === dow) {
+          const day = datesByDow[dl.dow]?.[slot];
+          if (day != null) {
+            const entries = getDayEntries(monthData, day);
             const entry = entries[dl.slot];
             if (entry && entry.trail_id) {
               const trail = findTrailById(entry.trail_id);
