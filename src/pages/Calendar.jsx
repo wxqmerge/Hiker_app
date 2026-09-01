@@ -1,28 +1,20 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTrails } from '../hooks/useTrails';
 import { useTooltips } from '../hooks/useTooltips';
 import { useNextHike } from '../hooks/useNextHike';
-import { useApiKey } from '../hooks/useApiKey';
 import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
 import ScheduledCards from '../components/ScheduledCards';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NextHikeBanner from '../components/NextHikeBanner';
-import SwapConfirmationModal from '../components/SwapConfirmationModal';
-import { updateSchedule } from '../api/client';
-import { setSchedule } from '../hooks/useTrailStore';
-import { storeToServerSchedule } from '../utils/scheduleFormat';
 import { getMonthKey } from '../utils/dateUtils';
 import { useScheduleStore } from '../hooks/useScheduleStore';
 import { useScheduleData } from '../hooks/useScheduleData';
-import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { useScheduleWeather } from '../hooks/useScheduleWeather';
-import { useToast } from '../hooks/useToast';
 
 export default function Calendar() {
   const { trails, schedule: scheduleData, loading } = useTrails();
   const { title: tt } = useTooltips();
-  const showToast = useToast();
 
   const { selectedMonth, selectedYear, setSelectedMonthKey } = useMonthContext();
   const { setSelectedDay } = useDayContext();
@@ -30,11 +22,9 @@ export default function Calendar() {
 
   const scheduleStore = useScheduleStore(scheduleData);
 
-  const nextHikes = useNextHike({ trails, schedule: scheduleData, year });
+  const nextHikes = useNextHike({ trails, schedule: scheduleData });
 
   const hasSyncedInitialMonth = useRef(false);
-  const hasApiKey = useApiKey();
-  const [pendingSwap, setPendingSwap] = useState(null);
 
   const dayWeatherMap = useScheduleWeather({ schedule: scheduleData, selectedMonth, trails, year });
 
@@ -65,47 +55,7 @@ export default function Calendar() {
     assignedHikes,
     findTrailById,
     trailIndexToId,
-    dragData,
-    setDragData,
   } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
-
-
-  const scheduleStoreRef = useRef(scheduleStore);
-  useEffect(() => {
-    scheduleStoreRef.current = scheduleStore;
-  }, [scheduleStore]);
-
-  const applyScheduleChange = useCallback(async (monthKey, updater) => {
-    const newStore = { ...scheduleStoreRef.current };
-    const current = newStore[monthKey] || {};
-    newStore[monthKey] = updater(current);
-    const serverData = storeToServerSchedule(newStore);
-    try {
-      await updateSchedule(serverData);
-      setSchedule(serverData);
-      scheduleStoreRef.current = newStore;
-    } catch (error) {
-      console.error('[Calendar] Failed to save schedule:', error);
-      showToast('Failed to save schedule to server: ' + error.message, 'error');
-    }
-  }, [showToast]);
-
-  const {
-    confirmSwap,
-    cancelSwap,
-  } = useScheduleDragDrop({
-    scheduleStore,
-    selectedMonth,
-    year,
-    dragData,
-    setDragData,
-    pendingSwap,
-    setPendingSwap,
-    findTrailById,
-    trailIndexToId,
-    updateScheduleFn: applyScheduleChange,
-    hasApiKey,
-  });
 
   if (loading) {
     return <LoadingSpinner message="Loading schedule..." />;
@@ -134,12 +84,6 @@ export default function Calendar() {
       />
 
       {/* Move functionality is disabled in the Calendar view (viewing only). */}
-
-      <SwapConfirmationModal
-        pendingSwap={pendingSwap}
-        onConfirm={confirmSwap}
-        onCancel={cancelSwap}
-      />
     </>
   );
 }

@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsData } from '@shared/types/index.js';
 import { MONTH_ABBR, resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { generateEtag } from '../utils/etag.js';
@@ -438,7 +439,8 @@ export function getScheduleVersion(): string {
 
 export function serverVersion(): string {
   try {
-    const pkg = JSON.parse(fsSync.readFileSync(path.join(__dirname, '../../package.json'), 'utf-8'));
+    const dir = path.dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(fsSync.readFileSync(path.join(dir, '../../package.json'), 'utf-8'));
     return pkg.version || 'unknown';
   } catch {
     return 'unknown';

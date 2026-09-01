@@ -90,7 +90,7 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   }
   // Determine which schedule files to skip (name mismatch)
   const skipScheduleFiles = new Set();
-  let skippedScheduleNames: string[] = [];
+  const skippedScheduleNames: string[] = [];
   for (const [name, zipScheduleName] of zipScheduleEntries) {
     if (zipScheduleName !== expectedScheduleName) {
       skipScheduleFiles.add(name);

@@ -4,8 +4,8 @@ let groupConfig = {
   name: null,
   hikeDays: null,
   maxHikesPerDay: 3,
-  minSpeedMph: 2.2,
-  maxSpeedMph: 1.1,
+  minSpeedMph: 1.1,
+  maxSpeedMph: 2.2,
   isBikeTrip: false,
   unitSystem: 'imperial'
 };

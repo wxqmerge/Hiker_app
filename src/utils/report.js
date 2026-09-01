@@ -125,11 +125,10 @@ export function getRideCost(range) {
 
 // Generate HTML report for a single trail (same format as monthly report)
 export function generateTrailHtml(trail, trailDetails, dateStr) {
-  let title = getTrailName(trail);
   let headerHtml = '';
   const date = dateStr ? (dateStr instanceof Date ? dateStr : new Date(dateStr)) : new Date();
   const formattedDate = `${DAY_NAMES[date.getDay()]}, ${MONTH_ABBR[date.getMonth()]} ${date.getDate()}`;
-  title = `${formattedDate} — ${getTrailName(trail)}`;
+  const title = `${formattedDate} — ${getTrailName(trail)}`;
   const trailLine = buildTrailLineHtml(trail, false);
   headerHtml = `<div class="entry-header">${esc(formattedDate)}\t${trailLine}</div>`;
 

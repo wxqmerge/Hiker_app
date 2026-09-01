@@ -54,8 +54,8 @@ function App() {
           name: data.name,
           hikeDays: data.hikeDays,
           maxHikesPerDay: data.maxHikesPerDay ?? 3,
-          minSpeedMph: data.minSpeedMph ?? 2.2,
-          maxSpeedMph: data.maxSpeedMph ?? 1.1,
+          minSpeedMph: data.minSpeedMph ?? 1.1,
+          maxSpeedMph: data.maxSpeedMph ?? 2.2,
           isBikeTrip: data.isBikeTrip ?? false
         });
       } else {

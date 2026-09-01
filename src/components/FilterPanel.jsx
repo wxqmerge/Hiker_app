@@ -10,7 +10,7 @@ export default function FilterPanel({ filters, setFilters, lookup, resetFilters,
   const { title: tt } = useTooltips();
   const [collapsed, setCollapsed] = useState(false);
   const difficulties = lookup?.difficulties || [];
-  const months = lookup?.months || MONTH_NAMES;
+  const months = MONTH_NAMES;
 
   const toggleDifficulty = useCallback((difficulty) => {
     setFilters(prev => ({
