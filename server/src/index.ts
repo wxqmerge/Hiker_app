@@ -136,6 +136,74 @@ app.get('/api/tide-proxy', async (req, res) => {
   }
 });
 
+interface TideStation {
+  stationId: string;
+  name: string;
+  lat: number;
+  lon: number;
+  distanceMiles: number;
+}
+
+let _tideStationsCache: { stations: Array<{ id: string; name: string; lat: number; lon: number }>; ts: number } | null = null;
+const TIDE_STATIONS_TTL = 24 * 60 * 60 * 1000;
+
+async function getTideStations(): Promise<Array<{ id: string; name: string; lat: number; lon: number }>> {
+  if (_tideStationsCache && Date.now() - _tideStationsCache.ts < TIDE_STATIONS_TTL) {
+    return _tideStationsCache.stations;
+  }
+  const res = await fetch('https://api.tidesandcurrents.noaa.gov/api/v1/stations.json?product=ht', {
+    headers: { 'User-Agent': 'Hiker-App' },
+  });
+  if (!res.ok) throw new Error(`NOAA stations API returned ${res.status}`);
+  const data: any = await res.json();
+  const stations = (data.stations || [])
+    .filter((s: any) => s.station?.latitude != null && s.station?.longitude != null)
+    .map((s: any) => ({
+      id: String(s.station.id),
+      name: s.station.name || `Station ${s.station.id}`,
+      lat: Number(s.station.latitude),
+      lon: Number(s.station.longitude),
+    }));
+  _tideStationsCache = { stations, ts: Date.now() };
+  return stations;
+}
+
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+app.get('/api/tide-stations/near', async (req, res) => {
+  const lat = parseFloat(String(req.query.lat || ''));
+  const lon = parseFloat(String(req.query.lon || ''));
+  if (isNaN(lat) || isNaN(lon)) {
+    res.status(400).json({ error: 'lat and lon are required' });
+    return;
+  }
+  try {
+    const stations = await getTideStations();
+    const results: TideStation[] = stations
+      .map((s) => ({
+        stationId: s.id,
+        name: s.name,
+        lat: s.lat,
+        lon: s.lon,
+        distanceMiles: haversineMiles(lat, lon, s.lat, s.lon),
+      }))
+      .sort((a, b) => a.distanceMiles - b.distanceMiles)
+      .slice(0, 5);
+    res.json({ stations: results });
+  } catch (err) {
+    res.status(502).json({ error: 'Failed to fetch tide stations from NOAA' });
+  }
+});
+
 app.get(/manifest\.webmanifest$/, (req, res) => {
   // Derive app name from URL path (e.g. /sothh-dev/manifest.webmanifest → "sothh-dev")
   // Fall back to X-App-Name header, then "hiker"

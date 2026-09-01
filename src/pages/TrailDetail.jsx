@@ -11,7 +11,7 @@ import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMon
 import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';
 import { clampHikeMinutes, getEtcBounds } from '../utils/etc';
 import { createFileInput, openHtmlInNewTab } from '../utils/io';
-import { uploadGpxFile } from '../api/client';
+import { uploadGpxFile, findNearbyTideStations } from '../api/client';
 import { useGpxActions } from '../hooks/useGpxActions';
 import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
@@ -91,6 +91,8 @@ export default function TrailDetail() {
   const [duplicateId, setDuplicateId] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState(null);
+  const [tideSearchResults, setTideSearchResults] = useState(null);
+  const [tideSearching, setTideSearching] = useState(false);
 
   const trail = useMemo(() => findTrailById(trails, id), [trails, id]);
   const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
@@ -1095,18 +1097,58 @@ export default function TrailDetail() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">NOAA Tide Station ID</label>
-                    <input
-                      type="text"
-                      value={getEditedValue('tideStationId') || ''}
-                      onChange={(e) => updateField('tideStationId', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
-                      placeholder="e.g. 9447130"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={getEditedValue('tideStationId') || ''}
+                        onChange={(e) => updateField('tideStationId', e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                        placeholder="e.g. 9447130"
+                      />
+                      <button
+                        type="button"
+                        disabled={tideSearching || (editedFields.trailHeadLat == null && trail.trailHeadLat == null)}
+                        onClick={async () => {
+                          const lat = editedFields.trailHeadLat ?? trail.trailHeadLat;
+                          const lon = editedFields.trailHeadLon ?? trail.trailHeadLon;
+                          if (lat == null || lon == null) return;
+                          setTideSearching(true);
+                          setTideSearchResults(null);
+                          try {
+                            const results = await findNearbyTideStations(lat, lon);
+                            setTideSearchResults(results);
+                          } catch (err) {
+                            showToast('Failed to find nearby stations: ' + err.message, 'error');
+                          } finally {
+                            setTideSearching(false);
+                          }
+                        }}
+                        className="px-3 py-2 text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        title="Find closest NOAA tide station to trailhead"
+                      >
+                        {tideSearching ? 'Searching…' : 'Find Closest'}
+                      </button>
+                    </div>
                     {(() => {
                       const val = String(getEditedValue('tideStationId') || '').trim();
                       if (val && !/^\d{7}$/.test(val)) return <p className="text-xs text-amber-600 mt-1">Expected 7 digits (e.g. 9447130)</p>;
                       return null;
                     })()}
+                    {tideSearchResults && tideSearchResults.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-gray-500">Closest stations to trailhead:</p>
+                        {tideSearchResults.map((s) => (
+                          <button
+                            key={s.stationId}
+                            type="button"
+                            onClick={() => { updateField('tideStationId', s.stationId); setTideSearchResults(null); }}
+                            className="block w-full text-left text-sm px-2 py-1 rounded hover:bg-blue-50 text-blue-700"
+                          >
+                            {s.stationId} — {s.name} ({s.distanceMiles.toFixed(1)} mi)
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">GPX Track</label>
