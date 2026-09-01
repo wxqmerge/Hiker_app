@@ -190,8 +190,3 @@ export async function importDataZip(file) {
     apiKey: true,
   });
 }
-
-export async function findNearbyTideStations(lat, lon) {
-  const data = await request(`/api/tide-stations/near?lat=${lat}&lon=${lon}`);
-  return data.stations || [];
-}
