@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import GPXHelp from '../components/GPXHelp';
 import MonthGrid from '../components/MonthGrid';
 import { useTrails } from '../hooks/useTrails';
@@ -95,10 +95,11 @@ export default function TrailDetail() {
   const trail = useMemo(() => findTrailById(trails, id), [trails, id]);
   const currentIndex = useMemo(() => findTrailIndexById(trails, id), [trails, id]);
 
+  const navigatedRef = useRef(false);
   useEffect(() => {
-    if (pendingNavigate && trails.find(t => t.id === pendingNavigate)) {
+    if (pendingNavigate && !navigatedRef.current && trails.find(t => t.id === pendingNavigate)) {
+      navigatedRef.current = true;
       navigate(`/trail/${pendingNavigate}`);
-      setPendingNavigate(null);
     }
   }, [trails, pendingNavigate, navigate]);
 
