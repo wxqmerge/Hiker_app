@@ -639,33 +639,46 @@ export function ScheduleSettingsProvider({ children }) {
     }
     rows.push(pad(headerRow, numCols));
 
-    // Group hikes by month for each day label
-    const hikesByMonth = {};
-    for (const dl of dayLabels) {
-      const key = `${dl.dow}-${dl.slot}`;
-      hikesByMonth[key] = {};
-      for (const m of quarter.months) {
-        hikesByMonth[key][m] = (hikesByDay[key] || []).filter(h => h.month === m);
-      }
-    }
-
+    // Include ALL dates that fall on a configured hike day-of-week,
+    // with blanks where there are no hikes yet.
     for (const month of quarter.months) {
-      const allMonthHikes = dayLabels.map(dl => hikesByMonth[`${dl.dow}-${dl.slot}`][month] || []);
-      const maxRows = Math.max(...allMonthHikes.map(arr => arr.length), 1);
+      const mIdx = MONTH_ABBR.indexOf(month);
+      const daysInMonth = getDaysInMonth(qYear, mIdx);
+      const monthKey = getMonthKey(qYear, mIdx);
+      const monthData = scheduleStore[monthKey] || {};
 
-      for (let i = 0; i < maxRows; i++) {
-        const row = [];
-        if (i === 0) row.push(month);
-        else row.push('');
+      // Find all days in this month that fall on a hike day-of-week
+      const hikeDays = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = createDate(qYear, mIdx, day);
+        if (uniqueDays.includes(date.getDay())) hikeDays.push(day);
+      }
 
-        for (let j = 0; j < allMonthHikes.length; j++) {
-          const h = allMonthHikes[j][i];
-          row.push(h ? String(h.day) : '');
-          row.push(h ? h.trailName : '');
-          row.push(h ? (h.leader || '') : '');
+      let firstRow = true;
+      for (const day of hikeDays) {
+        const date = createDate(qYear, mIdx, day);
+        const dow = date.getDay();
+        const entries = getDayEntries(monthData, day);
+        const row = [firstRow ? month : ''];
+        firstRow = false;
+
+        for (const dl of dayLabels) {
+          if (dl.dow === dow) {
+            const entry = entries[dl.slot];
+            if (entry && entry.trail_id) {
+              const trail = findTrailById(entry.trail_id);
+              let trailName = trail ? getTrailName(trail) : entry.trail_id;
+              const esOffset = normalizeStartOffset(entry.early_start);
+              if (esOffset !== 0) trailName += esOffset < 0 ? ` (${Math.abs(esOffset)}m early)` : ` (${esOffset}m late)`;
+              row.push(String(day), trailName, entry.leader || '');
+            } else {
+              row.push(String(day), '', '');
+            }
+          } else {
+            row.push('', '', '');
+          }
           row.push('');
         }
-
         rows.push(pad(row, numCols));
       }
     }
