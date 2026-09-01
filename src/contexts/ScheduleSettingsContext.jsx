@@ -357,8 +357,8 @@ export function ScheduleSettingsProvider({ children }) {
           const titleRow = lines[0]?.slice().join('').trim() || '';
           const fileGroupMatch = titleRow.match(/\(([^)]+)\)$/);
           const fileGroup = fileGroupMatch ? fileGroupMatch[1] : null;
-          const currentGroup = getGroupName() || 'hiker';
-          if (fileGroup && fileGroup !== currentGroup) {
+          const currentGroup = getGroupName() || '';
+          if (fileGroup && currentGroup && fileGroup !== currentGroup) {
             showToast(`This schedule is for "${fileGroup}" but you're running "${currentGroup}". Import cancelled.`, 'error');
             return;
           }
@@ -624,11 +624,12 @@ export function ScheduleSettingsProvider({ children }) {
     };
 
     const numCols = dayLabels.length * 4 + 1;
-    const prefix = getGroupName() || 'hiker';
+    const prefix = getGroupName() || '';
     let rows = [];
 
     // Row 0: title
-    rows.push(pad(['', '', quarter.label + ' Hikes ' + qYear + ' (' + prefix + ')'], numCols));
+    const titleSuffix = prefix ? ' (' + prefix + ')' : '';
+    rows.push(pad(['', '', quarter.label + ' Hikes ' + qYear + titleSuffix], numCols));
     rows.push(pad([], numCols));
     rows.push(pad([], numCols));
 

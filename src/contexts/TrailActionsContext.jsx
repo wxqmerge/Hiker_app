@@ -182,7 +182,7 @@ export function TrailActionsProvider({ children }) {
     try {
       const schedule = await getSchedule();
       const dateStr = formatDateToISO();
-      const prefix = getGroupName() || 'hiker';
+      const prefix = getGroupName() || 'export';
       const filename = `${prefix}-schedule-${dateStr}.json`;
       const json = JSON.stringify(schedule, null, 2);
       downloadBlob(json, filename, 'application/json');
@@ -218,7 +218,7 @@ export function TrailActionsProvider({ children }) {
   const exportAllDataJson = useCallback(async () => {
     try {
       const data = await exportJSON();
-      const prefix = getGroupName() || 'hiker';
+      const prefix = getGroupName() || 'export';
       downloadBlob(JSON.stringify(data, null, 2), `${prefix}-trail-data.json`);
     } catch (err) {
       showToast('Export failed: ' + err.message, 'error');
@@ -250,7 +250,7 @@ export function TrailActionsProvider({ children }) {
       const a = document.createElement('a');
       a.href = url;
       const date = formatDateToISO();
-      const prefix = getGroupName() || 'hiker';
+      const prefix = getGroupName() || 'export';
       a.download = `${prefix}-data-${date}.zip`;
       a.click();
       URL.revokeObjectURL(url);
