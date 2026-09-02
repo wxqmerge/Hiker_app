@@ -311,10 +311,15 @@ export function TrailActionsProvider({ children }) {
       askConfirm('Import all data from ZIP', 'Import all data from ZIP? This will overwrite matching JSON files on the server. 5 files will be checked.', async () => {
         try {
           const result = await importDataZip(file);
-          let msg = `Data imported successfully! ${result.imported} file(s) written.`;
+          let msg = `Data imported: ${result.imported} file(s) written.`;
           if (result.skippedSchedules?.length > 0) msg += ` Skipped schedule files: ${result.skippedSchedules.join(', ')} (wrong instance).`;
           if (result.reconciled > 0) msg += ` ${result.reconciled} GPX index entry/entries removed (trail IDs not on this instance).`;
-          showToast(msg, 'success');
+          if (result.errors?.length > 0) {
+            msg += ` ${result.errors.length} file(s) failed: ${result.errors.join('; ')}`;
+            showToast(msg, 'error');
+          } else {
+            showToast(msg, 'success');
+          }
           window.location.reload();
         } catch (err) {
           showToast('Import failed: ' + err.message, 'error');

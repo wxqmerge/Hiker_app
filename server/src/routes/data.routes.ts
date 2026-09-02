@@ -99,6 +99,7 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   }
 
   let imported = 0;
+  const errors: string[] = [];
 
   for (const entry of entries) {
     if (entry.isDirectory) continue;
@@ -131,6 +132,7 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
         JSON.parse(content.toString('utf-8'));
       } catch {
         console.warn(`[DATA] Skipping invalid JSON: ${name}`);
+        errors.push(`${name}: invalid JSON`);
         continue;
       }
     }
@@ -140,13 +142,20 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
       const gpxError = validateGpxContent(gpxContent);
       if (gpxError) {
         console.warn(`[DATA] Skipping invalid GPX: ${name} - ${gpxError}`);
+        errors.push(`${name}: ${gpxError}`);
         continue;
       }
     }
 
-    await fs.mkdir(path.dirname(target), { recursive: true });
-    await fs.writeFile(target, content);
-    imported++;
+    try {
+      await fs.mkdir(path.dirname(target), { recursive: true });
+      await fs.writeFile(target, content);
+      imported++;
+    } catch (err) {
+      const msg = (err as Error).message;
+      console.error(`[DATA] Failed to write ${name}: ${msg}`);
+      errors.push(`${name}: ${msg}`);
+    }
   }
 
   // Clean up temp file
@@ -180,9 +189,12 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   // Sync in-memory index so it matches the cleaned file on disk
   setGpxIndex(validGpxIndex);
 
-  const result: any = { success: true, imported, reconciled };
+  const result: any = { success: errors.length === 0, imported, reconciled };
   if (skippedScheduleNames.length > 0) {
     result.skippedSchedules = skippedScheduleNames;
+  }
+  if (errors.length > 0) {
+    result.errors = errors;
   }
   res.json(result);
 }));
