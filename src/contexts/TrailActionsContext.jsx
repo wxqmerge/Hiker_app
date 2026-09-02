@@ -88,8 +88,9 @@ export function TrailActionsProvider({ children }) {
   const checkGpxIntegrity = useCallback(async () => {
     setValidating(true);
     try {
-      const res = await request('/health');
-      const gpxIssues = (res.issues || []).filter(i => /GPX|gpx/i.test(i));
+      const res = await request('/api/validate');
+      const gpxResults = (res.results || []).filter(r => /gpx/i.test(r.file));
+      const gpxIssues = gpxResults.filter(r => !r.valid).flatMap(r => r.issues || [r.error || 'unknown issue']);
       if (gpxIssues.length > 0) {
         showToast(`GPX integrity: ${gpxIssues.length} issue(s)\n\n${gpxIssues.join('\n')}`, 'error');
       } else {
