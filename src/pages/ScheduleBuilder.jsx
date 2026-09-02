@@ -355,10 +355,13 @@ export default function ScheduleBuilder() {
                   <button
                     type="button"
                     className="text-xs font-medium text-blue-600 hover:text-blue-800"
-                    title={tt('Open a combined report for all leaders')}
+                    title={leaderFilter !== null ? tt('Report for this leader') : tt('Open a combined report for all leaders')}
                     onClick={() => {
+                      const leadersToReport = leaderFilter !== null
+                        ? [leaderFilter]
+                        : allLeaders;
                       const sections = [];
-                      for (const leader of allLeaders) {
+                      for (const leader of leadersToReport) {
                         const entries = [];
                         for (const m of quarterMonths) {
                           const monthKey = getMonthKey(year, m);
@@ -367,7 +370,10 @@ export default function ScheduleBuilder() {
                             const day = Number(dayStr);
                             const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
                             for (const entry of list) {
-                              if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
+                              const match = leader === ''
+                                ? !entry?.leader
+                                : entry?.leader?.toLowerCase() === leader.toLowerCase();
+                              if (match && entry?.trail_id) {
                                 const trail = trails.find(t => t.id === entry.trail_id);
                                 if (trail) {
                                   const monthAbbr = MONTH_ABBR[m] || '';
@@ -385,17 +391,20 @@ export default function ScheduleBuilder() {
                         }
                         if (entries.length > 0) {
                           entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                          const reportHtml = generateReportHtml(entries, `${leader} — All Hikes`);
+                          const reportHtml = generateReportHtml(entries, `${leader === '' ? 'No Leader' : leader} — All Hikes`);
                           const body = reportHtml.split('<body>')[1]?.split('</body>')[0] || '';
-                          sections.push(`<h2>${leader}</h2>${body.replace(/<h1>.*?<\/h1>/s, '')}`);
+                          sections.push(`<h2>${leader === '' ? 'No Leader' : leader}</h2>${body.replace(/<h1>.*?<\/h1>/s, '')}`);
                         }
                       }
+                      const title = leaderFilter !== null
+                        ? `${leaderFilter === '' ? 'No Leader' : leaderFilter} — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}`
+                        : `All Leaders — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}`;
                       const combined = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>All Leaders — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}</title>
+<title>${title}</title>
 <style>
   body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
   h1 { font-size: 24pt; font-weight: bold; margin-bottom: 30px; }
@@ -409,7 +418,7 @@ export default function ScheduleBuilder() {
 </style>
 </head>
 <body>
-<h1>All Leaders — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}</h1>
+<h1>${title}</h1>
 ${sections.join('\n')}
 </body>
 </html>`;
