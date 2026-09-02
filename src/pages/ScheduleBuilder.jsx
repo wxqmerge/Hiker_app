@@ -355,8 +355,9 @@ export default function ScheduleBuilder() {
                   <button
                     type="button"
                     className="text-xs font-medium text-blue-600 hover:text-blue-800"
-                    title={tt('Open a report tab for every leader')}
+                    title={tt('Open a combined report for all leaders')}
                     onClick={() => {
+                      const sections = [];
                       for (const leader of allLeaders) {
                         const entries = [];
                         for (const m of quarterMonths) {
@@ -382,9 +383,37 @@ export default function ScheduleBuilder() {
                             }
                           }
                         }
-                        entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                        openHtmlInNewTab(generateReportHtml(entries, `${leader} — All Hikes`));
+                        if (entries.length > 0) {
+                          entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                          const reportHtml = generateReportHtml(entries, `${leader} — All Hikes`);
+                          const body = reportHtml.split('<body>')[1]?.split('</body>')[0] || '';
+                          sections.push(`<h2>${leader}</h2>${body.replace(/<h1>.*?<\/h1>/s, '')}`);
+                        }
                       }
+                      const combined = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All Leaders — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
+  h1 { font-size: 24pt; font-weight: bold; margin-bottom: 30px; }
+  h2 { font-size: 20pt; font-weight: bold; margin-top: 40px; border-bottom: 2px solid #ccc; padding-bottom: 8px; }
+  .entry { margin-bottom: 28px; }
+  .entry-header { font-size: 18pt; font-weight: bold; white-space: pre-wrap; }
+  .early-start { color: red; }
+  .entry-desc { font-size: 18pt; margin-top: 4px; white-space: pre-line; }
+  .entry-link { font-size: 18pt; margin-top: 6px; }
+  .entry-link a { color: blue; }
+</style>
+</head>
+<body>
+<h1>All Leaders — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}</h1>
+${sections.join('\n')}
+</body>
+</html>`;
+                      openHtmlInNewTab(combined);
                     }}
                   >
                     All
