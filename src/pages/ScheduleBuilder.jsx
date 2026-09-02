@@ -17,9 +17,10 @@ import { MONTH_NAMES, MONTH_ABBR, DEFAULT_FILTERS } from '../utils/constants';
 import LeaderEdit from '../components/LeaderEdit';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { getNoaaTideUrl } from '../utils/url.js';
-import { createDate, getMonthKey } from '../utils/dateUtils';
+import { createDate, getMonthKey, getHikeSlotsForMonth } from '../utils/dateUtils';
+import { useHikeDays, useMaxHikesPerDay } from '../hooks/useHikeDays';
 import { useGpxActions } from '../hooks/useGpxActions';
-import { getDayEntries, setDayEntry } from '../utils/scheduleFormat';
+import { getDayEntries, setDayEntry, clearDayEntry } from '../utils/scheduleFormat';
 import { useTrailDetails } from '../hooks/useTrailDetails';
 import { useScheduleData } from '../hooks/useScheduleData';
 import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
@@ -95,6 +96,9 @@ export default function ScheduleBuilder() {
 
   const [leaderEdit, setLeaderEdit] = useState(null);
   const [moveSource, setMoveSource] = useState(null);
+  const [leaderFilter, setLeaderFilter] = useState(null);
+  const hikeDays = useHikeDays();
+  const maxHikesPerDay = useMaxHikesPerDay();
   const { isDownloading, downloadGpx, openTrailhead } = useGpxActions();
 
   const scheduledMap = useMemo(() => {
@@ -118,6 +122,44 @@ export default function ScheduleBuilder() {
     });
   }, [setScheduleStore]);
 
+  // Hike dates across the full quarter (used when leaderFilter is active).
+  const quarterDates = useMemo(() => {
+    if (leaderFilter === null) return [];
+    const dates = [];
+    for (const m of quarterMonths) {
+      const monthDates = getHikeSlotsForMonth(year, m, hikeDays, maxHikesPerDay);
+      monthDates.forEach(d => dates.push({ ...d, month: m }));
+    }
+    return dates;
+  }, [leaderFilter, quarterMonths, year, hikeDays, maxHikesPerDay]);
+
+  const matchesLeaderFilter = useCallback((entry) => {
+    if (leaderFilter === null) return true;
+    if (leaderFilter === '') return !entry?.leader;
+    return entry?.leader?.toLowerCase() === leaderFilter.toLowerCase();
+  }, [leaderFilter]);
+
+  const activeDates = leaderFilter !== null ? quarterDates : hikeDates;
+
+  const getEntryForSlot = useCallback((slot) => {
+    const month = leaderFilter !== null ? slot.month : selectedMonth;
+    const monthKey = getMonthKey(year, month);
+    const monthData = scheduleStore[monthKey] || {};
+    return getDayEntries(monthData, slot.day)[slot.slot] || { trail_id: null, early_start: 0, leader: '' };
+  }, [leaderFilter, selectedMonth, year, scheduleStore]);
+
+  const setStartOffsetForMonth = useCallback((day, slotIdx, offset, month) => {
+    const monthKey = getMonthKey(year, month);
+    const monthData = scheduleStore[monthKey] || {};
+    const entry = getDayEntries(monthData, day)[slotIdx];
+    if (!entry?.trail_id) return;
+    updateMonthSchedule(monthKey, prev => setDayEntry(prev, day, slotIdx, { ...entry, early_start: offset }));
+  }, [year, scheduleStore, updateMonthSchedule]);
+
+  const removeHikeForMonth = useCallback((day, slotIdx, month) => {
+    updateMonthSchedule(getMonthKey(year, month), prev => clearDayEntry(prev, day, slotIdx));
+  }, [year, updateMonthSchedule]);
+
   const filteredHikes = useMemo(() => {
     const filtered = filterTrails(hikeTrailMap, filters, trailDetails);
     const sorted = sortTrails(filtered, filters, trailDetails, weatherMap);
@@ -129,7 +171,6 @@ export default function ScheduleBuilder() {
     cancelSwap,
     handleDropOnDate,
     handleDropOnAvailable,
-    removeHike,
     moveHike,
   } = useScheduleDragDrop({
     scheduleStore,
@@ -144,14 +185,6 @@ export default function ScheduleBuilder() {
     updateScheduleFn: updateMonthSchedule,
   });
 
-  const setStartOffset = (day, slotIdx, offset) => {
-    const monthKey = getMonthKey(year, selectedMonth);
-    const monthData = scheduleStore[monthKey] || {};
-    const entry = getDayEntries(monthData, day)[slotIdx];
-    if (!entry?.trail_id) return;
-
-    updateMonthSchedule(monthKey, prev => setDayEntry(prev, day, slotIdx, { ...entry, early_start: offset }));
-  };
 
 
     const hikeCards = useMemo(() => {
@@ -287,9 +320,11 @@ export default function ScheduleBuilder() {
           <div className="flex-[1]">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between gap-2">
-               <h3 className="text-sm font-semibold text-gray-800">
-                  {MONTH_NAMES[selectedMonth]} {year} — {getHikeDaysLabel()}
-                </h3>
+                <h3 className="text-sm font-semibold text-gray-800">
+                   {leaderFilter !== null
+                     ? `${leaderFilter === '' ? 'No Leader' : leaderFilter} — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}`
+                     : `${MONTH_NAMES[selectedMonth]} ${year} — ${getHikeDaysLabel()}`}
+                 </h3>
                 <div className="flex items-center gap-2">
                   {saveStatus !== 'idle' && (
                     <span className={`text-xs font-medium px-2 py-0.5 rounded ${
@@ -302,41 +337,17 @@ export default function ScheduleBuilder() {
                   )}
                   <select
                     className="text-xs border border-gray-300 rounded px-1.5 py-0.5 bg-white"
-                    value=""
+                    value={leaderFilter === null ? '' : (leaderFilter === '' ? '__none__' : leaderFilter)}
                     onChange={(e) => {
-                      const leader = e.target.value;
-                      if (!leader) return;
-                      const entries = [];
-                      for (const m of quarterMonths) {
-                        const monthKey = getMonthKey(year, m);
-                        const monthData = scheduleStore[monthKey] || {};
-                        for (const [dayStr, dayEntries] of Object.entries(monthData)) {
-                          const day = Number(dayStr);
-                          const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
-                          for (const entry of list) {
-                            if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
-                              const trail = trails.find(t => t.id === entry.trail_id);
-                              if (trail) {
-                                const monthAbbr = MONTH_ABBR[m] || '';
-                                const date = createDate(year, m, day);
-                                entries.push({
-                                  dateStr: `${DAY_NAMES[date.getDay()]}, ${monthAbbr} ${day}`,
-                                  trail,
-                                  trailDetails,
-                                  earlyStart: entry.early_start || false,
-                                });
-                              }
-                            }
-                          }
-                        }
-                      }
-                      entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                      const title = `${leader} — All Hikes`;
-                      openHtmlInNewTab(generateReportHtml(entries, title));
+                      const val = e.target.value;
+                      if (val === '') setLeaderFilter(null);
+                      else if (val === '__none__') setLeaderFilter('');
+                      else setLeaderFilter(val);
                     }}
-                    title={tt('Generate report for a leader')}
+                    title={tt('Filter by leader (shows quarter view)')}
                   >
-                    <option value="">Leader Report</option>
+                    <option value="">Leader View</option>
+                    <option value="__none__">No Leader</option>
                     {allLeaders.map(leader => (
                       <option key={leader} value={leader}>{leader}</option>
                     ))}
@@ -382,32 +393,36 @@ export default function ScheduleBuilder() {
               </div>
               <div className="p-4 max-h-[calc(100vh-14rem)] overflow-y-auto">
                 <div className="space-y-3">
-                    {hikeDates.map((slot) => {
+                    {activeDates.map((slot) => {
                       const day = slot.day;
                       const slotIdx = slot.slot;
-                      const dayOfWeek = createDate(year, selectedMonth, day).getDay();
+                      const month = leaderFilter !== null ? slot.month : selectedMonth;
+                      const dayOfWeek = createDate(year, month, day).getDay();
 
-                        const entry = assignedHikes[day]?.[slotIdx] || { trail_id: null, early_start: 0, leader: '' };
+                        const entry = getEntryForSlot(slot);
+                        if (leaderFilter !== null && !matchesLeaderFilter(entry)) return null;
+
                         const trailId = entry.trail_id;
                         const earlyStart = normalizeStartOffset(entry.early_start);
                         const leader = entry.leader;
                          const trail = findTrailById(trailId);
                          const displayHikeName = trail ? getTrailName(trail) : trailId;
-                       const hasMultipleSlots = hikeDates.filter(s => s.day === day).length > 1;
+                        const sameDaySlots = activeDates.filter(s => (leaderFilter !== null ? s.month === month : true) && s.day === day);
+                        const hasMultipleSlots = sameDaySlots.length > 1;
 
                        return (
-                        <div
-                          key={`${day}-${slotIdx}`}
-                          draggable={!!trailId}
-                          onDragStart={trailId ? () => handleDragStart(null, day, slotIdx, trailId, earlyStart, leader) : undefined}
-                          onDragEnd={handleDragEnd}
-                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-green-50'); }}
-                          onDragLeave={(e) => { e.currentTarget.classList.remove('bg-green-50'); }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.classList.remove('bg-green-50');
-                            handleDropOnDate(day, slotIdx);
-                          }}
+                         <div
+                           key={`${month}-${day}-${slotIdx}`}
+                           draggable={!!trailId && leaderFilter === null}
+                           onDragStart={trailId && leaderFilter === null ? () => handleDragStart(null, day, slotIdx, trailId, earlyStart, leader) : undefined}
+                           onDragEnd={leaderFilter === null ? handleDragEnd : undefined}
+                           onDragOver={leaderFilter === null ? (e) => { e.preventDefault(); e.currentTarget.classList.add('bg-green-50'); } : undefined}
+                           onDragLeave={leaderFilter === null ? (e) => { e.currentTarget.classList.remove('bg-green-50'); } : undefined}
+                           onDrop={leaderFilter === null ? (e) => {
+                             e.preventDefault();
+                             e.currentTarget.classList.remove('bg-green-50');
+                             handleDropOnDate(day, slotIdx);
+                           } : undefined}
                            onDoubleClick={() => trailId && hasApiKey && navigate(`/trail/${trailId}?edit=true`)}
                              className={`border-2 rounded-lg p-3 transition-all ${
                                trailId && trail
@@ -417,15 +432,18 @@ export default function ScheduleBuilder() {
                                    : 'border-dashed border-gray-300 hover:border-green-300 hover:bg-green-50'
                              }`}
                             style={{ opacity: dragData?.sourceDay === day ? 0.4 : 1 }}
-                          title={trailId ? tt('Drop another hike here to swap · Double-click to edit trail (requires API key)') : tt('Drop a hike here to schedule')}
-                          aria-label={trailId ? `Day ${day}, ${getDayName(dayOfWeek)}: ${displayHikeName}` : `Empty slot on day ${day}, ${getDayName(dayOfWeek)}`}
+                           title={trailId ? tt('Double-click to edit trail (requires API key)') : tt('Drop a hike here to schedule')}
+                           aria-label={trailId ? `${MONTH_ABBR[month]} ${day}, ${getDayName(dayOfWeek)}: ${displayHikeName}` : `Empty slot on ${MONTH_ABBR[month]} ${day}`}
                         >
                            <div className="flex items-start gap-3">
                               <div className="text-center flex-shrink-0">
                                   <div className={`text-2xl font-bold ${DAY_COLORS[dayOfWeek] || 'text-gray-600'}`}>
                                     {day}
                                   </div>
-                                  <div className="text-xs text-gray-500">{getDayName(dayOfWeek)}</div>
+                                   <div className="text-xs text-gray-500">{getDayName(dayOfWeek)}</div>
+                                   {leaderFilter !== null && (
+                                     <div className="text-[10px] text-gray-400">{MONTH_ABBR[month]}</div>
+                                   )}
                                 </div>
                               <div className="flex-1 min-w-0">
                                 {displayHikeName ? (
@@ -448,10 +466,10 @@ export default function ScheduleBuilder() {
                                      )}
                                         <button
                                           type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setLeaderEdit({ day, slotIdx });
-                                          }}
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             setLeaderEdit({ day, slotIdx, month });
+                                           }}
                                           className={`mt-1 w-full text-xs border rounded px-1.5 py-0.5 text-left truncate transition-colors ${
                                             leader
                                               ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
@@ -461,21 +479,21 @@ export default function ScheduleBuilder() {
                                         >
                                           {leader || 'Set Leader'}
                                         </button>
-                                        {leaderEdit && leaderEdit.day === day && leaderEdit.slotIdx === slotIdx && (
-                                            <LeaderEdit
-                                              initialLeader={leader}
-                                              leaders={allLeaders}
-                                              tt={tt}
-                                              onSave={async (newLeader) => {
-                                                const monthKey = getMonthKey(year, selectedMonth);
-                                                const current = scheduleStore[monthKey] || {};
-                                                const existingEntry = getDayEntries(current, day)[slotIdx] || { trail_id: null, early_start: false, leader: '' };
-                                                const updated = setDayEntry(current, day, slotIdx, { ...existingEntry, leader: newLeader });
-                                                const newStore = { ...scheduleStore, [monthKey]: updated };
-                                                setScheduleStore(newStore);
-                                                await updateLeader(newStore, selectedMonth, day, slotIdx, newLeader, year);
-                                                setLeaderEdit(null);
-                                              }}
+                                         {leaderEdit && leaderEdit.day === day && leaderEdit.slotIdx === slotIdx && leaderEdit.month === month && (
+                                             <LeaderEdit
+                                               initialLeader={leader}
+                                               leaders={allLeaders}
+                                               tt={tt}
+                                               onSave={async (newLeader) => {
+                                                 const monthKey = getMonthKey(year, month);
+                                                 const current = scheduleStore[monthKey] || {};
+                                                 const existingEntry = getDayEntries(current, day)[slotIdx] || { trail_id: null, early_start: false, leader: '' };
+                                                 const updated = setDayEntry(current, day, slotIdx, { ...existingEntry, leader: newLeader });
+                                                 const newStore = { ...scheduleStore, [monthKey]: updated };
+                                                 setScheduleStore(newStore);
+                                                 await updateLeader(newStore, month, day, slotIdx, newLeader, year);
+                                                 setLeaderEdit(null);
+                                               }}
                                               onCancel={() => setLeaderEdit(null)}
                                             />
                                         )}
@@ -495,7 +513,7 @@ export default function ScheduleBuilder() {
                               <div className="flex items-center gap-1 ml-3">
                                 <select
                                   value={normalizeStartOffset(earlyStart)}
-                                  onChange={(e) => setStartOffset(day, slotIdx, Number(e.target.value))}
+                                   onChange={(e) => setStartOffsetForMonth(day, slotIdx, Number(e.target.value), month)}
                                   className="text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
                                   title={tt('Start time offset')}
                                   aria-label="Start time offset"
@@ -532,7 +550,7 @@ export default function ScheduleBuilder() {
                                 )}
                                 {trail?.tideStationId && (
                                   <a
-                                     href={getNoaaTideUrl(trail.tideStationId, createDate(year, selectedMonth, day))}
+                                      href={getNoaaTideUrl(trail.tideStationId, createDate(year, month, day))}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                      className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -558,27 +576,31 @@ export default function ScheduleBuilder() {
                                     </svg>
                                   </a>
                                 )}
-                                <button
-                                  onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: false })}
-                                  className="text-blue-600 hover:text-blue-800 transition-colors text-xs font-medium"
-                                  title={tt('Move to another date')}
-                                  aria-label={`Move ${displayHikeName || 'hike'} to another date`}
-                                >
-                                  Move
-                                </button>
-                                <button
-                                  onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: true })}
-                                  className="text-green-600 hover:text-green-800 transition-colors text-xs font-medium"
-                                  title={tt('Duplicate to another date')}
-                                  aria-label={`Duplicate ${displayHikeName || 'hike'} to another date`}
-                                >
-                                  Copy
-                                </button>
-                                <button
-                                  onClick={() => removeHike(day, slotIdx)}
-                                   className="text-red-400 hover:text-red-600 transition-colors"
-                                   title={tt('Remove hike from this date')}
-                                   aria-label={`Remove ${displayHikeName || 'hike'} from day ${day}`}
+                                 {leaderFilter === null && (
+                                   <>
+                                 <button
+                                   onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: false })}
+                                   className="text-blue-600 hover:text-blue-800 transition-colors text-xs font-medium"
+                                   title={tt('Move to another date')}
+                                   aria-label={`Move ${displayHikeName || 'hike'} to another date`}
+                                 >
+                                   Move
+                                 </button>
+                                 <button
+                                   onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: true })}
+                                   className="text-green-600 hover:text-green-800 transition-colors text-xs font-medium"
+                                   title={tt('Duplicate to another date')}
+                                   aria-label={`Duplicate ${displayHikeName || 'hike'} to another date`}
+                                 >
+                                   Copy
+                                 </button>
+                                   </>
+                                 )}
+                                 <button
+                                   onClick={() => removeHikeForMonth(day, slotIdx, month)}
+                                    className="text-red-400 hover:text-red-600 transition-colors"
+                                    title={tt('Remove hike from this date')}
+                                    aria-label={`Remove ${displayHikeName || 'hike'} from ${MONTH_ABBR[month]} ${day}`}
                                  >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
