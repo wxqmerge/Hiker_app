@@ -248,12 +248,13 @@ export function ScheduleSettingsProvider({ children }) {
     let successCount = 0;
     let failCount = 0;
     const concurrency = 5;
+    const targetDate = nextHikeDate || new Date();
     const items = hikeTrailMap.filter(item => hasValidCoords(item.trail?.trailHeadLat, item.trail?.trailHeadLon));
     for (let i = 0; i < items.length; i += concurrency) {
       const batch = items.slice(i, i + concurrency);
       await Promise.allSettled(batch.map(async (item) => {
         const trail = item.trail;
-        const w = await fetchWeatherAndTide(trail.trailHeadLat, trail.trailHeadLon, nextHikeDate, trail.tideStationId || null);
+        const w = await fetchWeatherAndTide(trail.trailHeadLat, trail.trailHeadLon, targetDate, trail.tideStationId || null);
         if (w) {
           results[trail.id] = w;
           successCount++;
