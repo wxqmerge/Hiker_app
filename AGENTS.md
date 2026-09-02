@@ -76,4 +76,4 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - Hairpin NAT: server may not reach its own public domain; use `localhost` fallbacks
 
 ## File Conventions
-- When the user references a log file by filename only (e.g. `console-log.txt`), look in `C:\Users\wxqme\Downloads\` — that's where F12 console exports and other downloaded files land.
+- F12 console logs are saved to `C:\Users\wxqme\Downloads\` with the pattern `<host>-<timestamp>.log` (e.g. `chess4.us-1788367055155.log`). When the user says "the log" or "the console log" without a specific filename, glob `C:\Users\wxqme\Downloads\*.log` and use the most recent one.
