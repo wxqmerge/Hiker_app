@@ -44,6 +44,7 @@ export function ScheduleSettingsProvider({ children }) {
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   const [weatherMap, setWeatherMap] = useState({});
   const [fetchingWeather, setFetchingWeather] = useState(false);
+  const fetchingRef = useRef(false);
   const [debugMode, setDebugMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [historyEntries, setHistoryEntries] = useState([]);
@@ -239,7 +240,8 @@ export function ScheduleSettingsProvider({ children }) {
   }, [scheduleStore, hikeDays]);
 
   const fetchWeatherForAll = useCallback(async () => {
-    if (fetchingWeather) return;
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     setFetchingWeather(true);
     setShowSettings(false);
     const results = {};
@@ -262,8 +264,9 @@ export function ScheduleSettingsProvider({ children }) {
     }
     setWeatherMap(results);
     setFetchingWeather(false);
+    fetchingRef.current = false;
     showToast(`Weather fetched: ${successCount} success, ${failCount} failed/skipped`, 'info');
-  }, [fetchingWeather, hikeTrailMap, nextHikeDate, showToast]);
+  }, [hikeTrailMap, nextHikeDate, showToast]);
 
   const verifyServerSchedule = useCallback(async () => {
     try {
