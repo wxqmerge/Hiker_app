@@ -166,7 +166,6 @@ export function sortTrails(items, filters, trailDetails, weatherMap) {
       if (!w || w.rain == null) return Infinity;
       return w.rain;
     };
-    console.log('[rain-sort] weatherMap keys:', Object.keys(weatherMap || {}).length, 'items:', items.length, 'sample:', items.slice(0, 3).map(i => ({ id: (i.trail || i).id, rain: weatherMap?.[(i.trail || i).id]?.rain })));
     sorted.sort((a, b) => {
       const ra = getRain(a);
       const rb = getRain(b);

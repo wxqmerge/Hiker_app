@@ -56,11 +56,11 @@ function useFiltersStore() {
   };
 }
 
-export function useFilters(trails, trailDetails) {
+export function useFilters(trails, trailDetails, weatherMap) {
   const { filters, setFilters, resetFilters } = useFiltersStore();
 
   const filteredTrails = useMemo(() => filterTrails(trails, filters, trailDetails), [trails, filters, trailDetails]);
-  const sortedTrails = useMemo(() => sortTrails(filteredTrails, filters, trailDetails), [filteredTrails, filters, trailDetails]);
+  const sortedTrails = useMemo(() => sortTrails(filteredTrails, filters, trailDetails, weatherMap), [filteredTrails, filters, trailDetails, weatherMap]);
 
   return { filters, setFilters, sortedTrails, resetFilters };
 }
