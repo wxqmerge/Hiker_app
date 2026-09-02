@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchOpenMeteoForDate, fetchWeatherAndTide, clearNwsCache, clearTideCache, openWeatherUrl, hasValidCoords, isNoaaRegion } from '../../utils/io';
+import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchOpenMeteoForDate, fetchWeatherAndTide, clearNwsCache, clearTideCache, clearOmCache, openWeatherUrl, hasValidCoords, isNoaaRegion } from '../../utils/io';
 
 describe('sanitizeFilename', () => {
   it('replaces non-alphanumeric characters with underscores', () => {
@@ -418,6 +418,7 @@ describe('fetchOpenMeteoForDate', () => {
 
   beforeEach(() => {
     vi.unstubAllGlobals();
+    clearOmCache();
   });
 
   it('returns temp, rain, and the om flag from the daily forecast', async () => {

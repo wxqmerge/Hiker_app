@@ -171,6 +171,12 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
  *   om    — true, so the UI can tag the rain % with an "OM" source marker
  */
 const OPEN_METEO_MAX_DAYS = 16;
+const _omCache = new Map();
+const _omTTL = 6 * 60 * 60 * 1000; // 6 hours
+
+export function clearOmCache() {
+  _omCache.clear();
+}
 
 export async function fetchOpenMeteoForDate(lat, lon, targetDate) {
   if (!hasValidCoords(lat, lon) || !targetDate) return null;
@@ -178,6 +184,9 @@ export async function fetchOpenMeteoForDate(lat, lon, targetDate) {
   const diffDays = Math.floor((new Date(targetDate) - now) / (1000 * 60 * 60 * 24));
   if (diffDays > OPEN_METEO_MAX_DAYS) return null;
   const dateStr = formatDateToISO(targetDate);
+  const cacheKey = `${lat},${lon},${dateStr}`;
+  const cached = _omCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < _omTTL) return cached.value;
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&daily=temperature_2m_max,precipitation_probability_max` +
@@ -192,7 +201,9 @@ export async function fetchOpenMeteoForDate(lat, lon, targetDate) {
     const temp = daily.temperature_2m_max?.[0];
     if (temp == null) return null;
     const rain = daily.precipitation_probability_max?.[0];
-    return { temp: Math.round(temp), rain: rain ?? 0, om: true };
+    const result = { temp: Math.round(temp), rain: rain ?? 0, om: true };
+    _omCache.set(cacheKey, { value: result, ts: Date.now() });
+    return result;
   } catch {
     return null;
   }
