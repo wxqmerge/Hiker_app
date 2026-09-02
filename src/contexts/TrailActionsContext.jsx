@@ -85,6 +85,23 @@ export function TrailActionsProvider({ children }) {
     }
   }, [showToast]);
 
+  const checkGpxIntegrity = useCallback(async () => {
+    setValidating(true);
+    try {
+      const res = await request('/health');
+      const gpxIssues = (res.issues || []).filter(i => /GPX|gpx/i.test(i));
+      if (gpxIssues.length > 0) {
+        showToast(`GPX integrity: ${gpxIssues.length} issue(s)\n\n${gpxIssues.join('\n')}`, 'error');
+      } else {
+        showToast('GPX integrity: all files accounted for.', 'success');
+      }
+    } catch (err) {
+      showToast('GPX check failed: ' + err.message, 'error');
+    } finally {
+      setValidating(false);
+    }
+  }, [showToast]);
+
   const startNewTrail = useCallback(() => {
     setNewTrailName('');
     setNewTrailForm(true);
@@ -374,7 +391,8 @@ export function TrailActionsProvider({ children }) {
     cleanupOrphanedDetails,
     validateData,
     resyncCoords,
-  }), [importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords]);
+    checkGpxIntegrity,
+  }), [importAllDataJson, importAllDataZip, importScheduleJson, importMonthlyTsv, cleanupOrphanedDetails, validateData, resyncCoords, checkGpxIntegrity]);
 
   const userActions = useMemo(() => ({
     newTrail: startNewTrail,

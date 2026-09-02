@@ -198,6 +198,7 @@ export default function ScheduleSettingsDropdown() {
       <DropdownItem onClick={() => { close(); trailActions.adminActions.cleanupOrphanedDetails(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Cleanup Orphaned Details</DropdownItem>
       <DropdownItem onClick={() => { close(); trailActions.adminActions.validateData(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Validate Data</DropdownItem>
       <DropdownItem onClick={() => { close(); trailActions.adminActions.resyncCoords(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Re-sync GPX Coords</DropdownItem>
+      <DropdownItem onClick={() => { close(); trailActions.adminActions.checkGpxIntegrity(); }} disabled={trailActions.validating}>Check GPX Integrity</DropdownItem>
     </div>
   ) : (
     <p className="px-3 py-2 text-sm text-gray-400">Admin actions unavailable</p>
