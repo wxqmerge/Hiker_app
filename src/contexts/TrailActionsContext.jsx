@@ -325,7 +325,7 @@ export function TrailActionsProvider({ children }) {
       document.body.removeChild(input);
       const file = e.target.files[0];
       if (!file) return;
-      askConfirm('Import all data from ZIP', 'Import all data from ZIP? This will overwrite matching JSON files on the server. 5 files will be checked.', async () => {
+      askConfirm('Import all data from ZIP', 'Import all data from ZIP? This will overwrite matching JSON and GPX files on the server.', async () => {
         try {
           const result = await importDataZip(file);
           let msg = `Data imported: ${result.imported} file(s) written.`;
