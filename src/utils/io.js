@@ -242,6 +242,15 @@ export function buildTrailCoords(trailIds, trails) {
  * @param {string|null} [stationId] - NOAA tide station ID (tide fetched only when provided)
  * @returns {{temp: number, rain: number, tide?: number}|null}
  */
+const FETCH_TIMEOUT_MS = 15000;
+
+function withTimeout(promise, ms = FETCH_TIMEOUT_MS) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ]);
+}
+
 export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
   try {
     const hasCoords = hasValidCoords(lat, lon);
@@ -250,11 +259,11 @@ export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
       // NWS only covers the next 7 days inside the NOAA box. Everything else
       // (out-of-box sites, or in-box sites beyond 7 days) uses Open-Meteo.
       const useNws = isNoaaRegion(lat, lon) && isWithin7Days(targetDate);
-      tasks.push(useNws
+      tasks.push(withTimeout(useNws
         ? fetchNwsForecastForDate(lat, lon, targetDate)
-        : fetchOpenMeteoForDate(lat, lon, targetDate));
+        : fetchOpenMeteoForDate(lat, lon, targetDate)));
     }
-    if (stationId) tasks.push(fetchTideHeightAt(stationId, targetDate));
+    if (stationId) tasks.push(withTimeout(fetchTideHeightAt(stationId, targetDate)));
     if (tasks.length === 0) return null;
 
     const results = await Promise.allSettled(tasks);

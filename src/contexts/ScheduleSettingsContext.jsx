@@ -244,6 +244,7 @@ export function ScheduleSettingsProvider({ children }) {
     fetchingRef.current = true;
     setFetchingWeather(true);
     setShowSettings(false);
+    showToast('Fetching weather…', 'info');
     const results = {};
     let successCount = 0;
     let failCount = 0;
