@@ -74,3 +74,6 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 ## Deployment
 - Nginx uses `alias` for subpath `/<SUBDOMAIN>/` — **not** subdomain root. Access via `https://main-domain/<SUBDOMAIN>/`, NOT `https://<SUBDOMAIN>.main-domain/`
 - Hairpin NAT: server may not reach its own public domain; use `localhost` fallbacks
+
+## File Conventions
+- When the user references a log file by filename only (e.g. `console-log.txt`), look in `C:\Users\wxqme\Downloads\` — that's where F12 console exports and other downloaded files land.
