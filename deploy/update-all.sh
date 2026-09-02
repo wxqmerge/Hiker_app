@@ -1,26 +1,39 @@
 #!/bin/bash
 # Update all app instances on the server
 # Run from: /var/www/html/
-# Usage: ./deploy/update-all.sh [--force|--force-critical] [--audit]
+# Usage: ./deploy/update-all.sh [--force|--force-critical] [--audit] [--env dev|app]
 #
 # Detects each instance by git remote origin, then runs its
 # deploy/update.sh with any flags passed through.
 # --audit also runs npm_audit_fix-all.sh after all updates.
+# --env dev|app  only update instances whose directory name contains the given tag
 # Works for any project that has a git repo and deploy/update.sh.
 
 BASE="/var/www/html"
 RUN_AUDIT=false
+ENV_TAG=""
 FLAGS=""
 
-for arg in "$@"; do
-    case $arg in
+# Parse flags: --audit, --env dev|app
+ARG_IDX=1
+while [ $ARG_IDX -le $# ]; do
+    case "${!ARG_IDX}" in
         --audit)
             RUN_AUDIT=true
             ;;
+        --env)
+            ARG_IDX=$((ARG_IDX + 1))
+            ENV_TAG="${!ARG_IDX}"
+            if [ -z "$ENV_TAG" ] || [ "$ENV_TAG" != "dev" ] && [ "$ENV_TAG" != "app" ]; then
+                echo "Error: --env requires 'dev' or 'app' argument"
+                exit 1
+            fi
+            ;;
         *)
-            FLAGS="$FLAGS $arg"
+            FLAGS="$FLAGS ${!ARG_IDX}"
             ;;
     esac
+    ARG_IDX=$((ARG_IDX + 1))
 done
 OK=0
 FAIL=0
@@ -65,6 +78,17 @@ for dir in "$BASE"/*/; do
         SKIP=$((SKIP + 1))
         echo ""
         continue
+    fi
+
+    # Optional filter: only update instances whose directory name contains ENV_TAG
+    if [ -n "$ENV_TAG" ]; then
+        lower_name=$(echo "$name" | tr '[:upper:]' '[:lower:]')
+        if [[ ! "$lower_name" == *"$ENV_TAG"* ]]; then
+            echo "  ⊘ $name — does not contain '$ENV_TAG', skipping"
+            SKIP=$((SKIP + 1))
+            echo ""
+            continue
+        fi
     fi
 
     # Must have deploy/update.sh

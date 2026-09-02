@@ -13,7 +13,7 @@ import TrailCard from '../components/TrailCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SwapConfirmationModal from '../components/SwapConfirmationModal';
 import MoveHikeModal from '../components/MoveHikeModal';
-import { MONTH_NAMES, DEFAULT_FILTERS } from '../utils/constants';
+import { MONTH_NAMES, MONTH_ABBR, DEFAULT_FILTERS } from '../utils/constants';
 import LeaderEdit from '../components/LeaderEdit';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { getNoaaTideUrl } from '../utils/url.js';
@@ -70,6 +70,22 @@ export default function ScheduleBuilder() {
     handleDragStart,
     handleDragEnd,
   } = useScheduleData({ trails, scheduleStore, selectedMonth, year });
+
+  // Collect ALL leaders from the entire schedule store, across all months/quarters.
+  // This enables the leader dropdown and reports to find leaders regardless of
+  // which month/quarter is currently selected in the UI.
+  const allLeaders = useMemo(() => {
+    const leaders = new Set();
+    Object.values(scheduleStore).forEach((monthEntries) => {
+      Object.values(monthEntries).forEach((dayEntries) => {
+        const entries = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
+        entries.forEach((entry) => {
+          if (entry?.leader) leaders.add(entry.leader);
+        });
+      });
+    });
+    return Array.from(leaders).sort();
+  }, [scheduleStore]);
 
   const [leaderEdit, setLeaderEdit] = useState(null);
   const [moveSource, setMoveSource] = useState(null);
@@ -284,11 +300,8 @@ export default function ScheduleBuilder() {
                     onChange={(e) => {
                       const leader = e.target.value;
                       if (!leader) return;
-                      const quarterStart = Math.floor(selectedMonth / 3) * 3;
-                      const quarterMonths = [quarterStart, quarterStart + 1, quarterStart + 2];
                       const entries = [];
-                      for (const m of quarterMonths) {
-                        const monthKey = getMonthKey(year, m);
+                      for (const monthKey of Object.keys(scheduleStore)) {
                         const monthData = scheduleStore[monthKey] || {};
                         for (const [dayStr, dayEntries] of Object.entries(monthData)) {
                           const day = Number(dayStr);
@@ -297,9 +310,10 @@ export default function ScheduleBuilder() {
                             if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
                               const trail = trails.find(t => t.id === entry.trail_id);
                               if (trail) {
-                                const date = createDate(year, m, day);
+                                const monthAbbr = MONTH_ABBR[Number(monthKey.slice(-1))] || '';
+                                const date = createDate(year, Number(monthKey.slice(-1)), day);
                                 entries.push({
-                                  dateStr: `${DAY_NAMES[date.getDay()]}, ${MONTH_NAMES[m]} ${day}`,
+                                  dateStr: `${DAY_NAMES[date.getDay()]}, ${monthAbbr} ${day}`,
                                   trail,
                                   trailDetails,
                                   earlyStart: entry.early_start || false,
@@ -310,17 +324,13 @@ export default function ScheduleBuilder() {
                         }
                       }
                       entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                      const qNum = Math.floor(selectedMonth / 3) + 1;
-                      const title = `${leader} — Q${qNum} ${year}`;
+                      const title = `${leader} — All Hikes ${year}`;
                       openHtmlInNewTab(generateReportHtml(entries, title));
                     }}
                     title={tt('Generate report for a leader')}
                   >
                     <option value="">Leader Report</option>
-                    {[...new Set(
-                      Object.values(assignedHikes).flatMap(e => Array.isArray(e) ? e : [e])
-                        .map(e => e?.leader).filter(Boolean)
-                    )].sort().map(leader => (
+                    {allLeaders.map(leader => (
                       <option key={leader} value={leader}>{leader}</option>
                     ))}
                   </select>
@@ -329,17 +339,9 @@ export default function ScheduleBuilder() {
                     className="text-xs font-medium text-blue-600 hover:text-blue-800"
                     title={tt('Open a report tab for every leader')}
                     onClick={() => {
-                      const quarterStart = Math.floor(selectedMonth / 3) * 3;
-                      const quarterMonths = [quarterStart, quarterStart + 1, quarterStart + 2];
-                      const qNum = Math.floor(selectedMonth / 3) + 1;
-                      const leaders = [...new Set(
-                        Object.values(assignedHikes).flatMap(e => Array.isArray(e) ? e : [e])
-                          .map(e => e?.leader).filter(Boolean)
-                      )].sort();
-                      for (const leader of leaders) {
+                      for (const leader of allLeaders) {
                         const entries = [];
-                        for (const m of quarterMonths) {
-                          const monthKey = getMonthKey(year, m);
+                        for (const monthKey of Object.keys(scheduleStore)) {
                           const monthData = scheduleStore[monthKey] || {};
                           for (const [dayStr, dayEntries] of Object.entries(monthData)) {
                             const day = Number(dayStr);
@@ -348,9 +350,10 @@ export default function ScheduleBuilder() {
                               if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
                                 const trail = trails.find(t => t.id === entry.trail_id);
                                 if (trail) {
-                                  const date = createDate(year, m, day);
+                                  const monthNum = Number(monthKey.slice(-1));
+                                  const date = createDate(year, monthNum, day);
                                   entries.push({
-                                    dateStr: `${DAY_NAMES[date.getDay()]}, ${MONTH_NAMES[m]} ${day}`,
+                                    dateStr: `${DAY_NAMES[date.getDay()]}, ${MONTH_ABBR[monthNum]} ${day}`,
                                     trail,
                                     trailDetails,
                                     earlyStart: entry.early_start || false,
@@ -360,8 +363,8 @@ export default function ScheduleBuilder() {
                             }
                           }
                         }
-                        entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                        openHtmlInNewTab(generateReportHtml(entries, `${leader} — Q${qNum} ${year}`));
+                      entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                      openHtmlInNewTab(generateReportHtml(entries, `${leader} — All Hikes ${year}`));
                       }
                     }}
                   >
