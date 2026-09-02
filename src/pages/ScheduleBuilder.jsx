@@ -17,7 +17,7 @@ import { MONTH_NAMES, MONTH_ABBR, DEFAULT_FILTERS } from '../utils/constants';
 import LeaderEdit from '../components/LeaderEdit';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
 import { getNoaaTideUrl } from '../utils/url.js';
-import { createDate, getMonthKey } from '../utils/dateUtils';
+import { createDate, getMonthKey, parseMonthKey } from '../utils/dateUtils';
 import { useGpxActions } from '../hooks/useGpxActions';
 import { getDayEntries, setDayEntry } from '../utils/scheduleFormat';
 import { useTrailDetails } from '../hooks/useTrailDetails';
@@ -303,6 +303,7 @@ export default function ScheduleBuilder() {
                       const entries = [];
                       for (const monthKey of Object.keys(scheduleStore)) {
                         const monthData = scheduleStore[monthKey] || {};
+                        const { year: entryYear, month: entryMonth } = parseMonthKey(monthKey);
                         for (const [dayStr, dayEntries] of Object.entries(monthData)) {
                           const day = Number(dayStr);
                           const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
@@ -310,8 +311,8 @@ export default function ScheduleBuilder() {
                             if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
                               const trail = trails.find(t => t.id === entry.trail_id);
                               if (trail) {
-                                const monthAbbr = MONTH_ABBR[Number(monthKey.slice(-1))] || '';
-                                const date = createDate(year, Number(monthKey.slice(-1)), day);
+                                const monthAbbr = MONTH_ABBR[entryMonth] || '';
+                                const date = createDate(entryYear, entryMonth, day);
                                 entries.push({
                                   dateStr: `${DAY_NAMES[date.getDay()]}, ${monthAbbr} ${day}`,
                                   trail,
@@ -324,7 +325,7 @@ export default function ScheduleBuilder() {
                         }
                       }
                       entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                      const title = `${leader} — All Hikes ${year}`;
+                      const title = `${leader} — All Hikes`;
                       openHtmlInNewTab(generateReportHtml(entries, title));
                     }}
                     title={tt('Generate report for a leader')}
@@ -343,6 +344,7 @@ export default function ScheduleBuilder() {
                         const entries = [];
                         for (const monthKey of Object.keys(scheduleStore)) {
                           const monthData = scheduleStore[monthKey] || {};
+                          const { year: entryYear, month: entryMonth } = parseMonthKey(monthKey);
                           for (const [dayStr, dayEntries] of Object.entries(monthData)) {
                             const day = Number(dayStr);
                             const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
@@ -350,10 +352,10 @@ export default function ScheduleBuilder() {
                               if (entry?.leader?.toLowerCase() === leader.toLowerCase() && entry?.trail_id) {
                                 const trail = trails.find(t => t.id === entry.trail_id);
                                 if (trail) {
-                                  const monthNum = Number(monthKey.slice(-1));
-                                  const date = createDate(year, monthNum, day);
+                                  const monthAbbr = MONTH_ABBR[entryMonth] || '';
+                                  const date = createDate(entryYear, entryMonth, day);
                                   entries.push({
-                                    dateStr: `${DAY_NAMES[date.getDay()]}, ${MONTH_ABBR[monthNum]} ${day}`,
+                                    dateStr: `${DAY_NAMES[date.getDay()]}, ${monthAbbr} ${day}`,
                                     trail,
                                     trailDetails,
                                     earlyStart: entry.early_start || false,
@@ -363,8 +365,8 @@ export default function ScheduleBuilder() {
                             }
                           }
                         }
-                      entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-                      openHtmlInNewTab(generateReportHtml(entries, `${leader} — All Hikes ${year}`));
+                        entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                        openHtmlInNewTab(generateReportHtml(entries, `${leader} — All Hikes`));
                       }
                     }}
                   >
