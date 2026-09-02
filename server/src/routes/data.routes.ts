@@ -189,9 +189,26 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   // Sync in-memory index so it matches the cleaned file on disk
   setGpxIndex(validGpxIndex);
 
+  // Check for orphaned GPX files on disk that have no index entry
+  const orphanedGpx: string[] = [];
+  try {
+    const gpxFilesOnDisk = await fs.readdir(GPX_UPLOAD_DIR);
+    const indexedFiles = new Set(Object.values(validGpxIndex));
+    for (const f of gpxFilesOnDisk) {
+      if (f.endsWith('.gpx') && !indexedFiles.has(f)) {
+        orphanedGpx.push(f);
+      }
+    }
+  } catch {
+    // gpx dir may not exist
+  }
+
   const result: any = { success: errors.length === 0, imported, reconciled };
   if (skippedScheduleNames.length > 0) {
     result.skippedSchedules = skippedScheduleNames;
+  }
+  if (orphanedGpx.length > 0) {
+    result.orphanedGpx = orphanedGpx;
   }
   if (errors.length > 0) {
     result.errors = errors;

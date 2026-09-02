@@ -314,6 +314,7 @@ export function TrailActionsProvider({ children }) {
           let msg = `Data imported: ${result.imported} file(s) written.`;
           if (result.skippedSchedules?.length > 0) msg += ` Skipped schedule files: ${result.skippedSchedules.join(', ')} (wrong instance).`;
           if (result.reconciled > 0) msg += ` ${result.reconciled} GPX index entry/entries removed (trail IDs not on this instance).`;
+          if (result.orphanedGpx?.length > 0) msg += ` ${result.orphanedGpx.length} orphaned GPX file(s) on disk: ${result.orphanedGpx.slice(0, 3).join(', ')}${result.orphanedGpx.length > 3 ? '…' : ''}`;
           if (result.errors?.length > 0) {
             msg += ` ${result.errors.length} file(s) failed: ${result.errors.join('; ')}`;
             showToast(msg, 'error');

@@ -425,6 +425,12 @@ app.get('/api/validate', async (_req, res) => {
         if (missingGpxFiles.length) {
           issues.push(`${missingGpxFiles.length} GPX file(s) in index but missing on disk: ${missingGpxFiles.slice(0, 5).map(([id, file]) => `"${id}" (${file})`).join(', ')}`);
         }
+        // Check for orphaned GPX files on disk that have no index entry
+        const indexedFiles = new Set(Object.values(gpxIndex));
+        const orphanedGpxFiles = gpxFilesOnDisk.filter(f => f.endsWith('.gpx') && !indexedFiles.has(f));
+        if (orphanedGpxFiles.length) {
+          issues.push(`${orphanedGpxFiles.length} orphaned GPX file(s) on disk (not in index): ${orphanedGpxFiles.slice(0, 5).join(', ')}`);
+        }
         // Check for corrupted GPX files (too small)
         const corruptedGpx: string[] = [];
         for (const filename of gpxFilesOnDisk) {
