@@ -405,9 +405,13 @@ export default function TrailDetail() {
       <div className="sticky top-14 z-30 bg-gray-50 border-b border-gray-200 py-2 mb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <Link to="/" className="text-green-700 hover:text-green-900 font-medium text-sm flex items-center gap-1">
-              ← Browse
-            </Link>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="text-green-700 hover:text-green-900 font-medium text-sm flex items-center gap-1"
+            >
+              ← Back
+            </button>
             <span className="text-gray-300">|</span>
             <div className="text-sm text-gray-600">
               Trail {currentIndex + 1} of {trails.length}
