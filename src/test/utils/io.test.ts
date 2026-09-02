@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchOpenMeteoForDate, fetchWeatherAndTide, clearNwsCache, openWeatherUrl, hasValidCoords, isNoaaRegion } from '../../utils/io';
+import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchOpenMeteoForDate, fetchWeatherAndTide, clearNwsCache, clearTideCache, openWeatherUrl, hasValidCoords, isNoaaRegion } from '../../utils/io';
 
 describe('sanitizeFilename', () => {
   it('replaces non-alphanumeric characters with underscores', () => {
@@ -204,6 +204,7 @@ describe('fetchTideHeightAt', () => {
 
   beforeEach(() => {
     vi.unstubAllGlobals();
+    clearTideCache();
   });
 
   it('returns the low tide nearest 10am with formatted time', async () => {

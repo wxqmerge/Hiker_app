@@ -319,11 +319,21 @@ export async function fetchTideForCoords(trailCoords, date) {
  * @param {number} [hour] - Local hour 0-23 (default 10 = 10am)
  * @returns {{height: number, time: string}|null}
  */
+const _tideCache = new Map();
+const _tideTTL = 6 * 60 * 60 * 1000; // 6 hours — tide predictions are stable
+
+export function clearTideCache() {
+  _tideCache.clear();
+}
+
 export async function fetchTideHeightAt(stationId, targetDate, hour = 10) {
   if (!stationId || !targetDate) return null;
+  const d = new Date(targetDate);
+  const dateStr = formatDateCompact(d);
+  const cacheKey = `${stationId}:${dateStr}:${hour}`;
+  const cached = _tideCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < _tideTTL) return cached.value;
   try {
-    const d = new Date(targetDate);
-    const dateStr = formatDateCompact(d);
     const { getApiBase } = await import('./url');
     const res = await fetch(
       `${getApiBase()}/api/tide-proxy?station=${stationId}&begin_date=${dateStr}&end_date=${dateStr}`
@@ -350,7 +360,9 @@ export async function fetchTideHeightAt(stationId, targetDate, hour = 10) {
     if (isNaN(height)) return null;
     const h12 = best.hh % 12 || 12;
     const time = `${h12}:${String(best.mm).padStart(2, '0')}${best.hh >= 12 ? 'p' : 'a'}`;
-    return { height, time };
+    const result = { height, time };
+    _tideCache.set(cacheKey, { value: result, ts: Date.now() });
+    return result;
   } catch {
     return null;
   }
