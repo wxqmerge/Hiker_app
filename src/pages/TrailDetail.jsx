@@ -502,6 +502,28 @@ export default function TrailDetail() {
                 Del
               </button>
             )}
+            {isEditMode && (
+              <>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={cancelEdits}
+                  className="px-2 py-1 text-xs font-medium rounded transition-colors text-gray-700 bg-gray-100 hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEdits}
+                  disabled={isDuplicate && ((editedFields.fullName || '') === getTrailName(trail))}
+                  className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                    isDuplicate && (editedFields.fullName || '') === getTrailName(trail)
+                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  }`}
+                >
+                  {isDuplicate ? 'Save New' : 'Save'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
