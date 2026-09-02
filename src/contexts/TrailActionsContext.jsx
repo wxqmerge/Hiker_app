@@ -174,12 +174,13 @@ export function TrailActionsProvider({ children }) {
           return;
         }
         let updated = 0;
+        let skipped = 0;
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split('\t');
           if (cols.length < 14) continue;
           const trailId = cols[0].trim();
           const trail = trails.find(t => t.id === trailId);
-          if (!trail) continue;
+          if (!trail) { skipped++; continue; }
           const monthly = [];
           for (let m = 2; m < 14; m++) {
             const val = parseInt(cols[m].trim(), 10);
@@ -191,7 +192,10 @@ export function TrailActionsProvider({ children }) {
           });
           updated++;
         }
-        showToast(`Updated monthly popularity for ${updated} trail(s).`, 'success');
+        let msg = `Updated monthly popularity for ${updated} trail(s).`;
+        if (skipped > 0) msg += ` ${skipped} row(s) skipped (unknown trail ID).`;
+        msg += ` Computed scores were reset.`;
+        showToast(msg, 'success');
       },
     });
   }, [requireKey, trails, trailDetails, saveTrailDetail, showToast]);
@@ -222,8 +226,8 @@ export function TrailActionsProvider({ children }) {
               await updateSchedule(schedule);
               showToast('Schedule imported successfully!', 'success');
               window.location.reload();
-            } catch {
-              showToast('Import failed: Invalid JSON format', 'error');
+            } catch (err) {
+              showToast('Import failed: ' + (err.message || 'Server rejected the schedule'), 'error');
             }
           }, true);
         } catch {

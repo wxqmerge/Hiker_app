@@ -45,7 +45,7 @@ describe('ScheduleSettingsDropdown', () => {
     fireEvent.click(screen.getByTitle('Schedule settings'));
     fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
     expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
-    expect(screen.getByText(/Clear All Data/)).toBeInTheDocument();
+    expect(screen.getByText(/Clear Schedule/)).toBeInTheDocument();
   });
 
   it('shows user actions in the User tab', () => {

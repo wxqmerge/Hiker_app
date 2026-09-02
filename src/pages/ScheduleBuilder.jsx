@@ -483,25 +483,20 @@ ${sections.join('\n')}
                                      <div className="text-[10px] text-gray-400">{MONTH_ABBR[month]}</div>
                                    )}
                                 </div>
-                              <div className="flex-1 min-w-0">
-                                {displayHikeName ? (
-                                  <>
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      {hasMultipleSlots && (
-                                        <span className="text-[10px] font-bold bg-gray-200 px-1.5 py-0.5 rounded text-gray-600 uppercase">
-                                          {slotLetter(slotIdx)}
-                                        </span>
-                                      )}
-                                      <span className="text-base font-semibold text-gray-900 truncate">
-                                        {displayHikeName}
-                                      </span>
-                                       {earlyStart !== 0 && <span className={`text-sm font-bold ${earlyStart > 0 ? 'text-green-700' : 'text-orange-500'}`} title={`Start offset: ${earlyStart > 0 ? '+' : ''}${earlyStart}m`}>{earlyStart > 0 ? `+${earlyStart}m` : `${earlyStart}m`}</span>}
-                                     </div>
-                                      {!trailId && (
-                                       <div className="text-xs text-gray-400 italic mt-0.5">
-                                         Unmatched trail_id — drag a trail here
-                                       </div>
-                                     )}
+                               <div className="flex-1 min-w-0">
+                                 {trailId && trail ? (
+                                   <>
+                                     <div className="flex items-center gap-1.5 flex-wrap">
+                                       {hasMultipleSlots && (
+                                         <span className="text-[10px] font-bold bg-gray-200 px-1.5 py-0.5 rounded text-gray-600 uppercase">
+                                           {slotLetter(slotIdx)}
+                                         </span>
+                                       )}
+                                       <span className="text-base font-semibold text-gray-900 truncate">
+                                         {getTrailName(trail)}
+                                       </span>
+                                        {earlyStart !== 0 && <span className={`text-sm font-bold ${earlyStart > 0 ? 'text-green-700' : 'text-orange-500'}`} title={`Start offset: ${earlyStart > 0 ? '+' : ''}${earlyStart}m`}>{earlyStart > 0 ? `+${earlyStart}m` : `${earlyStart}m`}</span>}
+                                      </div>
                                         <button
                                           type="button"
                                            onClick={(e) => {

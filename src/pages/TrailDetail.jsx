@@ -259,7 +259,7 @@ export default function TrailDetail() {
         await saveTrailDetail(newId, newDetail);
       }
 
-      showToast('Trail duplicated successfully!');
+      showToast('Trail duplicated (GPX track not copied).');
       setEditedFields({});
       setIsDuplicate(false);
       setIsEditMode(false);
@@ -349,7 +349,7 @@ export default function TrailDetail() {
         : null;
     try {
       await deleteTrail(id);
-      showToast(`Deleted "${name}".`, 'success');
+      showToast(`Deleted "${name}" (including schedule entries, details, and GPX).`, 'success');
       navigate(target ? `/trail/${target}` : '/');
     } catch (err) {
       showToast('Delete failed: ' + err.message, 'error');
@@ -728,13 +728,13 @@ export default function TrailDetail() {
                 <button
                       onClick={handleGpxShare}
                     className="flex items-center gap-2 text-green-600 hover:text-green-800 hover:underline"
-                    title="Share GPX to Organic Maps (mobile) or download (desktop)"
-                    aria-label="Share GPX to Organic Maps or download"
+                    title="Share GPX (mobile) or download (desktop)"
+                    aria-label="Share GPX or download"
                   >
                   <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
-                  <span>Share GPX (opens in Organic Maps or downloads)</span>
+                  <span>Share GPX (share on mobile, download on desktop)</span>
                 </button>
                 <span className="text-sm text-gray-500" title="Matched GPX file">
                   {trail.gpxFile}
@@ -1219,7 +1219,7 @@ export default function TrailDetail() {
       <ConfirmDialog
         open={deleteOpen}
         title="Delete trail"
-        message={`Delete "${getTrailName(trail)}"? This cannot be undone.`}
+        message={`Delete "${getTrailName(trail)}"? This also removes its scheduled hikes, details, and GPX file. This cannot be undone.`}
         confirmLabel="Delete"
         danger
         onConfirm={confirmDelete}

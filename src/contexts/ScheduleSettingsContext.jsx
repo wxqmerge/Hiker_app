@@ -155,12 +155,12 @@ export function ScheduleSettingsProvider({ children }) {
 
   const doClearSchedule = useCallback(async () => {
     setConfirmClear(false);
-    setScheduleStore({});
-    lastSavedStoreRef.current = JSON.stringify({});
     setShowSettings(false);
     closeHistory();
     try {
       await updateSchedule({}, { confirmEmpty: true });
+      setScheduleStore({});
+      lastSavedStoreRef.current = JSON.stringify({});
       showToast('Schedule cleared.', 'success');
     } catch (err) {
       showToast('Clear failed: ' + err.message, 'error');
@@ -250,6 +250,7 @@ export function ScheduleSettingsProvider({ children }) {
     const concurrency = 5;
     const targetDate = nextHikeDate || new Date();
     const items = hikeTrailMap.filter(item => hasValidCoords(item.trail?.trailHeadLat, item.trail?.trailHeadLon));
+    const noCoords = hikeTrailMap.length - items.length;
     for (let i = 0; i < items.length; i += concurrency) {
       const batch = items.slice(i, i + concurrency);
       await Promise.allSettled(batch.map(async (item) => {
@@ -266,7 +267,9 @@ export function ScheduleSettingsProvider({ children }) {
     setWeatherMap(results);
     setFetchingWeather(false);
     fetchingRef.current = false;
-    showToast(`Weather fetched: ${successCount} success, ${failCount} failed/skipped`, 'info');
+    let msg = `Weather fetched: ${successCount} success, ${failCount} failed`;
+    if (noCoords > 0) msg += `, ${noCoords} skipped (no coordinates)`;
+    showToast(msg, 'info');
   }, [hikeTrailMap, nextHikeDate, showToast]);
 
   const verifyServerSchedule = useCallback(async () => {
@@ -533,7 +536,7 @@ export function ScheduleSettingsProvider({ children }) {
       }
 
       await loadSchedule();
-      let msg = `Imported: ${matchedCount} hikes across ${Object.keys(schedule).length} month(s).`;
+      let msg = `Imported: ${matchedCount} hikes across ${Object.keys(schedule).length} month(s). Existing entries for those months were overwritten.`;
       if (unmatchedCount > 0) {
         msg += `\n${unmatchedCount} hike(s) could not be matched to a trail.`;
       }
@@ -828,7 +831,7 @@ export function ScheduleSettingsProvider({ children }) {
       <ConfirmDialog
         open={!!pendingRestore}
         title="Restore schedule?"
-        message={pendingRestore ? `Restore schedule from ${new Date(pendingRestore).toLocaleString()}?\nThis will replace your current schedule.` : ''}
+        message={pendingRestore ? `Restore schedule from ${new Date(pendingRestore).toLocaleString()}?\nThis will replace your current schedule (no automatic backup of the current state).` : ''}
         confirmLabel="Restore"
         danger
         onConfirm={() => doRestore(pendingRestore)}

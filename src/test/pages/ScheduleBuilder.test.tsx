@@ -82,10 +82,10 @@ describe('ScheduleBuilder', () => {
     expect(screen.getByText(/Import Quarterly Schedule TSV/)).toBeInTheDocument();
   });
 
-  it('shows Clear All Data button', () => {
+  it('shows Clear Schedule button', () => {
     renderSchedule();
     openScheduleTab();
-    expect(screen.getByText(/Clear All Data/)).toBeInTheDocument();
+    expect(screen.getByText(/Clear Schedule/)).toBeInTheDocument();
   });
 
   it('shows Debug Mode toggle', () => {
