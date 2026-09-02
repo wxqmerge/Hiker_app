@@ -464,6 +464,7 @@ export default function ScheduleBuilder() {
                                         {leaderEdit && leaderEdit.day === day && leaderEdit.slotIdx === slotIdx && (
                                             <LeaderEdit
                                               initialLeader={leader}
+                                              leaders={allLeaders}
                                               tt={tt}
                                               onSave={async (newLeader) => {
                                                 const monthKey = getMonthKey(year, selectedMonth);

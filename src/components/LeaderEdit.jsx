@@ -3,10 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 /**
  * Small inline form for editing a hike leader name, replacing the native
  * `prompt()` dialog. Submits on Enter, cancels on Escape.
+ * Shows a datalist of existing leaders for quick selection.
  */
-export default function LeaderEdit({ initialLeader, onSave, onCancel, tt = (s) => s }) {
+export default function LeaderEdit({ initialLeader, leaders = [], onSave, onCancel, tt = (s) => s }) {
   const [value, setValue] = useState(initialLeader || '');
   const inputRef = useRef(null);
+  const listId = useRef(`leader-list-${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -35,8 +37,14 @@ export default function LeaderEdit({ initialLeader, onSave, onCancel, tt = (s) =
         onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
         placeholder="Leader name"
         aria-label="Leader name"
+        list={listId.current}
         className="flex-1 min-w-0 text-xs border border-blue-300 rounded px-1.5 py-0.5 focus:ring-blue-500 focus:border-blue-500"
       />
+      <datalist id={listId.current}>
+        {leaders.map((l) => (
+          <option key={l} value={l} />
+        ))}
+      </datalist>
       <button type="submit" className="text-xs font-medium text-green-700 hover:text-green-900" title={tt('Save leader')}>
         Save
       </button>
