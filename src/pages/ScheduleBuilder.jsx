@@ -78,13 +78,24 @@ export default function ScheduleBuilder() {
     return [qStart, qStart + 1, qStart + 2];
   }, [selectedMonth]);
 
-  // Collect leaders from the current quarter only (for the leader-view filter).
+  // Quarter output months: the 3 quarter months + next quarter's first month (boundary, days 1-2 only).
+  const quarterOutputMonths = useMemo(() => {
+    const months = quarterMonths.map(m => ({ month: m, year, boundary: false }));
+    const nextMonth = (quarterMonths[2] + 1) % 12;
+    const nextYear = quarterMonths[2] === 11 ? year + 1 : year;
+    months.push({ month: nextMonth, year: nextYear, boundary: true });
+    return months;
+  }, [quarterMonths, year]);
+
+  // Collect leaders from the current quarter + boundary (for the leader-view filter).
   const allLeaders = useMemo(() => {
     const leaders = new Set();
-    for (const m of quarterMonths) {
-      const monthKey = getMonthKey(year, m);
+    for (const { month, year: mYear, boundary } of quarterOutputMonths) {
+      const monthKey = getMonthKey(mYear, month);
       const monthData = scheduleStore[monthKey] || {};
-      Object.values(monthData).forEach((dayEntries) => {
+      Object.entries(monthData).forEach(([dayStr, dayEntries]) => {
+        const day = Number(dayStr);
+        if (boundary && day > 2) return;
         const entries = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
         entries.forEach((entry) => {
           if (entry?.leader) leaders.add(entry.leader);
@@ -92,7 +103,7 @@ export default function ScheduleBuilder() {
       });
     }
     return Array.from(leaders).sort();
-  }, [scheduleStore, quarterMonths, year]);
+  }, [scheduleStore, quarterOutputMonths]);
 
   // Collect leaders from current + past quarter (for the edit datalist).
   const editLeaders = useMemo(() => {
@@ -145,16 +156,17 @@ export default function ScheduleBuilder() {
     });
   }, [setScheduleStore]);
 
-  // Hike dates across the full quarter (used when leaderFilter is active).
+  // Hike dates across the full quarter + boundary (used when leaderFilter is active).
   const quarterDates = useMemo(() => {
     if (leaderFilter === null) return [];
     const dates = [];
-    for (const m of quarterMonths) {
-      const monthDates = getHikeSlotsForMonth(year, m, hikeDays, maxHikesPerDay);
-      monthDates.forEach(d => dates.push({ ...d, month: m }));
+    for (const { month, year: mYear, boundary } of quarterOutputMonths) {
+      const monthDates = getHikeSlotsForMonth(mYear, month, hikeDays, maxHikesPerDay);
+      const filtered = boundary ? monthDates.filter(d => d.day === 1 || d.day === 2) : monthDates;
+      filtered.forEach(d => dates.push({ ...d, month, year: mYear }));
     }
     return dates;
-  }, [leaderFilter, quarterMonths, year, hikeDays, maxHikesPerDay]);
+  }, [leaderFilter, quarterOutputMonths, hikeDays, maxHikesPerDay]);
 
   const matchesLeaderFilter = useCallback((entry) => {
     if (leaderFilter === null) return true;
@@ -166,7 +178,8 @@ export default function ScheduleBuilder() {
 
   const getEntryForSlot = useCallback((slot) => {
     const month = leaderFilter !== null ? slot.month : selectedMonth;
-    const monthKey = getMonthKey(year, month);
+    const slotYear = leaderFilter !== null ? (slot.year || year) : year;
+    const monthKey = getMonthKey(slotYear, month);
     const monthData = scheduleStore[monthKey] || {};
     return getDayEntries(monthData, slot.day)[slot.slot] || { trail_id: null, early_start: 0, leader: '' };
   }, [leaderFilter, selectedMonth, year, scheduleStore]);
@@ -386,11 +399,12 @@ export default function ScheduleBuilder() {
                       const sections = [];
                       for (const leader of leadersToReport) {
                         const entries = [];
-                        for (const m of quarterMonths) {
-                          const monthKey = getMonthKey(year, m);
+                        for (const { month: m, year: mYear, boundary } of quarterOutputMonths) {
+                          const monthKey = getMonthKey(mYear, m);
                           const monthData = scheduleStore[monthKey] || {};
                           for (const [dayStr, dayEntries] of Object.entries(monthData)) {
                             const day = Number(dayStr);
+                            if (boundary && day > 2) continue;
                             const list = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
                             for (const entry of list) {
                               const match = leader === ''
@@ -400,7 +414,7 @@ export default function ScheduleBuilder() {
                                 const trail = trails.find(t => t.id === entry.trail_id);
                                 if (trail) {
                                   const monthAbbr = MONTH_ABBR[m] || '';
-                                  const date = createDate(year, m, day);
+                                  const date = createDate(mYear, m, day);
                                   entries.push({
                                     dateStr: `${DAY_NAMES[date.getDay()]}, ${monthAbbr} ${day}`,
                                     trail,
@@ -458,7 +472,8 @@ ${sections.join('\n')}
                       const day = slot.day;
                       const slotIdx = slot.slot;
                       const month = leaderFilter !== null ? slot.month : selectedMonth;
-                      const dayOfWeek = createDate(year, month, day).getDay();
+                      const slotYear = leaderFilter !== null ? (slot.year || year) : year;
+                      const dayOfWeek = createDate(slotYear, month, day).getDay();
 
                         const entry = getEntryForSlot(slot);
                         if (leaderFilter !== null && !matchesLeaderFilter(entry)) return null;
