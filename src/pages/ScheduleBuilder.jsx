@@ -78,7 +78,7 @@ export default function ScheduleBuilder() {
     return [qStart, qStart + 1, qStart + 2];
   }, [selectedMonth]);
 
-  // Collect leaders from the current quarter only.
+  // Collect leaders from the current quarter only (for the leader-view filter).
   const allLeaders = useMemo(() => {
     const leaders = new Set();
     for (const m of quarterMonths) {
@@ -93,6 +93,29 @@ export default function ScheduleBuilder() {
     }
     return Array.from(leaders).sort();
   }, [scheduleStore, quarterMonths, year]);
+
+  // Collect leaders from current + past quarter (for the edit datalist).
+  const editLeaders = useMemo(() => {
+    const leaders = new Set();
+    const collect = (months, yr) => {
+      for (const m of months) {
+        const monthKey = getMonthKey(yr, m);
+        const monthData = scheduleStore[monthKey] || {};
+        Object.values(monthData).forEach((dayEntries) => {
+          const entries = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
+          entries.forEach((entry) => {
+            if (entry?.leader) leaders.add(entry.leader);
+          });
+        });
+      }
+    };
+    collect(quarterMonths, year);
+    const qStart = Math.floor(selectedMonth / 3) * 3;
+    const pastQStart = (qStart - 3 + 12) % 12;
+    const pastYear = qStart === 0 ? year - 1 : year;
+    collect([pastQStart, pastQStart + 1, pastQStart + 2], pastYear);
+    return Array.from(leaders).sort();
+  }, [scheduleStore, quarterMonths, year, selectedMonth]);
 
   const [leaderEdit, setLeaderEdit] = useState(null);
   const [moveSource, setMoveSource] = useState(null);
@@ -515,7 +538,7 @@ ${sections.join('\n')}
                                          {leaderEdit && leaderEdit.day === day && leaderEdit.slotIdx === slotIdx && leaderEdit.month === month && (
                                              <LeaderEdit
                                                initialLeader={leader}
-                                               leaders={allLeaders}
+                                                leaders={editLeaders}
                                                tt={tt}
                                                onSave={async (newLeader) => {
                                                  const monthKey = getMonthKey(year, month);
