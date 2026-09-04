@@ -343,7 +343,7 @@ export function TrailActionsProvider({ children }) {
           } else {
             showToast(msg, 'success');
           }
-          window.location.reload();
+          setTimeout(() => window.location.reload(), 4000);
         } catch (err) {
           showToast('Import failed: ' + err.message, 'error');
         }
