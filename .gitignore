@@ -50,6 +50,7 @@ shared/types/*.d.ts.map
 # Exported data (never committed)
 exported_data/
 travel_data/
+orphan/
 
 # Python cache
 __pycache__/
