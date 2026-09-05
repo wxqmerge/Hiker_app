@@ -647,51 +647,99 @@ export function ScheduleSettingsProvider({ children }) {
     }
     rows.push(pad(headerRow, numCols));
 
-    // Include ALL dates that fall on a configured hike day-of-week,
-    // grouped by slot index (row 0 = 1st Wed + 1st Fri, row 1 = 2nd Wed + 2nd Fri, etc.)
+    // Collect every date in the quarter's months that falls on a configured
+    // hike day-of-week, plus the 1st/2nd day of the next quarter's first month
+    // (boundary) when it has a scheduled hike.
+    const candidates = [];
+    const pushCandidate = (year, mIdx, day) => {
+      candidates.push({
+        date: createDate(year, mIdx, day),
+        day,
+        monthLabel: MONTH_ABBR[mIdx],
+        monthData: scheduleStore[getMonthKey(year, mIdx)] || {},
+      });
+    };
     for (const month of quarter.months) {
       const mIdx = MONTH_ABBR.indexOf(month);
       const daysInMonth = getDaysInMonth(qYear, mIdx);
-      const monthKey = getMonthKey(qYear, mIdx);
-      const monthData = scheduleStore[monthKey] || {};
-
-      // For each day-of-week, collect all dates in this month (sorted)
-      const datesByDow = {};
-      for (const dow of uniqueDays) {
-        datesByDow[dow] = [];
-        for (let day = 1; day <= daysInMonth; day++) {
-          if (createDate(qYear, mIdx, day).getDay() === dow) {
-            datesByDow[dow].push(day);
-          }
+      for (let day = 1; day <= daysInMonth; day++) {
+        if (uniqueDays.includes(createDate(qYear, mIdx, day).getDay())) {
+          pushCandidate(qYear, mIdx, day);
         }
       }
+    }
+    // Boundary: 1st/2nd day of the next quarter's first month, if it has a hike.
+    const lastMIdx = MONTH_ABBR.indexOf(quarter.months[quarter.months.length - 1]);
+    const nextMIdx = (lastMIdx + 1) % 12;
+    const nextYear = lastMIdx === 11 ? qYear + 1 : qYear;
+    for (let day = 1; day <= 2; day++) {
+      const date = createDate(nextYear, nextMIdx, day);
+      if (!uniqueDays.includes(date.getDay())) continue;
+      const monthData = scheduleStore[getMonthKey(nextYear, nextMIdx)] || {};
+      if (getDayEntries(monthData, day).some(e => e && e.trail_id)) {
+        candidates.push({ date, day, monthLabel: MONTH_ABBR[nextMIdx], monthData });
+      }
+    }
 
-      // Max slot count across all day-of-weeks
-      const maxSlots = Math.max(...Object.values(datesByDow).map(arr => arr.length), 1);
+    // Group candidates by the Monday of their week so a Wednesday and the
+    // following Friday land on the same row (dates stay increasing).
+    const weekStart = (date) => {
+      const d = new Date(date);
+      const dow = d.getDay();
+      d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+      return d.getTime();
+    };
+    const weeks = new Map();
+    for (const c of candidates) {
+      const ws = weekStart(c.date);
+      if (!weeks.has(ws)) weeks.set(ws, []);
+      weeks.get(ws).push(c);
+    }
+    const sortedWeeks = [...weeks.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]);
 
-      for (let slot = 0; slot < maxSlots; slot++) {
-        const row = [slot === 0 ? month : ''];
-        for (const dl of dayLabels) {
-          const day = datesByDow[dl.dow]?.[slot];
-          if (day != null) {
-            const entries = getDayEntries(monthData, day);
-            const entry = entries[dl.slot];
-            if (entry && entry.trail_id) {
-              const trail = findTrailById(entry.trail_id);
-              let trailName = trail ? getTrailName(trail) : entry.trail_id;
-              const esOffset = normalizeStartOffset(entry.early_start);
-              if (esOffset !== 0) trailName += esOffset < 0 ? ` (${Math.abs(esOffset)}m early)` : ` (${esOffset}m late)`;
-              row.push(String(day), trailName, entry.leader || '');
-            } else {
-              row.push(String(day), '', '');
-            }
+    // Month labels: col 0 shows the earliest date's month; each subsequent
+    // group's separator column shows that group's date's month. A label is
+    // printed only when the month changes from the previous row.
+    let lastFirstMonth = null;
+    const lastGroupMonth = new Array(dayLabels.length).fill(null);
+
+    for (const weekCandidates of sortedWeeks) {
+      const byDate = [...weekCandidates].sort((a, b) => a.date - b.date);
+      const firstMonth = byDate[0].monthLabel;
+      const row = [firstMonth !== lastFirstMonth ? firstMonth : ''];
+      for (let gi = 0; gi < dayLabels.length; gi++) {
+        const dl = dayLabels[gi];
+        const cand = weekCandidates.find(c => c.date.getDay() === dl.dow);
+        if (cand) {
+          const entries = getDayEntries(cand.monthData, cand.day);
+          const entry = entries[dl.slot];
+          if (entry && entry.trail_id) {
+            const trail = findTrailById(entry.trail_id);
+            let trailName = trail ? getTrailName(trail) : entry.trail_id;
+            const esOffset = normalizeStartOffset(entry.early_start);
+            if (esOffset !== 0) trailName += esOffset < 0 ? ` (${Math.abs(esOffset)}m early)` : ` (${esOffset}m late)`;
+            row.push(String(cand.day), trailName, entry.leader || '');
           } else {
-            row.push('', '', '');
+            row.push(String(cand.day), '', '');
           }
+        } else {
+          row.push('', '', '');
+        }
+        // Separator column after this group holds the NEXT group's month label.
+        if (gi < dayLabels.length - 1) {
+          const nextCand = weekCandidates.find(c => c.date.getDay() === dayLabels[gi + 1].dow);
+          const nextMonth = nextCand ? nextCand.monthLabel : null;
+          row.push(nextMonth !== null && nextMonth !== lastGroupMonth[gi + 1] ? nextMonth : '');
+        } else {
           row.push('');
         }
-        rows.push(pad(row, numCols));
       }
+      lastFirstMonth = firstMonth;
+      for (let gi = 1; gi < dayLabels.length; gi++) {
+        const cand = weekCandidates.find(c => c.date.getDay() === dayLabels[gi].dow);
+        if (cand) lastGroupMonth[gi] = cand.monthLabel;
+      }
+      rows.push(pad(row, numCols));
     }
 
     // Alternate hikes section
