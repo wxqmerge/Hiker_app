@@ -1,5 +1,5 @@
 #!/bin/bash
-# Move orphaned GPX files to ../orphan
+# Move orphaned GPX files to <instance-dir>/orphan/
 #
 # An "orphaned" GPX file is a .gpx file in exported_data/gpx/ that is not
 # referenced by any trail's gpxFile field in exported_data/trails.json.
@@ -9,7 +9,8 @@
 #   ./orphan_gpx.sh          # process the current instance directory
 #   ./orphan_gpx.sh -all     # process every instance under the base directory
 #
-# Orphaned files are moved to <instance-dir>/../orphan/ (i.e. ../orphan).
+# Orphaned files are moved to <instance-dir>/orphan/ (inside the instance,
+# which is writable by the deploy user — the base dir may not be).
 # On a filename collision the file is prefixed with the instance name.
 
 # Self-fix: restore execute permission if stripped by Windows
@@ -47,7 +48,7 @@ process_instance() {
     local gpx_dir="$dir/exported_data/gpx"
     local trails_file="$dir/exported_data/trails.json"
     local orphan_dir
-    orphan_dir="$(dirname "$dir")/orphan"
+    orphan_dir="$dir/orphan"
 
     if [ ! -d "$gpx_dir" ]; then
         echo "[$name] no exported_data/gpx dir — skipping"
