@@ -31,11 +31,6 @@ export function filterTrails(items, filters, trailDetails) {
       const searchText = [
         t.name,
         t.fullName,
-        t.notes,
-        t.difficulty,
-        ...Object.entries(t.seasonal || [])
-          .filter(([, v]) => typeof v === 'number' && v > 0)
-          .map(([k]) => k.toLowerCase())
       ].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]/g, '');
 
       if (!searchText.includes(searchLower)) return false;

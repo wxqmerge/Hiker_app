@@ -45,11 +45,17 @@ describe('filterTrails', () => {
     expect(result[0].id).toBe('trail-2');
   });
 
-  it('filters by search text in notes', () => {
+  it('matches fullName in the primary search', () => {
     const filters = { ...mockFilters, search: 'Ridge' };
     const result = filterTrails(mockTrails, filters);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('trail-2');
+  });
+
+  it('does not match notes in the primary search', () => {
+    const filters = { ...mockFilters, search: 'Beautiful' };
+    const result = filterTrails(mockTrails, filters);
+    expect(result).toHaveLength(0);
   });
 
   it('filters by search text case insensitive', () => {

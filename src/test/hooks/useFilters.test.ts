@@ -117,11 +117,11 @@ describe('useFilters', () => {
     expect(result.current.sortedTrails).toHaveLength(0);
   });
 
-  it('searches seasonal month names', () => {
+  it('does not match seasonal month names in the primary search', () => {
     const { result } = renderHook(() => useFilters(mockTrails));
     act(() => {
       result.current.setFilters({ ...result.current.filters, search: 'Jan' });
     });
-    expect(result.current.sortedTrails).toHaveLength(1);
+    expect(result.current.sortedTrails).toHaveLength(0);
   });
 });
