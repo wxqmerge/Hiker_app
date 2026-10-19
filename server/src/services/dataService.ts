@@ -1,13 +1,13 @@
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsData } from '@shared/types/index.js';
 import { MONTH_ABBR, resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { generateEtag } from '../utils/etag.js';
 import { isSafeGpxFilename } from '../utils/gpxValidation.js';
 import { extractDurationFromGpxContent } from '../utils/gpxDuration.js';
 import { DATA_DIR, HISTORY_DIR } from '../utils/paths.js';
+import { getCurrentDir } from '../utils/path.js';
 
 // Cache for GPX durations
 const durationCache = new Map<string, { minutes: number; formatted: string }>();
@@ -235,6 +235,14 @@ export function getSchedule(): ScheduleData {
   return { ...schedule };
 }
 
+// Delete an uploaded GPX file (if present) and drop its cached duration.
+export async function removeUploadedGpxFile(fileName: string | undefined | null): Promise<void> {
+  if (!fileName || !isSafeGpxFilename(fileName)) return;
+  const gpxPath = path.join(GPX_UPLOAD_DIR, fileName);
+  durationCache.delete(gpxPath);
+  await fs.unlink(gpxPath).catch(() => {});
+}
+
 async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: string, gpxFileRemoved?: boolean): Promise<boolean> {
   if (gpxData) {
     await fs.mkdir(GPX_UPLOAD_DIR, { recursive: true });
@@ -251,14 +259,7 @@ async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: st
   }
   if (gpxFileRemoved || gpxData === '') {
     const oldGpxFile = gpxIndex[trailId];
-    if (oldGpxFile && isSafeGpxFilename(oldGpxFile)) {
-      durationCache.delete(path.join(GPX_UPLOAD_DIR, oldGpxFile));
-      try {
-        await fs.unlink(path.join(GPX_UPLOAD_DIR, oldGpxFile));
-      } catch {
-        // File may not exist
-      }
-    }
+    await removeUploadedGpxFile(oldGpxFile);
     delete gpxIndex[trailId];
     return false;
   }
@@ -304,16 +305,9 @@ export async function deleteTrail(id: string): Promise<void> {
     }
   }
 
-  // Remove uploaded GPX file if it exists
-  const gpxPaths = new Set([path.join(GPX_UPLOAD_DIR, getGpxUploadFileName(id))]);
-  if (oldGpxFile && isSafeGpxFilename(oldGpxFile)) gpxPaths.add(path.join(GPX_UPLOAD_DIR, oldGpxFile));
-  for (const gpxPath of gpxPaths) {
-    try {
-      await fs.unlink(gpxPath);
-    } catch {
-      // File may not exist
-    }
-  }
+  // Remove uploaded GPX file(s) if they exist
+  await removeUploadedGpxFile(getGpxUploadFileName(id));
+  await removeUploadedGpxFile(oldGpxFile);
 
   await writeWithHealth(path.join(DATA_DIR, 'trails.json'), { trails });
   await writeWithHealth(path.join(DATA_DIR, 'trail_details.json'), trailDetails);
@@ -439,7 +433,7 @@ export function getScheduleVersion(): string {
 
 export function serverVersion(): string {
   try {
-    const dir = path.dirname(fileURLToPath(import.meta.url));
+    const dir = getCurrentDir(import.meta.url);
     const pkg = JSON.parse(fsSync.readFileSync(path.join(dir, '../../package.json'), 'utf-8'));
     return pkg.version || 'unknown';
   } catch {

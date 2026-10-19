@@ -6,7 +6,7 @@ import multer from 'multer';
 import { requireAdminKey } from '../middleware/auth.middleware.js';
 import { withErrorTag } from '../middleware/error.middleware.js';
 import { validateGpxContent } from '../utils/gpxValidation.js';
-import { loadData, getScheduleFile, getTrails, getGpxIndex, setGpxIndex } from '../services/dataService.js';
+import { loadData, getScheduleFile, getTrails, getGpxIndex, setGpxIndex, removeUploadedGpxFile } from '../services/dataService.js';
 import { DATA_DIR, GPX_UPLOAD_DIR, TMP_DIR, HISTORY_DIR } from '../utils/paths.js';
 
 // Ensure tmp directory exists
@@ -171,11 +171,7 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   for (const [trailId, gpxFile] of Object.entries(gpxIndex)) {
     if (!trailIds.has(trailId)) {
       reconciled++;
-      try {
-        await fs.unlink(path.join(GPX_UPLOAD_DIR, gpxFile));
-      } catch {
-        // File may not exist
-      }
+      await removeUploadedGpxFile(gpxFile);
     }
   }
   // Rewrite gpx_index with only valid entries

@@ -8,7 +8,7 @@ const FT_PER_METER = 3.28084;
  * @param {number} miles - Distance in miles.
  * @returns {number} Distance in the display unit.
  */
-export function convertDistance(miles) {
+function convertDistance(miles) {
   if (getUnitSystem() === 'metric') {
     return miles * KM_PER_MILE;
   }
@@ -20,7 +20,7 @@ export function convertDistance(miles) {
  * @param {number} feet - Elevation in feet.
  * @returns {number} Elevation in the display unit.
  */
-export function convertElevation(feet) {
+function convertElevation(feet) {
   if (getUnitSystem() === 'metric') {
     return feet / FT_PER_METER;
   }

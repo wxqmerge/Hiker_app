@@ -6,7 +6,9 @@ export function sanitizeFilename(name, fallback = 'file') {
   return (name || fallback).replace(/[^a-zA-Z0-9]/g, '_');
 }
 
-// Extract the first GPS coordinate from GPX XML content
+// Extract the first GPS coordinate from GPX XML content.
+// Mirrors server-side extractFirstCoordinateFromGpx (server/src/utils/gpxCoord.ts).
+// Keep the trkpt → wpt → rtept fallback order in sync.
 export function getFirstCoordinateFromGpx(gpxContent) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(gpxContent, 'application/xml');

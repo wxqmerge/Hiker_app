@@ -80,7 +80,7 @@ See [USAGE.md](./USAGE.md) for end-user documentation.
 
 ### TypeScript Types
 
-Shared types in `shared/types/index.ts` are compiled to `shared/types/index.js` and `shared/types/index.d.ts`.
+Shared types in `shared/types/index.ts` are the source of truth. `build:server` compiles them to `shared/types/index.js` (committed so the server's `@shared` alias resolves at runtime). The server type-checks against `index.ts` directly; no `.d.ts` is emitted.
 
 ### JSON Files (`exported_data/`)
 
@@ -241,9 +241,8 @@ Nginx proxies `/<SUBDOMAIN>/` to frontend and `/api/*` to Express. See [DEPLOY.m
 │   └── tsconfig.json
 ├── shared/
 │   ├── types/
-│   │   ├── index.ts           # Shared TypeScript interfaces
-│   │   ├── index.js           # Compiled JS
-│   │   └── index.d.ts         # Type declarations
+│   │   ├── index.ts           # Shared TypeScript interfaces (source of truth)
+│   │   └── index.js           # Compiled JS (committed for runtime @shared resolution)
 │   └── tsconfig.json
 ├── scripts/
 │   ├── compile-shared.js      # Compile shared types

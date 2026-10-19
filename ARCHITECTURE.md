@@ -223,9 +223,10 @@ shared/types/index.ts  (TypeScript interfaces)
     Patch relative imports: `.ts` → `.js`
          │
          ▼
-shared/types/index.js   (compiled JS for Node)
-shared/types/index.d.ts (type declarations)
-```
+ shared/types/index.js   (compiled JS for Node; committed so the @shared alias resolves at runtime)
+ ```
+
+ The server type-checks `@shared/types/index.js` directly against `shared/types/index.ts` (TS maps the `.js` specifier to the `.ts` source), so no `.d.ts` is emitted.
 
 The compile script creates a temp directory, copies `.ts` files, compiles with `npx tsc`, then copies `.js` output back. The patch script adds `.js` extensions to relative imports (required by Node ESM).
 

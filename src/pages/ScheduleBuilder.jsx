@@ -6,6 +6,7 @@ import { useTooltips } from '../hooks/useTooltips';
 import { useApiKey } from '../hooks/useApiKey';
 
 import FilterPanel from '../components/FilterPanel';
+import SaveStatusBadge from '../components/shared/SaveStatusBadge';
 import { useMonthContext } from '../contexts/MonthContext';
 import { useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { getTrailName } from '../utils/data';
@@ -362,15 +363,7 @@ export default function ScheduleBuilder() {
                      : `${MONTH_NAMES[selectedMonth]} ${year} — ${getHikeDaysLabel()}`}
                  </h3>
                 <div className="flex items-center gap-2">
-                  {saveStatus !== 'idle' && (
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                      saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700'
-                        : saveStatus === 'saved' ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save failed'}
-                    </span>
-                  )}
+                  <SaveStatusBadge saveStatus={saveStatus} />
                   <select
                     className="text-xs border border-gray-300 rounded px-1.5 py-0.5 bg-white"
                     value={leaderFilter === null ? '' : (leaderFilter === '' ? '__none__' : leaderFilter)}

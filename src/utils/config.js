@@ -50,10 +50,6 @@ export function getMaxSpeedMph() {
   return groupConfig.maxSpeedMph ?? 1.1;
 }
 
-export function isBikeTrip() {
-  return groupConfig.isBikeTrip ?? false;
-}
-
 export function getUnitSystem() {
   return groupConfig.unitSystem ?? 'imperial';
 }

@@ -4,7 +4,7 @@ import { normalizeStartOffset } from './etc';
 
 const YEAR_MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-export function resolveScheduleMonthKey(key, defaultYear = CURRENT_YEAR) {
+function resolveScheduleMonthKey(key, defaultYear = CURRENT_YEAR) {
   if (typeof key !== 'string') return null;
   const trimmed = key.trim();
   if (YEAR_MONTH_KEY.test(trimmed)) return trimmed;

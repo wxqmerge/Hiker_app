@@ -13,6 +13,7 @@ import { getDaysInMonth } from '../utils/dateUtils';
 import MonthSelector from './MonthSelector';
 import DaySelector from './DaySelector';
 import ScheduleSettingsDropdown from './ScheduleSettingsDropdown';
+import SaveStatusBadge from './shared/SaveStatusBadge';
 
 const APP_VERSION = __APP_VERSION;
 
@@ -132,15 +133,7 @@ function HeaderContent() {
                 <span className="text-xs text-gray-400">v{APP_VERSION}</span>
               </nav>
               <div className="flex items-center gap-3 ml-4 min-w-0">
-                {saveStatus !== 'idle' && (
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700'
-                      : saveStatus === 'saved' ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save failed'}
-                  </span>
-                )}
+                <SaveStatusBadge saveStatus={saveStatus} />
                 <ScheduleSettingsDropdown />
                 {!isSchedule && pageContext && (
                   <span className="text-sm font-medium text-gray-600 truncate hidden sm:block">

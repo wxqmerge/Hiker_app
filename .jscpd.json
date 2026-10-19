@@ -1,0 +1,15 @@
+{
+  "threshold": 100,
+  "reporters": ["consoleFull"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/exported_data/**",
+    "**/travel_data/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ],
+  "minTokens": 80,
+  "minLines": 5,
+  "absolute": false
+}

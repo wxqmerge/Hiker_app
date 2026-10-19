@@ -6,7 +6,7 @@ export const getTodayMidnight = getTodayHikeRef;
 
 // Weather is fetched for any today-or-future date: NWS covers the next 7 days,
 // Open-Meteo covers dates beyond that. Past dates get tide only (no forecast).
-export function isTodayOrFuture(date, today = getTodayMidnight()) {
+function isTodayOrFuture(date, today = getTodayMidnight()) {
   const daysAhead = Math.round((date - today) / MS_PER_DAY);
   return daysAhead >= 0;
 }
