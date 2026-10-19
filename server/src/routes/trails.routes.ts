@@ -46,11 +46,11 @@ async function resolveGpxPath(gpxFile: string): Promise<string | null> {
 const router = Router();
 
 router.get('/', (req, res) => {
-  sendWithEtag(req, res, { trails: getTrails() });
+  sendWithEtag(req, res, { trails: getTrails() }, 0);
 });
 
 router.get('/details', (req, res) => {
-  sendWithEtag(req, res, getTrailDetails());
+  sendWithEtag(req, res, getTrailDetails(), 0);
 });
  
 router.put('/details/:id', requireAdminKey, withErrorTag('TRAILS')(async (req, res) => {

@@ -9,10 +9,11 @@
 //   - External tides (NOAA): cache-first (stable per date).
 //   - External forecast (NWS): cache-first with background update.
 //   - Write endpoints (PUT/POST/DELETE) are never cached. After a successful
-//     schedule write, the cached schedule is invalidated.
+//     write to trails/details/lookup/schedule/config/data, the cached API reads
+//     are invalidated so the next load (e.g. after an Import ZIP reload) refetches.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v5';
+const VERSION = 'v6';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const TIDE_CACHE = `hiker-tide-${VERSION}`;
@@ -46,6 +47,11 @@ const NETWORK_FIRST_API = new Set([
   '/api/config',
 ]);
 
+// Cached API reads to drop whenever a data-mutating write succeeds.
+const INVALIDATE_API_PATHS = new Set([...CACHE_FIRST_API, ...NETWORK_FIRST_API]);
+// Endpoint prefixes whose successful writes change the cached API reads above.
+const DATA_WRITE_PREFIXES = ['/api/trails', '/api/schedule', '/api/data', '/api/cleanup'];
+
 
 
 function isTideUrl(url) {
@@ -56,12 +62,10 @@ function isWeatherUrl(url) {
   return url.hostname === 'api.weather.gov';
 }
 
-function isScheduleWrite(url, method) {
+function isDataWrite(url, method) {
+  if (!['PUT', 'POST', 'DELETE'].includes(method)) return false;
   const path = stripBase(url.pathname);
-  return (
-    (path === '/api/schedule' || path.startsWith('/api/schedule/')) &&
-    ['PUT', 'POST', 'DELETE'].includes(method)
-  );
+  return DATA_WRITE_PREFIXES.some((p) => path === p || path.startsWith(p + '/'));
 }
 
 self.addEventListener('install', () => {
@@ -87,11 +91,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET') {
-    // Let writes go to the network; invalidate the schedule cache on success.
-    if (url.origin === self.location.origin && isScheduleWrite(url, request.method)) {
+    // Let writes go to the network; invalidate the cached API reads on success.
+    if (url.origin === self.location.origin && isDataWrite(url, request.method)) {
       event.respondWith(
         fetch(request).then((res) => {
-          if (res.ok) invalidateScheduleCache(url.origin);
+          if (res.ok) invalidateDataCache(url.origin);
           return res;
         })
       );
@@ -185,17 +189,13 @@ async function handleNavigation(request) {
 
 
 
-// Remove cached schedule + config after a successful schedule write.
-function invalidateScheduleCache(origin) {
+// Drop cached API reads so the next load refetches fresh data after a write.
+function invalidateDataCache(origin) {
   caches.open(API_CACHE).then(async (cache) => {
     const keys = await cache.keys();
     const toDelete = keys.filter((k) => {
       const u = new URL(k);
-      const path = stripBase(u.pathname);
-      return (
-        u.origin === origin &&
-        (path === '/api/schedule' || path === '/api/schedule/group' || path === '/api/config')
-      );
+      return u.origin === origin && INVALIDATE_API_PATHS.has(stripBase(u.pathname));
     });
     await Promise.all(toDelete.map((k) => cache.delete(k)));
   });

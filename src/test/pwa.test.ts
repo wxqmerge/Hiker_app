@@ -35,6 +35,14 @@ describe('PWA', () => {
     expect(sw).toContain('api.weather.gov');
   });
 
+  it('service worker invalidates cached API reads after data writes', () => {
+    const sw = readFileSync(resolve(publicDir, 'sw.js'), 'utf-8');
+    expect(sw).toContain('invalidateDataCache');
+    expect(sw).toContain('isDataWrite');
+    expect(sw).toContain("'/api/data'");
+    expect(sw).toContain("'/api/trails'");
+  });
+
   it('icons exist and are valid PNGs at the expected sizes', () => {
     for (const size of [192, 512]) {
       const iconPath = resolve(publicDir, 'icons', `icon-${size}.png`);
