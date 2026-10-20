@@ -12,7 +12,7 @@ export default function SaveStatusBadge({ saveStatus }) {
   const label =
     saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save failed';
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${color}`}>
+    <span className={`px-2 py-0.5 rounded text-sm font-medium ${color}`}>
       {label}
     </span>
   );

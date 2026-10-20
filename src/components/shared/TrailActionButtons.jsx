@@ -8,7 +8,7 @@ import { openWeatherUrl, hasValidCoords } from '../../utils/io';
 // Named button styles so TrailCard (link) and NextHikeBanner (hero) stay consistent.
 const VARIANTS = {
   link: 'flex items-center gap-1 text-blue-600 hover:text-blue-800',
-  hero: 'flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-medium transition-colors',
+  hero: 'flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-base font-medium transition-colors',
 };
 
 export default function TrailActionButtons({ trail, hikeDate, variant = 'link', buttonClassName = '', iconSize = 'w-3.5 h-3.5', onGpxDownload, onGpxShare, onTrailhead, onWeather }) {

@@ -137,11 +137,11 @@ function NextHikeCard({ hike, idx, weather }) {
                     onWeather={handleWeather}
                   />
                 </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-white/20">
+                   <div className="grid grid-cols-1 gap-2 pt-2 border-t border-white/20 min-[420px]:grid-cols-2 sm:grid-cols-5 sm:gap-3">
                      <TrailStats
                        trail={trail}
-                       itemClassName="flex items-center gap-2 text-green-50"
-                       iconSize="w-5 h-5"
+                       itemClassName="flex min-w-0 items-center gap-2 text-base text-green-50 sm:text-lg"
+                       iconSize="w-5 h-5 sm:w-6 sm:h-6"
                        rideFormat="range"
                        inline
                      />

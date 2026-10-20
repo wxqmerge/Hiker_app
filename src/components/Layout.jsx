@@ -102,17 +102,17 @@ function HeaderContent() {
       <PageContextSetter />
       <div className="min-h-screen bg-gray-50">
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-          <div className="container mx-auto px-4 py-2">
-            <div className="flex items-center justify-between">
-              <nav aria-label="Primary" className="flex items-baseline gap-2 flex-shrink-0">
+          <div className="container mx-auto px-3 py-2 sm:px-4 sm:py-2.5">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <nav aria-label="Primary" className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 {NAV_LINKS.map((link) => (
                   <NavLink
                     key={link.to}
                     to={link.to}
                     className={({ isActive }) =>
                       isActive
-                        ? 'text-lg font-bold text-gray-900'
-                        : 'text-sm text-green-700 hover:text-green-900 font-medium'
+                        ? 'text-base font-bold text-gray-900 sm:text-lg'
+                        : 'text-base font-medium text-green-700 hover:text-green-900 sm:text-lg'
                     }
                   >
                     {link.label}
@@ -130,21 +130,21 @@ function HeaderContent() {
                   year={selectedYear}
                   title="Select day"
                 />
-                <span className="text-xs text-gray-400">v{APP_VERSION}</span>
+                <span className="text-sm font-medium text-gray-400">v{APP_VERSION}</span>
               </nav>
-              <div className="flex items-center gap-3 ml-4 min-w-0">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 lg:gap-4">
                 <SaveStatusBadge saveStatus={saveStatus} />
                 <ScheduleSettingsDropdown />
                 {!isSchedule && pageContext && (
-                  <span className="text-sm font-medium text-gray-600 truncate hidden sm:block">
+                  <span className="min-w-0 max-w-full break-words text-base font-medium text-gray-600">
                     {pageContext}
                   </span>
                 )}
                 {groupName && (
                   <GroupBadge name={groupName} />
                 )}
-                 {isMainPage && (
-                  <span className="text-xs text-gray-500 whitespace-nowrap">
+                {isMainPage && (
+                  <span className="max-w-full break-words text-sm leading-snug text-gray-500 sm:text-base">
                     {trailSummary}
                   </span>
                 )}
