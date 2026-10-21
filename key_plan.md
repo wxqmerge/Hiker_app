@@ -135,6 +135,66 @@ Shortcuts or bookmarks that open an app with `?key=<secret>` still work, but the
 - It should be deleted with `shred -u` after browser import.
 - It must be regenerated after key rotation.
 
+### Nginx Access Logs
+
+A config shortcut does not just store the secret in the browser: every load sends
+`GET /<instance>/dist/?key=<secret>` to the server, and the default nginx `log_format`
+(`$request` = full path + query string) records the live key into `access.log`.
+The key plan's log redactions miss this because the logs are server-side and never
+committed.
+
+Fix on the parent-domain vhost that serves the `/<instance>/dist/` path — add
+`access_log off;` to the matching location (or paste
+`deploy/nginx/dist-nolog.conf`):
+
+```nginx
+location ~ ^/[a-z0-9-]+/dist/ {
+    access_log off;
+    # ...existing static serving directives...
+}
+```
+
+Notes (verified end-to-end on chess4.us, 2026-10-21):
+
+- **Parent domain** (the `root /var/www/html` vhost) — put this BEFORE `location /`.
+  `try_files` does NOT expand captures (`/$1/...` 404s as a literal path), so use
+  `rewrite ... break` to keep serving inside the no-log location:
+
+  ```nginx
+  location ~ ^/(?<app>[a-z0-9-]+)/dist/$ { access_log off; rewrite ^ /$app/dist/index.html break; }
+  location ~ ^/[a-z0-9-]+/dist/ { access_log off; }
+  ```
+
+  Do not rely on `access_log off` plus the `index` fallback: the internal redirect
+  re-logs through the final location.
+- **Subdomain vhosts** (one server block per app) — create once
+  `/etc/nginx/conf.d/nolog-key.conf`:
+
+  ```nginx
+  map $arg_key $log_without_key { default 1; "~.+" 0; }
+  ```
+
+  and per vhost add
+  `access_log /var/log/nginx/access.log combined if=$log_without_key;`
+  Only key-bearing requests skip the log; `X-API-Key` header traffic is fully logged.
+- **Test after reload** (expect no match; from the server use `--resolve <host>:443:127.0.0.1` —
+  hairpin NAT hangs on the public IP):
+
+  ```bash
+  M=T1$$; curl -sk --resolve <host>:443:127.0.0.1 "https://<host>/<instance>/dist/?key=$M"
+  sleep 1; sudo grep -c "$M" /var/log/nginx/access.log || echo NOT LOGGED
+  ```
+- Rotation does not remove old keys from old logs. After the fix, purge rotated logs
+  and truncate the current one: `sudo truncate -s 0 /var/log/nginx/access.log && sudo rm -f /var/log/nginx/access.log.*` —
+  and understand **purge ≠ safe: rotate the keys afterwards.**
+- Until the fix is applied, every shortcut load re-exposes the current key.
+- View-only bookmarks (`/dist/` without `?key=`) are harmless; only loads of the
+  key URLs leak.
+- Bughouse Ladder: `deploy/verify.sh` section 19 ("Nginx Log Secrets") fails the
+  deploy if readable nginx access logs contain `?key=` entries. Audit every app from
+  any repo with `deploy/fix-dist-nolog.sh [--dry-run|--test|--purge-logs]`; apply each
+  project's own vhost edit from within that project.
+
 ### Bughouse Ladder
 
 After migrating keys, `deploy/create_html.sh` and `deploy/admin-urls.sh` read from:
@@ -230,16 +290,64 @@ Run these before considering a project clean:
   - bookmark files
   - coverage or generated reports
 - Search PowerShell history for exposed secrets and redact it.
+- Confirm nginx access logs contain no `?key=` entries, or that `access_log off` covers the dist locations serving config URLs.
 - Confirm deployment scripts do not echo secrets.
 - Confirm rotation reports are mode `0600`.
-- Confirm production key files are not group/world readable.
+- Confirm production key files are not world-readable.
+- Accept `0600 root:root` or `0640 root:<admin-group>` for protected key files.
 - Confirm the service user cannot read the protected secret file.
+
+### Audit execution steps — run AFTER rotation, not before
+
+```text
+1. Deploy and rotate fully (all instances on new keys).
+2. Apply nginx log-leak protection (parent domain + every subdomain vhost).
+3. Verify.sh check after deploy (Nginx Log Secrets section).
+4. Purge old access logs (they hold pre-rotation keys).
+5. Run the full audit (tree/history grep, permission checks, log scans).
+6. Re-rotate if the audit finds a new leak location.
+```
+
+Rationale: auditing and rotating first, then deploying, rewrites the *new* key into
+nginx `access.log` on every `?key=` shortcut load — forcing a second rotation.
+Order: deploy -> rotate -> log-leak fix -> purge -> audit.
+
+## Deployment Rollout Order
+
+Use this order for projects with multiple instances and one shared key:
+
+1. Push the deployment-script changes.
+2. Pull and update all instances using the legacy key still in `server/.env`.
+3. Run `secure-env.sh` on every instance. This preserves the current key while moving it to protected storage.
+4. Log out and log back in so the administrator group takes effect.
+5. Run the all-instance key rotation once.
+6. Verify every service.
+7. Regenerate browser shortcuts.
+8. Refresh local and PWA keys.
+9. Delete migration backups, bookmark files, and key reports.
+
+Do not rotate keys until every instance has been migrated, otherwise instances still using the old location may be rejected.
+
+## Known Deployment Noise
+
+Some repository changes after deployment are operational artifacts, not security findings. Always inspect them before restoring files.
+
+Expected Hiker artifacts:
+
+- `index.html` may be modified because the deployment copies built files from `dist/` into the instance root. Do not restore it during production verification.
+- `deploy/*.sh` may show mode-only changes because deployment scripts normalize permissions.
+- `package-lock.json` may show npm metadata churn, such as `libc` field additions or removals, when the server’s npm version differs from the workstation.
+- `assets/`, `sw.js`, `manifest.webmanifest`, and other copied build output may appear untracked.
+
+Never run a broad `git checkout -- .` on a live instance without first inspecting the diff, because it may revert the deployed frontend.
 
 ## Current Project Status
 
 ### Hiker
 
-Completed locally:
+Status: implementation pushed and production migration in progress as of 2026-10-21.
+
+Completed:
 
 - Removed hardcoded production keys from:
   - `test_dev.bat`
@@ -255,13 +363,22 @@ Completed locally:
 - Updated update, verify, rotation, bookmark-generation, and comparison scripts to prefer the protected key file.
 - Updated rotation scripts to write reports with mode `0600` instead of printing keys.
 - Confirmed exposed keys are not present in Git history.
+- Pushed implementation: `166f1c9`
+- Bumped application version: `7dea2dd` (`v1.5.3`)
+
+In progress:
+
+- `ramblers-app` key migration completed.
+- Remaining Hiker instances still need `secure-env.sh`.
 
 Remaining:
 
-- Commit and push these changes.
-- Run `secure-env.sh` on every production instance.
+- Run `secure-env.sh` on every remaining production instance.
+- Re-login after group changes so the deployment user has `hiker-admin` membership.
 - Rotate all exposed/live Hiker keys.
+- Refresh PWA/browser keys after rotation.
 - Delete migration backups and key reports after successful verification.
+- Clean up deployment-script noise (`index.html`, lockfile metadata churn, and executable-bit changes).
 
 ### Bughouse Ladder
 
@@ -274,15 +391,43 @@ Completed locally:
   - `deploy/ladder-env.sh`
   - `deploy/secure-env.sh`
   - `deploy/update-env-key.ps1`
-- Updated deployment scripts to use protected `/etc/bughouse-ladder/<instance>.env` when present.
+- Updated deployment scripts to use protected `/etc/bughouse-ladder/<instance>.env` when present:
+  - `update.sh`, `verify.sh`, `admin-urls.sh`, `create_html.sh`, `manage_versions.sh`, `rotate-key-all.sh`
 - Updated key rotation to avoid printing keys and to write a mode-`0600` report.
+- `create_html.sh` writes bookmarks with `umask 077` and instructs `shred -u` cleanup.
+- Systemd templates (`deploy/instances/*/*.service`) include optional `EnvironmentFile=-/etc/bughouse-ladder/<instance>.env`.
+- Nginx log-leak mitigation: `deploy/fix-dist-nolog.sh` detects all parent vhosts on the server (every app/project following the `<app>.<parent>` naming, Hiker included), inserts `access_log off;` into `/dist/` locations with backup + `nginx -t` rollback, supports `--dry-run`, `--test` (dummy-marker proof), and `--purge-logs`. `deploy/nginx/dist-nolog.conf` documents the manual fallback; `verify.sh` section 19 warns on `?key=` entries in nginx access logs.
+- Documented key management in `SECURITY.md` and `deploy/README.md`.
+- Audit: working tree free of secrets (only placeholders/fake test keys); PowerShell history clean; `.env.example` files carry placeholders only.
+- Audit: git history contains one partial key fragment in `USER_MANUAL.md` (commits `edbc435`..`7e23fce`), removed from the current tree — covered by key rotation.
+
+Completed 2026-10-21 (security audit + ops):
+
+- Full security audit run (12 findings) — all fixed or documented in `SECURITY.md`
+  "Known Limitations": path-traversal guards on backup endpoints, `round` bound,
+  tab-injection sanitization, type-checked player-field whitelist, multer cleanup,
+  express 4.22.3 (0 runtime vulnerabilities; dev-only vite/vitest advisories
+  documented, `vite@8` major deferred), `ANON_HIDE_PII` opt-in, CSP snippet
+  (`deploy/nginx/csp.conf`), hardening tests. `npm test`: 191 server + 952 client green.
+- All changes committed and pushed (`origin/main`).
+- nginx log-leak fix DEPLOYED on chess4.us: parent `mysite.conf` regex locations
+  (`access_log off` + `rewrite ... break`), `/etc/nginx/conf.d/nolog-key.conf` map,
+  subdomain vhosts logging with `if=$log_without_key`; marker tests confirmed no
+  `?key=` logging; old access logs truncated + rotated logs deleted;
+  `verify.sh` section 19 `[PASS]`.
 
 Remaining:
 
-- Commit and push these changes.
-- Run migration on the production server.
-- Rotate the currently exposed key.
+- Production key rotation: `sudo bash ./deploy/secure-env.sh matt` (per instance),
+  add `EnvironmentFile=-/etc/bughouse-ladder/<instance>.env` via
+  `sudo systemctl edit <service>` if not present, restart, then
+  `bash deploy/rotate-key-all.sh` (all 4 ladders updated via `update.sh` 2026-10-21: 4 OK, 0 failed).
+- Regenerate bookmarks (`create_html.sh`, copy links, `shred -u`), refresh PWA keys,
+  delete bookmark/backup copies containing old keys (history fragment included).
 - Delete legacy backup files after verifying the new key works.
+- Optional follow-ups: apply `deploy/nginx/csp.conf` (needs `npm run build:all`),
+  schedule `vite@8` major, add `access_log ... if=$log_without_key;` to vhosts of
+  other projects from within those projects.
 
 ## Standard Local Workflow
 
@@ -341,5 +486,10 @@ Test scripts should read the variable inside PowerShell or another child process
 6. Add rotation script.
 7. Add hidden local key helper.
 8. Update deployment, verification, URL generation, and backup scripts.
-9. Rotate exposed keys.
-10. Document the key names, file paths, and rotation commands in `SECURITY.md`.
+9. Protect nginx access logs against `?key=` leaks (parent-domain regex location with
+   `rewrite ... break`; `/etc/nginx/conf.d/nolog-key.conf` map +
+   `access_log ... if=$log_without_key;` for subdomain vhosts), test with a marker
+   request, then purge old access logs.
+10. Rotate exposed keys.
+11. Run the audit execution steps (audit AFTER rotation, not before).
+12. Document the key names, file paths, and rotation commands in `SECURITY.md`.
