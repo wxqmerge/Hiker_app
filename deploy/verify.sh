@@ -16,10 +16,13 @@ DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE="${SERVICE_NAME:-$(basename "$PWD")}"
 APP_NAME="${SERVICE//_/-}"
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/html/$SERVICE}"
+source "$DEPLOY_DIR/hiker-env.sh"
 
 ERRORS=0
 WARNINGS=0
 DIR="$(pwd)"
+ENV_FILE="$DIR/server/.env"
+SECRET_FILE="$(hiker_secret_file_for "$SERVICE")"
 if [ -f "$DIR/server/.env" ] && grep -q '^DOMAIN=' "$DIR/server/.env"; then
     PARENT_DOMAIN=$(grep '^DOMAIN=' "$DIR/server/.env" | head -1 | cut -d= -f2- | tr -d '[:space:]')
 else
@@ -189,6 +192,13 @@ if [ -f "server/.env" ]; then
     pass "server/.env exists"
 
     # Check all required settings read by the server
+    is_secret_var() {
+        case "$1" in
+            ADMIN_API_KEY|*API_KEY|*SECRET*|*TOKEN*) return 0 ;;
+            *) return 1 ;;
+        esac
+    }
+
     check_env_var() {
         local varname="$1"
         local required="$2"
@@ -196,7 +206,11 @@ if [ -f "server/.env" ]; then
         if grep -q "^${varname}=" server/.env; then
             local val=$(grep "^${varname}=" server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
             if [ -n "$val" ]; then
-                pass "$varname is set ($val)"
+                if is_secret_var "$varname"; then
+                    pass "$varname is set"
+                else
+                    pass "$varname is set ($val)"
+                fi
             elif [ "$required" = false ]; then
                 pass "$varname is empty (using default: $default_val)"
             else
@@ -212,7 +226,16 @@ if [ -f "server/.env" ]; then
     }
 
     check_env_var "PORT" false "3000"
-    check_env_var "ADMIN_API_KEY" true "(none - required)"
+
+    if hiker_has_env_value ADMIN_API_KEY "$SECRET_FILE" server/.env; then
+        pass "ADMIN_API_KEY is set"
+        if [ -f "$SECRET_FILE" ]; then
+            echo "  Key source: $SECRET_FILE"
+        fi
+    else
+        fail "ADMIN_API_KEY is missing or unreadable"
+        NEED_ENV=true
+    fi
     check_env_var "SCHEDULE_NAME" false "default"
     check_env_var "HIKE_DAYS" false "3,5"
     check_env_var "MAX_HIKES_PER_DAY" false "3"
@@ -339,11 +362,23 @@ else
     warn "Hike Data BaseM.xls not found (needed for .xls import)"
 fi
 
-# Check server/.env
+# Check environment file permissions
+is_world_readable() {
+    stat -c '%A' "$1" 2>/dev/null | grep -q '^.\{8\}r'
+}
+
 if [ -f "$DIR/server/.env" ]; then
     ENV_PERMS=$(stat -c '%a' "$DIR/server/.env" 2>/dev/null || echo "000")
     ENV_OWNER=$(stat -c '%U' "$DIR/server/.env" 2>/dev/null || echo "unknown")
-    if [ "$ENV_OWNER" = "$SERVICE_USER" ] || [ "$ENV_PERMS" -ge 600 ]; then
+
+    if [ -f "$SECRET_FILE" ]; then
+        if is_world_readable "$DIR/server/.env"; then
+            fail "server/.env is world-readable ($ENV_PERMS)"
+            echo "  Fix: sudo chmod 640 $DIR/server/.env"
+        else
+            pass "server/.env is not world-readable ($ENV_PERMS)"
+        fi
+    elif [ "$ENV_OWNER" = "$SERVICE_USER" ] || { [ "$ENV_PERMS" -ge 600 ] && ! is_world_readable "$DIR/server/.env"; }; then
         pass "server/.env readable ($ENV_PERMS)"
     else
         fail "server/.env not readable by $SERVICE_USER (owner: $ENV_OWNER, perms: $ENV_PERMS)"
@@ -352,6 +387,19 @@ if [ -f "$DIR/server/.env" ]; then
     fi
 else
     warn "server/.env missing"
+fi
+
+if [ -f "$SECRET_FILE" ]; then
+    SECRET_PERMS=$(stat -c '%a' "$SECRET_FILE" 2>/dev/null || echo "000")
+    SECRET_OWNER=$(stat -c '%U:%G' "$SECRET_FILE" 2>/dev/null || echo "unknown")
+    if is_world_readable "$SECRET_FILE"; then
+        fail "$SECRET_FILE is world-readable ($SECRET_PERMS)"
+        echo "  Fix: sudo chmod 640 $SECRET_FILE"
+    elif [ "$SECRET_PERMS" != "640" ] && [ "$SECRET_PERMS" != "600" ]; then
+        warn "$SECRET_FILE permissions are $SECRET_PERMS (expected 640 or 600)"
+    else
+        pass "protected key file exists ($SECRET_PERMS, $SECRET_OWNER)"
+    fi
 fi
 
 # 7. Nginx config
@@ -688,9 +736,18 @@ fi
 # Always show app URL with API key at the end
 echo ""
 echo "--- Access ---"
-if [ -f "server/.env" ] && grep -q '^ADMIN_API_KEY=' server/.env; then
-    ADMIN_KEY=$(grep '^ADMIN_API_KEY=' server/.env | head -1 | cut -d= -f2- | tr -d '[:space:]')
-    echo "  ${APP_URL}?apikey=$ADMIN_KEY"
+ADMIN_KEY=$(hiker_read_env_value ADMIN_API_KEY "$SECRET_FILE" server/.env || true)
+if [ -n "$ADMIN_KEY" ]; then
+    umask 077
+    ACCESS_URL_FILE="$HOME/hiker-access-url-${SERVICE}-$(date +%Y%m%d%H%M%S).txt"
+    printf '%s?apikey=%s\n' "$APP_URL" "$ADMIN_KEY" > "$ACCESS_URL_FILE"
+    chmod 600 "$ACCESS_URL_FILE" 2>/dev/null || true
+    echo "  $APP_URL"
+    echo "  Protected access URL: $ACCESS_URL_FILE"
+    echo "  Delete the access URL file after copying it."
+    if [ "${VERIFY_SHOW_KEYS:-0}" = "1" ]; then
+        printf '  %s?apikey=%s\n' "$APP_URL" "$ADMIN_KEY"
+    fi
 else
     echo "  $APP_URL"
 fi

@@ -48,6 +48,9 @@ APP_NAME="${SERVICE//_/-}"
 DIR="$(pwd)"
 DEPLOY_USER="$(whoami)"
 SHARED_GROUP="www-data"
+source "$DEPLOY_DIR/hiker-env.sh"
+ENV_FILE="$DIR/server/.env"
+SECRET_FILE="$(hiker_secret_file_for "$SERVICE")"
 
 # Dependency cooldown configuration
 LAST_PACKAGE_UPDATE_FILE="$DIR/.last-package-update"
@@ -144,24 +147,25 @@ fi
 
 # 3. Validate API keys
 echo "[3/13] Validating API keys..."
-ENV_FILE="$DIR/server/.env"
 if [ ! -f "$ENV_FILE" ]; then
     echo "  ERROR: $ENV_FILE not found."
     echo "  API key (ADMIN_API_KEY) is required for production."
     echo "  Copy server/.env.example to server/.env and set your key."
     exit 1
 fi
-if grep -q '^ADMIN_API_KEY=' "$ENV_FILE"; then
-    ADMIN_KEY=$(grep '^ADMIN_API_KEY=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')
+
+if hiker_has_env_value ADMIN_API_KEY "$SECRET_FILE"; then
+    echo "  ADMIN_API_KEY: (set)"
+    echo "  Key source:    $SECRET_FILE"
+elif hiker_has_env_value ADMIN_API_KEY "$ENV_FILE"; then
+    echo "  ADMIN_API_KEY: (set)"
+    echo "  WARNING: legacy key location: $ENV_FILE"
+    echo "  Consider running: sudo bash ./deploy/secure-env.sh"
 else
-    ADMIN_KEY=""
-fi
-if [ -z "$ADMIN_KEY" ]; then
-    echo "  ERROR: ADMIN_API_KEY must be set in server/.env."
+    echo "  ERROR: ADMIN_API_KEY is missing or unreadable."
     echo "  Deploy aborted. Set the key and try again."
     exit 1
 fi
-echo "  ADMIN_API_KEY: (set)"
 
 if grep -q '^DOMAIN=' "$ENV_FILE"; then
     DOMAIN=$(grep '^DOMAIN=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')
@@ -255,8 +259,11 @@ find "$DIR" -type d -not -path "*/node_modules/*" -exec chmod 755 {} +
 find "$DIR" -type f -not -path "*/node_modules/*" -exec chmod 644 {} +
 # Restore execute bits on node_modules/.bin/* (chown -R can affect them)
 find "$DIR/node_modules/.bin" -type f -exec chmod 755 {} + 2>/dev/null || true
-chmod 600 "$DIR/server/.env" 2>/dev/null || true
+chmod 640 "$DIR/server/.env" 2>/dev/null || true
 chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
+if [ -f "$SECRET_FILE" ]; then
+    hiker_run_as_root chmod 640 "$SECRET_FILE" 2>/dev/null || true
+fi
 
 # exported_data/ and tmp/ — group-writable so server process can write
 chmod 775 "$DIR/exported_data" 2>/dev/null || true
@@ -272,50 +279,42 @@ echo "  Done."
 # 8. Fix systemd service file
 echo "[8/13] Fixing systemd service file if needed..."
 SERVICE_FILE="/etc/systemd/system/$SERVICE.service"
-if [ -f "$SERVICE_FILE" ]; then
-    HAS_ENV_FILE=$(grep -c '^EnvironmentFile=' "$SERVICE_FILE" || true)
-    if [ "$HAS_ENV_FILE" -gt 0 ]; then
-        SERVICE_SECTION=$(sed -n '/^\[Service\]/,/^$/p' "$SERVICE_FILE")
-        if echo "$SERVICE_SECTION" | grep -q '^EnvironmentFile='; then
-            echo "  EnvironmentFile is correctly placed in [Service] section."
-        else
-            echo "  WARNING: EnvironmentFile found but NOT in [Service] section — fixing..."
-            sudo sh -c "sed -i '/^EnvironmentFile=/d' $SERVICE_FILE"
-            ENV_FILE="$DIR/server/.env"
-            if [ -f "$ENV_FILE" ]; then
-                EXEC_LINE=$(grep -n '^ExecStart=' "$SERVICE_FILE" | head -1 | cut -d: -f1)
-                if [ -n "$EXEC_LINE" ] && [ "$EXEC_LINE" -gt 1 ]; then
-                    INSERT_LINE=$((EXEC_LINE - 1))
-                    sudo sh -c "sed -i '${INSERT_LINE}a EnvironmentFile=$ENV_FILE' $SERVICE_FILE"
-                    echo "  Injected EnvironmentFile into [Service] section"
-                fi
-            fi
-        fi
-    else
-        echo "  No EnvironmentFile found — adding it."
-        ENV_FILE="$DIR/server/.env"
-        if [ -f "$ENV_FILE" ]; then
-            EXEC_LINE=$(grep -n '^ExecStart=' "$SERVICE_FILE" | head -1 | cut -d: -f1)
-            if [ -n "$EXEC_LINE" ] && [ "$EXEC_LINE" -gt 1 ]; then
-                INSERT_LINE=$((EXEC_LINE - 1))
-                sudo sh -c "sed -i '${INSERT_LINE}a EnvironmentFile=$ENV_FILE' $SERVICE_FILE"
-                echo "  Injected EnvironmentFile into [Service] section"
-            fi
-        fi
-    fi
-    echo "  Reloading systemd daemon..."
-    sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
-else
+if [ ! -f "$SERVICE_FILE" ]; then
     echo "  WARNING: $SERVICE_FILE not found — creating from template"
     TEMPLATE="$DEPLOY_DIR/hiker-app.service"
     if [ -f "$TEMPLATE" ]; then
-        sed "s|/var/www/html/hiker-app|$DIR|g; s|User=hiker|User=$DEPLOY_USER|g; s|Group=hiker|Group=$SHARED_GROUP|g" "$TEMPLATE" | sudo tee "$SERVICE_FILE" > /dev/null
+        sed "s|/var/www/html/hiker-app|$DIR|g; s|<SECRET_FILE>|$SECRET_FILE|g; s|User=hiker|User=$DEPLOY_USER|g; s|Group=hiker|Group=$SHARED_GROUP|g" "$TEMPLATE" | sudo tee "$SERVICE_FILE" > /dev/null
         echo "  Created $SERVICE_FILE"
     else
         echo "  ERROR: Template $TEMPLATE not found"
         exit 1
     fi
 fi
+
+if [ -f "$SERVICE_FILE" ]; then
+    SERVICE_SECTION=$(sed -n '/^\[Service\]/,/^\[/p' "$SERVICE_FILE")
+    if ! echo "$SERVICE_SECTION" | grep -q '^EnvironmentFile='; then
+        if grep -q '^EnvironmentFile=' "$SERVICE_FILE" 2>/dev/null; then
+            echo "  WARNING: EnvironmentFile found outside [Service] — replacing it."
+            hiker_run_as_root sed -i '/^EnvironmentFile=/d' "$SERVICE_FILE"
+        fi
+    fi
+
+    if hiker_ensure_environment_file "$SERVICE_FILE" "$ENV_FILE"; then
+        echo "  EnvironmentFile: $ENV_FILE"
+    else
+        echo "  WARNING: Could not configure EnvironmentFile for $ENV_FILE"
+    fi
+
+    if [ -f "$SECRET_FILE" ]; then
+        if hiker_ensure_environment_file "$SERVICE_FILE" "$SECRET_FILE"; then
+            echo "  ProtectedKeyFile: $SECRET_FILE"
+        else
+            echo "  WARNING: Could not configure EnvironmentFile for $SECRET_FILE"
+        fi
+    fi
+fi
+
 echo "  Reloading systemd daemon..."
 sudo -n systemctl daemon-reload 2>&1 || echo "  WARNING: systemctl daemon-reload failed."
 

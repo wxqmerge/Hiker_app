@@ -237,6 +237,8 @@ The server reads from `exported_data/` directory. Key environment variables:
 | `ADMIN_API_KEY` | (none) | Admin API key for write operations |
 | `CORS_ORIGINS` | `*` | Comma-separated CORS origins |
 
+For production, run `sudo bash ./deploy/secure-env.sh <admin-user>` to move `ADMIN_API_KEY` to `/etc/hiker/<instance>.env` and remove it from `server/.env`. Systemd then loads both files through `EnvironmentFile`. Rotate keys with `./deploy/rotate-key-all.sh`; the new key is written to a mode-`0600` report file under `$HOME`.
+
 In production mode, the server serves the static `dist/` frontend and falls back to `index.html` for client-side routing.
 
 ## Routing

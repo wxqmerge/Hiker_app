@@ -180,6 +180,14 @@ Quarter column positions vary across 17 Excel sheets.
 | `ADMIN_API_KEY` | — | Admin key for write operations |
 | `CORS_ORIGINS` | `*` | Comma-separated origins |
 
+Production deployments should move `ADMIN_API_KEY` out of `server/.env` into `/etc/hiker/<instance>.env` with:
+
+```bash
+sudo bash ./deploy/secure-env.sh <admin-user>
+```
+
+Systemd supplies the protected file through `EnvironmentFile`. Rotate keys with `./deploy/rotate-key-all.sh`.
+
 ### Routing
 
 | Route | Page |

@@ -3,6 +3,8 @@
 # Run from any hiker app directory on the server
 
 BASE="/var/www/html"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/hiker-env.sh"
 FOUND=0
 
 echo "Hiker Instance Comparison"
@@ -102,7 +104,8 @@ for dir in "$BASE"/*/; do
     MAX_HIKES=$(grep '^MAX_HIKES_PER_DAY=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
     NODE_ENV_VAL=$(grep '^NODE_ENV=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
     PORT_VAL=$(grep '^PORT=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
-    API_KEY=$(grep '^ADMIN_API_KEY=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    secret_file="$(hiker_secret_file_for "$name")"
+    API_KEY=$(hiker_read_env_value ADMIN_API_KEY "$secret_file" "$env_file" || true)
 
     [ -z "$SCHED_NAME" ] && SCHED_NAME="-"
     [ -z "$HIKE_DAYS" ] && HIKE_DAYS="-"

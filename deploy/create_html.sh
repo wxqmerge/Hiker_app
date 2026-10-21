@@ -17,13 +17,14 @@ BASE="/var/www/html"
 DATE=$(date '+%Y-%m-%d')
 OUTPUT="$HOME/hiker-bookmarks-${DATE}.html"
 TS=$(date +%s)
+umask 077
 
-# Load domain from deploy config
+# Load domain and protected keys without sourcing the whole config file.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/../server/.env" ]; then
-    source "$SCRIPT_DIR/../server/.env"
-fi
-PARENT_DOMAIN="${DOMAIN:-example.com}"
+source "$SCRIPT_DIR/hiker-env.sh"
+CONFIG_FILE="$SCRIPT_DIR/../server/.env"
+PARENT_DOMAIN="$(hiker_read_env_value DOMAIN "$CONFIG_FILE" || true)"
+PARENT_DOMAIN="${PARENT_DOMAIN:-example.com}"
 
 # Detect the project repo from the directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -70,6 +71,7 @@ for dir in "$BASE"/*/; do
     fi
 
     ENV_FILE="$dir/server/.env"
+    SECRET_FILE="$(hiker_secret_file_for "$name")"
     if [ ! -f "$ENV_FILE" ]; then
         echo "  ✗ $name — $ENV_FILE not found, skipping"
         SKIP=$((SKIP + 1))
@@ -77,7 +79,12 @@ for dir in "$BASE"/*/; do
     fi
 
     # Read API key
-    ADMIN_KEY=$(grep '^ADMIN_API_KEY=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '[:space:]')
+    ADMIN_KEY="$(hiker_read_env_value ADMIN_API_KEY "$SECRET_FILE" "$ENV_FILE" || true)"
+    if [ -z "$ADMIN_KEY" ]; then
+        echo "  ✗ $name — no readable ADMIN_API_KEY, skipping"
+        SKIP=$((SKIP + 1))
+        continue
+    fi
 
     # Build URL
     APP_URL="https://$PARENT_DOMAIN/$name/"

@@ -1,20 +1,36 @@
 #!/bin/bash
 # Rotate API key across ALL app instances on the server
 # Run from: /var/www/html/
-# Usage: ./deploy/rotate-key-all.sh [new-key]
+# Usage:
+#   ROTATE_KEY=... ./deploy/rotate-key-all.sh
+#   ./deploy/rotate-key-all.sh [new-key]
 #
-# Detects all matching instances by git remote origin, then
-# rotates the ADMIN_API_KEY in each server/.env and restarts.
-# Works for any project that has a git repo and server/.env.
+# If /etc/hiker/<instance>.env exists, the key is written there (root/group
+# protected). Otherwise the legacy server/.env is updated. The new key is
+# written to a mode-0600 report file; set ROTATE_REPORT_TO_STDOUT=1 to print it.
 
 BASE="/var/www/html"
-FLAGS="$@"
 OK=0
 FAIL=0
 SKIP=0
 
+umask 077
+if [ -n "${SUDO_USER:-}" ]; then
+    REPORT_USER="$SUDO_USER"
+else
+    REPORT_USER="${USER:-$(id -un)}"
+fi
+REPORT_HOME="$(getent passwd "$REPORT_USER" 2>/dev/null | cut -d: -f6)"
+[ -n "$REPORT_HOME" ] || REPORT_HOME="$HOME"
+REPORT_FILE="$REPORT_HOME/hiker-rotated-key-$(date +%Y%m%d%H%M%S).txt"
+: > "$REPORT_FILE"
+if [ -n "${SUDO_USER:-}" ]; then
+    chown "$SUDO_USER:$SUDO_USER" "$REPORT_FILE" 2>/dev/null || true
+fi
+
 # Detect the project repo from the directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/hiker-env.sh"
 CALLER_REMOTE=$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null)
 CALLER_REPO=$(basename "$CALLER_REMOTE" .git)
 
@@ -24,17 +40,19 @@ if [ -z "$CALLER_REPO" ]; then
     exit 1
 fi
 
-# Generate or use provided key
-if [ -n "$FLAGS" ]; then
-    NEW_KEY="$FLAGS"
-else
+NEW_KEY="${ROTATE_KEY:-${1:-}}"
+if [ -z "$NEW_KEY" ] && [ -t 0 ]; then
+    read -rsp "New admin key (Enter to generate): " NEW_KEY
+    echo ""
+fi
+if [ -z "$NEW_KEY" ]; then
     NEW_KEY=$(openssl rand -hex 48)
 fi
 
 echo "========================================"
 echo "  Rotate API Key — ALL $CALLER_REPO Instances"
 echo "  Base: $BASE"
-echo "  Key:  $NEW_KEY"
+echo "  Report: $REPORT_FILE"
 echo "========================================"
 echo ""
 
@@ -62,6 +80,7 @@ for dir in "$BASE"/*/; do
     fi
 
     ENV_FILE="$dir/server/.env"
+    SECRET_FILE="$(hiker_secret_file_for "$name")"
     if [ ! -f "$ENV_FILE" ]; then
         echo "  ✗ $name — $ENV_FILE not found, skipping"
         FAIL=$((FAIL + 1))
@@ -69,17 +88,31 @@ for dir in "$BASE"/*/; do
         continue
     fi
 
-    # Update the key
-    if grep -q '^ADMIN_API_KEY=' "$ENV_FILE"; then
-        sed -i "s/^ADMIN_API_KEY=.*/ADMIN_API_KEY=$NEW_KEY/" "$ENV_FILE"
+    if [ -f "$SECRET_FILE" ]; then
+        if hiker_write_secret_file "$SECRET_FILE" "$NEW_KEY" &&
+           hiker_remove_legacy_keys "$ENV_FILE"; then
+            chmod 640 "$ENV_FILE" 2>/dev/null || hiker_run_as_root chmod 640 "$ENV_FILE" 2>/dev/null || true
+            echo "  ✓ $name — protected key updated"
+        else
+            echo "  ✗ $name — protected key update failed"
+            FAIL=$((FAIL + 1))
+            echo ""
+            continue
+        fi
     else
-        echo "ADMIN_API_KEY=$NEW_KEY" >> "$ENV_FILE"
+        if grep -q '^ADMIN_API_KEY=' "$ENV_FILE"; then
+            sed -i "s/^ADMIN_API_KEY=.*/ADMIN_API_KEY=$NEW_KEY/" "$ENV_FILE"
+        else
+            echo "ADMIN_API_KEY=$NEW_KEY" >> "$ENV_FILE"
+        fi
+        chmod 600 "$ENV_FILE" 2>/dev/null || true
+        echo "  ✓ $name — legacy key updated"
     fi
 
     # Restart the service
     SERVICE="$name"
     if sudo systemctl restart "$SERVICE" 2>/dev/null; then
-        echo "  ✓ $name — key updated, service restarted"
+        echo "  ✓ $name — service restarted"
         OK=$((OK + 1))
     else
         echo "  ⚠ $name — key updated, but service restart failed"
@@ -92,6 +125,26 @@ done
 echo "========================================"
 echo "  Done: $OK OK, $FAIL failed, $SKIP skipped"
 echo "========================================"
+echo ""
+
+{
+    echo "========================================"
+    echo "  Rotated API Key"
+    echo "  Generated: $(date '+%Y-%m-%d %H:%M')"
+    echo "========================================"
+    echo ""
+    echo "ADMIN_API_KEY=$NEW_KEY"
+    echo ""
+    echo "Delete this file after copying the key to your password manager."
+} > "$REPORT_FILE"
+
+echo "New key report written to:"
+echo "  $REPORT_FILE"
+echo "Delete it after copying the key."
+
+if [ "${ROTATE_REPORT_TO_STDOUT:-0}" = "1" ]; then
+    cat "$REPORT_FILE"
+fi
 
 if [ "$FAIL" -gt 0 ]; then
     exit 1

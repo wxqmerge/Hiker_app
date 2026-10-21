@@ -4,8 +4,8 @@
 #
 # Usage:
 #   .\test-external.ps1 -FrontendUrl "https://example.com/sothh-dev"
-#   .\test-external.ps1 -FrontendUrl "https://example.com/sothh-dev" -ApiKey "your-key"
-#   .\test-external.ps1 -FrontendUrl "https://example.com/sothh-dev" -ApiUrl "https://sothh-dev.example.com" -ApiKey "your-key"
+#   .\test-external.ps1 -FrontendUrl "https://example.com/sothh-dev" -ApiKeyEnvironmentVariable "SOThH_DEV_ADMIN_API_KEY"
+#   .\test-external.ps1 -FrontendUrl "https://example.com/sothh-dev" -ApiUrl "https://sothh-dev.example.com" -ApiKeyEnvironmentVariable "SOThH_DEV_ADMIN_API_KEY"
 #
 # Parameters:
 #   FrontendUrl  (required)  Frontend URL with subpath, e.g. https://example.com/sothh-dev
@@ -17,8 +17,14 @@ param(
     [Parameter(Mandatory=$false, HelpMessage="API server URL (auto-detected if omitted)")]
     [string]$ApiUrl,
     [Parameter(Mandatory=$false, HelpMessage="API key for write endpoint auth tests")]
-    [string]$ApiKey
+    [string]$ApiKey,
+    [Parameter(Mandatory=$false, HelpMessage="Environment variable containing the API key")]
+    [string]$ApiKeyEnvironmentVariable
 )
+
+if (-not $ApiKey -and $ApiKeyEnvironmentVariable) {
+    $ApiKey = [Environment]::GetEnvironmentVariable($ApiKeyEnvironmentVariable)
+}
 
 $FrontendUrl = $FrontendUrl.TrimEnd('/')
 $ApiUrl = if ($ApiUrl) { $ApiUrl.TrimEnd('/') } else {

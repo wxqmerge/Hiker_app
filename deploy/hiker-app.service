@@ -8,6 +8,7 @@ User=hiker
 Group=hiker
 WorkingDirectory=/var/www/html/hiker-app
 EnvironmentFile=/var/www/html/hiker-app/server/.env
+EnvironmentFile=-<SECRET_FILE>
 ExecStart=/usr/bin/node /var/www/html/hiker-app/server/dist/index.js
 Restart=on-failure
 RestartSec=5
