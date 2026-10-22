@@ -150,7 +150,7 @@ export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
 }
 
 export async function getScheduleHistory() {
-  return request('/api/schedule/history');
+  return request('/api/schedule/history', { apiKey: true });
 }
 
 export async function restoreSchedule(timestamp) {
@@ -178,7 +178,7 @@ export async function reloadSchedule() {
 }
 
 export async function exportDataZip() {
-  return request('/api/data/export-zip', { responseType: 'blob' });
+  return request('/api/data/export-zip', { responseType: 'blob', apiKey: true });
 }
 
 export async function importDataZip(file) {

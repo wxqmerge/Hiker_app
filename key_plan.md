@@ -491,5 +491,67 @@ Test scripts should read the variable inside PowerShell or another child process
    `access_log ... if=$log_without_key;` for subdomain vhosts), test with a marker
    request, then purge old access logs.
 10. Rotate exposed keys.
-11. Run the audit execution steps (audit AFTER rotation, not before).
-12. Document the key names, file paths, and rotation commands in `SECURITY.md`.
+ 11. Run the audit execution steps (audit AFTER rotation, not before).
+ 12. Document the key names, file paths, and rotation commands in `SECURITY.md`.
+
+## Network-Audit Findings 2026-10-21 (outside key scope — fix in each project)
+
+Context: rp5 firewall now defaults to deny; only LAN, tailnet, 80 and 443 reach the server.
+That contains these issues from the WAN side, but LAN-side exposure and code bugs remain.
+
+### Hiker
+
+- `GET /api/data/export-zip` (`server/src/routes/data.routes.ts:58`) and
+  `GET /api/validate` (`server/src/index.ts:210`) have NO `requireAdminKey` —
+  one unauthenticated GET downloads the entire DB (schedules + all GPX). Add the middleware.
+- `/api/tide-proxy` concatenates `station/begin_date/end_date` into the upstream URL
+  unencoded (`index.ts:125`) — `encodeURIComponent` each value.
+- App accepts keys as `?apikey=` query param (`src/App.jsx:31`) — prefer header/fragment
+  entry so keys stop entering URLs (log-leak work already covers nginx side).
+- `server.listen(PORT)` binds all interfaces (`index.ts:500`) — use `listen(PORT, '127.0.0.1')`;
+  nginx proxies on-loopback anyway.
+- Delete `server/.env.backup_20260829_135009` (old ADMIN key) after secure-env migration.
+- `.env.production` `VITE_API_BASE` uses `http://` — switch to `https://`.
+
+### Bughouse Ladder
+
+- Ladder instances listen on ALL interfaces (verified on rp5: 29970/29971/29972 open to LAN) —
+  `listen(PORT, '127.0.0.1')` in every instance.
+- `server/.env` currently `NODE_ENV=development` while serving production — this SKIPS the
+  fail-fast key guard (`index.ts:14-20`). Set `NODE_ENV=production`.
+- `CORS_ORIGINS=*` with `credentials:true` (`index.ts:113-124`) — pin to the actual
+  chess4.us origins.
+- Request logger writes FULL query strings (`index.ts:73-79`) — redact `key=`/`apikey=`
+  before logging (defense-in-depth behind the nginx fix).
+- Admin backup endpoints validate filenames with `endsWith('.tab')` only
+  (`admin.routes.ts:151,176,197` → `path.join` in `dataService.ts:472,507,526`) —
+  `path.basename(filename)` before joining (auth-gated today; cheap fix).
+- `server/data/backups|old|datao` (hundreds of historical `.tab` with player
+  Phone/School/Room) sit INSIDE the served tree — move `DATA_DIR` outside the web root
+  and deny HTTP access to whatever remains.
+
+### Exercise
+
+- `server/.env` has `APP_KEY=` EMPTY — auth middleware skips checks entirely
+  (`index.ts:105-115`), so config/entries/images/import/delete endpoints are wide open
+  to anyone who can reach :3000 (LAN today). Set a key or fail closed when unset.
+- `scripts/build-static.py` embeds `APP_KEY` into shipped HTML (`var KEY = …`) —
+  remove client-side key embedding; the header check is the real gate.
+- SSRF in `/api/images/save`: `assertPublicUrl` resolves DNS, then `fetch()` re-resolves
+  (`:92-101`, `:329`) — DNS-rebinding defeats it. Fetch via the already-validated IP.
+- `listen(PORT)` → bind `127.0.0.1`; pin `CORS_ORIGINS` (currently `*`).
+
+### simpleGraphy (static gallery)
+
+- Serve ONLY the generated gallery output. Currently the web root also exposes:
+  `.git/` (full history via git-dumper), 68 MB `.ARW` + 15 `.HEIC` originals with
+  EXIF/GPS, `gallery.log` (trip names + local paths), dev/debug scripts,
+  `__pycache__`, and `.exe/.dll/.pdb` build dirs.
+- If the repo dir must stay put: deny `/.git/` and `/.env*` in nginx and delete
+  RAW/HEIC/log files from the served tree.
+
+### All projects (served from repos in web roots)
+
+- `.git/` directories are downloadable wherever Apache/nginx serves the repo root.
+  Preferred: serve only `dist/` (and a non-web `DATA_DIR`); else deny dotfiles globally:
+  `location ~ /\. { deny all; }` (already standard nginx habit — verify each vhost has it).

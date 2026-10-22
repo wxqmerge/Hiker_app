@@ -31,6 +31,9 @@ describe('PWA', () => {
     expect(sw).toContain('skipWaiting');
     expect(sw).toContain('clients.claim');
     expect(sw).toContain('/api/schedule');
+    expect(sw).toContain('NO_CACHE_API');
+    expect(sw).toContain('/api/data/export-zip');
+    expect(sw).toContain('/api/schedule/history');
     expect(sw).toContain('api.tidesandcurrents.noaa.gov');
     expect(sw).toContain('api.weather.gov');
   });

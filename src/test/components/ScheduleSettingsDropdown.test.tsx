@@ -5,6 +5,7 @@ import { MonthContextProvider } from '../../contexts/MonthContext';
 import { ScheduleSettingsProvider } from '../../contexts/ScheduleSettingsContext';
 import { TrailActionsProvider } from '../../contexts/TrailActionsContext';
 import ScheduleSettingsDropdown from '../../components/ScheduleSettingsDropdown';
+import { API_KEY_STORAGE_KEY } from '../../utils/apiKey';
 
 describe('ScheduleSettingsDropdown', () => {
   beforeEach(() => {
@@ -46,6 +47,7 @@ describe('ScheduleSettingsDropdown', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
     expect(screen.getByText('Export Monthly HTML')).toBeInTheDocument();
     expect(screen.getByText(/Clear Schedule/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Schedule History/ })).toBeDisabled();
   });
 
   it('shows user actions in the User tab', () => {
@@ -59,6 +61,9 @@ describe('ScheduleSettingsDropdown', () => {
     expect(screen.getByText('Export Schedule')).toBeInTheDocument();
     expect(screen.getByText('Export Monthly Pop')).toBeInTheDocument();
     expect(screen.getByText('Validate DB')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New Trail/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Export ZIP/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Validate DB/ })).toBeDisabled();
   });
 
   it('shows admin actions in the Admin tab', () => {
@@ -72,7 +77,20 @@ describe('ScheduleSettingsDropdown', () => {
     expect(screen.getByText('Cleanup Orphaned Details')).toBeInTheDocument();
     expect(screen.getByText('Validate Data')).toBeInTheDocument();
     expect(screen.getByText('Re-sync GPX Coords')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Check GPX Integrity/ })).toBeDisabled();
     expect(screen.queryByText('Reload Schedule')).not.toBeInTheDocument();
+  });
+
+  it('enables key-required actions when an API key is stored', () => {
+    localStorage.setItem(API_KEY_STORAGE_KEY, 'test-key');
+    renderMenu();
+    fireEvent.click(screen.getByTitle('Schedule settings'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
+    expect(screen.getByRole('button', { name: /Schedule History/ })).toBeEnabled();
+    fireEvent.click(screen.getByRole('tab', { name: 'User' }));
+    expect(screen.getByRole('button', { name: /New Trail/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Export ZIP/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Validate DB/ })).toBeEnabled();
   });
 
   it('shows about info in the About tab', () => {

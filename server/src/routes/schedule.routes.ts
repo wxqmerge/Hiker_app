@@ -63,7 +63,7 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
   res.json({ success: true, etag: newVersion });
 }));
 
-router.get('/history', withErrorTag('SCHEDULE')(async (_req, res) => {
+router.get('/history', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
   const history = await getScheduleHistory();
   res.json(history);
 }));

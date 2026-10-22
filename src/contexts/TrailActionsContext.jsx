@@ -68,9 +68,10 @@ export function TrailActionsProvider({ children }) {
   }, []);
 
   const handleValidateDatabase = useCallback(async () => {
+    if (requireKey('API key required to validate server data.')) return;
     setValidating(true);
     try {
-      const res = await request('/api/validate');
+      const res = await request('/api/validate', { apiKey: true });
       const issues = res.results.filter(r => !r.valid);
       if (issues.length > 0) {
         const msg = issues.map(i => `${i.file}: ${i.issues?.join('; ') || i.error}`).join('\n');
@@ -83,12 +84,13 @@ export function TrailActionsProvider({ children }) {
     } finally {
       setValidating(false);
     }
-  }, [showToast]);
+  }, [requireKey, showToast]);
 
   const checkGpxIntegrity = useCallback(async () => {
+    if (requireKey('API key required to check GPX integrity.')) return;
     setValidating(true);
     try {
-      const res = await request('/api/validate');
+      const res = await request('/api/validate', { apiKey: true });
       const allIssues = (res.results || []).filter(r => !r.valid).flatMap(r => r.issues || [r.error || 'unknown issue']);
       const gpxIssues = allIssues.filter(i => /gpx/i.test(i));
       if (gpxIssues.length > 0) {
@@ -101,14 +103,16 @@ export function TrailActionsProvider({ children }) {
     } finally {
       setValidating(false);
     }
-  }, [showToast]);
+  }, [requireKey, showToast]);
 
   const startNewTrail = useCallback(() => {
+    if (requireKey('API key required to create a trail.')) return;
     setNewTrailName('');
     setNewTrailForm(true);
-  }, []);
+  }, [requireKey]);
 
   const submitNewTrail = useCallback(async () => {
+    if (requireKey('API key required to create a trail.')) return;
     const name = newTrailName.trim();
     if (!name) return;
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -137,7 +141,7 @@ export function TrailActionsProvider({ children }) {
     } catch (err) {
       showToast('Create failed: ' + err.message, 'error');
     }
-  }, [newTrailName, trails, saveTrail, navigate, showToast]);
+  }, [newTrailName, requireKey, trails, saveTrail, navigate, showToast]);
 
 
 
@@ -266,6 +270,7 @@ export function TrailActionsProvider({ children }) {
   }, [requireKey, importJSON, askConfirm, showToast]);
 
   const exportAllDataZip = useCallback(async () => {
+    if (requireKey('API key required to export the full data ZIP.')) return;
     try {
       const blob = await exportDataZip();
       const url = URL.createObjectURL(blob);
@@ -279,7 +284,7 @@ export function TrailActionsProvider({ children }) {
     } catch (err) {
       showToast('Export failed: ' + err.message, 'error');
     }
-  }, [showToast]);
+  }, [requireKey, showToast]);
 
   const exportGpxZip = useCallback(async () => {
     const trailsWithGpx = trails.filter(t => t.hasGpx);

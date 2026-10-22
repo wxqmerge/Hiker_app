@@ -55,7 +55,7 @@ async function collectFiles(): Promise<Map<string, Buffer>> {
   return files;
 }
 
-router.get('/export-zip', withErrorTag('DATA')(async (_req, res) => {
+router.get('/export-zip', requireAdminKey, withErrorTag('DATA')(async (_req, res) => {
   const files = await collectFiles();
   const zip = new AdmZip();
   for (const [name, content] of files) {

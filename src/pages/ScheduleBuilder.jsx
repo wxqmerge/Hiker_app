@@ -186,16 +186,18 @@ export default function ScheduleBuilder() {
   }, [leaderFilter, selectedMonth, year, scheduleStore]);
 
   const setStartOffsetForMonth = useCallback((day, slotIdx, offset, month) => {
+    if (!hasApiKey) return;
     const monthKey = getMonthKey(year, month);
     const monthData = scheduleStore[monthKey] || {};
     const entry = getDayEntries(monthData, day)[slotIdx];
     if (!entry?.trail_id) return;
     updateMonthSchedule(monthKey, prev => setDayEntry(prev, day, slotIdx, { ...entry, early_start: offset }));
-  }, [year, scheduleStore, updateMonthSchedule]);
+  }, [year, scheduleStore, updateMonthSchedule, hasApiKey]);
 
   const removeHikeForMonth = useCallback((day, slotIdx, month) => {
+    if (!hasApiKey) return;
     updateMonthSchedule(getMonthKey(year, month), prev => clearDayEntry(prev, day, slotIdx));
-  }, [year, updateMonthSchedule]);
+  }, [year, updateMonthSchedule, hasApiKey]);
 
   const filteredHikes = useMemo(() => {
     const filtered = filterTrails(hikeTrailMap, filters, trailDetails);
@@ -220,6 +222,7 @@ export default function ScheduleBuilder() {
     findTrailById,
     trailIndexToId,
     updateScheduleFn: updateMonthSchedule,
+    hasApiKey,
   });
 
 
@@ -232,12 +235,12 @@ export default function ScheduleBuilder() {
          cards.push(
           <div
              key={`${trail.id}-${item.hikeIndex}`}
-             draggable
-              onDragStart={() => handleDragStart(item.hikeIndex, null, null, trail.id, false, '')}
-             onDragEnd={handleDragEnd}
-             className="cursor-grab active:cursor-grabbing"
-             title={tt('Drag to schedule on a date')}
-             aria-label={`Drag ${getTrailName(trail)} to schedule on a date`}
+              draggable={hasApiKey}
+               onDragStart={hasApiKey ? () => handleDragStart(item.hikeIndex, null, null, trail.id, false, '') : undefined}
+              onDragEnd={handleDragEnd}
+              className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
+              title={hasApiKey ? tt('Drag to schedule on a date') : 'API key required to schedule hikes'}
+              aria-label={`Drag ${getTrailName(trail)} to schedule on a date`}
            >
              <div className="relative">
                 <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} weather={weatherMap[trail.id]} />
@@ -251,17 +254,16 @@ export default function ScheduleBuilder() {
                  {scheduledDays.length === 1 ? `Day ${scheduledDays[0]}` : `${scheduledDays.length} dates`}
                </div>
              )}
-             {hasApiKey && (
-               <button
-                 type="button"
-                 onClick={() => setMoveSource({ hikeIndex: item.hikeIndex, sourceDay: null, sourceSlot: null, trailId: trail.id, earlyStart: false, leader: '' })}
-                 className="absolute bottom-2 right-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-2 py-1 rounded"
-                 title={tt('Move to another date')}
-                 aria-label={`Move ${getTrailName(trail)} to another date`}
-               >
-                 Move
-               </button>
-             )}
+              <button
+                type="button"
+                onClick={() => setMoveSource({ hikeIndex: item.hikeIndex, sourceDay: null, sourceSlot: null, trailId: trail.id, earlyStart: false, leader: '' })}
+                disabled={!hasApiKey}
+                className={`absolute bottom-2 right-2 text-xs font-bold px-2 py-1 rounded ${hasApiKey ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}
+                title={!hasApiKey ? 'API key required' : tt('Move to another date')}
+                aria-label={`Move ${getTrailName(trail)} to another date`}
+              >
+                Move
+              </button>
            </div>
          </div>
        );
@@ -482,12 +484,12 @@ ${sections.join('\n')}
                        return (
                          <div
                            key={`${month}-${day}-${slotIdx}`}
-                           draggable={!!trailId && leaderFilter === null}
-                           onDragStart={trailId && leaderFilter === null ? () => handleDragStart(null, day, slotIdx, trailId, earlyStart, leader) : undefined}
-                           onDragEnd={leaderFilter === null ? handleDragEnd : undefined}
-                           onDragOver={leaderFilter === null ? (e) => { e.preventDefault(); e.currentTarget.classList.add('bg-green-50'); } : undefined}
-                           onDragLeave={leaderFilter === null ? (e) => { e.currentTarget.classList.remove('bg-green-50'); } : undefined}
-                           onDrop={leaderFilter === null ? (e) => {
+                            draggable={!!trailId && leaderFilter === null && hasApiKey}
+                            onDragStart={trailId && leaderFilter === null && hasApiKey ? () => handleDragStart(null, day, slotIdx, trailId, earlyStart, leader) : undefined}
+                            onDragEnd={leaderFilter === null && hasApiKey ? handleDragEnd : undefined}
+                            onDragOver={leaderFilter === null && hasApiKey ? (e) => { e.preventDefault(); e.currentTarget.classList.add('bg-green-50'); } : undefined}
+                            onDragLeave={leaderFilter === null && hasApiKey ? (e) => { e.currentTarget.classList.remove('bg-green-50'); } : undefined}
+                            onDrop={leaderFilter === null && hasApiKey ? (e) => {
                              e.preventDefault();
                              e.currentTarget.classList.remove('bg-green-50');
                              handleDropOnDate(day, slotIdx);
@@ -529,18 +531,22 @@ ${sections.join('\n')}
                                         {earlyStart !== 0 && <span className={`text-sm font-bold ${earlyStart > 0 ? 'text-green-700' : 'text-orange-500'}`} title={`Start offset: ${earlyStart > 0 ? '+' : ''}${earlyStart}m`}>{earlyStart > 0 ? `+${earlyStart}m` : `${earlyStart}m`}</span>}
                                       </div>
                                         <button
-                                          type="button"
-                                           onClick={(e) => {
-                                             e.stopPropagation();
-                                             setLeaderEdit({ day, slotIdx, month });
-                                           }}
-                                          className={`mt-1 w-full text-xs border rounded px-1.5 py-0.5 text-left truncate transition-colors ${
-                                            leader
-                                              ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
-                                              : 'border-gray-300 text-gray-400 hover:bg-gray-50 cursor-pointer'
-                                          }`}
-                                          title="Click to set leader"
-                                        >
+                                           type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (!hasApiKey) return;
+                                              setLeaderEdit({ day, slotIdx, month });
+                                            }}
+                                           disabled={!hasApiKey}
+                                           className={`mt-1 w-full text-xs border rounded px-1.5 py-0.5 text-left truncate transition-colors ${
+                                             !hasApiKey
+                                               ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+                                               : leader
+                                               ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
+                                               : 'border-gray-300 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                                           }`}
+                                           title={!hasApiKey ? 'API key required to set leader' : 'Click to set leader'}
+                                         >
                                           {leader || 'Set Leader'}
                                         </button>
                                          {leaderEdit && leaderEdit.day === day && leaderEdit.slotIdx === slotIdx && leaderEdit.month === month && (
@@ -575,11 +581,12 @@ ${sections.join('\n')}
                           </div>
                             {trailId && (
                               <div className="flex items-center gap-1 ml-3">
-                                <select
-                                  value={normalizeStartOffset(earlyStart)}
-                                   onChange={(e) => setStartOffsetForMonth(day, slotIdx, Number(e.target.value), month)}
-                                  className="text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
-                                  title={tt('Start time offset')}
+                                 <select
+                                   value={normalizeStartOffset(earlyStart)}
+                                    onChange={(e) => setStartOffsetForMonth(day, slotIdx, Number(e.target.value), month)}
+                                   disabled={!hasApiKey}
+                                   className={`text-xs border border-gray-300 rounded px-1 py-0.5 bg-white ${!hasApiKey ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                   title={!hasApiKey ? 'API key required to change start time offset' : tt('Start time offset')}
                                   aria-label="Start time offset"
                                 >
                                   {START_OFFSET_OPTIONS.map(opt => (
@@ -642,30 +649,33 @@ ${sections.join('\n')}
                                 )}
                                  {leaderFilter === null && (
                                    <>
-                                 <button
-                                   onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: false })}
-                                   className="text-blue-600 hover:text-blue-800 transition-colors text-xs font-medium"
-                                   title={tt('Move to another date')}
-                                   aria-label={`Move ${displayHikeName || 'hike'} to another date`}
-                                 >
-                                   Move
-                                 </button>
-                                 <button
-                                   onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: true })}
-                                   className="text-green-600 hover:text-green-800 transition-colors text-xs font-medium"
-                                   title={tt('Duplicate to another date')}
-                                   aria-label={`Duplicate ${displayHikeName || 'hike'} to another date`}
-                                 >
-                                   Copy
-                                 </button>
+                                  <button
+                                    onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: false })}
+                                    disabled={!hasApiKey}
+                                    className={`transition-colors text-xs font-medium ${hasApiKey ? 'text-blue-600 hover:text-blue-800' : 'text-gray-300 cursor-not-allowed'}`}
+                                    title={!hasApiKey ? 'API key required' : tt('Move to another date')}
+                                    aria-label={`Move ${displayHikeName || 'hike'} to another date`}
+                                  >
+                                    Move
+                                  </button>
+                                  <button
+                                    onClick={() => setMoveSource({ hikeIndex: null, sourceDay: day, sourceSlot: slotIdx, trailId, earlyStart, leader, duplicate: true })}
+                                    disabled={!hasApiKey}
+                                    className={`transition-colors text-xs font-medium ${hasApiKey ? 'text-green-600 hover:text-green-800' : 'text-gray-300 cursor-not-allowed'}`}
+                                    title={!hasApiKey ? 'API key required' : tt('Duplicate to another date')}
+                                    aria-label={`Duplicate ${displayHikeName || 'hike'} to another date`}
+                                  >
+                                    Copy
+                                  </button>
                                    </>
                                  )}
-                                 <button
-                                   onClick={() => removeHikeForMonth(day, slotIdx, month)}
-                                    className="text-red-400 hover:text-red-600 transition-colors"
-                                    title={tt('Remove hike from this date')}
-                                    aria-label={`Remove ${displayHikeName || 'hike'} from ${MONTH_ABBR[month]} ${day}`}
-                                 >
+                                  <button
+                                    onClick={() => removeHikeForMonth(day, slotIdx, month)}
+                                     disabled={!hasApiKey}
+                                     className={`transition-colors ${hasApiKey ? 'text-red-400 hover:text-red-600' : 'text-gray-300 cursor-not-allowed'}`}
+                                     title={!hasApiKey ? 'API key required' : tt('Remove hike from this date')}
+                                     aria-label={`Remove ${displayHikeName || 'hike'} from ${MONTH_ABBR[month]} ${day}`}
+                                  >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                  </svg>

@@ -19,6 +19,7 @@ import { createDate } from '../utils/dateUtils';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../utils/url.js';
 import { hasStoredApiKey } from '../utils/apiKey';
+import { useApiKey } from '../hooks/useApiKey';
 import { formatDistance, formatElevation, getDistanceUnit, getElevationUnit } from '../utils/units';
 import LoadingSpinner from '../components/LoadingSpinner';
 import MonthlyScoreGrid, { ScoreBreakdownRow } from '../components/MonthlyScoreGrid.jsx';
@@ -85,7 +86,8 @@ export default function TrailDetail() {
   const { trailDetails, saveTrail, saveTrailDetail, deleteTrail } = useTrailStore();
   const { title: tt } = useTooltips();
   const showToast = useToast();
-  const [isEditMode, setIsEditMode] = useState(() => searchParams.get('edit') === 'true');
+  const hasApiKey = useApiKey();
+  const [isEditMode, setIsEditMode] = useState(() => searchParams.get('edit') === 'true' && hasStoredApiKey());
   const [editedFields, setEditedFields] = useState({});
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [duplicateId, setDuplicateId] = useState('');
@@ -155,11 +157,19 @@ export default function TrailDetail() {
   };
 
   const startEditMode = () => {
+    if (!hasApiKey) {
+      showToast('API key required to edit trails.', 'error');
+      return;
+    }
     setEditedFields({});
     setIsEditMode(true);
   };
 
   const startDuplicate = () => {
+    if (!hasApiKey) {
+      showToast('API key required to duplicate trails.', 'error');
+      return;
+    }
     const baseId = trail.id.replace(/-\d+$/, '');
     let newId = `${baseId}-2`;
     let counter = 2;
@@ -201,6 +211,11 @@ export default function TrailDetail() {
   };
 
   const saveEdits = async () => {
+    if (!hasApiKey) {
+      showToast('API key required to save trail changes.', 'error');
+      return;
+    }
+    try {
     if (isDuplicate) {
       const newName = editedFields.fullName || '';
       const originalName = getTrailName(trail);
@@ -320,6 +335,9 @@ export default function TrailDetail() {
     setIsEditMode(false);
     searchParams.delete('edit');
     navigate(`/trail/${id}${searchParams.toString() ? '?' + searchParams.toString() : ''}`, { replace: true });
+    } catch (err) {
+      showToast('Save failed: ' + err.message, 'error');
+    }
   };
 
   const cancelEdits = () => {
@@ -469,8 +487,9 @@ export default function TrailDetail() {
 
             <button
               onClick={startEditMode}
-              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-green-700 hover:text-green-900"
-              title={tt('Edit trail details')}
+              disabled={!hasApiKey}
+              className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-green-700 hover:text-green-900' : 'text-gray-300 cursor-not-allowed'}`}
+              title={!hasApiKey ? 'API key required' : tt('Edit trail details')}
               aria-label="Edit trail details"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -480,8 +499,9 @@ export default function TrailDetail() {
             </button>
             <button
               onClick={startDuplicate}
-              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-blue-700 hover:text-blue-900"
-              title="Duplicate this trail as a new entry"
+              disabled={!hasApiKey}
+              className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-blue-700 hover:text-blue-900' : 'text-gray-300 cursor-not-allowed'}`}
+              title={!hasApiKey ? 'API key required' : 'Duplicate this trail as a new entry'}
               aria-label="Duplicate this trail as a new entry"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -492,8 +512,9 @@ export default function TrailDetail() {
             {!isDuplicate && (
               <button
                 onClick={requestDelete}
-                className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors text-red-700 hover:text-red-900"
-                title="Delete this trail"
+                disabled={!hasApiKey}
+                className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-red-700 hover:text-red-900' : 'text-gray-300 cursor-not-allowed'}`}
+                title={!hasApiKey ? 'API key required' : 'Delete this trail'}
                 aria-label="Delete this trail"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -513,9 +534,9 @@ export default function TrailDetail() {
                 </button>
                 <button
                   onClick={saveEdits}
-                  disabled={isDuplicate && ((editedFields.fullName || '') === getTrailName(trail))}
+                  disabled={!hasApiKey || (isDuplicate && ((editedFields.fullName || '') === getTrailName(trail)))}
                   className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                    isDuplicate && (editedFields.fullName || '') === getTrailName(trail)
+                    !hasApiKey || (isDuplicate && (editedFields.fullName || '') === getTrailName(trail))
                       ? 'bg-gray-400 text-white cursor-not-allowed'
                       : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
@@ -1152,6 +1173,10 @@ export default function TrailDetail() {
                       <div className="flex gap-2">
                         <button
                           onClick={async () => {
+                            if (!hasApiKey) {
+                              showToast('API key required to upload GPX files.', 'error');
+                              return;
+                            }
                             createFileInput({
                               accept: '.gpx',
                               onFile: async (file) => {
@@ -1174,7 +1199,9 @@ export default function TrailDetail() {
                               }
                             });
                           }}
-                          className="px-3 py-2 text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition-colors"
+                          disabled={!hasApiKey}
+                          title={!hasApiKey ? 'API key required' : undefined}
+                          className={`px-3 py-2 text-sm rounded-lg transition-colors ${hasApiKey ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}
                         >
                           {(editedFields.gpxFile ?? trail.gpxFile) ? 'Replace GPX' : 'Upload GPX'}
                         </button>
@@ -1201,9 +1228,9 @@ export default function TrailDetail() {
                 </button>
                 <button
                   onClick={saveEdits}
-                  disabled={isDuplicate && ((editedFields.fullName || '') === getTrailName(trail))}
+                  disabled={!hasApiKey || (isDuplicate && ((editedFields.fullName || '') === getTrailName(trail)))}
                   className={`px-4 py-2 text-white rounded-lg transition-colors ${
-                    isDuplicate && (editedFields.fullName || '') === getTrailName(trail)
+                    !hasApiKey || (isDuplicate && (editedFields.fullName || '') === getTrailName(trail))
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-green-600 hover:bg-green-700'
                   }`}

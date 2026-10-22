@@ -58,6 +58,14 @@ export function ScheduleSettingsProvider({ children }) {
   const lastSavedStoreRef = useRef(null);
   const doTsvImportRef = useRef(null);
 
+  const requireKey = useCallback((msg) => {
+    if (!hasApiKey) {
+      showToast(msg, 'error');
+      return true;
+    }
+    return false;
+  }, [hasApiKey, showToast]);
+
   const { assignedHikes, hikeDates, findTrailById, trailIndexToId } = useScheduleData({
     trails, scheduleStore, selectedMonth, year,
   });
@@ -95,7 +103,7 @@ export function ScheduleSettingsProvider({ children }) {
   // Save schedule to server (debounced 1s)
   const savingRef = useRef(false);
   const saveScheduleToServer = useCallback(async () => {
-    if (savingRef.current) return;
+    if (!hasApiKey || savingRef.current) return;
     const currentStoreJson = JSON.stringify(scheduleStore);
     if (lastSavedStoreRef.current === currentStoreJson) {
       return;
@@ -124,7 +132,7 @@ export function ScheduleSettingsProvider({ children }) {
     } finally {
       savingRef.current = false;
     }
-  }, [scheduleStore, debugMode, showToast]);
+  }, [scheduleStore, debugMode, hasApiKey, showToast]);
 
   useEffect(() => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -155,6 +163,7 @@ export function ScheduleSettingsProvider({ children }) {
 
   const doClearSchedule = useCallback(async () => {
     setConfirmClear(false);
+    if (requireKey('API key required to clear the schedule.')) return;
     setShowSettings(false);
     closeHistory();
     try {
@@ -165,7 +174,7 @@ export function ScheduleSettingsProvider({ children }) {
     } catch (err) {
       showToast('Clear failed: ' + err.message, 'error');
     }
-  }, [closeHistory, showToast]);
+  }, [closeHistory, requireKey, showToast]);
 
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true);
@@ -181,10 +190,11 @@ export function ScheduleSettingsProvider({ children }) {
   }, [showToast]);
 
   const openHistory = useCallback(() => {
+    if (requireKey('API key required to view schedule history.')) return;
     setShowHistory(true);
     setShowSettings(false);
     loadHistory();
-  }, [loadHistory]);
+  }, [loadHistory, requireKey]);
 
   const handleRestore = useCallback((timestamp) => {
     setPendingRestore(timestamp);
@@ -192,6 +202,7 @@ export function ScheduleSettingsProvider({ children }) {
 
   const doRestore = useCallback(async (timestamp) => {
     setPendingRestore(null);
+    if (requireKey('API key required to restore the schedule.')) return;
     try {
       const result = await restoreSchedule(timestamp);
       if (result.success) {
@@ -204,9 +215,10 @@ export function ScheduleSettingsProvider({ children }) {
     } catch (err) {
       showToast('Restore failed: ' + err.message, 'error');
     }
-  }, [closeHistory, showToast]);
+  }, [closeHistory, requireKey, showToast]);
 
   const handleReload = useCallback(async () => {
+    if (requireKey('API key required to reload server data.')) return;
     try {
       await reloadSchedule();
       showToast('Schedule and trail data reloaded from disk.', 'success');
@@ -215,7 +227,7 @@ export function ScheduleSettingsProvider({ children }) {
     } catch (err) {
       showToast('Failed to reload: ' + err.message, 'error');
     }
-  }, [showToast]);
+  }, [requireKey, showToast]);
 
   const nextHikeDate = useMemo(() => {
     const today = getTodayHikeRef();
@@ -338,6 +350,7 @@ export function ScheduleSettingsProvider({ children }) {
   }, [scheduleStore, trails, showToast]);
 
   const importScheduleTsv = useCallback(() => {
+    if (requireKey('API key required to import a quarterly schedule.')) return;
     createFileInput({
       accept: '.tsv,.txt',
       onFile: async (file) => {
@@ -437,9 +450,10 @@ export function ScheduleSettingsProvider({ children }) {
       },
       onCleanup: () => setShowSettings(false),
     });
-  }, [trails, showToast]);
+  }, [requireKey, trails, showToast]);
 
   async function doTsvImportSchedule(lines, headerIdx, columnGroups) {
+    if (requireKey('API key required to import a quarterly schedule.')) return;
     try {
       // Pre-build normalized trail lookup for O(1) matching
       const trailLookup = new Map();
@@ -818,7 +832,12 @@ export function ScheduleSettingsProvider({ children }) {
               Schedule History ({historyEntries.length})
             </h3>
             <div className="flex items-center gap-2">
-              <button onClick={clearSchedule} disabled={!hasApiKey} className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`} title={tt('Clear all schedule data and preserve history')}>
+              <button
+                onClick={clearSchedule}
+                disabled={!hasApiKey}
+                className={`text-xs font-medium px-2 py-1 rounded transition-colors ${hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
+                title={!hasApiKey ? 'API key required' : tt('Clear all schedule data and preserve history')}
+              >
                 Clear Schedule
               </button>
               <button onClick={closeHistory} className="text-gray-400 hover:text-gray-600" title={tt('Close history panel')}>
@@ -854,7 +873,7 @@ export function ScheduleSettingsProvider({ children }) {
                             ? 'bg-green-600 text-white hover:bg-green-700'
                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         }`}
-                        title={tt('Restore schedule from this backup')}
+                        title={!hasApiKey ? 'API key required' : tt('Restore schedule from this backup')}
                       >
                         Restore
                       </button>

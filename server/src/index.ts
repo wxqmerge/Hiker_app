@@ -207,7 +207,7 @@ app.post('/api/cleanup/orphaned-details', requireAdminKey, async (_req, res) => 
   }
 });
 
-app.get('/api/validate', async (_req, res) => {
+app.get('/api/validate', requireAdminKey, async (_req, res) => {
   const fs = await import('fs/promises');
   const path = (await import('path')).default;
 

@@ -314,6 +314,12 @@ describe('exportDataZip', () => {
     const { exportDataZip } = await import('../../api/client');
     const result = await exportDataZip();
     expect(result).toBeInstanceOf(Blob);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/data/export-zip'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'X-API-Key': 'test-key' }),
+      })
+    );
   });
 });
 
@@ -328,6 +334,12 @@ describe('getScheduleHistory', () => {
     const { getScheduleHistory } = await import('../../api/client');
     const history = await getScheduleHistory();
     expect(history).toHaveProperty('history');
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/schedule/history'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'X-API-Key': 'test-key' }),
+      })
+    );
   });
 });
 

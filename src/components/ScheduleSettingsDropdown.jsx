@@ -30,6 +30,7 @@ export default function ScheduleSettingsDropdown() {
   if (!fetchWeatherForAll) return null;
 
   const close = () => setShowSettings(false);
+  const keyRequiredTitle = (enabled) => enabled ? undefined : 'API key required';
   const section = (title) => (
     <div className="px-3 py-2 border-t border-b border-gray-100 mt-1 first:mt-0">
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
@@ -69,18 +70,30 @@ export default function ScheduleSettingsDropdown() {
         Export Quarterly Schedule
       </button>
       {section('Import')}
-      <button onClick={importScheduleTsv} disabled={!hasApiKey} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}>
+      <button
+        onClick={importScheduleTsv}
+        disabled={!hasApiKey}
+        title={hasApiKey ? undefined : 'API key required'}
+        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}
+      >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         Import Quarterly Schedule TSV {!hasApiKey && '(need API key)'}
       </button>
       {section('Maintenance')}
-      <button onClick={openHistory} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+      <button
+        onClick={openHistory}
+        disabled={!hasApiKey}
+        title={hasApiKey ? undefined : 'API key required'}
+        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
+          hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
+        }`}
+      >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        Schedule History
+        Schedule History {!hasApiKey && '(need API key)'}
       </button>
       <button onClick={verifyServerSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,6 +115,7 @@ export default function ScheduleSettingsDropdown() {
       <button
         onClick={handleReload}
         disabled={!hasApiKey}
+        title={hasApiKey ? undefined : 'API key required'}
         className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
           hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
         }`}
@@ -115,6 +129,7 @@ export default function ScheduleSettingsDropdown() {
       <button
         onClick={clearSchedule}
         disabled={!hasApiKey}
+        title={hasApiKey ? undefined : 'API key required'}
         className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
           hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'
         }`}
@@ -149,15 +164,36 @@ export default function ScheduleSettingsDropdown() {
         </div>
       </div>
       {section('Trail')}
-      <DropdownItem onClick={() => { close(); trailActions.userActions.newTrail(); }}>New Trail</DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.userActions.newTrail(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        New Trail
+      </DropdownItem>
       {section('Export')}
       <DropdownItem onClick={() => { close(); trailActions.userActions.exportJson(); }}>Export JSON</DropdownItem>
-      <DropdownItem onClick={() => { close(); trailActions.userActions.exportZip(); }}>Export ZIP</DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.userActions.exportZip(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Export ZIP
+      </DropdownItem>
       <DropdownItem onClick={() => { close(); trailActions.userActions.exportGpxZip(); }}>Export GPX ZIP</DropdownItem>
       <DropdownItem onClick={() => { close(); trailActions.userActions.exportSchedule(); }}>Export Schedule</DropdownItem>
       <DropdownItem onClick={() => { close(); trailActions.userActions.exportMonthlyPop(); }}>Export Monthly Pop</DropdownItem>
       {section('Maintenance')}
-      <DropdownItem onClick={() => { close(); trailActions.userActions.validateDb(); }} disabled={trailActions.validating}>Validate DB</DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.userActions.validateDb(); }}
+        disabled={!trailActions.hasApiKey || trailActions.validating}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Validate DB
+      </DropdownItem>
     </div>
   ) : (
     <p className="px-3 py-2 text-sm text-gray-400">Trail actions unavailable</p>
@@ -188,17 +224,73 @@ export default function ScheduleSettingsDropdown() {
       {section('Import Trails')}
 
       {section('Import All')}
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.importAllJson(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Import All JSON</DropdownItem>
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.importZip(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Import ZIP</DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.adminActions.importAllJson(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Import All JSON
+      </DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.adminActions.importZip(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Import ZIP
+      </DropdownItem>
       {section('Schedule')}
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.importScheduleJson(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Import Schedule JSON</DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.adminActions.importScheduleJson(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Import Schedule JSON
+      </DropdownItem>
       {section('Popularity Data')}
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.importMonthlyTsv(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Import Monthly Pop TSV</DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.adminActions.importMonthlyTsv(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Import Monthly Pop TSV
+      </DropdownItem>
       {section('Maintenance')}
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.cleanupOrphanedDetails(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Cleanup Orphaned Details</DropdownItem>
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.validateData(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Validate Data</DropdownItem>
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.resyncCoords(); }} disabled={!trailActions.hasApiKey} locked={!trailActions.hasApiKey}>Re-sync GPX Coords</DropdownItem>
-      <DropdownItem onClick={() => { close(); trailActions.adminActions.checkGpxIntegrity(); }} disabled={trailActions.validating}>Check GPX Integrity</DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.adminActions.cleanupOrphanedDetails(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Cleanup Orphaned Details
+      </DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.adminActions.validateData(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Validate Data
+      </DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.adminActions.resyncCoords(); }}
+        disabled={!trailActions.hasApiKey}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Re-sync GPX Coords
+      </DropdownItem>
+      <DropdownItem
+        onClick={() => { close(); trailActions.adminActions.checkGpxIntegrity(); }}
+        disabled={!trailActions.hasApiKey || trailActions.validating}
+        locked={!trailActions.hasApiKey}
+        title={keyRequiredTitle(trailActions.hasApiKey)}
+      >
+        Check GPX Integrity
+      </DropdownItem>
     </div>
   ) : (
     <p className="px-3 py-2 text-sm text-gray-400">Admin actions unavailable</p>

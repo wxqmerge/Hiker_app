@@ -64,7 +64,24 @@ describe('TrailDetail', () => {
     }, { timeout: 3000 });
   });
 
+  it('disables trail write actions without an API key', async () => {
+    const { default: TrailDetail } = await import('../../pages/TrailDetail');
+    render(
+      <MemoryRouter initialEntries={['/trail/trail-1']}>
+        <Routes>
+          <Route path="/trail/:id" element={<TrailDetail />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Edit trail details' })).toBeDisabled();
+    }, { timeout: 3000 });
+    expect(screen.getByRole('button', { name: 'Duplicate this trail as a new entry' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete this trail' })).toBeDisabled();
+  });
+
   it('preserves trailhead coordinates when duplicating a trail', async () => {
+    localStorage.setItem('hiker-api-key', 'test-key');
     const mock = globalThis.__TEST_MOCK_DATA__;
     mock.trails[0].trailHeadLat = 47.6;
     mock.trails[0].trailHeadLon = -121.7;

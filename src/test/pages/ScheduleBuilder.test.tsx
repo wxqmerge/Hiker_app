@@ -188,6 +188,14 @@ describe('ScheduleBuilder', () => {
     expect(screen.getByTitle('Schedule settings')).toBeInTheDocument();
   });
 
+  it('disables hike write actions without an API key', () => {
+    const { container } = renderSchedule();
+    expect(container.querySelector('[draggable="true"]')).not.toBeInTheDocument();
+    const moveButtons = screen.getAllByRole('button', { name: /Move .* to another date/ });
+    expect(moveButtons.length).toBeGreaterThan(0);
+    expect(moveButtons[0]).toBeDisabled();
+  });
+
   it('shows available hikes count', () => {
     renderSchedule();
     const availableHikes = screen.getByText(/Available Hikes \(\d+\)/);
