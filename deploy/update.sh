@@ -5,16 +5,23 @@
 #   --force          Bypass all cooldowns and force package update
 #   --force-critical Force package update for critical security patches (2-day cooldown)
 
-# npm must run as the deploy user. Running the whole script through sudo uses
-# root's npm cache, changes repository ownership, and can make step 6 appear to hang.
+# npm must run as the deploy user. Running the whole script through root uses
+# root's npm cache, changes repository ownership, and can make step 6 hang.
+SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+
 if [ "$(id -u)" -eq 0 ]; then
-    echo "ERROR: Do not run update.sh as root or with sudo."
+    chmod +x "$SCRIPT_PATH"
+    if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+        echo "Re-running as $SUDO_USER..."
+        exec sudo -u "$SUDO_USER" bash "$SCRIPT_PATH" "$@"
+    fi
+
+    echo "ERROR: Do not run update.sh as root."
     echo "Run it as the Hiker deploy user; privileged commands already use sudo."
     exit 1
 fi
 
 # Self-fix: restore execute permission if stripped by Windows
-SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 if [ ! -x "$SCRIPT_PATH" ]; then
     sudo chmod +x "$SCRIPT_PATH"
 fi

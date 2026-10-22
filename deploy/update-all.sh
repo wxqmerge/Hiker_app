@@ -9,6 +9,20 @@
 # --env dev|app  only update instances whose directory name contains the given tag
 # Works for any project that has a git repo and deploy/update.sh.
 
+SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+
+if [ "$(id -u)" -eq 0 ]; then
+    chmod +x "$SCRIPT_PATH"
+    if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+        echo "Re-running as $SUDO_USER..."
+        exec sudo -u "$SUDO_USER" bash "$SCRIPT_PATH" "$@"
+    fi
+
+    echo "ERROR: Do not run update-all.sh as root."
+    echo "Run it as the Hiker deploy user; update.sh already uses sudo for privileged steps."
+    exit 1
+fi
+
 BASE="/var/www/html"
 RUN_AUDIT=false
 ENV_TAG=""
