@@ -288,10 +288,13 @@ requireAdminKey(req, res, next)
     │
     ├── Check ADMIN_API_KEY is configured
     ├── Read X-API-Key from headers
-    ├── crypto.timingSafeEqual() — constant-time comparison
-    │   └── Pads buffers to max length if sizes differ
+    ├── SHA-256 both keys, then crypto.timingSafeEqual()
+    ├── Delay configurable failure responses (1 second by default)
     │
     └── Set req.role = 'admin'
+
+GET /api/auth/verify
+    └── Rate-limit failed attempts, then requireAdminKey + return 204
 ```
 
 ### Data Service (`dataService.ts`)

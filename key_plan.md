@@ -514,6 +514,9 @@ That contains these issues from the WAN side, but LAN-side exposure and code bug
   reports, and no key command-line arguments; generated bookmark/access URL backups are ignored.
 - FIXED: nginx examples/local config deny dotfiles and non-static directories; `verify.sh`
   checks dotfile denial.
+- FIXED: admin keys are verified through `GET /api/auth/verify` before the UI stores them;
+  invalid keys are not saved, failed auth is delayed by 1 second by default, and verification
+  failures are rate-limited.
 - Deleted local `server/.env.backup_20260829_135009`; local `.env.production` already uses
   `https://`.
 

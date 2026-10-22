@@ -68,13 +68,19 @@ See [USAGE.md](./USAGE.md) for end-user documentation.
 |--------|----------|------|-------------|
 | GET | `/api/lookup` | — | Reference data (difficulties, parking) |
 
+### Auth (`/api/auth`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/auth/verify` | Admin Key | Return `204` when the submitted key is valid |
+
 ### Health
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Server health + write health status |
 
-**Auth**: Mutating endpoints and admin read endpoints require the `X-API-Key` header. Client admin-key bootstrap uses URL fragments (`#apikey=...`), not query parameters. Uses `crypto.timingSafeEqual` for secure comparison.
+**Auth**: Mutating endpoints and admin read endpoints require the `X-API-Key` header. Client admin-key bootstrap uses URL fragments (`#apikey=...`), not query parameters. Keys are compared with fixed-length SHA-256 digests and `crypto.timingSafeEqual`; failed key checks are delayed and rate-limited. `GET /api/auth/verify` lets the app confirm a key before storing it.
 
 ## Data Structure
 
@@ -179,6 +185,7 @@ Quarter column positions vary across 17 Excel sheets.
 | `HOST` | `127.0.0.1` | Bind address; set only when intentionally exposing the Node process |
 | `NODE_ENV` | `development` | `production` serves static `dist/` |
 | `ADMIN_API_KEY` | — | Admin key for mutating and admin-read operations |
+| `ADMIN_AUTH_FAILURE_DELAY_MS` | `1000` | Delay before responding to a failed admin-key check |
 | `CORS_ORIGINS` | unset | Optional comma-separated origin list; unset disables CORS middleware |
 
 Production deployments should move `ADMIN_API_KEY` out of `server/.env` into `/etc/hiker/<instance>.env` with:

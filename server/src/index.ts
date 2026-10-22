@@ -57,6 +57,15 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const adminKeyVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skipSuccessfulRequests: true,
+  message: { success: false, error: { message: 'Too many failed API key attempts. Try again later.' } },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const rawCors = process.env.CORS_ORIGINS?.trim() || '';
 if (rawCors) {
   const corsOrigins = rawCors === '*' ? true : rawCors.split(',').map(o => o.trim()).filter(Boolean);
@@ -114,6 +123,10 @@ app.get('/api/config', (req, res) => {
     maxSpeedMph: parseFloat(process.env.MAX_SPEED_MPH || '2.2'),
     isBikeTrip: process.env.IS_BIKE_TRIP === 'true',
   });
+});
+
+app.get('/api/auth/verify', adminKeyVerifyLimiter, requireAdminKey, (_req: Request, res: Response) => {
+  res.status(204).end();
 });
 
 app.get('/api/tide-proxy', async (req, res) => {

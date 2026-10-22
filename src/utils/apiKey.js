@@ -1,22 +1,29 @@
 export const API_KEY_STORAGE_KEY = 'hiker-api-key';
 
 const listeners = new Set();
+let verifiedStoredApiKey = '';
 
 export function getStoredApiKey() {
-  return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+  return (localStorage.getItem(API_KEY_STORAGE_KEY) || '').trim();
 }
 
 export function hasStoredApiKey() {
-  return getStoredApiKey().trim().length > 0;
+  return getStoredApiKey().length > 0;
 }
 
-export function storeApiKey(key) {
-  if (key && key.trim().length > 0) {
-    localStorage.setItem(API_KEY_STORAGE_KEY, key);
+export function storeApiKey(key, options = {}) {
+  const trimmedKey = String(key || '').trim();
+  if (trimmedKey) {
+    localStorage.setItem(API_KEY_STORAGE_KEY, trimmedKey);
   } else {
     localStorage.removeItem(API_KEY_STORAGE_KEY);
   }
+  verifiedStoredApiKey = options.verified && trimmedKey ? trimmedKey : '';
   listeners.forEach((fn) => fn());
+}
+
+export function isStoredApiKeyVerified() {
+  return !!verifiedStoredApiKey && verifiedStoredApiKey === getStoredApiKey();
 }
 
 export function subscribeApiKeyChange(fn) {

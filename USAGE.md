@@ -107,7 +107,7 @@ Navigate to **Trail Manager** (`/trails`) to:
 - **Export for Excel** — Generates `export_for_excel.json` for Python scripts
 - **API Key** — Set the admin API key for server-side operations
 
-To set the API key: enter it in the "API Key" field and click "Save Key". The key is stored in localStorage.
+To set the API key: enter it in the "API Key" field and click "Save". The app verifies the key against `/api/auth/verify` before storing it. Invalid keys are not saved; network failures leave the previously stored key intact.
 
 ## Calendar
 
@@ -219,12 +219,17 @@ The Express server provides the following API endpoints:
 |--------|----------|------|-------------|
 | GET | `/api/lookup` | No | Get reference data (difficulties, parking levels) |
 
+### Auth (`/api/auth`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/auth/verify` | Admin Key | Return `204` when the submitted key is valid |
+
 ### Health
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Server health with write health status |
 
-**Authentication:** Mutating endpoints and admin read endpoints require an `X-API-Key` header. The API key is set in Trail Manager or stored in localStorage under `hiker-api-key`. Admin-key shortcut URLs use a `#apikey=...` fragment so the browser does not send the key to nginx.
+**Authentication:** Mutating endpoints and admin read endpoints require an `X-API-Key` header. The admin UI verifies entered keys through `GET /api/auth/verify` before storing them in localStorage under `hiker-api-key`. Admin-key shortcut URLs use a `#apikey=...` fragment so the browser does not send the key to nginx.
 
 ## Server Configuration
 
@@ -236,6 +241,7 @@ The server reads from `exported_data/` directory. Key environment variables:
 | `HOST` | `127.0.0.1` | Bind address; set only when intentionally exposing the Node process |
 | `NODE_ENV` | `development` | Environment (production enables static file serving) |
 | `ADMIN_API_KEY` | (none) | Admin API key for mutating and admin-read operations |
+| `ADMIN_AUTH_FAILURE_DELAY_MS` | `1000` | Delay before responding to a failed admin-key check |
 | `CORS_ORIGINS` | (unset) | Optional comma-separated CORS origins; unset disables CORS middleware |
 
 For production, run `sudo bash ./deploy/secure-env.sh <admin-user>` to move `ADMIN_API_KEY` to `/etc/hiker/<instance>.env` and remove it from `server/.env`. Systemd then loads both files through `EnvironmentFile`. Rotate keys with `./deploy/rotate-key-all.sh`; the new key is written to a mode-`0600` report file under `$HOME`.

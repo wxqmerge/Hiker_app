@@ -13,7 +13,7 @@
 //     are invalidated so the next load (e.g. after an Import ZIP reload) refetches.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v7';
+const VERSION = 'v8';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const TIDE_CACHE = `hiker-tide-${VERSION}`;
@@ -49,6 +49,7 @@ const NETWORK_FIRST_API = new Set([
 
 // Admin-only API reads must never be served from or written to the offline cache.
 const NO_CACHE_API = new Set([
+  '/api/auth/verify',
   '/api/data/export-zip',
   '/api/validate',
   '/api/schedule/history',

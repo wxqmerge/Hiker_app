@@ -16,7 +16,7 @@ const PageLazy = ({ children }) => (
     {children}
   </Suspense>
 );
-import { ensureScheduleWritable, request } from './api/client.js';
+import { ensureScheduleWritable, request, verifyAdminKey } from './api/client.js';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 import { setGroupConfig, getGroupName } from './utils/config';
@@ -24,15 +24,40 @@ import { storeApiKey, hasStoredApiKey, getApiKeyFromHash, removeApiKeyFromLocati
 import SplashScreen from './components/SplashScreen';
 import { hasVisited } from './utils/visited';
 
-function ApiKeySync() {
+function ApiKeySync({ showToast }) {
   const { search } = useLocation();
   useEffect(() => {
-    const key = getApiKeyFromHash();
-    if (key) {
-      storeApiKey(key);
-      removeApiKeyFromLocation();
-    }
-  }, []);
+    const candidate = getApiKeyFromHash().trim();
+    if (!candidate) return;
+
+    let active = true;
+    (async () => {
+      try {
+        const result = await verifyAdminKey(candidate);
+        if (!active) return;
+
+        if (result.valid) {
+          storeApiKey(candidate, { verified: true });
+          showToast('API key verified.', 'success');
+          return;
+        }
+
+        storeApiKey('');
+        if (result.reason === 'invalid') showToast('API key is invalid.', 'error');
+        else if (result.reason === 'not-configured') showToast('Server has no admin API key configured.', 'error');
+        else showToast(result.error || 'Could not verify the API key.', 'error');
+      } catch (err) {
+        if (!active) return;
+        showToast(`Could not verify API key: ${err.message}`, 'error');
+      } finally {
+        if (active) removeApiKeyFromLocation();
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [showToast]);
   useEffect(() => {
     const params = new URLSearchParams(search);
     if (params.has('apikey')) {
@@ -99,7 +124,7 @@ function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       {showSplash && <SplashScreen onDismiss={() => setShowSplash(false)} />}
-      <ApiKeySync />
+      <ApiKeySync showToast={showToast} />
       <PageContextProvider>
         <MonthContextProvider>
           <DayContextProvider>

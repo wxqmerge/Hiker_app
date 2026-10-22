@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useToast } from '../hooks/useToast';
 import { createFileInput, createImportFileInput, downloadBlob, sanitizeFilename } from '../utils/io';
-import { getGpx, getSchedule, updateSchedule, request, exportDataZip, importDataZip, resyncGpxCoords } from '../api/client';
+import { getGpx, getSchedule, updateSchedule, request, exportDataZip, importDataZip, resyncGpxCoords, verifyAdminKey } from '../api/client';
 import { getTrailName } from '../utils/data';
 import { getGroupName } from '../utils/config';
 import { formatDateToISO } from '../utils/dateUtils';
-import { getStoredApiKey, storeApiKey, subscribeApiKeyChange } from '../utils/apiKey';
+import { getStoredApiKey, storeApiKey, subscribeApiKeyChange, isStoredApiKeyVerified } from '../utils/apiKey';
 import { useApiKey } from '../hooks/useApiKey';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -20,7 +20,14 @@ export function TrailActionsProvider({ children }) {
   const navigate = useNavigate();
 
   const [apiKey, setApiKey] = useState(getStoredApiKey());
+  const [keyStatus, setKeyStatus] = useState(() => getStoredApiKey() ? 'unknown' : 'missing');
+  const [verifyingKey, setVerifyingKey] = useState(false);
   const userEditedKeyRef = useRef(false);
+  const apiKeyInputRef = useRef(apiKey);
+  const verifyingKeyRef = useRef(false);
+  const verifyRequestRef = useRef(0);
+  const mountedRef = useRef(true);
+  const attemptedAutoVerificationRef = useRef('');
   const [validating, setValidating] = useState(false);
   const [newTrailForm, setNewTrailForm] = useState(false);
   const [newTrailName, setNewTrailName] = useState('');
@@ -29,19 +36,121 @@ export function TrailActionsProvider({ children }) {
 
   const hasApiKey = useApiKey();
 
-  // Keep the apiKey field in sync with the stored key. ApiKeySync (in App) stores
-  // a #apikey= URL fragment value in a post-render effect, which runs after this provider
-  // mounts — so the initial useState snapshot is stale. Without this, the field
-  // shows empty and clicking Save would clear the freshly-stored key. We skip the
-  // sync while the user is actively editing the field.
+  const runKeyVerification = useCallback(async (candidate, { explicit = false, notify = true } = {}) => {
+    const trimmed = String(candidate || '').trim();
+    const requestId = ++verifyRequestRef.current;
+    verifyingKeyRef.current = true;
+    setVerifyingKey(true);
+
+    if (!trimmed) {
+      if (explicit) {
+        apiKeyInputRef.current = '';
+        setApiKey('');
+        userEditedKeyRef.current = false;
+        storeApiKey('');
+      }
+      attemptedAutoVerificationRef.current = '';
+      verifyRequestRef.current++;
+      verifyingKeyRef.current = false;
+      setVerifyingKey(false);
+      setKeyStatus('missing');
+      return false;
+    }
+
+    setKeyStatus('checking');
+
+    try {
+      const result = await verifyAdminKey(trimmed);
+      if (!mountedRef.current || requestId !== verifyRequestRef.current) return false;
+
+      if (result.valid) {
+        if (apiKeyInputRef.current === trimmed) {
+          apiKeyInputRef.current = trimmed;
+          setApiKey(trimmed);
+          userEditedKeyRef.current = false;
+        }
+        attemptedAutoVerificationRef.current = trimmed;
+        storeApiKey(trimmed, { verified: true });
+        setKeyStatus('verified');
+        if (explicit && notify) showToast('API key verified.', 'success');
+        return true;
+      }
+
+      if (result.reason === 'invalid' || result.reason === 'not-configured') {
+        if (explicit || getStoredApiKey() === trimmed) {
+          attemptedAutoVerificationRef.current = '';
+          storeApiKey('');
+          if (explicit && apiKeyInputRef.current === trimmed) {
+            apiKeyInputRef.current = '';
+            setApiKey('');
+            userEditedKeyRef.current = false;
+          }
+        }
+        setKeyStatus('invalid');
+        if (notify) {
+          showToast(result.reason === 'not-configured'
+            ? 'Server has no admin API key configured.'
+            : 'API key is invalid.', 'error');
+        }
+        return false;
+      }
+
+      setKeyStatus('error');
+      if (notify) showToast(result.error || 'Could not verify the API key.', 'error');
+      return false;
+    } catch (err) {
+      if (!mountedRef.current || requestId !== verifyRequestRef.current) return false;
+      setKeyStatus('error');
+      if (notify) showToast(`Could not verify API key: ${err.message}`, 'error');
+      return false;
+    } finally {
+      if (mountedRef.current && requestId === verifyRequestRef.current) {
+        verifyingKeyRef.current = false;
+        setVerifyingKey(false);
+      }
+    }
+  }, [showToast]);
+
   useEffect(() => {
+    let active = true;
+    mountedRef.current = true;
     const sync = () => {
-      if (!userEditedKeyRef.current) setApiKey(getStoredApiKey());
+      if (!active || verifyingKeyRef.current) return;
+      const stored = getStoredApiKey();
+      if (!userEditedKeyRef.current) {
+        apiKeyInputRef.current = stored;
+        setApiKey(stored);
+      }
+
+      if (!stored) {
+        attemptedAutoVerificationRef.current = '';
+        setKeyStatus('missing');
+        return;
+      }
+
+      if (isStoredApiKeyVerified()) {
+        attemptedAutoVerificationRef.current = stored;
+        setKeyStatus('verified');
+        return;
+      }
+
+      if (attemptedAutoVerificationRef.current === stored) {
+        setKeyStatus('error');
+        return;
+      }
+
+      attemptedAutoVerificationRef.current = stored;
+      runKeyVerification(stored, { notify: true });
     };
+
     const unsubscribe = subscribeApiKeyChange(sync);
     sync();
-    return unsubscribe;
-  }, []);
+    return () => {
+      active = false;
+      mountedRef.current = false;
+      unsubscribe();
+    };
+  }, [runKeyVerification]);
 
   const requireKey = useCallback((msg) => {
     if (!hasApiKey) {
@@ -55,16 +164,32 @@ export function TrailActionsProvider({ children }) {
     setPendingConfirm({ title, message, onConfirm, danger });
   }, []);
 
-  const saveApiKey = useCallback(() => {
-    storeApiKey(apiKey);
+  const saveApiKey = useCallback(async () => {
     userEditedKeyRef.current = false;
-    showToast('API key saved!', 'success');
-  }, [apiKey, showToast]);
+    return runKeyVerification(apiKeyInputRef.current, { explicit: true });
+  }, [runKeyVerification]);
+
+  const clearApiKey = useCallback(() => {
+    verifyRequestRef.current++;
+    verifyingKeyRef.current = false;
+    setVerifyingKey(false);
+    apiKeyInputRef.current = '';
+    setApiKey('');
+    userEditedKeyRef.current = false;
+    attemptedAutoVerificationRef.current = '';
+    storeApiKey('');
+    setKeyStatus('missing');
+    showToast('API key cleared.', 'info');
+  }, [showToast]);
 
   // Marks the field as user-edited so the auto-sync above doesn't clobber input.
   const handleApiKeyChange = useCallback((value) => {
     userEditedKeyRef.current = true;
+    apiKeyInputRef.current = value;
     setApiKey(value);
+    if (!verifyingKeyRef.current) {
+      setKeyStatus(String(value || '').trim() ? 'unknown' : 'missing');
+    }
   }, []);
 
   const handleValidateDatabase = useCallback(async () => {
@@ -418,6 +543,9 @@ export function TrailActionsProvider({ children }) {
     apiKey,
     setApiKey: handleApiKeyChange,
     saveApiKey,
+    clearApiKey,
+    keyStatus,
+    verifyingKey,
     hasApiKey,
     requireKey,
     askConfirm,

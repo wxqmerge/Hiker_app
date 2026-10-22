@@ -215,11 +215,40 @@ export default function ScheduleSettingsDropdown() {
           />
           <button
             onClick={trailActions.saveApiKey}
-            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs whitespace-nowrap"
+            disabled={trailActions.verifyingKey}
+            className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded text-xs whitespace-nowrap"
           >
-            Save
+            {trailActions.verifyingKey ? 'Checking…' : 'Save'}
+          </button>
+          <button
+            onClick={trailActions.clearApiKey}
+            disabled={!trailActions.hasApiKey || trailActions.verifyingKey}
+            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-gray-700 rounded text-xs"
+          >
+            Clear
           </button>
         </div>
+        <p
+          aria-live="polite"
+          className={`mt-1 text-xs ${
+            trailActions.keyStatus === 'verified' ? 'text-green-700'
+              : trailActions.keyStatus === 'invalid' ? 'text-red-600'
+              : trailActions.keyStatus === 'error' ? 'text-amber-700'
+              : 'text-gray-500'
+          }`}
+        >
+          {trailActions.verifyingKey || trailActions.keyStatus === 'checking'
+            ? 'Verifying API key…'
+            : trailActions.keyStatus === 'verified'
+              ? 'Verified. Admin actions are enabled.'
+              : trailActions.keyStatus === 'invalid'
+                ? 'Invalid API key. Enter a valid key.'
+                : trailActions.keyStatus === 'error'
+                  ? 'Unable to verify the API key.'
+                  : trailActions.keyStatus === 'missing'
+                    ? 'Enter an admin API key.'
+                    : 'Press Save to verify this key.'}
+        </p>
       </div>
       {section('Import Trails')}
 

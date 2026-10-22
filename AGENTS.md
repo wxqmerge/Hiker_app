@@ -50,7 +50,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 4. `flatten-server-dist.js` — flattens nested output
 
 ## API Quirks
-- Mutating endpoints (`PUT`, `DELETE`, `POST`) and admin reads such as `/api/data/export-zip`, `/api/validate`, and `/api/schedule/history` require the `X-API-Key` header. Do not add `apikey` query-param auth; client bootstrap accepts `#apikey=` fragments and strips them locally.
+- Mutating endpoints (`PUT`, `DELETE`, `POST`) and admin reads such as `/api/data/export-zip`, `/api/validate`, and `/api/schedule/history` require the `X-API-Key` header. Do not add `apikey` query-param auth; client bootstrap accepts `#apikey=` fragments, verifies them through `/api/auth/verify`, and strips them locally.
 - `seasonal` is a dict `{ "Jan": 3, ... }`, not an array
 - `importJSON` accepts both `trailDetails` (camelCase) and `trail_details` (snake_case)
 - Trail ID lookup falls back: `"360-rd"` → `"360"` (first segment)

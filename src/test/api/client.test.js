@@ -122,6 +122,34 @@ describe('api/client', () => {
     });
   });
 
+  describe('verifyAdminKey', () => {
+    it('returns valid for a 204 response', async () => {
+      fetchSpy.mockResolvedValue({ status: 204 });
+      const { verifyAdminKey } = await import('../../api/client.js');
+      const result = await verifyAdminKey('good-key');
+      expect(result).toEqual({ valid: true });
+      expect(fetchSpy).toHaveBeenCalledWith('/api/auth/verify', {
+        headers: { 'X-API-Key': 'good-key' },
+      });
+    });
+
+    it('returns invalid for a 401 response', async () => {
+      fetchSpy.mockResolvedValue({ status: 401 });
+      const { verifyAdminKey } = await import('../../api/client.js');
+      await expect(verifyAdminKey('bad-key')).resolves.toEqual({ valid: false, reason: 'invalid' });
+    });
+
+    it('returns a network error without throwing', async () => {
+      fetchSpy.mockRejectedValue(new Error('offline'));
+      const { verifyAdminKey } = await import('../../api/client.js');
+      await expect(verifyAdminKey('good-key')).resolves.toEqual({
+        valid: false,
+        reason: 'network',
+        error: 'Unable to reach the server.',
+      });
+    });
+  });
+
   describe('request error handling', () => {
     it('throws on 404 response', async () => {
       fetchSpy.mockResolvedValue({ ok: false, status: 404, json: () => Promise.resolve({ error: { message: 'Not found' } }) });

@@ -54,6 +54,29 @@ export async function request(path, options = {}) {
   return data;
 }
 
+export async function verifyAdminKey(apiKey) {
+  const key = String(apiKey || '').trim();
+  const headers = {};
+  if (key) headers['X-API-Key'] = key;
+
+  let res;
+  try {
+    res = await fetch(`${getApiBase()}/api/auth/verify`, { headers });
+  } catch {
+    return { valid: false, reason: 'network', error: 'Unable to reach the server.' };
+  }
+
+  if (res.status === 200 || res.status === 204) return { valid: true };
+  if (res.status === 401) return { valid: false, reason: 'invalid' };
+  if (res.status === 403) return { valid: false, reason: 'not-configured' };
+
+  const data = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } }));
+  const message = data.error?.message || `HTTP ${res.status}`;
+  if (res.status === 429) return { valid: false, reason: 'rate-limited', error: message };
+
+  throw new Error(message);
+}
+
 export async function getTrails() {
   const data = await request('/api/trails');
   return data.trails || [];

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MonthContextProvider } from '../../contexts/MonthContext';
 import { ScheduleSettingsProvider } from '../../contexts/ScheduleSettingsContext';
@@ -11,6 +11,13 @@ describe('ScheduleSettingsDropdown', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     localStorage.clear();
+    const baseFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn((url: string, options?: RequestInit) => {
+      if (String(url).endsWith('/api/auth/verify')) {
+        return Promise.resolve({ status: 204 } as Response);
+      }
+      return baseFetch(url, options);
+    }) as typeof globalThis.fetch;
   });
 
   const renderMenu = () => render(
@@ -81,10 +88,13 @@ describe('ScheduleSettingsDropdown', () => {
     expect(screen.queryByText('Reload Schedule')).not.toBeInTheDocument();
   });
 
-  it('enables key-required actions when an API key is stored', () => {
+  it('enables key-required actions when an API key is stored', async () => {
     localStorage.setItem(API_KEY_STORAGE_KEY, 'test-key');
     renderMenu();
     fireEvent.click(screen.getByTitle('Schedule settings'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Admin' }));
+    await waitFor(() => expect(screen.getByText('Verified. Admin actions are enabled.')).toBeInTheDocument());
+
     fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
     expect(screen.getByRole('button', { name: /Schedule History/ })).toBeEnabled();
     fireEvent.click(screen.getByRole('tab', { name: 'User' }));
@@ -99,5 +109,37 @@ describe('ScheduleSettingsDropdown', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'About' }));
     expect(screen.getByText(/Open source/)).toBeInTheDocument();
     expect(screen.getByText('View on GitHub')).toBeInTheDocument();
+  });
+
+  it('stores and verifies an entered API key', async () => {
+    renderMenu();
+    fireEvent.click(screen.getByTitle('Schedule settings'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Admin' }));
+
+    fireEvent.change(screen.getByLabelText('Admin API key'), { target: { value: 'good-key' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(localStorage.getItem(API_KEY_STORAGE_KEY)).toBe('good-key'));
+    expect(screen.getByText('Verified. Admin actions are enabled.')).toBeInTheDocument();
+  });
+
+  it('does not store an invalid API key', async () => {
+    globalThis.fetch = vi.fn((url: string) => {
+      if (String(url).endsWith('/api/auth/verify')) {
+        return Promise.resolve({ status: 401 } as Response);
+      }
+      return Promise.resolve({ status: 404, json: () => Promise.resolve({}) } as Response);
+    }) as typeof globalThis.fetch;
+
+    renderMenu();
+    fireEvent.click(screen.getByTitle('Schedule settings'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Admin' }));
+
+    fireEvent.change(screen.getByLabelText('Admin API key'), { target: { value: 'bad-key' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.getByText('Invalid API key. Enter a valid key.')).toBeInTheDocument());
+    expect(localStorage.getItem(API_KEY_STORAGE_KEY)).toBeNull();
+    expect(screen.getByRole('button', { name: /Check GPX Integrity/ })).toBeDisabled();
   });
 });

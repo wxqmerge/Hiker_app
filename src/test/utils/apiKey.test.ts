@@ -6,6 +6,7 @@ import {
   getApiKeyFromHash,
   hasPendingApiKeyFromHash,
   removeApiKeyFromLocation,
+  isStoredApiKeyVerified,
 } from '../../utils/apiKey';
 
 describe('apiKey utils', () => {
@@ -87,6 +88,21 @@ describe('apiKey utils', () => {
       storeApiKey('old-key');
       storeApiKey('new-key');
       expect(getStoredApiKey()).toBe('new-key');
+    });
+
+    it('trims stored keys', () => {
+      storeApiKey('  test-key  ');
+      expect(localStorage.getItem('hiker-api-key')).toBe('test-key');
+      expect(getStoredApiKey()).toBe('test-key');
+    });
+
+    it('tracks whether the stored key has been verified', () => {
+      storeApiKey('  verified-key  ', { verified: true });
+      expect(getStoredApiKey()).toBe('verified-key');
+      expect(isStoredApiKeyVerified()).toBe(true);
+
+      storeApiKey('verified-key');
+      expect(isStoredApiKeyVerified()).toBe(false);
     });
   });
 
