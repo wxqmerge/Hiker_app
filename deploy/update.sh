@@ -5,6 +5,14 @@
 #   --force          Bypass all cooldowns and force package update
 #   --force-critical Force package update for critical security patches (2-day cooldown)
 
+# npm must run as the deploy user. Running the whole script through sudo uses
+# root's npm cache, changes repository ownership, and can make step 6 appear to hang.
+if [ "$(id -u)" -eq 0 ]; then
+    echo "ERROR: Do not run update.sh as root or with sudo."
+    echo "Run it as the Hiker deploy user; privileged commands already use sudo."
+    exit 1
+fi
+
 # Self-fix: restore execute permission if stripped by Windows
 SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 if [ ! -x "$SCRIPT_PATH" ]; then
@@ -94,6 +102,57 @@ check_package_cooldown() {
 
 record_package_update() {
     date +%s > "$LAST_PACKAGE_UPDATE_FILE"
+}
+
+NPM_INSTALL_TIMEOUT="${NPM_INSTALL_TIMEOUT:-900}"
+NPM_INSTALL_FLAGS=(
+    --no-audit
+    --no-fund
+    --no-progress
+    --prefer-offline
+    --fetch-timeout=120000
+    --fetch-retries=1
+    --fetch-retry-mintimeout=2000
+    --fetch-retry-maxtimeout=15000
+)
+
+install_npm_dependencies() {
+    local install_dir="$1"
+    local npm_command
+
+    if [ ! -f "$install_dir/package-lock.json" ]; then
+        npm_command="install"
+    elif [ ! -d "$install_dir/node_modules" ] || [ ! -f "$install_dir/node_modules/.package-lock.json" ]; then
+        npm_command="ci"
+    else
+        npm_command="install"
+    fi
+
+    run_npm() {
+        local command="$1"
+        (
+            cd "$install_dir" || exit 1
+            if command -v timeout >/dev/null 2>&1; then
+                timeout --foreground --kill-after=30 "$NPM_INSTALL_TIMEOUT" npm "$command" "${NPM_INSTALL_FLAGS[@]}"
+            else
+                npm "$command" "${NPM_INSTALL_FLAGS[@]}"
+            fi
+        )
+    }
+
+    echo "  npm $npm_command (timeout: ${NPM_INSTALL_TIMEOUT}s)"
+
+    if run_npm "$npm_command"; then
+        return 0
+    fi
+
+    if [ "$npm_command" = "install" ] && [ -f "$install_dir/package-lock.json" ]; then
+        echo "  npm install failed or timed out — retrying with npm ci"
+        run_npm ci
+        return $?
+    fi
+
+    return 1
 }
 
 time_since_last_update() {
@@ -218,8 +277,8 @@ if [ -f "package.json" ]; then
         fi
     fi
     if [ "$INSTALL_DEPS" = true ]; then
-        if ! npm install; then
-            echo "  ERROR: Frontend npm install failed."
+        if ! install_npm_dependencies "$DIR"; then
+            echo "  ERROR: Frontend npm install failed or timed out."
             exit 1
         fi
         echo "  Dependencies installed."
@@ -228,8 +287,10 @@ fi
 
 echo "[6/13] Installing server dependencies..."
 if [ -f "server/package.json" ]; then
-    if ! (cd server && npm install); then
-        echo "  ERROR: Server npm install failed."
+    if ! install_npm_dependencies "$DIR/server"; then
+        echo "  ERROR: Server npm install failed or timed out."
+        echo "  Retry with visible npm output:"
+        echo "    cd $DIR/server && npm ci --no-audit --no-fund --loglevel=http"
         exit 1
     fi
     echo "  Server dependencies installed."
