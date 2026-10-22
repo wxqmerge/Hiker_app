@@ -104,18 +104,79 @@ hiker_write_env_value() {
     rm -f "$tmp_file"
 }
 
+hiker_set_service_option() {
+    local service_file="$1"
+    local key="$2"
+    local value="$3"
+    local desired="$key=$value"
+    local tmp_file
+
+    [ -f "$service_file" ] || return 1
+    [ -n "$key" ] || return 1
+
+    if grep -qxF "$desired" "$service_file" 2>/dev/null; then
+        return 0
+    fi
+
+    tmp_file=$(mktemp)
+    awk -v key="$key" -v desired="$desired" '
+        BEGIN { in_service = 0; replaced = 0 }
+        /^\[Service\]/ {
+            in_service = 1
+            print
+            next
+        }
+        in_service && /^\[/ {
+            if (!replaced) print desired
+            replaced = 1
+            in_service = 0
+            print
+            next
+        }
+        in_service && $0 ~ "^" key "=" {
+            print desired
+            replaced = 1
+            next
+        }
+        { print }
+        END {
+            if (in_service && !replaced) print desired
+        }
+    ' "$service_file" > "$tmp_file"
+
+    if ! grep -qxF "$desired" "$tmp_file" 2>/dev/null; then
+        rm -f "$tmp_file"
+        return 1
+    fi
+
+    hiker_run_as_root cp "$tmp_file" "$service_file"
+    rm -f "$tmp_file"
+}
+
 hiker_ensure_environment_file() {
     local service_file="$1"
     local env_file="$2"
     local marker="EnvironmentFile=${env_file}"
+    local optional_marker="EnvironmentFile=-${env_file}"
     local tmp_file
 
     [ -f "$service_file" ] || return 1
-    [ -f "$env_file" ] || return 1
 
-    if grep -qxF "$marker" "$service_file" 2>/dev/null; then
+    if grep -qxF "$optional_marker" "$service_file" 2>/dev/null &&
+       grep -qxF "$marker" "$service_file" 2>/dev/null; then
+        tmp_file=$(mktemp)
+        awk -v remove_line="$marker" '$0 != remove_line' "$service_file" > "$tmp_file"
+        hiker_run_as_root cp "$tmp_file" "$service_file"
+        rm -f "$tmp_file"
         return 0
     fi
+
+    if grep -qxF "$optional_marker" "$service_file" 2>/dev/null ||
+       grep -qxF "$marker" "$service_file" 2>/dev/null; then
+        return 0
+    fi
+
+    [ -f "$env_file" ] || return 1
 
     tmp_file=$(mktemp)
     awk -v insert_line="$marker" 'BEGIN { inserted = 0 }

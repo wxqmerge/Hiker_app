@@ -340,6 +340,10 @@ find "$DIR/node_modules/.bin" -type f -exec chmod 755 {} + 2>/dev/null || true
 find "$DIR" -maxdepth 1 -name '.env*' -exec chmod 600 {} + 2>/dev/null || true
 chmod 600 "$DIR/server/.env" 2>/dev/null || true
 chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
+find "$DEPLOY_DIR" -maxdepth 1 -type f -name '*.sh' -exec chmod 750 {} + 2>/dev/null || true
+if [ -d "$DIR/scripts" ]; then
+    find "$DIR/scripts" -maxdepth 1 -type f -name '*.sh' -exec chmod 750 {} + 2>/dev/null || true
+fi
 if [ -d "$DIR/.git" ]; then
     chmod -R go-rwx "$DIR/.git" 2>/dev/null || true
 fi
@@ -380,6 +384,13 @@ if [ -f "$SERVICE_FILE" ]; then
             echo "  WARNING: EnvironmentFile found outside [Service] — replacing it."
             hiker_run_as_root sed -i '/^EnvironmentFile=/d' "$SERVICE_FILE"
         fi
+    fi
+
+    if ! hiker_set_service_option "$SERVICE_FILE" User "$DEPLOY_USER"; then
+        echo "  WARNING: Could not configure User=$DEPLOY_USER for $SERVICE_FILE"
+    fi
+    if ! hiker_set_service_option "$SERVICE_FILE" Group "$SHARED_GROUP"; then
+        echo "  WARNING: Could not configure Group=$SHARED_GROUP for $SERVICE_FILE"
     fi
 
     if hiker_ensure_environment_file "$SERVICE_FILE" "$ENV_FILE"; then
