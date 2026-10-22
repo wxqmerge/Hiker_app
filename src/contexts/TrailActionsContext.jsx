@@ -30,7 +30,7 @@ export function TrailActionsProvider({ children }) {
   const hasApiKey = useApiKey();
 
   // Keep the apiKey field in sync with the stored key. ApiKeySync (in App) stores
-  // a ?apikey= URL value in a post-render effect, which runs after this provider
+  // a #apikey= URL fragment value in a post-render effect, which runs after this provider
   // mounts — so the initial useState snapshot is stale. Without this, the field
   // shows empty and clicking Save would clear the freshly-stored key. We skip the
   // sync while the user is actively editing the field.

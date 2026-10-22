@@ -501,17 +501,21 @@ That contains these issues from the WAN side, but LAN-side exposure and code bug
 
 ### Hiker
 
-- `GET /api/data/export-zip` (`server/src/routes/data.routes.ts:58`) and
-  `GET /api/validate` (`server/src/index.ts:210`) have NO `requireAdminKey` —
-  one unauthenticated GET downloads the entire DB (schedules + all GPX). Add the middleware.
-- `/api/tide-proxy` concatenates `station/begin_date/end_date` into the upstream URL
-  unencoded (`index.ts:125`) — `encodeURIComponent` each value.
-- App accepts keys as `?apikey=` query param (`src/App.jsx:31`) — prefer header/fragment
-  entry so keys stop entering URLs (log-leak work already covers nginx side).
-- `server.listen(PORT)` binds all interfaces (`index.ts:500`) — use `listen(PORT, '127.0.0.1')`;
-  nginx proxies on-loopback anyway.
-- Delete `server/.env.backup_20260829_135009` (old ADMIN key) after secure-env migration.
-- `.env.production` `VITE_API_BASE` uses `http://` — switch to `https://`.
+- FIXED: `GET /api/data/export-zip`, `GET /api/validate`, and
+  `GET /api/schedule/history` now use `requireAdminKey`; key-required UI actions are disabled
+  without a stored key.
+- FIXED: `/api/tide-proxy` builds its NOAA request with `URL`/`URLSearchParams`.
+- FIXED: the client stores keys only from `#apikey=` fragments, strips legacy `?apikey=`
+  parameters without storing them, and server auth remains header-only.
+- FIXED: the Express server binds `HOST` with default `127.0.0.1`.
+- FIXED: CORS is disabled unless `CORS_ORIGINS` is explicitly configured; wildcard CORS never
+  enables credentials.
+- FIXED: deploy scripts use protected key files/prompts, fragment access URLs, mode-0600
+  reports, and no key command-line arguments; generated bookmark/access URL backups are ignored.
+- FIXED: nginx examples/local config deny dotfiles and non-static directories; `verify.sh`
+  checks dotfile denial.
+- Deleted local `server/.env.backup_20260829_135009`; local `.env.production` already uses
+  `https://`.
 
 ### Bughouse Ladder
 

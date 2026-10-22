@@ -140,7 +140,8 @@ function Test-WriteEndpoint {
     # Test with API key if provided
     if ($ApiKey) {
         try {
-            $Result = & curl.exe -s -o NUL -w "%{http_code}" -k --max-time 5 -X $Method -H "Content-Type: application/json" -H "X-API-Key: $ApiKey" -d '{}' $Url | Out-String
+            $AuthConfig = "header = ""X-API-Key: $ApiKey""`n"
+            $Result = $AuthConfig | & curl.exe --config - -s -o NUL -w "%{http_code}" -k --max-time 5 -X $Method -H "Content-Type: application/json" -d '{}' $Url | Out-String
             $Code = [int]$Result.Trim()
             if ($Code -eq $ExpectedStatusWithAuth -or $Code -eq 400) {
                 Write-Host "PASS $Label - Auth works (HTTP $Code)" -ForegroundColor Green

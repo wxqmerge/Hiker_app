@@ -26,6 +26,7 @@ const { hash: buildHash, ts: buildTs, full: buildFull } = buildVersion();
 
 const app: Application = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
+const HOST = process.env.HOST?.trim() || '127.0.0.1';
 
 app.set('trust proxy', 1);
 
@@ -57,14 +58,15 @@ const apiLimiter = rateLimit({
 });
 
 const rawCors = process.env.CORS_ORIGINS?.trim() || '';
-const allowAnyOrigin = rawCors === '' || rawCors === '*';
-const corsOrigins = allowAnyOrigin ? [] : rawCors.split(',').map(o => o.trim()).filter(o => o);
-app.use(cors({
-  origin: allowAnyOrigin ? true : corsOrigins,
-  credentials: !allowAnyOrigin,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
-}));
+if (rawCors) {
+  const corsOrigins = rawCors === '*' ? true : rawCors.split(',').map(o => o.trim()).filter(Boolean);
+  app.use(cors({
+    origin: corsOrigins,
+    credentials: false,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  }));
+}
 
 app.use('/api', apiLimiter);
 app.use(compression());
@@ -122,7 +124,16 @@ app.get('/api/tide-proxy', async (req, res) => {
     res.status(400).json({ error: 'station, begin_date, and end_date are required' });
     return;
   }
-  const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&interval=hilo&begin_date=${beginDate}&end_date=${endDate}&station=${station}&time_zone=lst_ldt&units=english&format=json`;
+  const url = new URL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter');
+  url.searchParams.set('product', 'predictions');
+  url.searchParams.set('datum', 'MLLW');
+  url.searchParams.set('interval', 'hilo');
+  url.searchParams.set('begin_date', beginDate);
+  url.searchParams.set('end_date', endDate);
+  url.searchParams.set('station', station);
+  url.searchParams.set('time_zone', 'lst_ldt');
+  url.searchParams.set('units', 'english');
+  url.searchParams.set('format', 'json');
   try {
     const upstream = await fetch(url);
     if (!upstream.ok) {
@@ -497,14 +508,14 @@ const isMainModule = process.argv[1] && (path.basename(process.argv[1]).endsWith
 if (isMainModule) {
   (async () => {
     await waitForDataReady();
-    server.listen(PORT, () => {
+    server.listen(PORT, HOST, () => {
       console.log(`\n========================================`);
       console.log(`  HIKER TRAIL APP SERVER`);
       console.log(`========================================\n`);
-      console.log(`✓ Server running on port ${PORT}`);
+      console.log(`✓ Server running on http://${HOST}:${PORT}`);
       console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`✓ Build: ${buildFull}`);
-      console.log(`✓ CORS Origins: ${process.env.CORS_ORIGINS || '*'}`);
+      console.log(`✓ CORS Origins: ${process.env.CORS_ORIGINS || 'same-origin only'}`);
       console.log(`✓ Admin API Key: ${process.env.ADMIN_API_KEY ? 'Enabled' : '⚠️  NOT SET'}`);
       console.log(`========================================\n`);
     });

@@ -60,6 +60,19 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # Deny dotfiles and directories that must never be served from the web root.
+    location ~ ^/<APP_NAME>/(server|deploy|src|shared|scripts|node_modules|exported_data|tmp)(/|$) {
+        deny all;
+        access_log off;
+        return 404;
+    }
+
+    location ~ /\. {
+        deny all;
+        access_log off;
+        return 404;
+    }
+
     # Hiker app - serve frontend from /<APP_NAME>/
     location /<APP_NAME>/ {
         root /var/www/html;

@@ -85,6 +85,25 @@ hiker_remove_legacy_keys() {
     hiker_run_as_root sed -i '/^ADMIN_API_KEY=/d' "$env_file"
 }
 
+hiker_write_env_value() {
+    local var="$1"
+    local value="$2"
+    local file="$3"
+    local tmp_file
+
+    [ -n "$var" ] || return 1
+    [ -n "$value" ] || return 1
+    [ -n "$file" ] || return 1
+
+    umask 077
+    tmp_file=$(mktemp)
+    grep -v "^${var}=" "$file" > "$tmp_file" 2>/dev/null || true
+    printf '%s=%s\n' "$var" "$value" >> "$tmp_file"
+    hiker_run_as_root cp "$tmp_file" "$file"
+    chmod 600 "$file" 2>/dev/null || hiker_run_as_root chmod 600 "$file" 2>/dev/null || true
+    rm -f "$tmp_file"
+}
+
 hiker_ensure_environment_file() {
     local service_file="$1"
     local env_file="$2"

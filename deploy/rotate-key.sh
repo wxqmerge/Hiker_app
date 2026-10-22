@@ -2,8 +2,11 @@
 # Rotate API key across all app instances from the same git repository
 # Run from: /var/www/html/
 # Usage:
+#   ./deploy/rotate-key.sh
 #   ROTATE_KEY=... ./deploy/rotate-key.sh
-#   ./deploy/rotate-key.sh [new-key]
+#
+# Never pass a key as a command-line argument. If ROTATE_KEY is unset, the script
+# reads it from a hidden prompt or generates one.
 #
 # If /etc/hiker/<instance>.env exists, the key is written there. Otherwise the
 # legacy server/.env is updated. The new key is written to a mode-0600 report.
@@ -39,7 +42,13 @@ if [ -z "$CALLER_REPO" ]; then
     exit 1
 fi
 
-NEW_KEY="${ROTATE_KEY:-${1:-}}"
+if [ -n "${1:-}" ]; then
+    echo "Error: do not pass an API key as a command-line argument."
+    echo "Run interactively, or set ROTATE_KEY in a protected environment."
+    exit 1
+fi
+
+NEW_KEY="${ROTATE_KEY:-}"
 if [ -z "$NEW_KEY" ] && [ -t 0 ]; then
     read -rsp "New admin key (Enter to generate): " NEW_KEY
     echo ""
@@ -99,12 +108,12 @@ for dir in "$BASE"/*/; do
             continue
         fi
     else
-        if grep -q '^ADMIN_API_KEY=' "$ENV_FILE"; then
-            sed -i "s/^ADMIN_API_KEY=.*/ADMIN_API_KEY=$NEW_KEY/" "$ENV_FILE"
-        else
-            echo "ADMIN_API_KEY=$NEW_KEY" >> "$ENV_FILE"
+        if ! hiker_write_env_value ADMIN_API_KEY "$NEW_KEY" "$ENV_FILE"; then
+            echo "  ✗ $name — legacy key update failed"
+            FAIL=$((FAIL + 1))
+            echo ""
+            continue
         fi
-        chmod 600 "$ENV_FILE" 2>/dev/null || true
         echo "  ✓ $name — legacy key updated"
     fi
 
@@ -137,13 +146,10 @@ echo ""
     echo "Delete this file after copying the key to your password manager."
 } > "$REPORT_FILE"
 
+chmod 600 "$REPORT_FILE" 2>/dev/null || true
 echo "New key report written to:"
 echo "  $REPORT_FILE"
-echo "Delete it after copying the key."
-
-if [ "${ROTATE_REPORT_TO_STDOUT:-0}" = "1" ]; then
-    cat "$REPORT_FILE"
-fi
+echo "Delete it securely after copying the key: shred -u $REPORT_FILE"
 
 if [ "$FAIL" -gt 0 ]; then
     exit 1

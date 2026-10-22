@@ -443,6 +443,13 @@ if [ -f "$NGINX_CONF" ]; then
             pass "SPA location $SPA_PATH uses 'root' (correct for SPA)"
         fi
     fi
+
+    if grep -q 'location ~ /\\.' "$NGINX_CONF"; then
+        pass "Nginx denies dotfiles"
+    else
+        fail "Nginx does not deny dotfiles (add: location ~ /\\. { deny all; access_log off; return 404; })"
+        NEED_NGINX_RELOAD=true
+    fi
 else
     fail "Nginx config missing at $NGINX_CONF"
     NEED_NGINX_CONF=true
@@ -733,21 +740,19 @@ else
     fi
 fi
 
-# Always show app URL with API key at the end
+# Show the public URL and write a protected access URL only to a mode-0600 file.
+# The URL is not echoed because the terminal, shell history, and CI logs may retain it.
 echo ""
 echo "--- Access ---"
 ADMIN_KEY=$(hiker_read_env_value ADMIN_API_KEY "$SECRET_FILE" server/.env || true)
 if [ -n "$ADMIN_KEY" ]; then
     umask 077
     ACCESS_URL_FILE="$HOME/hiker-access-url-${SERVICE}-$(date +%Y%m%d%H%M%S).txt"
-    printf '%s?apikey=%s\n' "$APP_URL" "$ADMIN_KEY" > "$ACCESS_URL_FILE"
+    printf '%s#apikey=%s\n' "$APP_URL" "$ADMIN_KEY" > "$ACCESS_URL_FILE"
     chmod 600 "$ACCESS_URL_FILE" 2>/dev/null || true
     echo "  $APP_URL"
-    echo "  Protected access URL: $ACCESS_URL_FILE"
-    echo "  Delete the access URL file after copying it."
-    if [ "${VERIFY_SHOW_KEYS:-0}" = "1" ]; then
-        printf '  %s?apikey=%s\n' "$APP_URL" "$ADMIN_KEY"
-    fi
+    echo "  Protected access URL written to: $ACCESS_URL_FILE"
+    echo "  Securely delete the access URL file after copying it."
 else
     echo "  $APP_URL"
 fi

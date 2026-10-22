@@ -200,7 +200,7 @@ User drops on date → handleDropOnDate(targetDay)
 ```
 API PUT /api/trails/:id
     │
-    ├── requireAdminKey middleware — validates X-API-Key via timingSafeEqual
+    ├── requireAdminKey middleware — validates X-API-Key header via timingSafeEqual
     │
     ├── dataService.updateTrail(trail)
     │   ├── Find trail in memory array
@@ -241,7 +241,7 @@ server/src/index.ts
 ├── Middleware
 │   ├── Request timing logger
 │   ├── Rate limiter (2000 req / 15 min)
-│   ├── CORS (configurable origins)
+│   ├── CORS (disabled unless CORS_ORIGINS is set)
 │   ├── Helmet (CSP, security headers)
 │   └── JSON/URL body parsers (1mb limit)
 │
@@ -269,7 +269,7 @@ Timing logger (adds duration to console.log)
 Rate limiter (/api only) — 2000 req / 15 min
     │
     ▼
-CORS — configurable origins, credentials, methods
+CORS — explicit origins when configured; no credentials
     │
     ▼
 Helmet — CSP (defaultSrc: self, scriptSrc: self, styleSrc: self + unsafe-inline)
@@ -336,7 +336,13 @@ DELETE /api/trails/:id    → requireAdminKey + deleteTrail()
 GET  /api/schedule              → getSchedule()
 GET  /api/schedule/report       → Text report for quarter(s) (Q1=Dec/Jan/Feb, etc.)
 GET  /api/schedule/download     → TSV download for quarter(s)
+GET  /api/schedule/history      → requireAdminKey + schedule history
 POST /api/schedule/upload       → requireAdminKey + multer file upload + TSV parse
+```
+
+**data.routes.ts**:
+```
+GET /api/data/export-zip → requireAdminKey + full data ZIP
 ```
 
 **lookup.routes.ts**:

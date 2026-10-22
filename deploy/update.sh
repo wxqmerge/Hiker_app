@@ -255,12 +255,33 @@ echo "  Built files deployed."
 echo "[7c/13] Fixing ownership and permissions..."
 echo "  Owner: $DEPLOY_USER:$SHARED_GROUP"
 sudo chown -R "$DEPLOY_USER:$SHARED_GROUP" "$DIR"
-find "$DIR" -type d -not -path "*/node_modules/*" -exec chmod 755 {} +
-find "$DIR" -type f -not -path "*/node_modules/*" -exec chmod 644 {} +
-# Restore execute bits on node_modules/.bin/* (chown -R can affect them)
+# Keep the repo group-only by default. Nginx should serve only static output; do
+# not make .git, server, deploy, source, and data directories world-readable.
+find "$DIR" -type d -not -path "*/node_modules/*" -exec chmod 750 {} + 2>/dev/null || true
+find "$DIR" -type f -not -path "*/node_modules/*" -exec chmod 640 {} + 2>/dev/null || true
+chmod 755 "$DIR"
+for entry in "$DIR"/*; do
+    [ -e "$entry" ] || continue
+    base="$(basename "$entry")"
+    case "$base" in
+        node_modules|server|deploy|src|scripts|shared|exported_data|tmp|coverage)
+            continue
+            ;;
+    esac
+    if [ -d "$entry" ]; then
+        find "$entry" -type d -exec chmod 755 {} + 2>/dev/null || true
+        find "$entry" -type f -exec chmod 644 {} + 2>/dev/null || true
+    elif [ -f "$entry" ]; then
+        chmod 644 "$entry" 2>/dev/null || true
+    fi
+done
 find "$DIR/node_modules/.bin" -type f -exec chmod 755 {} + 2>/dev/null || true
-chmod 640 "$DIR/server/.env" 2>/dev/null || true
+find "$DIR" -maxdepth 1 -name '.env*' -exec chmod 600 {} + 2>/dev/null || true
+chmod 600 "$DIR/server/.env" 2>/dev/null || true
 chmod 600 "$DIR/deploy/.env" 2>/dev/null || true
+if [ -d "$DIR/.git" ]; then
+    chmod -R go-rwx "$DIR/.git" 2>/dev/null || true
+fi
 if [ -f "$SECRET_FILE" ]; then
     hiker_run_as_root chmod 640 "$SECRET_FILE" 2>/dev/null || true
 fi

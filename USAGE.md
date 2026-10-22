@@ -224,7 +224,7 @@ The Express server provides the following API endpoints:
 |--------|----------|-------------|
 | GET | `/health` | Server health with write health status |
 
-**Authentication:** Write endpoints (PUT, DELETE, POST) require an `X-API-Key` header. The API key is set in Trail Manager or stored in localStorage under `hiker-api-key`.
+**Authentication:** Mutating endpoints and admin read endpoints require an `X-API-Key` header. The API key is set in Trail Manager or stored in localStorage under `hiker-api-key`. Admin-key shortcut URLs use a `#apikey=...` fragment so the browser does not send the key to nginx.
 
 ## Server Configuration
 
@@ -233,9 +233,10 @@ The server reads from `exported_data/` directory. Key environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
+| `HOST` | `127.0.0.1` | Bind address; set only when intentionally exposing the Node process |
 | `NODE_ENV` | `development` | Environment (production enables static file serving) |
-| `ADMIN_API_KEY` | (none) | Admin API key for write operations |
-| `CORS_ORIGINS` | `*` | Comma-separated CORS origins |
+| `ADMIN_API_KEY` | (none) | Admin API key for mutating and admin-read operations |
+| `CORS_ORIGINS` | (unset) | Optional comma-separated CORS origins; unset disables CORS middleware |
 
 For production, run `sudo bash ./deploy/secure-env.sh <admin-user>` to move `ADMIN_API_KEY` to `/etc/hiker/<instance>.env` and remove it from `server/.env`. Systemd then loads both files through `EnvironmentFile`. Rotate keys with `./deploy/rotate-key-all.sh`; the new key is written to a mode-`0600` report file under `$HOME`.
 

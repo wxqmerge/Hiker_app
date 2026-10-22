@@ -74,7 +74,7 @@ See [USAGE.md](./USAGE.md) for end-user documentation.
 |--------|----------|-------------|
 | GET | `/health` | Server health + write health status |
 
-**Auth**: Write endpoints require `X-API-Key` header. Uses `crypto.timingSafeEqual` for secure comparison.
+**Auth**: Mutating endpoints and admin read endpoints require the `X-API-Key` header. Client admin-key bootstrap uses URL fragments (`#apikey=...`), not query parameters. Uses `crypto.timingSafeEqual` for secure comparison.
 
 ## Data Structure
 
@@ -176,9 +176,10 @@ Quarter column positions vary across 17 Excel sheets.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
+| `HOST` | `127.0.0.1` | Bind address; set only when intentionally exposing the Node process |
 | `NODE_ENV` | `development` | `production` serves static `dist/` |
-| `ADMIN_API_KEY` | — | Admin key for write operations |
-| `CORS_ORIGINS` | `*` | Comma-separated origins |
+| `ADMIN_API_KEY` | — | Admin key for mutating and admin-read operations |
+| `CORS_ORIGINS` | unset | Optional comma-separated origin list; unset disables CORS middleware |
 
 Production deployments should move `ADMIN_API_KEY` out of `server/.env` into `/etc/hiker/<instance>.env` with:
 

@@ -419,7 +419,10 @@ export function getGpxFileName(trailId: string): string | undefined {
 }
 
 export function getGpxUploadFileName(trailId: string): string {
-  return `${trailId}.gpx`;
+  const base = path.basename(String(trailId)).replace(/\0/g, '');
+  const withoutExt = base.toLowerCase().endsWith('.gpx') ? base.slice(0, -4) : base;
+  const safe = withoutExt.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/^\.+/, '');
+  return `${safe || 'trail'}.gpx`;
 }
 
 export function getScheduleVersion(): string {

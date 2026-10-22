@@ -50,7 +50,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 4. `flatten-server-dist.js` — flattens nested output
 
 ## API Quirks
-- Write endpoints (`PUT`, `DELETE`, `POST`) require `X-API-Key` header
+- Mutating endpoints (`PUT`, `DELETE`, `POST`) and admin reads such as `/api/data/export-zip`, `/api/validate`, and `/api/schedule/history` require the `X-API-Key` header. Do not add `apikey` query-param auth; client bootstrap accepts `#apikey=` fragments and strips them locally.
 - `seasonal` is a dict `{ "Jan": 3, ... }`, not an array
 - `importJSON` accepts both `trailDetails` (camelCase) and `trail_details` (snake_case)
 - Trail ID lookup falls back: `"360-rd"` → `"360"` (first segment)
@@ -62,7 +62,8 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - Dev: Vite proxies `/api` and `/health` to `localhost:3000`
 - Dev: Express proxies non-API routes to `localhost:5173` (Vite)
 - Production: Express serves `dist/` static files and falls back to `index.html` for SPA routing
-- Production port is `$PORT` env var (default 3000), not hardcoded
+- Production port is `$PORT` env var (default 3000), not hardcoded. The server binds `$HOST` (default `127.0.0.1`); set `HOST=0.0.0.0` only when intentionally exposing the Node process directly.
+- CORS is disabled unless `CORS_ORIGINS` is explicitly set to a comma-separated origin list.
 
 ## Testing
 - Vitest 4 + jsdom + testing-library
@@ -72,7 +73,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - ESLint ignores `server/`, `scripts/`, `shared/` — only lints `src/`
 
 ## Deployment
-- Nginx uses `alias` for subpath `/<SUBDOMAIN>/` — **not** subdomain root. Access via `https://main-domain/<SUBDOMAIN>/`, NOT `https://<SUBDOMAIN>.main-domain/`
+- Nginx serves subpath `/<SUBDOMAIN>/` from `/var/www/html` with `root` and SPA `try_files` fallback — not `alias`. Access via `https://main-domain/<SUBDOMAIN>/`, NOT `https://<SUBDOMAIN>.main-domain/`
 - Hairpin NAT: server may not reach its own public domain; use `localhost` fallbacks
 
 ## File Conventions

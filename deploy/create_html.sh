@@ -12,6 +12,10 @@
 #             View/
 #               - View (instance1)
 #               - View (instance2)
+#
+# Admin bookmarks use URL fragments (#apikey=...) because fragments are not sent
+# to nginx or app servers. The generated HTML still contains secrets: download it,
+# import it, then securely delete it.
 
 BASE="/var/www/html"
 DATE=$(date '+%Y-%m-%d')
@@ -45,6 +49,14 @@ echo "========================================"
 echo ""
 
 # Temp files for collecting bookmarks by type
+secure_remove() {
+    if command -v shred >/dev/null 2>&1; then
+        shred -u "$@"
+    else
+        rm -f "$@"
+    fi
+}
+
 ADMIN_TMP=$(mktemp)
 VIEW_TMP=$(mktemp)
 
@@ -90,7 +102,7 @@ for dir in "$BASE"/*/; do
     APP_URL="https://$PARENT_DOMAIN/$name/"
 
     # Collect bookmarks
-    echo "        <DT><A HREF=\"${APP_URL}?apikey=${ADMIN_KEY}\" ADD_DATE=\"$TS\">Admin ($name)</A>" >> "$ADMIN_TMP"
+    echo "        <DT><A HREF=\"${APP_URL}#apikey=${ADMIN_KEY}\" ADD_DATE=\"$TS\">Admin ($name)</A>" >> "$ADMIN_TMP"
     echo "        <DT><A HREF=\"$APP_URL\" ADD_DATE=\"$TS\">View ($name)</A>" >> "$VIEW_TMP"
 
     echo "  ✓ $name — 2 bookmarks added"
@@ -124,8 +136,8 @@ cat >> "$OUTPUT" << 'FOOTER'
 </DL><p>
 FOOTER
 
-# Cleanup temp files
-rm -f "$ADMIN_TMP" "$VIEW_TMP"
+chmod 600 "$OUTPUT"
+secure_remove "$ADMIN_TMP" "$VIEW_TMP"
 
 echo ""
 echo "========================================"
@@ -136,4 +148,4 @@ echo ""
 echo "Import into browser:"
 echo "  1. Download: scp user@server:$OUTPUT ~/Downloads/"
 echo "  2. Browser → Bookmarks Manager → Import → $OUTPUT"
-echo "  3. Delete from server: rm $OUTPUT"
+echo "  3. Delete from server: shred -u $OUTPUT  (or rm -f $OUTPUT if shred is unavailable)"

@@ -1,9 +1,22 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { getStoredApiKey, hasStoredApiKey, storeApiKey } from '../../utils/apiKey';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  getStoredApiKey,
+  hasStoredApiKey,
+  storeApiKey,
+  getApiKeyFromHash,
+  hasPendingApiKeyFromHash,
+  removeApiKeyFromLocation,
+} from '../../utils/apiKey';
 
 describe('apiKey utils', () => {
   beforeEach(() => {
     localStorage.clear();
+    window.history.replaceState({}, '', '/');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.history.replaceState({}, '', '/');
   });
 
   describe('getStoredApiKey', () => {
@@ -74,6 +87,45 @@ describe('apiKey utils', () => {
       storeApiKey('old-key');
       storeApiKey('new-key');
       expect(getStoredApiKey()).toBe('new-key');
+    });
+  });
+
+  describe('hash key import', () => {
+    const setLocation = (href: string) => {
+      const url = new URL(href);
+      Object.assign(window.location, {
+        protocol: url.protocol,
+        origin: url.origin,
+        hostname: url.hostname,
+        pathname: url.pathname,
+        search: url.search,
+        hash: url.hash,
+        href: url.href,
+      });
+    };
+
+    it('reads apikey and key fragments', () => {
+      setLocation('http://localhost/app/?x=1#apikey=hash-key');
+      expect(getApiKeyFromHash()).toBe('hash-key');
+      expect(hasPendingApiKeyFromHash()).toBe(true);
+
+      setLocation('http://localhost/app/#key=short-key');
+      expect(getApiKeyFromHash()).toBe('short-key');
+      expect(hasPendingApiKeyFromHash()).toBe(true);
+    });
+
+    it('removes only the key fragment without storing it', () => {
+      setLocation('http://localhost/app/?x=1#apikey=secret');
+      vi.spyOn(window.history, 'replaceState').mockImplementation((_state, _title, url) => {
+        setLocation(String(url));
+      });
+
+      removeApiKeyFromLocation();
+
+      expect(window.location.pathname).toBe('/app/');
+      expect(window.location.search).toBe('?x=1');
+      expect(window.location.hash).toBe('');
+      expect(getStoredApiKey()).toBe('');
     });
   });
 });

@@ -20,17 +20,22 @@ import { ensureScheduleWritable, request } from './api/client.js';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 import { setGroupConfig, getGroupName } from './utils/config';
-import { storeApiKey, hasStoredApiKey } from './utils/apiKey';
+import { storeApiKey, hasStoredApiKey, getApiKeyFromHash, removeApiKeyFromLocation, hasPendingApiKeyFromHash } from './utils/apiKey';
 import SplashScreen from './components/SplashScreen';
 import { hasVisited } from './utils/visited';
 
 function ApiKeySync() {
   const { search } = useLocation();
   useEffect(() => {
-    const params = new URLSearchParams(search);
-    const key = params.get('apikey');
+    const key = getApiKeyFromHash();
     if (key) {
       storeApiKey(key);
+      removeApiKeyFromLocation();
+    }
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.has('apikey')) {
       params.delete('apikey');
       const newSearch = params.toString();
       window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname);
@@ -43,8 +48,8 @@ function App() {
   const showToast = useToast();
   const [isConfigLoaded, setIsConfigLoaded] = useState(!!getGroupName());
   const [showSplash, setShowSplash] = useState(() => {
-    if (new URLSearchParams(window.location.search).has('apikey')) return false;
-    return !hasStoredApiKey() && !hasVisited();
+    if (hasStoredApiKey() || hasPendingApiKeyFromHash()) return false;
+    return !hasVisited();
   });
 
   useEffect(() => {

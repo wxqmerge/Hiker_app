@@ -67,6 +67,11 @@ travel_data/
 travel.md
 Booklet.pdf
 server/.env.backup_*
+server/.env.pre-secret.*
+.env.*.backup
+.env.pre-secret.*
+hiker-access-url-*.txt
+hiker-bookmarks-*.html
 
 # Temp upload directory
 tmp/

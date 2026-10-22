@@ -6,6 +6,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     localStorage.clear();
+    window.history.replaceState({}, '', '/');
   });
 
   it('renders Home at root path', () => {
