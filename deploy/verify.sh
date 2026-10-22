@@ -488,6 +488,28 @@ if command -v systemctl &>/dev/null; then
     SERVICE_STATE=$(systemctl show -p ActiveState --value "$SERVICE" 2>/dev/null || echo "unknown")
     if systemctl is-active --quiet "$SERVICE"; then
         pass "$SERVICE service is running"
+
+        MAIN_PID=$(systemctl show -p MainPID --value "$SERVICE" 2>/dev/null || echo "")
+        if [ -n "$MAIN_PID" ] && [ "$MAIN_PID" != "0" ]; then
+            if [ "$(id -u)" -eq 0 ]; then
+                SERVICE_ENV_CMD=(cat "/proc/$MAIN_PID/environ")
+            elif sudo -n true >/dev/null 2>&1; then
+                SERVICE_ENV_CMD=(sudo -n cat "/proc/$MAIN_PID/environ")
+            else
+                SERVICE_ENV_CMD=()
+            fi
+
+            if [ "${#SERVICE_ENV_CMD[@]}" -gt 0 ]; then
+                if "${SERVICE_ENV_CMD[@]}" 2>/dev/null | tr '\0' '\n' | grep -q '^ADMIN_API_KEY=.'; then
+                    pass "Running service has ADMIN_API_KEY loaded"
+                else
+                    fail "Running service does not have ADMIN_API_KEY loaded"
+                    echo "  Check EnvironmentFile, key file permissions, and service group membership."
+                fi
+            else
+                warn "Could not read $SERVICE environment without sudo"
+            fi
+        fi
     elif systemctl show -p ActiveState --value "$SERVICE" | grep -q "activating"; then
         warn "$SERVICE service is activating (it may take a moment to respond)"
     else
@@ -596,10 +618,34 @@ if command -v curl &>/dev/null; then
         fail "Cannot fetch manifest from http://localhost:$SERVER_PORT/manifest.webmanifest"
     fi
 
-    # --- Manifest Check (via nginx subpath) ---
-    MANIFEST_HTTPS=$(curl -sk --max-time 5 "https://$DOMAIN/$APP_NAME/manifest.webmanifest" 2>/dev/null)
-    if [ -n "$MANIFEST_HTTPS" ]; then
-        MANIFEST_HTTPS_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "https://$DOMAIN/$APP_NAME/manifest.webmanifest" 2>/dev/null)
+    # --- Manifest Check (via nginx deployment path) ---
+    MANIFEST_HTTPS_URL="${FRONTEND_URL%/}/manifest.webmanifest"
+    PUBLIC_HOST=$(printf '%s\n' "$FRONTEND_URL" | sed -E 's|^https?://||; s|[:/].*||')
+    MANIFEST_HTTPS_CODE=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "$MANIFEST_HTTPS_URL" 2>/dev/null | tr -d '[:space:]' || echo "")
+    MANIFEST_HTTPS=$(curl -sk --max-time 5 "$MANIFEST_HTTPS_URL" 2>/dev/null || echo "")
+    MANIFEST_FAILED=false
+
+    if [[ "$MANIFEST_HTTPS_CODE" =~ ^0+$ || -z "$MANIFEST_HTTPS_CODE" || -z "$MANIFEST_HTTPS" ]]; then
+        if [ -n "$PUBLIC_HOST" ] && curl --help all 2>/dev/null | grep -q -- '--resolve'; then
+            LOCAL_NGINX_CODE=$(curl -sk --max-time 5 --resolve "$PUBLIC_HOST:443:127.0.0.1" -o /dev/null -w "%{http_code}" "$MANIFEST_HTTPS_URL" 2>/dev/null | tr -d '[:space:]' || echo "")
+            LOCAL_NGINX_MANIFEST=$(curl -sk --max-time 5 --resolve "$PUBLIC_HOST:443:127.0.0.1" "$MANIFEST_HTTPS_URL" 2>/dev/null || echo "")
+        else
+            LOCAL_NGINX_CODE=""
+            LOCAL_NGINX_MANIFEST=""
+        fi
+
+        if [ -n "$LOCAL_NGINX_MANIFEST" ]; then
+            warn "Public $MANIFEST_HTTPS_URL unreachable (DNS/NAT?), but local nginx serves it"
+            MANIFEST_HTTPS_CODE="$LOCAL_NGINX_CODE"
+            MANIFEST_HTTPS="$LOCAL_NGINX_MANIFEST"
+        else
+            fail "Cannot fetch manifest via HTTPS ($MANIFEST_HTTPS_URL)"
+            echo "  PWA install will fail. Check nginx and server."
+            MANIFEST_FAILED=true
+        fi
+    fi
+
+    if [ "$MANIFEST_FAILED" != true ]; then
         MANIFEST_HTTPS_NAME=$(echo "$MANIFEST_HTTPS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))" 2>/dev/null)
         MANIFEST_HTTPS_START=$(echo "$MANIFEST_HTTPS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('start_url',''))" 2>/dev/null)
         if [ "$MANIFEST_HTTPS_CODE" = "200" ] && [ "$MANIFEST_HTTPS_NAME" = "$APP_NAME" ]; then
@@ -617,9 +663,6 @@ if command -v curl &>/dev/null; then
             fail "Manifest via HTTPS name is '$MANIFEST_HTTPS_NAME', expected '$APP_NAME'"
             echo "  Fix: check nginx X-App-Name header for manifest proxy"
         fi
-    else
-        fail "Cannot fetch manifest via HTTPS (https://$DOMAIN/$APP_NAME/manifest.webmanifest)"
-        echo "  PWA install will fail. Check nginx and server."
     fi
 
     # --- Redirect Check ---
