@@ -491,41 +491,89 @@ fi
 
 # 12. Stop service and kill stale process on port
 echo "[12/13] Stopping service and freeing port $SERVER_PORT..."
-sudo -n systemctl stop "$SERVICE" 2>&1 || true
+# Do NOT swallow this. With `|| true` a failed stop (passwordless sudo not granted,
+# or a unit name that does not match) left the unit running with Restart=on-failure,
+# and everything below then fights systemd for the port: kill the process and systemd
+# starts another one within RestartSec, so the deploy loops on "still busy" while the
+# thing it keeps killing is its own service. A missing unit is fine, anything else is
+# a reason to stop here.
+if ! STOP_OUT=$(sudo -n systemctl stop "$SERVICE" 2>&1); then
+    case "$STOP_OUT" in
+        *"could not be found"*|*"no such file"*|*"Not loaded"*|*"inactive"*)
+            echo "  (no $SERVICE unit loaded yet — nothing to stop)"
+            ;;
+        *)
+            echo "  ERROR: could not stop $SERVICE: $STOP_OUT"
+            echo "  Aborting before touching the port: systemd's Restart= will re-spawn the"
+            echo "  process faster than this script can kill it. Check with:"
+            echo "    sudo systemctl status $SERVICE"
+            echo "    sudo systemctl show $SERVICE -p MainPID -p NRestarts -p ExecMainStartTimestamp --value"
+            exit 1
+            ;;
+    esac
+fi
 sleep 1
 PORT_PID=$(hiker_port_owner_pid "$SERVER_PORT" || true)
 if [ -n "$PORT_PID" ]; then
     PORT_CMD=$(ps -o cmd= -p "$PORT_PID" 2>/dev/null || echo "unknown")
+    PORT_UNIT=$(hiker_process_unit "$PORT_PID" || true)
     echo "  Port $SERVER_PORT is still held by PID $PORT_PID after the stop:"
-    echo "    user: $(ps -o user= -p "$PORT_PID" 2>/dev/null | tr -d ' ')"
+    echo "    user:    $(ps -o user= -p "$PORT_PID" 2>/dev/null | sed 's/^ *//')"
     echo "    started: $(ps -o lstart= -p "$PORT_PID" 2>/dev/null | sed 's/^ *//')"
-    echo "    cmd: $PORT_CMD"
+    echo "    cmd:     $PORT_CMD"
+    [ -n "$PORT_UNIT" ] && echo "    unit:    $PORT_UNIT"
 
-    # Kill it only if it is a stale copy of THIS instance. If another instance
-    # (sothh-dev, ramblers, travel…) grabbed the same port, killing it takes down a
-    # different site: that is a port-allocation bug in the two server/.env files and
-    # has to be fixed there, not by murder.
-    case "$PORT_CMD" in
-        *"$DIR"*)
-            echo "  Orphan from this instance — killing."
-            hiker_run_as_root kill -9 "$PORT_PID" 2>/dev/null || true
-            for _ in 1 2 3 4 5; do
-                hiker_port_owner_pid "$SERVER_PORT" >/dev/null 2>&1 || break
-                sleep 1
-            done
-            ;;
-        *)
-            echo "  ERROR: port $SERVER_PORT belongs to a process that is NOT $DIR."
-            echo "  Two instances are configured with the same PORT. Give this one its own:"
-            echo "    1) edit $ENV_FILE  (PORT=<free port>)"
-            echo "    2) re-run this deploy so nginx proxy_pass follows the new port"
-            echo "  Aborting before start — the service would die with EADDRINUSE."
+    # If the holder belongs to THIS unit, the stop above did not take effect and killing
+    # it is a losing fight: systemd re-spawns within RestartSec. Say so instead of
+    # firing SIGKILL at our own service.
+    if [ "$PORT_UNIT" = "$SERVICE.service" ]; then
+        echo "  ERROR: that process is $SERVICE's OWN process — the stop did not take effect."
+        echo "  Killing it is pointless while the unit is loaded: systemd starts another one"
+        echo "  within RestartSec. Find out why stop failed:"
+        echo "    sudo systemctl status $SERVICE"
+        echo "    sudo systemctl show $SERVICE -p MainPID -p NRestarts -p ExecMainStartTimestamp -p Restart --value"
+        exit 1
+    fi
+
+    # Kill it only if the process really belongs to THIS instance, decided from the
+    # process's working directory rather than its cmdline text. If another instance
+    # (sothh-dev, ramblers, travel…) owns the port, killing it takes down a different
+    # site: that is a port-allocation bug in two server/.env files, not a process to
+    # murder.
+    if hiker_process_in_dir "$PORT_PID" "$DIR"; then
+        echo "  cwd is inside $DIR — this instance's orphan. Killing it."
+        hiker_run_as_root kill -9 "$PORT_PID" 2>/dev/null ||
+            echo "  WARNING: kill -9 $PORT_PID did not succeed (permissions?)."
+        for _ in 1 2 3 4 5; do
+            hiker_port_owner_pid "$SERVER_PORT" >/dev/null 2>&1 || break
+            sleep 1
+        done
+
+        STILL_PID=$(hiker_port_owner_pid "$SERVER_PORT" || true)
+        if [ -n "$STILL_PID" ]; then
+            echo "  ERROR: port $SERVER_PORT is still busy, now held by PID $STILL_PID."
+            if [ "$STILL_PID" != "$PORT_PID" ]; then
+                echo "  That is a DIFFERENT process, so this is a port fight between two"
+                echo "  instances, not a stale process. Stop guessing and give this one its"
+                echo "  own PORT in $ENV_FILE."
+            else
+                echo "  SIGKILL cannot be ignored, so either the kill was not permitted, the"
+                echo "  PID is a zombie its parent will not reap, or a child of it inherited"
+                echo "  the listening socket (a cluster/worker). Look:"
+                echo "    sudo ps -o pid,ppid,stat,user,args -p $PORT_PID"
+                echo "    pgrep -aP $PORT_PID"
+                [ -n "$PORT_UNIT" ] && echo "    sudo systemctl stop $PORT_UNIT   # if it is a service, stop the UNIT"
+            fi
             exit 1
-            ;;
-    esac
-
-    if hiker_port_owner_pid "$SERVER_PORT" >/dev/null 2>&1; then
-        echo "  ERROR: port $SERVER_PORT is still busy after the kill; aborting before start."
+        fi
+        echo "  Port $SERVER_PORT freed."
+    else
+        echo "  ERROR: that process is not part of $DIR, so it is NOT being killed."
+        [ -n "$PORT_UNIT" ] && echo "  It is owned by $PORT_UNIT."
+        echo "  Two instances are configured with the same PORT. Give this one its own:"
+        echo "    1) edit $ENV_FILE  (PORT=<free port>)"
+        echo "    2) re-run this deploy so nginx proxy_pass follows the new port"
+        echo "  Aborting before start — the service would die with EADDRINUSE."
         exit 1
     fi
 fi

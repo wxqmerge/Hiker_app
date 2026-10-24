@@ -487,6 +487,41 @@ fi
 echo ""
 echo "--- Service ---"
 if command -v systemctl &>/dev/null; then
+    # A stray EnvironmentFile= from a neighbouring instance (a copied unit file)
+    # silently wins over this instance's own config: systemd applies EnvironmentFile
+    # lines in order and later entries override earlier ones, so PORT and
+    # ADMIN_API_KEY come from the other site.
+    UNIT_ENV_FILES=$(systemctl cat "$SERVICE" 2>/dev/null | grep -E '^EnvironmentFile=' | sed -E 's/^EnvironmentFile=-?//')
+    FOREIGN_ENV_FOUND=false
+    while IFS= read -r envf; do
+        [ -n "$envf" ] || continue
+        foreign_reason=""
+        foreign_owner=""
+        foreign_pat=""
+        case "$envf" in
+            "$DEPLOY_PATH"/*) ;;
+            /var/www/html/*/*)
+                foreign_owner=${envf#/var/www/html/}
+                foreign_owner=${foreign_owner%%/*}
+                [ "$foreign_owner" = "$SERVICE" ] || { foreign_reason="belongs to instance '$foreign_owner' (overrides $SERVICE)"; foreign_pat=".*${foreign_owner}/"; }
+                ;;
+            /etc/hiker/*.env)
+                foreign_owner=${envf#/etc/hiker/}
+                foreign_owner=${foreign_owner%.env}
+                [ "$foreign_owner" = "$SERVICE" ] || { foreign_reason="belongs to instance '$foreign_owner' (overrides $SERVICE)"; foreign_pat="${foreign_owner}\.env"; }
+                ;;
+        esac
+        if [ -n "$foreign_reason" ]; then
+            fail "EnvironmentFile $envf $foreign_reason"
+            echo "  Fix: sudo sed -i '\\|^EnvironmentFile=.*${foreign_pat}|d' $(systemctl show -p FragmentPath --value "$SERVICE" 2>/dev/null || echo "/etc/systemd/system/$SERVICE.service")"
+            echo "       sudo systemctl daemon-reload && sudo systemctl restart $SERVICE"
+            FOREIGN_ENV_FOUND=true
+        fi
+    done <<< "$UNIT_ENV_FILES"
+    if [ "$FOREIGN_ENV_FOUND" = false ] && [ -n "$UNIT_ENV_FILES" ]; then
+        pass "EnvironmentFile entries all belong to $SERVICE"
+    fi
+
     SERVICE_STATE=$(systemctl show -p ActiveState --value "$SERVICE" 2>/dev/null || echo "unknown")
     if systemctl is-active --quiet "$SERVICE"; then
         pass "$SERVICE service is running"
@@ -558,10 +593,27 @@ if [ -n "$PORT_OWNER_PID" ] && [ -n "$UNIT_MAIN_PID" ] && [ "$UNIT_MAIN_PID" != 
     echo "  dies on every start with EADDRINUSE and restart-loops, while the orphan keeps"
     echo "  answering with whatever environment it was started with (often no key):"
     ps -o pid,user,lstart,args -p "$PORT_OWNER_PID" --no-headers 2>/dev/null | sed 's/^/    /'
+    OWNER_UNIT=$(hiker_process_unit "$PORT_OWNER_PID" || true)
+    [ -n "$OWNER_UNIT" ] && echo "    owning unit: $OWNER_UNIT"
+    if [ "$OWNER_UNIT" = "$SERVICE.service" ]; then
+        echo "    that is $SERVICE's own process, so the unit is restart-looping rather than"
+        echo "    being blocked by an orphan — read the journal for why it keeps dying."
+    elif hiker_process_in_dir "$PORT_OWNER_PID" "$DIR"; then
+        echo "    cwd is inside $DIR — a stale copy of this instance, safe to kill."
+    else
+        echo "    cwd is NOT under $DIR — do not kill it; two instances share this PORT."
+    fi
     NEED_PORT_CONFLICT=true
 elif [ -n "$PORT_OWNER_PID" ] && [ "${SERVICE_STATE:-}" != "active" ]; then
     fail "Port $SERVER_PORT is held by PID $PORT_OWNER_PID while $SERVICE is not active"
     ps -o pid,user,lstart,args -p "$PORT_OWNER_PID" --no-headers 2>/dev/null | sed 's/^/    /'
+    OWNER_UNIT=$(hiker_process_unit "$PORT_OWNER_PID" || true)
+    [ -n "$OWNER_UNIT" ] && echo "    owning unit: $OWNER_UNIT"
+    if hiker_process_in_dir "$PORT_OWNER_PID" "$DIR"; then
+        echo "    cwd is inside $DIR — a stale copy of this instance, safe to kill."
+    else
+        echo "    cwd is NOT under $DIR — do not kill it; two instances share this PORT."
+    fi
     NEED_PORT_CONFLICT=true
 elif [ -n "$PORT_OWNER_PID" ]; then
     pass "Port $SERVER_PORT is held by $SERVICE (PID $PORT_OWNER_PID)"

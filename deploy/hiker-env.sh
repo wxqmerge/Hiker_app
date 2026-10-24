@@ -436,3 +436,40 @@ hiker_verify_admin_key_after_change() {
     echo "  WARNING: could not reach /api/auth/verify on port $port (HTTP $HIKER_ADMIN_PROBE_CODE)."
     return 1
 }
+
+# Does this PID belong to this instance? Matching the CMDLINE STRING was wrong in both
+# directions: an orphan started with `cd <dir> && npm start` runs as `node dist/index.js`
+# with no path in it at all, while a second checkout can carry a path that is not this
+# one. Ask the kernel what the process's working directory actually is, then its exe,
+# and fall back to the cmdline.
+hiker_process_in_dir() {
+    local pid="${1:-}"
+    local dir="${2:-}"
+    local cwd exe cmd
+
+    [ -n "$pid" ] && [ -n "$dir" ] || return 1
+    [ -e "/proc/$pid" ] || return 1
+
+    # cwd/exe of another user's process is restricted, so read them as root.
+    cwd=$(hiker_run_as_root readlink "/proc/$pid/cwd" 2>/dev/null || true)
+    exe=$(hiker_run_as_root readlink "/proc/$pid/exe" 2>/dev/null || true)
+    cmd=$(hiker_run_as_root cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)
+
+    case "$cwd" in "$dir"|"$dir"/*) return 0 ;; esac
+    case "$exe" in "$dir"/*) return 0 ;; esac
+    case "$cmd" in *"$dir"*) return 0 ;; esac
+
+    return 1
+}
+
+# Which systemd unit owns a PID, or nothing. A hand-started process reports its login
+# session's unit instead, which is still the answer you want: it says the squatter is
+# NOT a service, so stopping services will never free the port.
+hiker_process_unit() {
+    local pid="${1:-}"
+
+    [ -n "$pid" ] || return 1
+    [ -e "/proc/$pid/cgroup" ] || return 1
+
+    sed -n 's#.*/\([^.[:space:]]*\.service\).*#\1#p' "/proc/$pid/cgroup" 2>/dev/null | head -1
+}
