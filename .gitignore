@@ -71,7 +71,7 @@ server/.env.pre-secret.*
 .env.*.backup
 .env.pre-secret.*
 hiker-access-url-*.txt
-hiker-bookmarks-*.html
+hiker-bookmarks*.html
 
 # Temp upload directory
 tmp/

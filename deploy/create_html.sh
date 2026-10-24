@@ -18,8 +18,7 @@
 # import it, then securely delete it.
 
 BASE="/var/www/html"
-DATE=$(date '+%Y-%m-%d')
-OUTPUT="$HOME/hiker-bookmarks-${DATE}.html"
+OUTPUT="$HOME/hiker-bookmarks.html"
 TS=$(date +%s)
 umask 077
 

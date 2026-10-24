@@ -23,7 +23,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
   const showToast = useToast();
   const [nameCopied, setNameCopied] = useState(false);
   const [showLeaderEdit, setShowLeaderEdit] = useState(false);
-  const { handleGpxDownload, handleTrailhead } = useGpxActions(trail);
+  const { handleGpxDownload, handleGpxShare, handleTrailhead } = useGpxActions(trail);
   const trailDetails = useTrailDetails();
   const { title: tt } = useTooltips();
   const trailName = getTrailName(trail);
@@ -221,6 +221,7 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                 trail={trail}
                 hikeDate={hikeDate}
                 onGpxDownload={handleGpxDownload}
+                onGpxShare={handleGpxShare}
                 onTrailhead={handleTrailhead}
               />
            </div>

@@ -900,7 +900,7 @@ echo "--- Access ---"
 ADMIN_KEY=$(hiker_read_env_value ADMIN_API_KEY "$SECRET_FILE" server/.env || true)
 if [ -n "$ADMIN_KEY" ]; then
     umask 077
-    ACCESS_URL_FILE="$HOME/hiker-access-url-${SERVICE}-$(date +%Y%m%d%H%M%S).txt"
+    ACCESS_URL_FILE="$HOME/hiker-access-url-${SERVICE}.txt"
     printf '%s#apikey=%s\n' "$APP_URL" "$ADMIN_KEY" > "$ACCESS_URL_FILE"
     chmod 600 "$ACCESS_URL_FILE" 2>/dev/null || true
     echo "  $APP_URL"
