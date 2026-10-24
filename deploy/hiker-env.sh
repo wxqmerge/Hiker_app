@@ -197,3 +197,45 @@ hiker_ensure_environment_file() {
     rm -f "$tmp_file"
     return 1
 }
+
+# Ask the RUNNING server whether it actually holds an admin key, without needing
+# root. Sets HIKER_ADMIN_PROBE_CODE to the HTTP status and returns:
+#   0 = key is loaded (401 rejects our deliberately missing header; 429 means the
+#       limiter answered, which it can only do behind a configured key)
+#   1 = the process has NO key (403 "ADMIN_API_KEY not configured")
+#   2 = inconclusive (nothing answering, no curl, no base url)
+#
+# Why a live probe belongs next to the file checks at all:
+#   - hiker_read_env_value falls back to `sudo -n grep`, so a key that root can
+#     read and the service user cannot is "set" to every file-based check;
+#   - `EnvironmentFile=-<path>` makes an unreadable file a SILENT no-op, so the
+#     service starts, answers /health with 200, and every admin route 403s;
+#   - /proc/<pid>/environ is the right source but is root-only, so verify.sh can
+#     only warn when it is run without passwordless sudo.
+# requireAdminKey tests ADMIN_API_KEY *before* it reads the request header, which
+# is exactly what makes a keyless GET /api/auth/verify an oracle for the process
+# environment rather than for the caller's key. Failed tries are what the limiter
+# counts (skipSuccessfulRequests), so do not call this in a loop.
+hiker_probe_admin_key_loaded() {
+    local base="${1:-}"
+    base="${base%/}"
+
+    HIKER_ADMIN_PROBE_CODE="000"
+
+    [ -n "$base" ] || return 2
+    command -v curl >/dev/null 2>&1 || return 2
+
+    # Auth failures sleep ~1s each (ADMIN_AUTH_FAILURE_DELAY_MS), hence the 10s cap.
+    # curl prints 000 itself when it could not connect, so no `|| echo` here: that
+    # appends a second 000 to the one it already wrote and yields 000000.
+    HIKER_ADMIN_PROBE_CODE=$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' \
+        "$base/api/auth/verify" 2>/dev/null)
+    HIKER_ADMIN_PROBE_CODE=$(printf '%s' "$HIKER_ADMIN_PROBE_CODE" | tr -dc '0-9')
+    [ -n "$HIKER_ADMIN_PROBE_CODE" ] || HIKER_ADMIN_PROBE_CODE="000"
+
+    case "$HIKER_ADMIN_PROBE_CODE" in
+        401|429) return 0 ;;
+        403) return 1 ;;
+        *) return 2 ;;
+    esac
+}

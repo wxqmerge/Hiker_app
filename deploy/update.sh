@@ -385,6 +385,15 @@ if [ ! -f "$SERVICE_FILE" ]; then
 fi
 
 if [ -f "$SERVICE_FILE" ]; then
+    # The installed unit can predate this script and still carry the template's
+    # <SECRET_FILE> placeholder (deploy/hiker-app.service). systemd resolves that to
+    # a path that does not exist, the leading '-' makes the miss non-fatal, and the
+    # process starts with no key at all.
+    if grep -qF '<SECRET_FILE>' "$SERVICE_FILE" 2>/dev/null; then
+        hiker_run_as_root sed -i "s|<SECRET_FILE>|$SECRET_FILE|g" "$SERVICE_FILE" 2>/dev/null || true
+        echo "  Replaced the <SECRET_FILE> placeholder with $SECRET_FILE"
+    fi
+
     SERVICE_SECTION=$(sed -n '/^\[Service\]/,/^\[/p' "$SERVICE_FILE")
     if ! echo "$SERVICE_SECTION" | grep -q '^EnvironmentFile='; then
         if grep -q '^EnvironmentFile=' "$SERVICE_FILE" 2>/dev/null; then
@@ -411,6 +420,24 @@ if [ -f "$SERVICE_FILE" ]; then
             echo "  ProtectedKeyFile: $SECRET_FILE"
         else
             echo "  WARNING: Could not configure EnvironmentFile for $SECRET_FILE"
+        fi
+
+        # The secret file is 640 root:$HIKER_SECRET_GROUP and /etc/hiker itself is
+        # 750 root:$HIKER_SECRET_GROUP, so the account that RUNS the service must be
+        # in that group. secure-env.sh adds the interactive admin user, never the
+        # service user, and EnvironmentFile=- skips an unreadable file without any
+        # error — which is how a green deploy ends up serving 403 on every admin route.
+        SERVICE_USER_NOW=$(systemctl show -p User --value "$SERVICE" 2>/dev/null || echo "")
+        [ -n "$SERVICE_USER_NOW" ] || SERVICE_USER_NOW="$DEPLOY_USER"
+        if [ "$SERVICE_USER_NOW" != "root" ] && id "$SERVICE_USER_NOW" >/dev/null 2>&1 &&
+           ! id -nG "$SERVICE_USER_NOW" 2>/dev/null | grep -qw "$HIKER_SECRET_GROUP"; then
+            hiker_run_as_root groupadd -f "$HIKER_SECRET_GROUP" 2>/dev/null || true
+            if hiker_run_as_root usermod -aG "$HIKER_SECRET_GROUP" "$SERVICE_USER_NOW" 2>/dev/null; then
+                echo "  Added service user $SERVICE_USER_NOW to $HIKER_SECRET_GROUP"
+            else
+                echo "  WARNING: $SERVICE_USER_NOW cannot read $SECRET_FILE; add it manually:"
+                echo "    sudo usermod -aG $HIKER_SECRET_GROUP $SERVICE_USER_NOW"
+            fi
         fi
     fi
 fi
@@ -483,15 +510,46 @@ if ! sudo -n systemctl start "$SERVICE" 2>&1; then
 fi
 
 sleep 2
-if sudo systemctl is-active --quiet "$SERVICE"; then
-    echo ""
-    echo "=== Update complete. $SERVICE is running. ==="
-    echo ""
-    echo "To trace live logs: sudo journalctl -u $SERVICE -f"
-else
+if ! sudo systemctl is-active --quiet "$SERVICE"; then
     echo ""
     echo "=== WARNING: $SERVICE is NOT running! Check status: ==="
     echo "  sudo systemctl status $SERVICE"
     echo "  sudo journalctl -u $SERVICE --no-pager -n 20"
     exit 1
 fi
+
+# Active is not the same as usable. Step 3 read the key through sudo
+# (hiker_read_env_value falls back to `sudo -n grep`), and EnvironmentFile=- skips
+# a file the SERVICE user cannot read without a word of complaint — so the process
+# can come up healthy, answer /health with 200, serve every public GET, and return
+# 403 "ADMIN_API_KEY not configured" for every admin route. Nothing above can see
+# that difference; the running process can, and needs no privileges to ask.
+echo ""
+echo "Probing the running process for the admin key..."
+if hiker_probe_admin_key_loaded "http://localhost:$SERVER_PORT"; then
+    echo "  ADMIN_API_KEY: loaded (/api/auth/verify $HIKER_ADMIN_PROBE_CODE)"
+elif [ "$HIKER_ADMIN_PROBE_CODE" = "403" ]; then
+    echo "  ERROR: the running $SERVICE process has NO admin key."
+    echo "  /api/auth/verify answered 403 instead of 401, so the process started without"
+    echo "  ADMIN_API_KEY even though this shell could read the key file."
+    echo "  Diagnose (a leading '-' on EnvironmentFile hides an unreadable file):"
+    echo "    sudo systemctl cat $SERVICE | grep -E 'EnvironmentFile|^User=|^Group='"
+    echo "    sudo ls -ld $HIKER_SECRET_DIR && sudo ls -l $SECRET_FILE"
+    echo "    getent group $HIKER_SECRET_GROUP"
+    echo "  Fix without changing the key:"
+    echo "    sudo usermod -aG $HIKER_SECRET_GROUP \$(systemctl show -p User --value $SERVICE)"
+    echo "    sudo systemctl daemon-reload && sudo systemctl restart $SERVICE"
+    echo "  Then re-check (401 = fixed, 403 = still missing):"
+    echo "    curl -s -w ' [%{http_code}]\n' http://localhost:$SERVER_PORT/api/auth/verify"
+    echo ""
+    echo "=== Update did NOT complete: $SERVICE is up, but admin routes are dead. ==="
+    exit 1
+else
+    echo "  WARNING: could not probe /api/auth/verify (HTTP $HIKER_ADMIN_PROBE_CODE)."
+    echo "  The admin key is NOT confirmed in the running process."
+fi
+
+echo ""
+echo "=== Update complete. $SERVICE is running. ==="
+echo ""
+echo "To trace live logs: sudo journalctl -u $SERVICE -f"

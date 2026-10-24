@@ -54,6 +54,7 @@ NEED_NGINX_CONF=false
 NEED_NGINX_ENABLE=false
 NEED_NGINX_RELOAD=false
 NEED_SERVICE_START=false
+NEED_ADMIN_KEY_ENV=false
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -510,6 +511,27 @@ if command -v systemctl &>/dev/null; then
                 warn "Could not read $SERVICE environment without sudo"
             fi
         fi
+
+        # Everything above needs privileges the deploy user may not have, and none of
+        # it can see the one failure mode that matters: the key file exists and is
+        # readable by ROOT but not by the service user, so EnvironmentFile=- skips it
+        # silently, the process starts, /health answers 200, and every admin route
+        # returns 403. Ask the running process instead — this needs no privileges.
+        if hiker_probe_admin_key_loaded "http://localhost:$SERVER_PORT"; then
+            pass "Running process has ADMIN_API_KEY loaded (/api/auth/verify $HIKER_ADMIN_PROBE_CODE)"
+        elif [ "$HIKER_ADMIN_PROBE_CODE" = "403" ]; then
+            fail "Running process has NO ADMIN_API_KEY (/api/auth/verify returns 403, not 401)"
+            SERVICE_USER=$(systemctl show -p User --value "$SERVICE" 2>/dev/null || echo "")
+            echo "  $SECRET_FILE may be readable to root but not to the service user,"
+            echo "  and a leading '-' on EnvironmentFile makes that silent. Check:"
+            echo "    sudo systemctl cat $SERVICE | grep -E 'EnvironmentFile|^User=|^Group='"
+            echo "    sudo ls -ld $HIKER_SECRET_DIR $SECRET_FILE"
+            [ -n "$SERVICE_USER" ] && echo "    getent group $HIKER_SECRET_GROUP   # is $SERVICE_USER a member?"
+            [ -n "$SERVICE_USER" ] && echo "    sudo usermod -aG $HIKER_SECRET_GROUP $SERVICE_USER && sudo systemctl restart $SERVICE"
+            NEED_ADMIN_KEY_ENV=true
+        else
+            warn "Could not probe /api/auth/verify (HTTP $HIKER_ADMIN_PROBE_CODE) — is port $SERVER_PORT answering?"
+        fi
     elif systemctl show -p ActiveState --value "$SERVICE" | grep -q "activating"; then
         warn "$SERVICE service is activating (it may take a moment to respond)"
     else
@@ -758,6 +780,11 @@ else
     fi
     if [ "$NEED_ENV" = true ]; then
         echo "  cp server/.env.example server/.env && nano server/.env"
+    fi
+    if [ "$NEED_ADMIN_KEY_ENV" = true ]; then
+        echo "  sudo systemctl cat $SERVICE | grep -E 'EnvironmentFile|^User=|^Group='"
+        echo "  sudo usermod -aG $HIKER_SECRET_GROUP \$(systemctl show -p User --value $SERVICE)"
+        echo "  sudo systemctl daemon-reload && sudo systemctl restart $SERVICE"
     fi
     if [ "$NEED_NGINX_CONF" = true ]; then
         echo "  sudo cp deploy/hiker.conf $NGINX_CONF"
