@@ -41,19 +41,33 @@ BACKUP="$ENV_FILE.pre-secret.$(date +%Y%m%d%H%M%S)"
 hiker_run_as_root cp -a "$ENV_FILE" "$BACKUP"
 hiker_run_as_root chmod 600 "$BACKUP"
 
-hiker_write_secret_file "$SECRET_FILE" "$ADMIN_KEY"
+hiker_write_secret_file "$SECRET_FILE" "$ADMIN_KEY" || exit 1
 hiker_remove_legacy_keys "$ENV_FILE"
 hiker_run_as_root chmod 640 "$ENV_FILE"
 
 if [ -f "$SERVICE_FILE" ]; then
     hiker_ensure_environment_file "$SERVICE_FILE" "$ENV_FILE" || echo "  WARNING: could not configure $ENV_FILE"
     hiker_ensure_environment_file "$SERVICE_FILE" "$SECRET_FILE" || echo "  WARNING: could not configure $SECRET_FILE"
+
+    # This migration deletes the key from server/.env, so from here the only copy the
+    # service can see is $SECRET_FILE: 640 root:$HIKER_SECRET_GROUP inside a 750
+    # directory. The account in the unit's User= must be in that group, or systemd
+    # skips the unreadable file silently (leading '-') and every admin route answers
+    # 403 while the deploy reports success. The TARGET_USER added above is the
+    # interactive admin, who is not necessarily the service user.
+    hiker_grant_secret_access "$(hiker_service_user "$SERVICE")" "$SECRET_FILE" ||
+        echo "  WARNING: could not grant the service user access to $SECRET_FILE"
+
+    SERVER_PORT=$(hiker_read_env_value PORT "$ENV_FILE" 2>/dev/null || echo "3000")
     hiker_run_as_root systemctl daemon-reload
     if hiker_run_as_root systemctl restart "$SERVICE"; then
         echo "Service restarted: $SERVICE"
+        sleep 2
+        hiker_verify_admin_key_after_change "$SERVICE" "$SERVER_PORT" || VERIFY_FAILED=1
     else
         echo "Warning: keys were migrated, but service restart failed."
         echo "Fix: sudo systemctl restart $SERVICE"
+        VERIFY_FAILED=1
     fi
 else
     echo "Warning: $SERVICE_FILE not found; keys migrated without updating systemd."
@@ -62,3 +76,11 @@ fi
 echo "Secrets stored: $SECRET_FILE"
 echo "Legacy backup:  $BACKUP"
 echo "server/.env permissions: 640, key line removed"
+
+if [ "${VERIFY_FAILED:-0}" = "1" ]; then
+    echo ""
+    echo "The key was written, but the running service was NOT confirmed to hold it."
+    echo "Trust the rotation only after this reports 401 (403 = the process has no key):"
+    echo "  curl -s -w ' [%{http_code}]\n' http://localhost:${SERVER_PORT:-3000}/api/auth/verify"
+    exit 1
+fi

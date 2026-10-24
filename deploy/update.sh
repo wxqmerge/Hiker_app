@@ -493,11 +493,41 @@ fi
 echo "[12/13] Stopping service and freeing port $SERVER_PORT..."
 sudo -n systemctl stop "$SERVICE" 2>&1 || true
 sleep 1
-PORT_PID=$(sudo lsof -ti :$SERVER_PORT 2>/dev/null || true)
+PORT_PID=$(hiker_port_owner_pid "$SERVER_PORT" || true)
 if [ -n "$PORT_PID" ]; then
-    echo "  Found stale process on port $SERVER_PORT (PID: $PORT_PID) — killing."
-    sudo kill -9 $PORT_PID 2>/dev/null || true
-    sleep 1
+    PORT_CMD=$(ps -o cmd= -p "$PORT_PID" 2>/dev/null || echo "unknown")
+    echo "  Port $SERVER_PORT is still held by PID $PORT_PID after the stop:"
+    echo "    user: $(ps -o user= -p "$PORT_PID" 2>/dev/null | tr -d ' ')"
+    echo "    started: $(ps -o lstart= -p "$PORT_PID" 2>/dev/null | sed 's/^ *//')"
+    echo "    cmd: $PORT_CMD"
+
+    # Kill it only if it is a stale copy of THIS instance. If another instance
+    # (sothh-dev, ramblers, travel…) grabbed the same port, killing it takes down a
+    # different site: that is a port-allocation bug in the two server/.env files and
+    # has to be fixed there, not by murder.
+    case "$PORT_CMD" in
+        *"$DIR"*)
+            echo "  Orphan from this instance — killing."
+            hiker_run_as_root kill -9 "$PORT_PID" 2>/dev/null || true
+            for _ in 1 2 3 4 5; do
+                hiker_port_owner_pid "$SERVER_PORT" >/dev/null 2>&1 || break
+                sleep 1
+            done
+            ;;
+        *)
+            echo "  ERROR: port $SERVER_PORT belongs to a process that is NOT $DIR."
+            echo "  Two instances are configured with the same PORT. Give this one its own:"
+            echo "    1) edit $ENV_FILE  (PORT=<free port>)"
+            echo "    2) re-run this deploy so nginx proxy_pass follows the new port"
+            echo "  Aborting before start — the service would die with EADDRINUSE."
+            exit 1
+            ;;
+    esac
+
+    if hiker_port_owner_pid "$SERVER_PORT" >/dev/null 2>&1; then
+        echo "  ERROR: port $SERVER_PORT is still busy after the kill; aborting before start."
+        exit 1
+    fi
 fi
 sudo systemctl daemon-reload 2>&1 || true
 
@@ -515,6 +545,19 @@ if ! sudo systemctl is-active --quiet "$SERVICE"; then
     echo "=== WARNING: $SERVICE is NOT running! Check status: ==="
     echo "  sudo systemctl status $SERVICE"
     echo "  sudo journalctl -u $SERVICE --no-pager -n 20"
+    # The usual reason a service that just built cleanly refuses to stay up is that
+    # something else already owns its port: node dies with EADDRINUSE at listen(),
+    # systemd restart-loops it every RestartSec, and the deploy log looks fine until
+    # the journal is read. Name the squatter instead of leaving the user to find it.
+    STALE_PID=$(hiker_port_owner_pid "$SERVER_PORT" || true)
+    if [ -n "$STALE_PID" ]; then
+        echo ""
+        echo "  Port $SERVER_PORT is held by PID $STALE_PID — that is why it cannot bind:"
+        ps -o pid,user,lstart,args -p "$STALE_PID" --no-headers 2>/dev/null | sed 's/^/    /'
+        echo "  If it is a stale copy of $DIR:"
+        echo "    sudo kill $STALE_PID && sudo systemctl reset-failed $SERVICE && sudo systemctl restart $SERVICE"
+        echo "  If it is a DIFFERENT instance, do not kill it — one of the two needs its own PORT."
+    fi
     exit 1
 fi
 
@@ -532,6 +575,16 @@ elif [ "$HIKER_ADMIN_PROBE_CODE" = "403" ]; then
     echo "  ERROR: the running $SERVICE process has NO admin key."
     echo "  /api/auth/verify answered 403 instead of 401, so the process started without"
     echo "  ADMIN_API_KEY even though this shell could read the key file."
+    # A 403 can also mean the answer did not come from this unit at all: if some other
+    # process owns the port, it is what answered, and it has its own (older) environment.
+    ANSWERER_PID=$(hiker_port_owner_pid "$SERVER_PORT" || true)
+    UNIT_PID=$(systemctl show -p MainPID --value "$SERVICE" 2>/dev/null || echo "")
+    if [ -n "$ANSWERER_PID" ] && [ -n "$UNIT_PID" ] && [ "$ANSWERER_PID" != "$UNIT_PID" ]; then
+        echo "  NOTE: port $SERVER_PORT is owned by PID $ANSWERER_PID, not by this unit's"
+        echo "  MainPID $UNIT_PID — the 403 came from a process systemd does not control:"
+        ps -o pid,user,lstart,args -p "$ANSWERER_PID" --no-headers 2>/dev/null | sed 's/^/    /'
+        echo "    sudo kill $ANSWERER_PID && sudo systemctl reset-failed $SERVICE && sudo systemctl restart $SERVICE"
+    fi
     echo "  Diagnose (a leading '-' on EnvironmentFile hides an unreadable file):"
     echo "    sudo systemctl cat $SERVICE | grep -E 'EnvironmentFile|^User=|^Group='"
     echo "    sudo ls -ld $HIKER_SECRET_DIR && sudo ls -l $SECRET_FILE"

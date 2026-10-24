@@ -119,13 +119,31 @@ for dir in "$BASE"/*/; do
 
     # Restart the service
     SERVICE="$name"
+    INSTANCE_PORT=$(hiker_read_env_value PORT "$ENV_FILE" 2>/dev/null || echo "3000")
+
+    # Grant access BEFORE restarting: the new file is only usable if the account that
+    # RUNS the service can traverse $HIKER_SECRET_DIR and read it. This script used to
+    # confirm the key by reading the file as root, which proves nothing about the
+    # service user — and EnvironmentFile=- skips an unreadable file silently.
+    if [ -f "$SECRET_FILE" ]; then
+        hiker_grant_secret_access "$(hiker_service_user "$SERVICE")" "$SECRET_FILE" ||
+            echo "  ⚠ $name — could not grant the service user access to $SECRET_FILE"
+    fi
+
     if sudo systemctl restart "$SERVICE" 2>/dev/null; then
         echo "  ✓ $name — service restarted"
-        OK=$((OK + 1))
+        sleep 2
+        # A restart that succeeds while the process holds no key is precisely the
+        # failure this script used to count as OK.
+        if hiker_verify_admin_key_after_change "$SERVICE" "$INSTANCE_PORT"; then
+            OK=$((OK + 1))
+        else
+            FAIL=$((FAIL + 1))
+        fi
     else
-        echo "  ⚠ $name — key updated, but service restart failed"
+        echo "  ✗ $name — key updated, but service restart failed"
         echo "    Fix: sudo systemctl restart $SERVICE"
-        OK=$((OK + 1))
+        FAIL=$((FAIL + 1))
     fi
     echo ""
 done

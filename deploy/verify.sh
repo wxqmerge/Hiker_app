@@ -55,6 +55,7 @@ NEED_NGINX_ENABLE=false
 NEED_NGINX_RELOAD=false
 NEED_SERVICE_START=false
 NEED_ADMIN_KEY_ENV=false
+NEED_PORT_CONFLICT=false
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -545,6 +546,29 @@ else
     warn "systemctl not available (non-Linux?)"
 fi
 
+# 8b. Who actually owns the port?
+echo ""
+echo "--- Port Ownership ---"
+PORT_OWNER_PID=$(hiker_port_owner_pid "$SERVER_PORT" || true)
+UNIT_MAIN_PID=$(systemctl show -p MainPID --value "$SERVICE" 2>/dev/null || echo "")
+if [ -n "$PORT_OWNER_PID" ] && [ -n "$UNIT_MAIN_PID" ] && [ "$UNIT_MAIN_PID" != "0" ] &&
+   [ "$PORT_OWNER_PID" != "$UNIT_MAIN_PID" ]; then
+    fail "Port $SERVER_PORT is owned by PID $PORT_OWNER_PID, but $SERVICE's MainPID is $UNIT_MAIN_PID"
+    echo "  nginx is being served by a process this unit does not control. The unit then"
+    echo "  dies on every start with EADDRINUSE and restart-loops, while the orphan keeps"
+    echo "  answering with whatever environment it was started with (often no key):"
+    ps -o pid,user,lstart,args -p "$PORT_OWNER_PID" --no-headers 2>/dev/null | sed 's/^/    /'
+    NEED_PORT_CONFLICT=true
+elif [ -n "$PORT_OWNER_PID" ] && [ "${SERVICE_STATE:-}" != "active" ]; then
+    fail "Port $SERVER_PORT is held by PID $PORT_OWNER_PID while $SERVICE is not active"
+    ps -o pid,user,lstart,args -p "$PORT_OWNER_PID" --no-headers 2>/dev/null | sed 's/^/    /'
+    NEED_PORT_CONFLICT=true
+elif [ -n "$PORT_OWNER_PID" ]; then
+    pass "Port $SERVER_PORT is held by $SERVICE (PID $PORT_OWNER_PID)"
+else
+    warn "Could not determine what listens on port $SERVER_PORT (need ss or lsof)"
+fi
+
 # 9. Disk Space
 echo ""
 echo "--- Disk Space ---"
@@ -785,6 +809,13 @@ else
         echo "  sudo systemctl cat $SERVICE | grep -E 'EnvironmentFile|^User=|^Group='"
         echo "  sudo usermod -aG $HIKER_SECRET_GROUP \$(systemctl show -p User --value $SERVICE)"
         echo "  sudo systemctl daemon-reload && sudo systemctl restart $SERVICE"
+    fi
+    if [ "$NEED_PORT_CONFLICT" = true ]; then
+        echo "  If the PID above is a stale copy of $DIR:"
+        echo "    sudo kill $PORT_OWNER_PID"
+        echo "    sudo systemctl reset-failed $SERVICE && sudo systemctl restart $SERVICE"
+        echo "  If it is a DIFFERENT instance, do NOT kill it — one of them needs its own"
+        echo "  PORT in server/.env, then re-run the deploy so nginx proxy_pass follows."
     fi
     if [ "$NEED_NGINX_CONF" = true ]; then
         echo "  sudo cp deploy/hiker.conf $NGINX_CONF"
