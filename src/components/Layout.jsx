@@ -7,7 +7,7 @@ import { TrailActionsProvider, useTrailActions } from '../contexts/TrailActionsC
 import { getGroupName, getGroupUrl } from '../utils/config';
 import { getTrailName } from '../utils/data';
 import { useTrails } from '../hooks/useTrails';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NAV_LINKS } from '../utils/constants';
 import { getDaysInMonth } from '../utils/dateUtils';
 import MonthSelector from './MonthSelector';
@@ -62,6 +62,49 @@ function GroupBadge({ name }) {
     <span className="text-lg font-black text-green-800 uppercase tracking-tight flex-shrink-0">
       {label}
     </span>
+  );
+}
+
+function ReloadButton() {
+  const [busy, setBusy] = useState(false);
+  const handleClick = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      // Re-fetch sw.js; the worker's skipWaiting lets a new version
+      // activate immediately so the reload below picks it up.
+      const reg = await navigator.serviceWorker?.getRegistration();
+      await reg?.update();
+      await new Promise(r => setTimeout(r, 400));
+    } catch {
+      // Offline or SW unavailable — plain reload still helps.
+    }
+    window.location.reload();
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={busy}
+      title="Check for updates and reload the app"
+      aria-label="Reload app"
+      className="flex flex-shrink-0 items-center gap-1 rounded-lg border border-green-300 px-2 py-0.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-50 hover:text-green-900 disabled:opacity-50"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={`h-3.5 w-3.5 ${busy ? 'animate-spin' : ''}`}
+        aria-hidden="true"
+      >
+        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+        <path d="M21 3v6h-6" />
+      </svg>
+      Reload
+    </button>
   );
 }
 
@@ -143,6 +186,7 @@ function HeaderContent() {
                 {groupName && (
                   <GroupBadge name={groupName} />
                 )}
+                <ReloadButton />
                 {isMainPage && (
                   <span className="max-w-full break-words text-sm leading-snug text-gray-500 sm:text-base">
                     {trailSummary}
