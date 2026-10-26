@@ -3,17 +3,18 @@
 // Scoped to the app base path so subpath deployments (e.g. /sothh-dev/) work.
 // Caching strategy:
 //   - Static assets (JS/CSS/images/fonts): cache-first, populated on first fetch.
+//     Hashed bundles are served by the server with immutable long-cache headers.
 //   - Navigation (SPA routes): network-first, falling back to cached index.html.
-//   - Same-origin API reads: cache-first for trails/details/lookup,
-//     cache-first with background update for schedule/config/group.
-//   - External tides (NOAA): cache-first (stable per date).
-//   - External forecast (NWS): cache-first with background update.
+//   - Same-origin API reads and external weather/tides: network-first with cache
+//     fallback. If-None-Match from the page is passed through so unchanged data
+//     costs a server 304 and the cached copy is served in response. Freshness is
+//     bounded by the server's Cache-Control instead of a never-revalidating cache.
 //   - Write endpoints (PUT/POST/DELETE) are never cached. After a successful
 //     write to trails/details/lookup/schedule/config/data, the cached API reads
 //     are invalidated so the next load (e.g. after an Import ZIP reload) refetches.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v8';
+const VERSION = 'v9';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const TIDE_CACHE = `hiker-tide-${VERSION}`;
@@ -34,14 +35,12 @@ function stripBase(pathname) {
   return pathname;
 }
 
-// Read-only same-origin API endpoints: cache-first (stable data).
-const CACHE_FIRST_API = new Set([
+// Read-only same-origin API endpoints: network-first with cache fallback so
+// data is never stale beyond the server's Cache-Control, offline still works.
+const API_READ_PATHS = new Set([
   '/api/trails',
   '/api/trails/details',
   '/api/lookup',
-]);
-// Endpoints that change: network-first with cache fallback + timeout.
-const NETWORK_FIRST_API = new Set([
   '/api/schedule',
   '/api/schedule/group',
   '/api/config',
@@ -57,7 +56,7 @@ const NO_CACHE_API = new Set([
 ]);
 
 // Cached API reads to drop whenever a data-mutating write succeeds.
-const INVALIDATE_API_PATHS = new Set([...CACHE_FIRST_API, ...NETWORK_FIRST_API]);
+const INVALIDATE_API_PATHS = API_READ_PATHS;
 // Endpoint prefixes whose successful writes change the cached API reads above.
 const DATA_WRITE_PREFIXES = ['/api/trails', '/api/schedule', '/api/data', '/api/cleanup'];
 
@@ -113,10 +112,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.origin !== self.location.origin) {
-    if (isTideUrl(url)) {
-      event.respondWith(cacheFirst(request, TIDE_CACHE));
-    } else if (isWeatherUrl(url)) {
-      event.respondWith(cacheFirstBackground(request, TIDE_CACHE));
+    if (isTideUrl(url) || isWeatherUrl(url)) {
+      event.respondWith(networkFirstWithCache(request, TIDE_CACHE));
     }
     return;
   }
@@ -128,12 +125,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   const path = stripBase(url.pathname);
-  if (CACHE_FIRST_API.has(path)) {
-    event.respondWith(cacheFirst(request, API_CACHE));
-    return;
-  }
-  if (NETWORK_FIRST_API.has(path)) {
-    event.respondWith(cacheFirstBackground(request, API_CACHE));
+  if (API_READ_PATHS.has(path)) {
+    event.respondWith(networkFirstWithCache(request, API_CACHE));
     return;
   }
   if (NO_CACHE_API.has(path)) {
@@ -157,28 +150,24 @@ async function cacheFirst(request, cacheName) {
   return res;
 }
 
-// Cache-first with background network update.
-// Serves cached response immediately, then updates cache from network in background.
-// If no cache exists, waits for network.
-async function cacheFirstBackground(request, cacheName) {
+// Network-first with cache fallback.
+// The page request (including any If-None-Match) goes to the network so the
+// server can answer 304 cheaply. On 304 the cached copy is served; on 200 the
+// cache is refreshed. Only when the network fails does the cache answer.
+async function networkFirstWithCache(request, cacheName) {
   const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-
-  // Update cache from network in background (strip ETag to avoid 304)
-  const bgReq = new Request(request, { headers: new Headers(Object.fromEntries(
-    [...request.headers].filter(([k]) => k.toLowerCase() !== 'if-none-match')
-  ))});
-  fetch(bgReq).then((res) => {
-    if (res.ok) cache.put(request, res.clone());
-  }).catch(() => {});
-
-  if (cached) return cached;
-  // No cache yet — wait for network
   try {
     const res = await fetch(request);
+    if (res.status === 304) {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      return res;
+    }
     if (res.ok) cache.put(request, res.clone());
     return res;
   } catch {
+    const cached = await cache.match(request);
+    if (cached) return cached;
     return offlineResponse();
   }
 }

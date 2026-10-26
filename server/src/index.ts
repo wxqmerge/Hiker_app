@@ -114,6 +114,7 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 app.get('/api/config', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
   const appName = req.headers['x-app-name'] || 'hiker';
   res.json({
     appName: String(appName),
@@ -495,9 +496,24 @@ if (isDev) {
     req.pipe(proxyReq);
   });
 } else {
-  app.use(express.static(path.join(__dirname, '../../dist')));
+  app.use(
+    express.static(path.join(__dirname, '../../dist'), {
+      setHeaders(res, filePath) {
+        // Content-hashed bundles: safe to cache for a year, never mutate.
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (filePath.endsWith('sw.js')) {
+          // Must revalidate so SW updates are discovered.
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      },
+    })
+  );
   app.get('*', (_req: Request, res: Response) => {
-    res.sendFile(path.join(__dirname, '../../dist/index.html'));
+    // HTML shell must always revalidate or users get a stale app after deploys.
+    res.sendFile(path.join(__dirname, '../../dist/index.html'), {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
   });
 }
 

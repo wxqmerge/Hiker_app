@@ -12,6 +12,7 @@ import { getPublicConfig } from '../utils/publicConfig.js';
 const router = Router();
 
 router.get('/group', (_req, res) => {
+  res.set('Cache-Control', 'no-cache');
   const { scheduleName, ...cfg } = getPublicConfig();
   res.json({
     name: scheduleName,
@@ -30,13 +31,16 @@ router.post('/reload', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, re
 }));
 
 router.get('/', (req, res) => {
+  // Always revalidate (ETag makes it cheap): never heuristic HTTP caching.
+  res.set('Cache-Control', 'no-cache');
   const schedule = getSchedule();
   const version = getScheduleVersion();
   if (version && etagMatches(req.headers['if-none-match'] as string | undefined, version)) {
     return res.status(304).end();
   }
   if (version) {
-    res.set('ETag', version);
+    // RFC 7232: entity-tags must be quoted; strict clients reject raw hex.
+    res.set('ETag', `"${version}"`);
   }
   res.json(schedule);
 });
@@ -56,7 +60,7 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
     const currentVersion = getScheduleVersion();
     if (currentVersion && !etagMatches(ifMatch, currentVersion)) {
       console.warn('[SCHEDULE] 412 precondition failed - stale If-Match rejected');
-      return res.status(412).set('ETag', currentVersion).json({
+      return res.status(412).set('ETag', `"${currentVersion}"`).json({
         success: false,
         error: { message: 'Schedule changed on the server since it was loaded. Reload the latest schedule before saving.' },
       });
@@ -73,7 +77,7 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
   await updateSchedule(result.data);
   const newVersion = getScheduleVersion();
   console.log('[SCHEDULE] Save complete, new version:', newVersion.substring(0, 8));
-  res.json({ success: true, etag: newVersion });
+  res.json({ success: true, etag: `"${newVersion}"` });
 }));
 
 router.get('/history', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
@@ -87,7 +91,7 @@ router.post('/history/restore', requireAdminKey, withErrorTag('SCHEDULE')(async 
     return res.status(400).json({ success: false, error: { message: 'Invalid restore request' } });
   }
   const restored = await restoreScheduleByTimestamp(result.data.timestamp);
-  res.json({ success: true, schedule: restored, etag: getScheduleVersion() });
+  res.json({ success: true, schedule: restored, etag: `"${getScheduleVersion()}"` });
 }));
  
 router.get('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
