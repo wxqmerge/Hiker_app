@@ -62,7 +62,9 @@ async function initSharedState() {
     setState(trails, details, false, lookup, schedule);
   } catch (error) {
     console.error('[useTrailStore] Failed to load data:', error);
-    setState([], {}, true, null, null);
+    // loading must become false, otherwise the app is stuck on the splash
+    // spinner forever after a transient network failure.
+    setState([], {}, false, null, null);
   }
 }
 

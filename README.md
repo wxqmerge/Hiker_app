@@ -208,10 +208,12 @@ Systemd supplies the protected file through `EnvironmentFile`. Rotate keys with 
 
 ## Testing
 
-Tests use Vitest with jsdom and fake-indexeddb. Setup in `src/test/setup.ts` mocks IndexedDB.
+Tests use Vitest with jsdom and fake-indexeddb. Setup in `src/test/setup.ts` mocks IndexedDB. Server routes have a separate Node-env suite in `server/test/`.
 
 ```bash
-npm run test:run
+npm run test:run       # client tests
+npm run test:server    # server route tests
+npm run test:all       # both
 npm run test:coverage
 ```
 

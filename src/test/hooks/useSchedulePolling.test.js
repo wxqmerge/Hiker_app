@@ -1,117 +1,90 @@
-import { describe, it, expect } from 'vitest';
-import { deepEqual } from '../../utils/object.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { useSchedulePolling } from '../../hooks/useSchedulePolling.js';
+import { setScheduleEtag } from '../../api/client.js';
 
-describe('deepEqual', () => {
-  it('returns true for identical primitives', () => {
-    expect(deepEqual(1, 1)).toBe(true);
-    expect(deepEqual('a', 'a')).toBe(true);
-    expect(deepEqual(true, true)).toBe(true);
-    expect(deepEqual(false, false)).toBe(true);
+vi.mock('../../utils/url.js', () => ({ getApiBase: () => '' }));
+vi.mock('../../api/client.js', () => ({ setScheduleEtag: vi.fn() }));
+
+function jsonResponse(schedule, etag) {
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: (h) => (String(h).toLowerCase() === 'etag' ? etag : null) },
+    json: async () => schedule,
+  };
+}
+
+const scheduleA = { Jun: [{ day: 1, trail_id: 'trail-1' }] };
+const scheduleB = { Jun: [{ day: 1, trail_id: 'trail-2' }] };
+
+describe('useSchedulePolling', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    globalThis.fetch = vi.fn();
   });
 
-  it('returns false for different primitives', () => {
-    expect(deepEqual(1, 2)).toBe(false);
-    expect(deepEqual('a', 'b')).toBe(false);
-    expect(deepEqual(true, false)).toBe(false);
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
   });
 
-  it('returns false for null vs non-null', () => {
-    expect(deepEqual(null, {})).toBe(false);
-    expect(deepEqual(undefined, {})).toBe(false);
-    expect(deepEqual(null, undefined)).toBe(false);
+  it('applies changed schedule data and syncs the etag to the save path', async () => {
+    const setSchedule = vi.fn();
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse(scheduleA, 'v1'));
+    renderHook(() => useSchedulePolling({ setSchedule }, 1000));
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    expect(setSchedule).toHaveBeenCalledTimes(1);
+    expect(setSchedule).toHaveBeenCalledWith(scheduleA);
+    expect(setScheduleEtag).toHaveBeenCalledWith('v1');
   });
 
-  it('returns true for identical empty objects', () => {
-    expect(deepEqual({}, {})).toBe(true);
+  it('sends If-None-Match after the first etag and applies nothing on 304', async () => {
+    const setSchedule = vi.fn();
+    globalThis.fetch
+      .mockResolvedValueOnce(jsonResponse(scheduleA, 'v1'))
+      .mockResolvedValueOnce({ ok: true, status: 304, headers: { get: () => null }, json: async () => ({}) });
+    renderHook(() => useSchedulePolling({ setSchedule }, 1000));
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(globalThis.fetch.mock.calls[1][1].headers['If-None-Match']).toBe('v1');
+    // Only the first (changed) poll applied data; the 304 applied nothing.
+    expect(setSchedule).toHaveBeenCalledTimes(1);
   });
 
-  it('returns true for identical simple objects', () => {
-    expect(deepEqual({ a: 1 }, { a: 1 })).toBe(true);
-    expect(deepEqual({ a: 'x', b: 2 }, { a: 'x', b: 2 })).toBe(true);
+  it('does not re-apply identical data on later polls', async () => {
+    const setSchedule = vi.fn();
+    globalThis.fetch
+      .mockResolvedValueOnce(jsonResponse(scheduleA, 'v1'))
+      .mockResolvedValueOnce(jsonResponse(scheduleA, 'v2'));
+    renderHook(() => useSchedulePolling({ setSchedule }, 1000));
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    expect(setSchedule).toHaveBeenCalledTimes(1);
+    // Etag still advanced even though data was skipped.
+    expect(setScheduleEtag).toHaveBeenCalledWith('v2');
   });
 
-  it('returns false for different values in identical keys', () => {
-    expect(deepEqual({ a: 1 }, { a: 2 })).toBe(false);
-    expect(deepEqual({ a: 'x' }, { a: 'y' })).toBe(false);
-  });
+  it('survives network errors and keeps polling', async () => {
+    const setSchedule = vi.fn();
+    globalThis.fetch
+      .mockResolvedValueOnce(jsonResponse(scheduleA, 'v1'))
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(jsonResponse(scheduleB, 'v2'));
+    renderHook(() => useSchedulePolling({ setSchedule }, 1000));
 
-  it('returns false for different key counts', () => {
-    expect(deepEqual({ a: 1 }, { a: 1, b: 2 })).toBe(false);
-    expect(deepEqual({ a: 1, b: 2 }, { a: 1 })).toBe(false);
-  });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
 
-  it('returns false for missing keys', () => {
-    expect(deepEqual({ a: 1, b: 2 }, { a: 1, c: 2 })).toBe(false);
-  });
-
-  it('returns true for identical nested objects', () => {
-    const obj1 = { a: { b: { c: 1 } } };
-    const obj2 = { a: { b: { c: 1 } } };
-    expect(deepEqual(obj1, obj2)).toBe(true);
-  });
-
-  it('returns false for different nested values', () => {
-    const obj1 = { a: { b: { c: 1 } } };
-    const obj2 = { a: { b: { c: 2 } } };
-    expect(deepEqual(obj1, obj2)).toBe(false);
-  });
-
-  it('returns true for identical arrays of primitives', () => {
-    expect(deepEqual([1, 2, 3], [1, 2, 3])).toBe(true);
-  });
-
-  it('returns false for different arrays', () => {
-    expect(deepEqual([1, 2, 3], [1, 2, 4])).toBe(false);
-    expect(deepEqual([1, 2], [1, 2, 3])).toBe(false);
-  });
-
-  it('returns true for identical schedule data', () => {
-    const schedule1 = {
-      Jun: [{ day: 1, hike: 'Hike 1', trail_id: 'trail-1', early_start: false }],
-      Jul: [{ day: 8, hike: 'Hike 2', trail_id: 'trail-2', early_start: true }],
-    };
-    const schedule2 = {
-      Jun: [{ day: 1, hike: 'Hike 1', trail_id: 'trail-1', early_start: false }],
-      Jul: [{ day: 8, hike: 'Hike 2', trail_id: 'trail-2', early_start: true }],
-    };
-    expect(deepEqual(schedule1, schedule2)).toBe(true);
-  });
-
-  it('returns false when early_start differs', () => {
-    const schedule1 = {
-      Jun: [{ day: 1, hike: 'Hike 1', trail_id: 'trail-1', early_start: false }],
-    };
-    const schedule2 = {
-      Jun: [{ day: 1, hike: 'Hike 1', trail_id: 'trail-1', early_start: true }],
-    };
-    expect(deepEqual(schedule1, schedule2)).toBe(false);
-  });
-
-  it('returns false when day number differs', () => {
-    const schedule1 = {
-      Jun: [{ day: 1, hike: 'Hike 1', trail_id: 'trail-1' }],
-    };
-    const schedule2 = {
-      Jun: [{ day: 2, hike: 'Hike 1', trail_id: 'trail-1' }],
-    };
-    expect(deepEqual(schedule1, schedule2)).toBe(false);
-  });
-
-  it('returns false when trail_id differs', () => {
-    const schedule1 = {
-      Jun: [{ day: 1, hike: 'Hike 1', trail_id: 'trail-1' }],
-    };
-    const schedule2 = {
-      Jun: [{ day: 1, hike: 'Hike 1', trail_id: 'trail-2' }],
-    };
-    expect(deepEqual(schedule1, schedule2)).toBe(false);
-  });
-
-  it('returns true for identical empty arrays', () => {
-    expect(deepEqual([], [])).toBe(true);
-  });
-
-  it('returns true for identical empty nested objects in array', () => {
-    expect(deepEqual([{ a: {} }], [{ a: {} }])).toBe(true);
+    expect(setSchedule).toHaveBeenCalledTimes(2);
+    expect(setSchedule).toHaveBeenLastCalledWith(scheduleB);
   });
 });

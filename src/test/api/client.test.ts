@@ -267,6 +267,88 @@ describe('updateSchedule', () => {
   });
 });
 
+describe('schedule etag precondition (If-Match)', () => {
+  it('getSchedule captures the response ETag', async () => {
+    (globalThis.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ Jan: [] }),
+      headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+    });
+    const { getSchedule, getScheduleEtag } = await import('../../api/client');
+    const schedule = await getSchedule();
+    expect(schedule).toEqual({ Jan: [] });
+    expect(schedule).not.toHaveProperty('_etag');
+    expect(getScheduleEtag()).toBe('v1');
+  });
+
+  it('updateSchedule sends If-Match and adopts the returned ETag', async () => {
+    (globalThis.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ Jan: [] }),
+        headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+      })
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: true, etag: 'v2' }),
+        headers: { get: () => null },
+      });
+    const { getSchedule, updateSchedule, getScheduleEtag } = await import('../../api/client');
+    await getSchedule();
+    await updateSchedule({ Jan: [{ day: 1, trail_id: 'trail-1' }] });
+    expect(globalThis.fetch).toHaveBeenLastCalledWith(
+      expect.stringContaining('/api/schedule'),
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({ 'If-Match': 'v1' }),
+      })
+    );
+    expect(getScheduleEtag()).toBe('v2');
+  });
+
+  it('updateSchedule omits If-Match when no ETag was seen', async () => {
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ success: true }),
+      headers: { get: () => null },
+    });
+    const { updateSchedule } = await import('../../api/client');
+    await updateSchedule({ Jan: [{ day: 1, trail_id: 'trail-1' }] });
+    const sentHeaders = (globalThis.fetch as any).mock.calls.at(-1)[1].headers;
+    expect(sentHeaders['If-Match']).toBeUndefined();
+  });
+
+  it('updateSchedule adopts the server ETag on 412 and rethrows', async () => {
+    (globalThis.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ Jan: [] }),
+        headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+      })
+      .mockResolvedValueOnce({
+        ok: false, status: 412,
+        json: () => Promise.resolve({ success: false, error: { message: 'Schedule changed on the server since it was loaded. Reload the latest schedule before saving.' } }),
+        headers: { get: (h: string) => (h === 'etag' ? 'v9' : null) },
+      });
+    const { getSchedule, updateSchedule, getScheduleEtag } = await import('../../api/client');
+    await getSchedule();
+    await expect(updateSchedule({ Jan: [{ day: 1, trail_id: 'trail-1' }] })).rejects.toThrow('Schedule changed');
+    expect(getScheduleEtag()).toBe('v9');
+  });
+
+  it('restoreSchedule adopts the post-restore ETag', async () => {
+    (globalThis.fetch as any).mockResolvedValueOnce({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ success: true, schedule: {}, etag: 'v3' }),
+      headers: { get: () => null },
+    });
+    const { restoreSchedule, getScheduleEtag } = await import('../../api/client');
+    await restoreSchedule('1700000000000');
+    expect(getScheduleEtag()).toBe('v3');
+  });
+});
+
 describe('getTrailDetails', () => {
   it('returns trail details', async () => {
     (globalThis.fetch as any).mockResolvedValue({

@@ -2,15 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useTrailStore, setSchedule, resetTrailStore } from '../../hooks/useTrailStore';
 
-vi.mock('../../api/client.js', () => ({
-  getTrails: vi.fn(() => Promise.resolve([{ id: 'trail-1', name: 'Test Trail' }])),
-  getTrailDetails: vi.fn(() => Promise.resolve({ 'trail-1': { fullDescription: 'Details' } })),
-  getLookup: vi.fn(() => Promise.resolve({ difficulties: [] })),
-  getSchedule: vi.fn(() => Promise.resolve({ Jan: {} })),
-  updateTrail: vi.fn((trail) => Promise.resolve(trail)),
-  updateTrailDetail: vi.fn((id, detail) => Promise.resolve(detail)),
-  deleteTrail: vi.fn((id) => Promise.resolve()),
-}));
+// NOTE: no vi.mock('../../api/client.js') here — the test setup loads the
+// store module before test-file mocks can apply, so the store always uses the
+// REAL client with the global fetch mock from src/test/setup.ts. Failures are
+// therefore injected at the fetch boundary.
 
 describe('useTrailStore', () => {
   beforeEach(() => {
@@ -68,5 +63,57 @@ describe('useTrailStore', () => {
     resetTrailStore();
     const { result } = renderHook(() => useTrailStore());
     expect(result.current.schedule).toBeNull();
+  });
+
+  it('clears loading when initial data fetch fails', async () => {
+    // Let the in-flight initSharedState from the beforeEach reset settle.
+    await act(async () => {});
+    // The store was module-loaded by the test setup with the real client, so
+    // force the failure at the fetch boundary.
+    globalThis.fetch = vi.fn(() => Promise.reject(new Error('offline')));
+    resetTrailStore();
+    const { result } = renderHook(() => useTrailStore());
+    await act(async () => {});
+    expect(result.current.loading).toBe(false);
+    expect(result.current.trails).toEqual([]);
+  });
+
+  it('rolls back local trails when saveTrail fails', async () => {
+    const { result } = renderHook(() => useTrailStore());
+    await act(async () => {});
+    const namesBefore = result.current.trails.map(t => t.name);
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({ ok: false, status: 500, headers: { get: () => null }, json: async () => ({ error: { message: 'boom' } }) })
+    );
+    await expect(result.current.saveTrail({ id: 'trail-1', name: 'Renamed' })).rejects.toThrow('boom');
+    expect(result.current.trails.map(t => t.name)).toEqual(namesBefore);
+  });
+
+  it('importJSON surfaces a failure, leaves local state untouched, and shows the server is partially imported', async () => {
+    const { result } = renderHook(() => useTrailStore());
+    await act(async () => {});
+    const namesBefore = result.current.trails.map(t => t.name);
+
+    let puts = 0;
+    globalThis.fetch = vi.fn(async (_url: string, opts?: { method?: string }) => {
+      if (opts?.method === 'PUT') {
+        puts++;
+        if (puts === 2) {
+          return { ok: false, status: 500, headers: { get: () => null }, json: async () => ({ error: { message: 'import failed' } }) };
+        }
+        return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({}) };
+      }
+      return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({}) };
+    });
+
+    const payload = {
+      trails: [{ id: 'imp-a', name: 'A' }, { id: 'imp-b', name: 'B' }, { id: 'imp-c', name: 'C' }],
+    };
+    await expect(result.current.importJSON(payload)).rejects.toThrow('import failed');
+    // First PUT succeeded server-side before the second failed: the server is
+    // partially imported while local state is untouched — documents the
+    // known no-rollback behavior of importJSON.
+    expect(puts).toBe(2);
+    expect(result.current.trails.map(t => t.name)).toEqual(namesBefore);
   });
 });

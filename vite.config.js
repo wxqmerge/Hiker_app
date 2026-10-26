@@ -40,6 +40,8 @@ export default defineConfig(({ mode }) => ({
   test: {
     globals: true,
     environment: 'jsdom',
+    include: ['src/**/*.test.{js,jsx,ts,tsx}'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'server/**'],
     environmentOptions: {
       jsdom: {
         url: 'http://localhost/',

@@ -2,7 +2,6 @@ const listeners = new Set();
 
 // Non-hook version so plain (non-React) modules can raise a toast too.
 export function showToast(message, type = 'info') {
-  console.log(`[toast:${type}] ${message}`);
   listeners.forEach(fn => fn({ id: Date.now() + Math.random(), message, type }));
 }
 

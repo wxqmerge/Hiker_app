@@ -18,6 +18,7 @@ import { router as dataRouter } from './routes/data.routes.js';
 import { getWriteHealth, serverVersion, waitForDataReady, getScheduleFile } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
 import { DATA_DIR, HISTORY_DIR } from './utils/paths.js';
+import { getPublicConfig } from './utils/publicConfig.js';
 import { requireAdminKey } from './middleware/auth.middleware.js';
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -116,12 +117,7 @@ app.get('/api/config', (req, res) => {
   const appName = req.headers['x-app-name'] || 'hiker';
   res.json({
     appName: String(appName),
-    scheduleName: process.env.SCHEDULE_NAME || 'default',
-    hikeDays: process.env.HIKE_DAYS || '3,5',
-    maxHikesPerDay: parseInt(process.env.MAX_HIKES_PER_DAY || '3', 10) || 3,
-    minSpeedMph: parseFloat(process.env.MIN_SPEED_MPH || '1.1'),
-    maxSpeedMph: parseFloat(process.env.MAX_SPEED_MPH || '2.2'),
-    isBikeTrip: process.env.IS_BIKE_TRIP === 'true',
+    ...getPublicConfig(),
   });
 });
 
@@ -243,14 +239,30 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
     results.push({ file, valid, ...opts });
   }
 
+  // Shared scaffold: read + parse one JSON file, run its validator, record the
+  // result. Returns the parsed content (undefined on read/parse error).
+  async function checkFile(
+    label: string,
+    filePath: string,
+    validate: (parsed: any) => { recordCount?: number; issues: string[] },
+  ): Promise<any> {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const { recordCount, issues } = validate(parsed);
+      addResult(label, issues.length === 0, { recordCount, issues: issues.length ? issues : undefined });
+      return parsed;
+    } catch (err) {
+      addResult(label, false, { error: (err as Error).message });
+      return undefined;
+    }
+  }
+
   let trails: any[] = [];
 
   // trails.json
   {
-    const filePath = path.join(DATA_DIR, 'trails.json');
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      const parsed = JSON.parse(content);
+    const parsed = await checkFile('trails.json', path.join(DATA_DIR, 'trails.json'), (parsed) => {
       const issues: string[] = [];
       if (!parsed || typeof parsed !== 'object') {
         issues.push('root must be an object');
@@ -266,19 +278,14 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
         const nonStrings = parsed.trails.filter((t: any) => typeof t.id !== 'string' || !t.id);
         if (nonStrings.length) issues.push(`${nonStrings.length} trail(s) with invalid/missing "id"`);
       }
-      if (Array.isArray(parsed?.trails)) trails = parsed.trails;
-      addResult('trails.json', issues.length === 0, { recordCount: Array.isArray(parsed?.trails) ? parsed.trails.length : 0, issues: issues.length ? issues : undefined });
-    } catch (err) {
-      addResult('trails.json', false, { error: (err as Error).message });
-    }
+      return { issues, recordCount: Array.isArray(parsed?.trails) ? parsed.trails.length : 0 };
+    });
+    if (Array.isArray(parsed?.trails)) trails = parsed.trails;
   }
 
   // trail_details.json
   {
-    const filePath = path.join(DATA_DIR, 'trail_details.json');
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      const parsed = JSON.parse(content);
+    await checkFile('trail_details.json', path.join(DATA_DIR, 'trail_details.json'), (parsed) => {
       const issues: string[] = [];
       if (!parsed || typeof parsed !== 'object') {
         issues.push('root must be an object keyed by trail ID');
@@ -299,18 +306,13 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
           issues.push(`${orphaned.length} orphaned detail(s): ${orphaned.join(', ')}`);
         }
       }
-      addResult('trail_details.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
-    } catch (err) {
-      addResult('trail_details.json', false, { error: (err as Error).message });
-    }
+      return { issues, recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0 };
+    });
   }
 
   // lookup.json
   {
-    const filePath = path.join(DATA_DIR, 'lookup.json');
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      const parsed = JSON.parse(content);
+    await checkFile('lookup.json', path.join(DATA_DIR, 'lookup.json'), (parsed) => {
       const issues: string[] = [];
       if (!parsed || typeof parsed !== 'object') {
         issues.push('root must be an object');
@@ -318,49 +320,42 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
         if (!Array.isArray(parsed.difficulties)) issues.push('missing "difficulties" array');
         if (typeof parsed.parkingLevels !== 'object' || Array.isArray(parsed.parkingLevels)) issues.push('"parkingLevels" must be an object');
       }
-      addResult('lookup.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
-    } catch (err) {
-      addResult('lookup.json', false, { error: (err as Error).message });
-    }
+      return { issues, recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0 };
+    });
   }
 
-    // schedule.json
-    {
-      const filePath = path.join(DATA_DIR, getScheduleFile());
-      try {
-        const content = await fs.readFile(filePath, 'utf-8');
-        const parsed = JSON.parse(content);
-        const issues: string[] = [];
-        if (!parsed || typeof parsed !== 'object') {
-          issues.push('root must be an object');
+  // schedule.json
+  {
+    const scheduleFile = getScheduleFile();
+    await checkFile(scheduleFile, path.join(DATA_DIR, scheduleFile), (parsed) => {
+      const issues: string[] = [];
+      if (!parsed || typeof parsed !== 'object') {
+        issues.push('root must be an object');
+      } else {
+        const keys = Object.keys(parsed);
+        if (keys.length === 0) {
+          issues.push('object is empty');
         } else {
-          const keys = Object.keys(parsed);
-          if (keys.length === 0) {
-            issues.push('object is empty');
-          } else {
-            const invalidKeys = keys.filter(k => !MONTH_KEYS.has(k) && !YEAR_MONTH_RE.test(k));
-            if (invalidKeys.length) issues.push(`invalid month keys: ${invalidKeys.join(', ')}`);
-            const nonArrayEntries = keys.filter(k => !Array.isArray(parsed[k]));
-            if (nonArrayEntries.length) issues.push(`month(s) with non-array values: ${nonArrayEntries.join(', ')}`);
-            let totalScheduled = 0;
-            for (const k of keys) {
-              const entries = parsed[k];
-              if (Array.isArray(entries)) {
-                totalScheduled += entries.filter((e: any) => e?.trail_id).length;
-              }
-            }
-            if (totalScheduled === 0) {
-              issues.push('no scheduled hikes found — schedule is empty');
-              issues.push('→ use TSV import (Import Hike Tsv) or ScheduleBuilder to add hikes, not direct JSON editing');
+          const invalidKeys = keys.filter(k => !MONTH_KEYS.has(k) && !YEAR_MONTH_RE.test(k));
+          if (invalidKeys.length) issues.push(`invalid month keys: ${invalidKeys.join(', ')}`);
+          const nonArrayEntries = keys.filter(k => !Array.isArray(parsed[k]));
+          if (nonArrayEntries.length) issues.push(`month(s) with non-array values: ${nonArrayEntries.join(', ')}`);
+          let totalScheduled = 0;
+          for (const k of keys) {
+            const entries = parsed[k];
+            if (Array.isArray(entries)) {
+              totalScheduled += entries.filter((e: any) => e?.trail_id).length;
             }
           }
+          if (totalScheduled === 0) {
+            issues.push('no scheduled hikes found — schedule is empty');
+            issues.push('→ use TSV import (Import Hike Tsv) or ScheduleBuilder to add hikes, not direct JSON editing');
+          }
         }
-        addResult(getScheduleFile(), issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
-      } catch (err) {
-        addResult(getScheduleFile(), false, { error: (err as Error).message });
       }
-    }
-
+      return { issues, recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0 };
+    });
+  }
 
   // schedule_history/*.json
   try {
@@ -368,20 +363,15 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
     const files = await fs.readdir(historyDir);
     const historyFiles = files.filter(f => f.startsWith('schedule_') && f.endsWith('.json'));
     for (const filename of historyFiles) {
-      const filePath = path.join(historyDir, filename);
-      try {
-        const content = await fs.readFile(filePath, 'utf-8');
-        const parsed = JSON.parse(content);
+      await checkFile(`schedule_history/${filename}`, path.join(historyDir, filename), (parsed) => {
         const issues: string[] = [];
         if (!parsed?.schedule) {
           issues.push('missing "schedule" property');
         } else if (typeof parsed.schedule !== 'object') {
           issues.push('"schedule" must be an object');
         }
-        addResult(`schedule_history/${filename}`, issues.length === 0, { issues: issues.length ? issues : undefined });
-      } catch (err) {
-        addResult(`schedule_history/${filename}`, false, { error: (err as Error).message });
-      }
+        return { issues };
+      });
     }
   } catch {
     // schedule_history dir may not exist
@@ -389,10 +379,7 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
 
   // gpx_index.json
   {
-    const filePath = path.join(DATA_DIR, 'gpx_index.json');
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      const parsed = JSON.parse(content);
+    await checkFile('gpx_index.json', path.join(DATA_DIR, 'gpx_index.json'), (parsed) => {
       const issues: string[] = [];
       if (!parsed || typeof parsed !== 'object') {
         issues.push('root must be an object keyed by trail ID');
@@ -402,10 +389,8 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
           issues.push('object is empty');
         }
       }
-      addResult('gpx_index.json', issues.length === 0, { recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0, issues: issues.length ? issues : undefined });
-    } catch (err) {
-      addResult('gpx_index.json', false, { error: (err as Error).message });
-    }
+      return { issues, recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0 };
+    });
   }
 
   // Cross-reference checks: trail IDs, GPX files, popularity data

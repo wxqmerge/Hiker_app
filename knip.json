@@ -1,21 +1,14 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreDependencies": ["adm-zip", "multer", "@types/adm-zip", "@types/multer"],
   "workspaces": {
     ".": {
       "entry": [
-        "src/main.jsx",
         "public/sw.js",
-        "scripts/*.js",
-        "vite.config.js",
-        "eslint.config.js",
-        "postcss.config.js"
+        "scripts/*.js"
       ],
-      "project": ["src/**/*.{js,jsx,ts,tsx}"],
-      "ignore": ["shared/types/**"]
+      "project": ["src/**/*.{js,jsx,ts,tsx}"]
     },
     "server": {
-      "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     }
   }

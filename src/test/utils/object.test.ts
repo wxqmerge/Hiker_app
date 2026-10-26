@@ -73,4 +73,14 @@ describe('deepEqual', () => {
     const b = { arr: [{ x: 1, y: [2, 3] }], obj: { a: { b: { c: 4 } } } };
     expect(deepEqual(a, b)).toBe(true);
   });
+
+  // Schedule-shaped comparisons (guards useSchedulePolling change detection)
+  it('compares schedule payloads by value', () => {
+    const s1 = { Jun: [{ day: 1, trail_id: 'a', early_start: 0, leader: 'X' }], Jul: [] };
+    const s2 = { Jun: [{ day: 1, trail_id: 'a', early_start: 0, leader: 'X' }], Jul: [] };
+    expect(deepEqual(s1, s2)).toBe(true);
+    expect(deepEqual(s1, { ...s1, Jun: [{ day: 2, trail_id: 'a', early_start: 0, leader: 'X' }] })).toBe(false);
+    expect(deepEqual(s1, { ...s1, Jun: [{ day: 1, trail_id: 'b', early_start: 0, leader: 'X' }] })).toBe(false);
+    expect(deepEqual(s1, { ...s1, Jun: [{ day: 1, trail_id: 'a', early_start: -30, leader: 'X' }] })).toBe(false);
+  });
 });

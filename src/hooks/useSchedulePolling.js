@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { getApiBase } from '../utils/url.js';
 import { deepEqual } from '../utils/object.js';
+import { setScheduleEtag } from '../api/client.js';
 
 export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
   const prevDataRef = useRef(null);
@@ -49,6 +50,9 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
 
       if (newEtag) {
         etagRef.current = newEtag;
+        // Keep the save-path precondition (If-Match) current even when the
+        // data itself is unchanged and setSchedule is skipped.
+        setScheduleEtag(newEtag);
       }
 
       const data = await response.json();

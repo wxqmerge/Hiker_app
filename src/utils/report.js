@@ -2,6 +2,7 @@ import { buildTrailLineParts } from './formatTrail';
 import { getTrailName } from './data';
 import { normalizeStartOffset } from './etc';
 import { DAY_NAMES, MONTH_ABBR } from './constants';
+import { safeWebLink } from './url';
 
 // Escape HTML special characters
 function esc(s) {
@@ -28,11 +29,12 @@ function buildTrailDetailsHtml(trail, trailDetails, mode = 'compact') {
     html += `<div class="section"><h2>Notes</h2><p>${esc(trail.notes)}</p></div>`;
   }
 
-  if (trail.webLink) {
+  const safeLink = safeWebLink(trail.webLink);
+  if (safeLink) {
     if (mode === 'compact') {
-      html += `<div class="entry-link"><a href="${esc(trail.webLink)}" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></div>`;
+      html += `<div class="entry-link"><a href="${esc(safeLink)}" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></div>`;
     } else {
-      html += `<div class="section"><h2>Web Link</h2><p><a href="${esc(trail.webLink)}" class="link" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></p></div>`;
+      html += `<div class="section"><h2>Web Link</h2><p><a href="${esc(safeLink)}" class="link" target="_blank" rel="noopener noreferrer">${esc(trail.webLink)}</a></p></div>`;
     }
   }
 

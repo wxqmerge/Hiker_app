@@ -26,6 +26,8 @@ export async function request(path, options = {}) {
     if (options.throwOnError !== false) {
       const err = new Error(errMsg);
       err.status = res.status;
+      const errEtag = res.headers?.get('etag');
+      if (errEtag) err.etag = errEtag;
       throw err;
     }
     return { error: errMsg, status: res.status };
@@ -152,7 +154,22 @@ export async function getLookup() {
 }
 
 export async function getSchedule() {
-  return request('/api/schedule', { stripMetadata: true });
+  const data = await request('/api/schedule');
+  if (data && data._etag) currentScheduleEtag = data._etag;
+  const { _etag, _status, ...rest } = data;
+  return rest;
+}
+
+// ETag of the most recently seen server schedule. Sent as If-Match on saves so
+// a stale editor gets 412 instead of silently overwriting newer server state.
+let currentScheduleEtag = null;
+
+export function setScheduleEtag(etag) {
+  currentScheduleEtag = etag || null;
+}
+
+export function getScheduleEtag() {
+  return currentScheduleEtag;
 }
 
 function getScheduleEntryCount(schedule) {
@@ -164,12 +181,24 @@ export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
   if (getScheduleEntryCount(schedule) === 0 && !confirmEmpty) {
     throw new Error('Refusing to save an empty schedule. Use an explicit clear action to confirm.');
   }
-  return request('/api/schedule', {
-    method: 'PUT',
-    body: schedule,
-    apiKey: true,
-    headers: confirmEmpty ? { 'X-Confirm-Empty': 'true' } : undefined,
-  });
+  const headers = {};
+  if (confirmEmpty) headers['X-Confirm-Empty'] = 'true';
+  if (currentScheduleEtag) headers['If-Match'] = currentScheduleEtag;
+  try {
+    const result = await request('/api/schedule', {
+      method: 'PUT',
+      body: schedule,
+      apiKey: true,
+      headers: Object.keys(headers).length ? headers : undefined,
+    });
+    if (result && result.etag) currentScheduleEtag = result.etag;
+    return result;
+  } catch (err) {
+    // On 412 the server sends the current ETag; adopt it so a fresh reload +
+    // retry sends the right precondition instead of failing in a loop.
+    if (err.status === 412 && err.etag) currentScheduleEtag = err.etag;
+    throw err;
+  }
 }
 
 export async function getScheduleHistory() {
@@ -177,11 +206,13 @@ export async function getScheduleHistory() {
 }
 
 export async function restoreSchedule(timestamp) {
-  return request('/api/schedule/history/restore', {
+  const result = await request('/api/schedule/history/restore', {
     method: 'POST',
     body: { timestamp },
     apiKey: true,
   });
+  if (result && result.etag) currentScheduleEtag = result.etag;
+  return result;
 }
 
 export async function ensureScheduleWritable() {

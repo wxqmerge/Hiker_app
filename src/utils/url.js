@@ -43,3 +43,27 @@ export function getNoaaTideUrl(stationId, date) {
   }
   return url;
 }
+
+// Returns a URL safe for use in href/src, or '' when the scheme is not allowed.
+// HTML escaping alone does not neutralize javascript:/data: URLs, so stored
+// trail.webLink values must pass through this before reaching an <a href>.
+export function safeWebLink(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    // Bare domains like "example.com/page" are treated as https links.
+    try {
+      parsed = new URL(`https://${trimmed}`);
+    } catch {
+      return '';
+    }
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:' && parsed.protocol !== 'mailto:') {
+    return '';
+  }
+  return parsed.href;
+}

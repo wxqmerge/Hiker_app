@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getApiBase, getGoogleAllTrailsSearchUrl } from '../../utils/url';
+import { getApiBase, getGoogleAllTrailsSearchUrl, safeWebLink } from '../../utils/url';
 
 vi.mock('react');
 
@@ -88,5 +88,34 @@ describe('getGoogleAllTrailsSearchUrl', () => {
     const url = getGoogleAllTrailsSearchUrl('Trail & Path');
     expect(url).toContain('https://www.google.com/search?q=');
     expect(url).toContain('alltrails.com%2Bwashington');
+  });
+});
+
+describe('safeWebLink', () => {
+  it('passes through https and http URLs', () => {
+    expect(safeWebLink('https://example.com/r')).toBe('https://example.com/r');
+    expect(safeWebLink('http://example.com/r')).toBe('http://example.com/r');
+  });
+
+  it('allows mailto', () => {
+    expect(safeWebLink('mailto:a@b.com')).toBe('mailto:a@b.com');
+  });
+
+  it('blocks javascript: scheme', () => {
+    expect(safeWebLink('javascript:alert(1)')).toBe('');
+  });
+
+  it('blocks data: scheme', () => {
+    expect(safeWebLink('data:text/html,<script>alert(1)</script>')).toBe('');
+  });
+
+  it('assumes https for bare domains', () => {
+    expect(safeWebLink('example.com/page')).toBe('https://example.com/page');
+  });
+
+  it('returns empty for empty/invalid input', () => {
+    expect(safeWebLink('')).toBe('');
+    expect(safeWebLink(null)).toBe('');
+    expect(safeWebLink(undefined)).toBe('');
   });
 });

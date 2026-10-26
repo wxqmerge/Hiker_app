@@ -17,7 +17,7 @@ import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
 import { createDate } from '../utils/dateUtils';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
-import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../utils/url.js';
+import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl, safeWebLink } from '../utils/url.js';
 import { hasStoredApiKey } from '../utils/apiKey';
 import { useApiKey } from '../hooks/useApiKey';
 import { formatDistance, formatElevation, getDistanceUnit, getElevationUnit } from '../utils/units';
@@ -691,11 +691,11 @@ export default function TrailDetail() {
             </div>
           )}
 
-          {trail.webLink ? (
+          {safeWebLink(trail.webLink) ? (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Web Link</h3>
               <a
-                href={trail.webLink}
+                href={safeWebLink(trail.webLink)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline"
@@ -1180,10 +1180,8 @@ export default function TrailDetail() {
                             createFileInput({
                               accept: '.gpx',
                               onFile: async (file) => {
-                                console.log('[TrailDetail] Uploading GPX:', file.name, 'for trail:', trail.id);
                                 try {
                                   const result = await uploadGpxFile(trail.id, file);
-                                  console.log('[TrailDetail] GPX upload result:', result);
                                   updateField('gpxFile', result.gpxFile);
                                   updateField('hasGpx', true);
                                   if (result.trailHeadLat != null) updateField('trailHeadLat', result.trailHeadLat);

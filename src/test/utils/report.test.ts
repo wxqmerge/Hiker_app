@@ -129,6 +129,21 @@ describe('generateReportHtml', () => {
     expect(html).toContain('https://example.com');
   });
 
+  it('omits javascript: web links instead of emitting executable hrefs', () => {
+    const evilTrail = { ...mockTrail, webLink: 'javascript:alert(1)' };
+    const entries = [{ dateStr: '2024-01-15', trail: evilTrail, trailDetails: null, earlyStart: 0 }];
+    const html = generateReportHtml(entries, 'Test Schedule');
+    expect(html).not.toContain('href="javascript:');
+    expect(html).not.toContain('<div class="entry-link">');
+  });
+
+  it('omits data: web links', () => {
+    const evilTrail = { ...mockTrail, webLink: 'data:text/html,<script>alert(1)</script>' };
+    const entries = [{ dateStr: '2024-01-15', trail: evilTrail, trailDetails: null, earlyStart: 0 }];
+    const html = generateReportHtml(entries, 'Test Schedule');
+    expect(html).not.toContain('href="data:');
+  });
+
   it('includes GPX availability', () => {
     const trailWithGpx = { ...mockTrail, hasGpx: true };
     const entries = [{ dateStr: '2024-01-15', trail: trailWithGpx, trailDetails: null, earlyStart: 0 }];

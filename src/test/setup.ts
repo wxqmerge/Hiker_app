@@ -2,7 +2,6 @@ import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 import { beforeEach } from 'vitest';
 import { resetFiltersStore } from '../hooks/useFilters';
-import { resetTrailStore } from '../hooks/useTrailStore';
 import { setGroupConfig } from '../utils/config';
 
 // Mock data
@@ -155,6 +154,11 @@ const createFetchMock = () => {
 };
 
 globalThis.fetch = createFetchMock();
+
+// Imported AFTER the fetch mock exists: useTrailStore runs initSharedState()
+// at module-load time, and a static import here would hit the real fetch
+// (relative URL → TypeError) before the mock is installed.
+const { resetTrailStore } = await import('../hooks/useTrailStore');
 
 // Reset fetch mock between tests
 beforeEach(() => {

@@ -7,17 +7,15 @@ import fs from 'fs';
 import path from 'path';
 import { etagMatches } from '../utils/etagCompare.js';
 import { DATA_DIR } from '../utils/paths.js';
+import { getPublicConfig } from '../utils/publicConfig.js';
 
 const router = Router();
 
 router.get('/group', (_req, res) => {
+  const { scheduleName, ...cfg } = getPublicConfig();
   res.json({
-    name: process.env.SCHEDULE_NAME || 'default',
-    hikeDays: process.env.HIKE_DAYS || '3,5',
-    maxHikesPerDay: parseInt(process.env.MAX_HIKES_PER_DAY || '3', 10) || 3,
-    minSpeedMph: parseFloat(process.env.MIN_SPEED_MPH || '1.1'),
-    maxSpeedMph: parseFloat(process.env.MAX_SPEED_MPH || '2.2'),
-    isBikeTrip: process.env.IS_BIKE_TRIP === 'true'
+    name: scheduleName,
+    ...cfg,
   });
 });
 
@@ -50,6 +48,21 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
   }
   const entryCount = Object.values(result.data).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
   console.log('[SCHEDULE] PUT schedule -', entryCount, 'entries');
+
+  // Precondition: reject saves based on a stale view of the schedule so two
+  // concurrent editors can't silently overwrite each other (lost update).
+  const ifMatch = req.headers['if-match'];
+  if (typeof ifMatch === 'string' && ifMatch.trim()) {
+    const currentVersion = getScheduleVersion();
+    if (currentVersion && !etagMatches(ifMatch, currentVersion)) {
+      console.warn('[SCHEDULE] 412 precondition failed - stale If-Match rejected');
+      return res.status(412).set('ETag', currentVersion).json({
+        success: false,
+        error: { message: 'Schedule changed on the server since it was loaded. Reload the latest schedule before saving.' },
+      });
+    }
+  }
+
   const oldSchedule = getSchedule();
   const oldCount = Object.values(oldSchedule).reduce((n: number, entries: any) => n + (Array.isArray(entries) ? entries.length : 0), 0);
   console.log('[SCHEDULE] Previous:', oldCount, 'entries');
@@ -74,7 +87,7 @@ router.post('/history/restore', requireAdminKey, withErrorTag('SCHEDULE')(async 
     return res.status(400).json({ success: false, error: { message: 'Invalid restore request' } });
   }
   const restored = await restoreScheduleByTimestamp(result.data.timestamp);
-  res.json({ success: true, schedule: restored });
+  res.json({ success: true, schedule: restored, etag: getScheduleVersion() });
 }));
  
 router.get('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
@@ -87,7 +100,7 @@ router.get('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (
     const filePath = path.join(dataDir, file);
     try {
       const stat = await fs.promises.stat(filePath);
-      if (!stat.isDirectory) {
+      if (!stat.isDirectory()) {
         // 0o664: owner (deploy user) rw, group (www-data) rw, other r.
         // Matches deploy/update.sh permissions. Group ownership is set by the deploy script.
         await fs.promises.chmod(filePath, 0o664);

@@ -14,6 +14,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:server": "vitest run --config server/vitest.config.ts",
+    "test:all": "vitest run && vitest run --config server/vitest.config.ts",
     "test:coverage": "vitest run --coverage",
     "generate:icons": "node scripts/generate-icons.js",
     "audit:dead": "knip",
@@ -21,10 +23,8 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.1",
-    "adm-zip": "^0.6.1",
     "dotenv": "^17.4.2",
     "jszip": "^3.10.1",
-    "multer": "^2.4.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1"
@@ -33,7 +33,6 @@
     "@eslint/js": "^9.39.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@types/multer": "^2.3.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",

@@ -17,7 +17,7 @@ import MoveHikeModal from '../components/MoveHikeModal';
 import { MONTH_NAMES, MONTH_ABBR, DEFAULT_FILTERS } from '../utils/constants';
 import LeaderEdit from '../components/LeaderEdit';
 import { filterTrails, sortTrails } from '../utils/filterTrails';
-import { getNoaaTideUrl } from '../utils/url.js';
+import { getNoaaTideUrl, safeWebLink } from '../utils/url.js';
 import { createDate, getMonthKey, getHikeSlotsForMonth } from '../utils/dateUtils';
 import { useHikeDays, useMaxHikesPerDay } from '../hooks/useHikeDays';
 import { useGpxActions } from '../hooks/useGpxActions';
@@ -633,9 +633,9 @@ ${sections.join('\n')}
                                     </svg>
                                   </a>
                                 )}
-                                {trail?.webLink && (
+                                {trail?.webLink && safeWebLink(trail.webLink) && (
                                   <a
-                                    href={trail.webLink}
+                                    href={safeWebLink(trail.webLink)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                      className="text-blue-600 hover:text-blue-800 transition-colors"

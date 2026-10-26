@@ -2,7 +2,7 @@
 // Used by TrailCard and NextHikeBanner with different styling
 
 import { getTrailName } from '../../utils/data';
-import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl } from '../../utils/url.js';
+import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl, safeWebLink } from '../../utils/url.js';
 import { openWeatherUrl, hasValidCoords } from '../../utils/io';
 
 // Named button styles so TrailCard (link) and NextHikeBanner (hero) stay consistent.
@@ -13,6 +13,7 @@ const VARIANTS = {
 
 export default function TrailActionButtons({ trail, hikeDate, variant = 'link', buttonClassName = '', iconSize = 'w-3.5 h-3.5', onGpxDownload, onGpxShare, onTrailhead, onWeather }) {
   const trailName = getTrailName(trail);
+  const webLinkHref = safeWebLink(trail.webLink);
   const baseClass = `${VARIANTS[variant] || VARIANTS.link} ${buttonClassName}`.trim();
 
   const handleWeatherClick = (e) => {
@@ -29,9 +30,9 @@ export default function TrailActionButtons({ trail, hikeDate, variant = 'link', 
 
   return (
     <>
-      {trail.webLink && (
+      {webLinkHref && (
         <a
-          href={trail.webLink}
+          href={webLinkHref}
           target="_blank"
           rel="noopener noreferrer"
           className={baseClass}
@@ -61,7 +62,7 @@ export default function TrailActionButtons({ trail, hikeDate, variant = 'link', 
         </a>
       )}
 
-      {!trail.webLink && !trail.tideStationId && (
+      {!webLinkHref && !trail.tideStationId && (
         <a
           href={getGoogleAllTrailsSearchUrl(trailName)}
           target="_blank"

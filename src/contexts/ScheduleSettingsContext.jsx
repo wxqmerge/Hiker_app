@@ -318,7 +318,7 @@ export function ScheduleSettingsProvider({ children }) {
       const trailsMatch = missingTrails.length === 0 && extraTrails.length === 0;
 
       const result = { schedulesMatch, trailsMatch, serverEntries: serverEntries.length, localEntries: localEntries.length, serverTrails: serverTrails.length, localTrails: trails.length, missingOnServer, extraOnServer, missingTrails, extraTrails };
-      console.log('[Verify Pushed to Server]', result);
+      if (debugMode) console.log('[Verify Pushed to Server]', result);
 
       if (schedulesMatch && trailsMatch) {
         showToast('Local matches server. Schedule: ' + serverEntries.length + ' entries, Trails: ' + serverTrails.length + ' trails', 'success');
@@ -347,7 +347,7 @@ export function ScheduleSettingsProvider({ children }) {
     } catch (err) {
       showToast('Failed to verify: ' + err.message, 'error');
     }
-  }, [scheduleStore, trails, showToast]);
+  }, [scheduleStore, trails, showToast, debugMode]);
 
   const importScheduleTsv = useCallback(() => {
     if (requireKey('API key required to import a quarterly schedule.')) return;
@@ -357,7 +357,7 @@ export function ScheduleSettingsProvider({ children }) {
         try {
           const text = await file.text();
           const lines = text.split('\n').map(l => l.split('\t'));
-          console.log('[TSV Import] Lines:', lines.length, 'Trails:', trails?.length);
+          if (debugMode) console.log('[TSV Import] Lines:', lines.length, 'Trails:', trails?.length);
 
           let headerIdx = -1;
           for (let i = 0; i < Math.min(lines.length, 10); i++) {
@@ -366,7 +366,7 @@ export function ScheduleSettingsProvider({ children }) {
               break;
             }
           }
-          console.log('[TSV Import] Header index:', headerIdx);
+          if (debugMode) console.log('[TSV Import] Header index:', headerIdx);
 
           if (headerIdx < 0) {
             showToast('Could not find quarterly schedule header in file.', 'error');
@@ -403,7 +403,7 @@ export function ScheduleSettingsProvider({ children }) {
               columnGroups.push({ dayLabel, dayCol, hikeCol, leaderCol: hikeCol + 1 });
             }
           }
-          console.log('[TSV Import] Column groups:', columnGroups);
+          if (debugMode) console.log('[TSV Import] Column groups:', columnGroups);
 
           // Map each column group to its slot: slot = occurrence within same day-of-week
           // sothh [3,5]: Wed→slot 0, Fri→slot 0 (different days, each has 1 hike)
@@ -450,7 +450,7 @@ export function ScheduleSettingsProvider({ children }) {
       },
       onCleanup: () => setShowSettings(false),
     });
-  }, [requireKey, trails, showToast]);
+  }, [requireKey, trails, showToast, debugMode]);
 
   async function doTsvImportSchedule(lines, headerIdx, columnGroups) {
     if (requireKey('API key required to import a quarterly schedule.')) return;
@@ -518,14 +518,14 @@ export function ScheduleSettingsProvider({ children }) {
               schedule[currentMonth].push({ day: dayNum, slot, trail_id: trail.id, leader: leader || '', early_start: startOffset });
               matchedCount++;
             } else {
-              console.log('[TSV Import] Unmatched:', hikeName);
+              if (debugMode) console.log('[TSV Import] Unmatched:', hikeName);
               unmatchedCount++;
             }
           }
         }
       }
 
-      console.log('[TSV Import] Matched:', matchedCount, 'Unmatched:', unmatchedCount, 'Schedule:', JSON.stringify(schedule).substring(0, 200));
+      if (debugMode) console.log('[TSV Import] Matched:', matchedCount, 'Unmatched:', unmatchedCount, 'Schedule:', JSON.stringify(schedule).substring(0, 200));
 
       if (!Object.keys(schedule).length) {
         showToast('No valid schedule data found in file.', 'error');

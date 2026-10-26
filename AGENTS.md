@@ -4,6 +4,7 @@
 - `server/`: Express/TS API server (reads/writes `exported_data/` JSON files)
 - `shared/types/`: Shared TypeScript interfaces, compiled to JS via `scripts/compile-shared.js`
 - `scripts/`: Build helpers (`compile-shared.js`, `patch-shared-imports.js`, `flatten-server-dist.js`)
+- `tools/`: One-off data/utility scripts (Python, PowerShell, CJS) — not part of the build; the documented pipeline scripts `extract_trails_xls.py` / `match_schedule.py` / `export_to_xls.py` stay at the repo root
 - `deploy/`: Deployment scripts (never commit)
 - `exported_data/`: Server-side JSON data (never commit)
 - **Never commit**: `*.xls*`, `exported_data/`, `node_modules/`, `dist/`, `server/dist/`, `deploy/.env`, `deploy/hiker.conf`, `server/.env`
@@ -12,8 +13,10 @@
 ```
 npm run dev:all        # Vite (5173) + Express (3000) concurrently
 npm run build:all      # Vite build + server TypeScript build
-npm run test:run       # Run all tests (684 tests, ~5s)
-npm run test:coverage  # Tests with V8 coverage
+npm run test:run       # Client tests only (Vitest + jsdom, src/**)
+npm run test:server    # Server route tests only (Vitest + node env, server/test)
+npm run test:all       # Client then server tests
+npm run test:coverage  # Client tests with V8 coverage
 npm run lint           # ESLint on src/ only
 ```
 
@@ -51,6 +54,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 
 ## API Quirks
 - Mutating endpoints (`PUT`, `DELETE`, `POST`) and admin reads such as `/api/data/export-zip`, `/api/validate`, and `/api/schedule/history` require the `X-API-Key` header. Do not add `apikey` query-param auth; client bootstrap accepts `#apikey=` fragments, verifies them through `/api/auth/verify`, and strips them locally.
+- **`PUT /api/schedule`**: honors `If-Match` — a mismatch against the current schedule version returns `412` with the current version in the `ETag` header (client `updateSchedule` adopts it and rethrows). Omitting `If-Match` is still accepted for legacy/curl callers. The client tracks the version via `getSchedule()`, `restoreSchedule()`, and polling (`setScheduleEtag`).
 - `seasonal` is a dict `{ "Jan": 3, ... }`, not an array
 - `importJSON` accepts both `trailDetails` (camelCase) and `trail_details` (snake_case)
 - Trail ID lookup falls back: `"360-rd"` → `"360"` (first segment)
@@ -66,10 +70,12 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - CORS is disabled unless `CORS_ORIGINS` is explicitly set to a comma-separated origin list.
 
 ## Testing
-- Vitest 4 + jsdom + testing-library
+- Client: Vitest 4 + jsdom + testing-library (`test:run`). Server: Vitest + node env (`test:server`, config `server/vitest.config.ts`, tests in `server/test/`). `test:all` runs both.
+- Server tests set `DATA_DIR`/`SCHEDULE_NAME`/`ADMIN_API_KEY` env then dynamic-import the router (env is read at module-load time); data lives in a temp dir under `tmp/`.
 - Tests use `MemoryRouter` wrapping `BrowserRouter` (App uses `BrowserRouter`)
 - Mock data in `src/test/setup.ts`: 3 trails (`trail-1`, `trail-2`, `trail-3`)
 - `globalThis.__TEST_MOCK_DATA__` exposes mock data for test modifications
+- `src/test/setup.ts` installs the fetch mock BEFORE loading the store (the store runs `initSharedState()` at module-load, so it must not be a static import)
 - ESLint ignores `server/`, `scripts/`, `shared/` — only lints `src/`
 
 ## Deployment
