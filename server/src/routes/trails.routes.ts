@@ -81,6 +81,9 @@ router.get('/gpx/:id', async (req, res) => {
     const content = await fs.readFile(gpxPath, 'utf-8');
     res.set('Content-Type', 'application/gpx+xml');
     res.set('Cache-Control', 'no-cache');
+    // Lets direct-URL saves (browser download managers) name the file.
+    const safeName = path.basename(gpxFile, '.gpx').replace(/[^a-zA-Z0-9._-]/g, '_');
+    res.set('Content-Disposition', `attachment; filename="${safeName}.gpx"`);
     res.send(content);
   } catch {
     res.status(404).json({ success: false, error: { message: 'GPX file not found' } });

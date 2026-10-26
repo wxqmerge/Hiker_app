@@ -412,8 +412,14 @@ export function downloadBlob(data, filename, type = 'application/json') {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  // Some engines (Android browsers, WebViews) ignore clicks on detached nodes.
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 // Open HTML content in a new browser tab

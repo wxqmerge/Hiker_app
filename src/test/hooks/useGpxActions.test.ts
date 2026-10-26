@@ -61,6 +61,21 @@ describe('useGpxActions', () => {
     expect(event.stopPropagation).toHaveBeenCalled();
   });
 
+  it('uses share sheet instead of blob download on Android', async () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Linux; Android 14) Chrome/120' });
+    try {
+      (shareGpxFile as any).mockResolvedValue(true);
+      const { result } = renderHook(() => useGpxActions(trail));
+      await act(async () => {
+        await result.current.handleGpxDownload();
+      });
+      expect(shareGpxFile).toHaveBeenCalledWith(expect.stringContaining('<gpx>'), 'Test Trail Full');
+      expect(downloadBlob).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('sets gpxDownloading to true during download', async () => {
     const { result } = renderHook(() => useGpxActions(trail));
     await act(async () => {

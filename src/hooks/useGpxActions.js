@@ -30,6 +30,13 @@ export function useGpxActions(trail) {
     try {
       const gpx = await getGpx(trailId);
       if (gpx) {
+        // Android: blob-URL anchor clicks are silently ignored in installed
+        // PWAs (and some Android browsers). The share sheet is the native
+        // save/open path there — Save to Files, Drive, or a maps app.
+        if (/android/i.test(navigator.userAgent)) {
+          await shareGpxFile(gpx, trailName || 'route');
+          return;
+        }
         const safeName = sanitizeFilename(trailName || 'route');
         downloadBlob(gpx, `${safeName}.gpx`, 'application/gpx+xml');
       }

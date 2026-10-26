@@ -14,7 +14,7 @@
 //     are invalidated so the next load (e.g. after an Import ZIP reload) refetches.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v9';
+const VERSION = 'v10';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const TIDE_CACHE = `hiker-tide-${VERSION}`;
@@ -130,6 +130,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (NO_CACHE_API.has(path)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+  // GPX downloads: the server marks them no-cache and re-uploads change the
+  // bytes — always go to the network, never the shell/API caches.
+  if (path.startsWith('/api/trails/gpx/')) {
     event.respondWith(fetch(request));
     return;
   }
