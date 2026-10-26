@@ -53,7 +53,10 @@ function buildTrailDetailsHtml(trail, trailDetails, mode = 'compact') {
 function buildTrailLineHtml(trail, earlyStart) {
   const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
 
-  let line = esc(`${name}◆︎`);
+  // ◆ marks wilderness trails only — same predicate as the filter/sort
+  // (name carries the ◆); buildTrailLineParts strips it from `name`.
+  const wilderness = getTrailName(trail).includes('\u25C6');
+  let line = esc(wilderness ? `${name}\u25C6\uFE0E` : name);
   const offset = normalizeStartOffset(earlyStart);
   if (offset !== 0) {
     const label = offset < 0 ? `${Math.abs(offset)}m early` : `${offset}m late`;

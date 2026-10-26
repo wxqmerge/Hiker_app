@@ -78,6 +78,16 @@ describe('generateReportHtml', () => {
     expect(html).toContain('font-weight: bold');
   });
 
+  it('adds the wilderness ◆ marker only for trails whose name has it', () => {
+    const plain = [{ dateStr: 'Fri, Jun 12', trail: mockTrail, trailDetails: null, earlyStart: 0 }];
+    expect(generateReportHtml(plain, 'Title')).not.toContain('\u25C6');
+
+    const wild = { ...mockTrail, id: 'trail-w', fullName: '\u25C6 Wilderness Peak' };
+    const wildEntries = [{ dateStr: 'Fri, Jun 12', trail: wild, trailDetails: null, earlyStart: 0 }];
+    const html = generateReportHtml(wildEntries, 'Title');
+    expect(html).toContain('Wilderness Peak\u25C6');
+  });
+
   it('renders description', () => {
     const entries = [{
       dateStr: 'Fri, Jun 12',
