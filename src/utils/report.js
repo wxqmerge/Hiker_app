@@ -4,9 +4,10 @@ import { formatStartOffset } from './etc';
 import { DAY_NAMES, MONTH_ABBR } from './constants';
 import { safeWebLink } from './url';
 
-// Escape HTML special characters
+// Escape HTML special characters. Total on any input: a missing/numeric
+// field must not crash report generation.
 function esc(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // Build description + web link + GPX HTML snippet for a trail.
