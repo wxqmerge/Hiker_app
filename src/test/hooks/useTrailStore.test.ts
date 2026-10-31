@@ -78,6 +78,25 @@ describe('useTrailStore', () => {
     expect(result.current.trails).toEqual([]);
   });
 
+  it('keeps successful endpoints when one startup fetch fails', async () => {
+    await act(async () => {}); // settle the init started by beforeEach
+    const baseFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
+    globalThis.fetch = vi.fn(async (url: string, opts?: RequestInit) => {
+      const u = String(url);
+      // fail trails but not trails/details
+      if (u.includes('/api/trails') && !u.includes('/details')) throw new Error('503');
+      return baseFetch(url, opts);
+    });
+    resetTrailStore();
+    const { result } = renderHook(() => useTrailStore());
+    await act(async () => {});
+    // The endpoints that answered must survive the failure of the others.
+    expect(result.current.trailDetails).toHaveProperty('trail-1');
+    expect(result.current.schedule).toBeTruthy();
+    expect(result.current.loading).toBe(false);
+    expect(result.current.trails).toEqual([]);
+  });
+
   it('rolls back local trails when saveTrail fails', async () => {
     const { result } = renderHook(() => useTrailStore());
     await act(async () => {});

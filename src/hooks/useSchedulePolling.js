@@ -73,4 +73,14 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
     const interval = setInterval(pollSchedule, pollingInterval);
     return () => clearInterval(interval);
   }, [pollSchedule, pollingInterval]);
+
+  // Backgrounded PWAs get their timers frozen, so the interval above cannot
+  // self-heal a failed startup fetch. Poll as soon as the app becomes visible.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (!document.hidden) pollSchedule();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [pollSchedule]);
 }
