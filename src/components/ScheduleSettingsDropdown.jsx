@@ -3,6 +3,7 @@ import { useScheduleSettings } from '../contexts/ScheduleSettingsContext';
 import { useTrailActions } from '../contexts/TrailActionsContext';
 import { getUnitSystem, setUnitSystem } from '../utils/config';
 import DropdownItem from './shared/DropdownItem';
+import LegendList from './shared/LegendList';
 import PwaInstall from './PwaInstall';
 
 const APP_VERSION = __APP_VERSION;
@@ -335,17 +336,7 @@ export default function ScheduleSettingsDropdown() {
       </p>
       <div className="mb-4">
         <p className="text-base font-semibold text-gray-500 uppercase tracking-wider mb-2">Legend</p>
-        <dl className="text-base text-gray-700 space-y-2">
-          <div><dt className="inline font-mono font-semibold">ETC</dt><dd className="inline"> — estimated return time to Sequim ± 90 min</dd></div>
-          <div><dt className="inline font-mono font-semibold">TH</dt><dd className="inline"> — trailhead (Google Maps directions)</dd></div>
-          <div><dt className="inline font-mono font-semibold">GPX</dt><dd className="inline"> — GPS track (download / share)</dd></div>
-          <div><dt className="inline font-mono font-semibold">Get Maps</dt><dd className="inline"> — links to a navigation app (Organic Maps / GPXSee) that opens GPX files offline</dd></div>
-          <div><dt className="inline font-mono font-semibold">◆</dt><dd className="inline"> — wilderness trail (limit 12 hikers in group)</dd></div>
-          <div><dt className="inline font-mono font-semibold">Tide</dt><dd className="inline"> — NOAA low tide prediction</dd></div>
-          <div><dt className="inline font-mono font-semibold">Early Start</dt><dd className="inline"> — departs 30 min earlier</dd></div>
-          <div><dt className="inline font-mono font-semibold">°F</dt><dd className="inline"> — high temp at trailhead</dd></div>
-          <div><dt className="inline font-mono font-semibold">%</dt><dd className="inline"> — chance of rain</dd></div>
-        </dl>
+        <LegendList />
       </div>
       <a
         href="https://github.com/wxqmerge/Hiker_app"

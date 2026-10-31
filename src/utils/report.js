@@ -1,6 +1,6 @@
 import { buildTrailLineParts } from './formatTrail';
-import { getTrailName } from './data';
-import { normalizeStartOffset } from './etc';
+import { getTrailName, isWilderness } from './data';
+import { formatStartOffset } from './etc';
 import { DAY_NAMES, MONTH_ABBR } from './constants';
 import { safeWebLink } from './url';
 
@@ -53,15 +53,10 @@ function buildTrailDetailsHtml(trail, trailDetails, mode = 'compact') {
 function buildTrailLineHtml(trail, earlyStart) {
   const { name, difficulty, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
 
-  // ◆ marks wilderness trails only — same predicate as the filter/sort
-  // (name carries the ◆); buildTrailLineParts strips it from `name`.
-  const wilderness = getTrailName(trail).includes('\u25C6');
-  let line = esc(wilderness ? `${name}\u25C6\uFE0E` : name);
-  const offset = normalizeStartOffset(earlyStart);
-  if (offset !== 0) {
-    const label = offset < 0 ? `${Math.abs(offset)}m early` : `${offset}m late`;
-    line += ` <span class="early-start">(${label})</span>`;
-  }
+  // ◆ marks wilderness trails only (buildTrailLineParts strips it from `name`).
+  let line = esc(isWilderness(trail) ? `${name}\u25C6\uFE0E` : name);
+  const early = formatStartOffset(earlyStart);
+  if (early) line += ` <span class="early-start">(${early.shortLabel})</span>`;
   line += `  ${esc(difficulty)}\t${esc(distanceText)} / ${esc(elevationText)}\t${esc(parking)}`;
   if (rideCost) line += `\t${esc(rideCost)}`;
 
@@ -81,9 +76,40 @@ function renderEntryHtml({ dateStr, trail, trailDetails, earlyStart }) {
   return html;
 }
 
-export function generateReportHtml(entries, title) {
-  let sections = entries.map(renderEntryHtml).join('');
+// Shared document shell and CSS so the four generators cannot drift apart.
+const BASE_CSS = `  body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
+  h1 { font-size: 24pt; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 30px; }
+  .entry { margin-bottom: 28px; }
+  .entry-header { font-size: 18pt; font-weight: bold; font-family: Arial, sans-serif; white-space: pre-wrap; }
+  .early-start { color: red; }
+  .entry-desc { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 4px; white-space: pre-line; }
+  .entry-link { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 6px; }
+  .entry-link a { color: blue; }`;
 
+// Extra CSS for the two print sheets (month headings, notes, toolbar, print).
+const SHEET_CSS = `  h2.month { font-size: 20pt; font-weight: bold; font-family: Arial, sans-serif; margin: 26px 0 14px; }
+  .empty { font-size: 18pt; }
+  .notes { margin-top: 32px; font-size: 13pt; line-height: 1.5; }
+  .toolbar { position: sticky; top: 0; background: #fff; padding: 8px 0; margin-bottom: 12px; border-bottom: 1px solid #ddd; }
+  .toolbar button { font: inherit; font-size: 14px; padding: 6px 14px; border: 1px solid #2e7d32; border-radius: 6px; background: #fff; color: #2e7d32; cursor: pointer; }
+  .toolbar button:hover { background: #e8f5e9; }`;
+
+const printCss = (breakSelectors) => `  @media print {
+    .no-print { display: none; }
+    body { margin: 0; }
+    ${breakSelectors}, .notes p { break-inside: avoid; page-break-inside: avoid; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }`;
+
+const PRINT_TOOLBAR = '<div class="toolbar no-print"><button onclick="window.print()">Print</button></div>';
+
+function renderNotesHtml(notes) {
+  return notes.length
+    ? `<div class="notes">${notes.map((n) => `<p><b>${esc(n.heading)}</b> ${esc(n.text)}</p>`).join('')}</div>`
+    : '';
+}
+
+function documentShell(title, css, bodyHtml) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -91,21 +117,19 @@ export function generateReportHtml(entries, title) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(title)}</title>
 <style>
-  body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
-  h1 { font-size: 24pt; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 30px; }
-  .entry { margin-bottom: 28px; }
-  .entry-header { font-size: 18pt; font-weight: bold; font-family: Arial, sans-serif; white-space: pre-wrap; }
-  .early-start { color: red; }
-  .entry-desc { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 4px; white-space: pre-line; }
-  .entry-link { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 6px; }
-  .entry-link a { color: blue; }
+${BASE_CSS}
+${css}
 </style>
 </head>
 <body>
-<h1>${esc(title)}</h1>
-${sections}
+${bodyHtml}
 </body>
 </html>`;
+}
+
+export function generateReportHtml(entries, title) {
+  const sections = entries.map(renderEntryHtml).join('');
+  return documentShell(title, '', `<h1>${esc(title)}</h1>\n${sections}`);
 }
 
 // Printable hike-descriptions sheet modeled on the old Google Sites page:
@@ -114,53 +138,15 @@ ${sections}
 // monthGroups: [{ label, entries: [{ dateStr, trail, trailDetails, earlyStart }] }]
 // notes: [{ heading, text }]
 export function generateDescriptionsPrintHtml({ title, monthGroups, notes = [] }) {
-  const sections = monthGroups.map(group => {
+  const sections = monthGroups.map((group) => {
     const body = group.entries.length
       ? group.entries.map(renderEntryHtml).join('')
       : '<p class="empty">No hikes scheduled.</p>';
     return `<h2 class="month">${esc(group.label)}</h2>${body}`;
   }).join('');
 
-  const notesHtml = notes.length
-    ? `<div class="notes">${notes.map(n => `<p><b>${esc(n.heading)}</b> ${esc(n.text)}</p>`).join('')}</div>`
-    : '';
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(title)}</title>
-<style>
-  body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
-  h1 { font-size: 24pt; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 30px; }
-  h2.month { font-size: 20pt; font-weight: bold; font-family: Arial, sans-serif; margin: 26px 0 14px; }
-  .entry { margin-bottom: 28px; }
-  .entry-header { font-size: 18pt; font-weight: bold; font-family: Arial, sans-serif; white-space: pre-wrap; }
-  .early-start { color: red; }
-  .entry-desc { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 4px; white-space: pre-line; }
-  .entry-link { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 6px; }
-  .entry-link a { color: blue; }
-  .empty { font-size: 18pt; }
-  .notes { margin-top: 32px; font-size: 13pt; line-height: 1.5; }
-  .toolbar { position: sticky; top: 0; background: #fff; padding: 8px 0; margin-bottom: 12px; border-bottom: 1px solid #ddd; }
-  .toolbar button { font: inherit; font-size: 14px; padding: 6px 14px; border: 1px solid #2e7d32; border-radius: 6px; background: #fff; color: #2e7d32; cursor: pointer; }
-  .toolbar button:hover { background: #e8f5e9; }
-  @media print {
-    .no-print { display: none; }
-    body { margin: 0; }
-    .entry, .notes p { break-inside: avoid; page-break-inside: avoid; }
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-</head>
-<body>
-<div class="toolbar no-print"><button onclick="window.print()">Print</button></div>
-<h1>${esc(title)}</h1>
-${sections}
-${notesHtml}
-</body>
-</html>`;
+  const body = `${PRINT_TOOLBAR}<h1>${esc(title)}</h1>\n${sections}\n${renderNotesHtml(notes)}`;
+  return documentShell(title, `${SHEET_CSS}\n${printCss('.entry')}`, body);
 }
 
 // Printable one-line-per-hike schedule sheet (calendar counterpart of the
@@ -182,45 +168,13 @@ export function generatePrintableScheduleHtml({ title, monthGroups, notes = [] }
     return `<h2 class="month">${esc(group.label)}</h2><table>${rows}</table>`;
   }).join('');
 
-  const notesHtml = notes.length
-    ? `<div class="notes">${notes.map((n) => `<p><b>${esc(n.heading)}</b> ${esc(n.text)}</p>`).join('')}</div>`
-    : '';
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(title)}</title>
-<style>
-  body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
-  h1 { font-size: 24pt; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 30px; }
-  h2.month { font-size: 20pt; font-weight: bold; font-family: Arial, sans-serif; margin: 26px 0 12px; }
-  table { border-collapse: collapse; width: 100%; }
+  const scheduleCss = `  table { border-collapse: collapse; width: 100%; }
   td { padding: 4px 10px 4px 0; vertical-align: top; font-size: 16pt; border-bottom: 1px solid #eee; }
   td.date { white-space: nowrap; font-weight: bold; }
-  .leader { font-style: italic; }
-  .early-start { color: red; }
-  .empty { font-size: 18pt; }
-  .notes { margin-top: 32px; font-size: 13pt; line-height: 1.5; }
-  .toolbar { position: sticky; top: 0; background: #fff; padding: 8px 0; margin-bottom: 12px; border-bottom: 1px solid #ddd; }
-  .toolbar button { font: inherit; font-size: 14px; padding: 6px 14px; border: 1px solid #2e7d32; border-radius: 6px; background: #fff; color: #2e7d32; cursor: pointer; }
-  .toolbar button:hover { background: #e8f5e9; }
-  @media print {
-    .no-print { display: none; }
-    body { margin: 0; }
-    tr, .notes p { break-inside: avoid; page-break-inside: avoid; }
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-</head>
-<body>
-<div class="toolbar no-print"><button onclick="window.print()">Print</button></div>
-<h1>${esc(title)}</h1>
-${tables}
-${notesHtml}
-</body>
-</html>`;
+  .leader { font-style: italic; }`;
+
+  const body = `${PRINT_TOOLBAR}<h1>${esc(title)}</h1>\n${tables}\n${renderNotesHtml(notes)}`;
+  return documentShell(title, `${SHEET_CSS}\n${scheduleCss}\n${printCss('tr')}`, body);
 }
 
 // Convert range value to ride cost based on VBA formula:
@@ -244,40 +198,15 @@ export function getRideCost(range) {
 
 // Generate HTML report for a single trail (same format as monthly report)
 export function generateTrailHtml(trail, trailDetails, dateStr) {
-  let headerHtml = '';
   const date = dateStr ? (dateStr instanceof Date ? dateStr : new Date(dateStr)) : new Date();
   const formattedDate = `${DAY_NAMES[date.getDay()]}, ${MONTH_ABBR[date.getMonth()]} ${date.getDate()}`;
   const title = `${formattedDate} — ${getTrailName(trail)}`;
   const trailLine = buildTrailLineHtml(trail, false);
-  headerHtml = `<div class="entry-header">${esc(formattedDate)}\t${trailLine}</div>`;
 
-  let html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(title)}</title>
-<style>
-  body { font-family: Arial, sans-serif; font-size: 18px; line-height: 1.5; margin: 40px; color: #222; }
-  h1 { font-size: 24pt; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 30px; }
-  .entry { margin-bottom: 28px; }
-  .entry-header { font-size: 18pt; font-weight: bold; font-family: Arial, sans-serif; white-space: pre-wrap; }
-  .early-start { color: red; }
-  .entry-desc { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 4px; white-space: pre-line; }
-  .entry-link { font-size: 18pt; font-family: Arial, sans-serif; margin-top: 6px; }
-  .entry-link a { color: blue; }
-</style>
-</head>
-<body>
-<h1>${esc(title)}</h1>
-`;
+  const body = `<h1>${esc(title)}</h1>
+<div class="entry"><div class="entry-header">${esc(formattedDate)}\t${trailLine}</div>${buildTrailDetailsHtml(trail, trailDetails, 'compact')}</div>`;
 
-  html += `<div class="entry">${headerHtml}`;
-  html += buildTrailDetailsHtml(trail, trailDetails, 'compact');
-  html += `</div>`;
-
-  html += `</body></html>`;
-  return html;
+  return documentShell(title, '', body);
 }
 
 // Copy text to clipboard

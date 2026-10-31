@@ -12,6 +12,16 @@ export function getTrailName(trail) {
 }
 
 /**
+ * Wilderness predicate: a ◆ (U+25C6) in the display name marks a wilderness
+ * trail (12-hiker limit). Single source of truth for filter, sort, report.
+ * @param {Object} trail - Trail object
+ * @returns {boolean}
+ */
+export function isWilderness(trail) {
+  return getTrailName(trail).includes('\u25C6');
+}
+
+/**
  * Find a trail by ID with fallback matching strategies:
  * 1. Exact match
  * 2. Case-insensitive match

@@ -8,8 +8,8 @@ import { MONTH_NAMES, DAY_NAMES } from '../utils/constants';
 import { getGroupName } from '../utils/config';
 import { getTodayHikeRef, createDate, getMonthKey } from '../utils/dateUtils';
 import { getDayEntries } from '../utils/scheduleFormat';
-import { normalizeStartOffset } from '../utils/etc';
-import { findTrailById, getTrailName } from '../utils/data';
+import { normalizeStartOffset, formatStartOffset } from '../utils/etc';
+import { findTrailById, isWilderness } from '../utils/data';
 import { buildTrailLineParts } from '../utils/formatTrail';
 import { generateDescriptionsPrintHtml, generatePrintableScheduleHtml } from '../utils/report';
 import { openHtmlInNewTab } from '../utils/io';
@@ -49,11 +49,6 @@ function collectMonthHikes(scheduleStore, trails, year, month, today) {
   return hikes;
 }
 
-function earlyStartLabel(offset) {
-  if (offset === 0) return null;
-  return offset < 0 ? `${Math.abs(offset)}m early` : `${offset}m late`;
-}
-
 // Full month names in date lines, matching the old hike-descriptions page.
 function fullDateStr(d) {
   return `${DAY_NAMES[d.getDay()]}, ${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;
@@ -73,11 +68,10 @@ function HikeEntry({ hike }) {
   const { trailDetails } = useTrails();
   const { handleGpxDownload, gpxDownloading } = useGpxActions(trail);
   const { name, distanceText, elevationText, parking, rideCost } = buildTrailLineParts(trail);
-  // Same wilderness predicate as the filter/report: the ◆ lives in the name.
-  const isWilderness = getTrailName(trail).includes('\u25C6');
+  const isWild = isWilderness(trail);
   const desc = trailDetails[trailId]?.fullDescription?.trim();
   const webLink = safeWebLink(trail.webLink);
-  const early = earlyStartLabel(earlyStart);
+  const early = formatStartOffset(earlyStart)?.shortLabel;
 
   return (
     <div className="mb-7">
@@ -86,7 +80,7 @@ function HikeEntry({ hike }) {
         <span className="ml-3">
           <Link to={`/trail/${trailId}`} className="text-gray-900 hover:underline">
             {name}
-            {isWilderness && <span title="Wilderness trail (limit 12 hikers)">&#9670;&#xFE0E;</span>}
+              {isWild && <span title="Wilderness trail (limit 12 hikers)">&#9670;&#xFE0E;</span>}
           </Link>
           {'  '}[{trail.difficulty}]
           {'  '}{distanceText} / {elevationText}
@@ -166,10 +160,10 @@ export default function Descriptions() {
         dateStr: fullDateStr(h.date),
         trailName: (() => {
           const { name } = buildTrailLineParts(h.trail);
-          return getTrailName(h.trail).includes('\u25C6') ? `${name}\u25C6\uFE0E` : name;
+          return isWilderness(h.trail) ? `${name}\u25C6\uFE0E` : name;
         })(),
         difficulty: `[${h.trail.difficulty}]`,
-        earlyLabel: earlyStartLabel(h.earlyStart) || '',
+        earlyLabel: formatStartOffset(h.earlyStart)?.shortLabel || '',
         leader: h.leader,
       })),
     }));

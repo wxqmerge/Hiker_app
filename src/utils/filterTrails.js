@@ -1,6 +1,6 @@
 import { MONTH_ABBR } from './constants';
 import { getSeasonalInfo, sumMonthlyScores } from './score.js';
-import { getTrailDetailsById, getTrailName } from './data';
+import { getTrailDetailsById, getTrailName, isWilderness } from './data';
 
 function getTrailMonthlyScore(trail, trailDetails, idx) {
   const rawId = trail?.id || trail?.trail?.id;
@@ -77,10 +77,7 @@ export function filterTrails(items, filters, trailDetails) {
       if (!matchesMonth) return false;
     }
 
-    if (filters.wilderness) {
-      const name = getTrailName(t);
-      if (!name.includes('\u25C6')) return false;
-    }
+    if (filters.wilderness && !isWilderness(t)) return false;
 
     if (filters.gpx && filters.gpx !== 'all') {
       const hasGpx = !!t.hasGpx;
@@ -148,8 +145,8 @@ export function sortTrails(items, filters, trailDetails, weatherMap) {
     sorted.sort((a, b) => {
       const ta = a.trail || a;
       const tb = b.trail || b;
-      const aWild = getTrailName(ta).includes('\u25C6') ? 1 : 0;
-      const bWild = getTrailName(tb).includes('\u25C6') ? 1 : 0;
+      const aWild = isWilderness(ta) ? 1 : 0;
+      const bWild = isWilderness(tb) ? 1 : 0;
       if (aWild !== bWild) return aWild - bWild;
       return getTrailName(ta).localeCompare(getTrailName(tb));
     });

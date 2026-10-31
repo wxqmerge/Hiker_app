@@ -11,6 +11,24 @@ export const START_OFFSET_OPTIONS = [
   { value: 30, label: '9:00 AM (30m late)' },
 ];
 
+/**
+ * Single source of truth for early/late start badges.
+ * @returns {{ offset: number, label: string, shortLabel: string, className: string }|null}
+ *   `label` is the badge form ("8:00 AM (30m early)"), `shortLabel` the
+ *   report form ("30m early"). Null for on-time starts.
+ */
+export function formatStartOffset(earlyStart) {
+  const offset = normalizeStartOffset(earlyStart);
+  if (offset === 0) return null;
+  const opt = START_OFFSET_OPTIONS.find((o) => o.value === offset);
+  return {
+    offset,
+    label: opt ? opt.label : `${offset > 0 ? '+' : ''}${offset}m`,
+    shortLabel: offset < 0 ? `${Math.abs(offset)}m early` : `${offset}m late`,
+    className: offset > 0 ? 'bg-green-700' : 'bg-orange-500',
+  };
+}
+
 export function getEtcBounds(distance) {
   const dist = Math.max(distance || 0, 0);
   const minSpeed = getMinSpeedMph();
