@@ -227,7 +227,8 @@ export function getTrailDetails(): TrailDetailsData {
 }
 
 export function getTrailDetailById(id: string): TrailDetail | undefined {
-  return trailDetails[id];
+  // Own-property guard against inherited keys ('__proto__', 'toString', ...).
+  return Object.prototype.hasOwnProperty.call(trailDetails, id) ? trailDetails[id] : undefined;
 }
 
 export function getLookup(): LookupData {
@@ -444,7 +445,10 @@ export function setGpxIndex(index: Record<string, string>): void {
 }
 
 export function getGpxFileName(trailId: string): string | undefined {
-  return gpxIndex[trailId];
+  // Own-string check: gpxIndex is a plain object, so inherited keys like
+  // '__proto__' or 'constructor' would otherwise return prototype values.
+  const file = gpxIndex[trailId];
+  return typeof file === 'string' ? file : undefined;
 }
 
 export function getGpxUploadFileName(trailId: string): string {

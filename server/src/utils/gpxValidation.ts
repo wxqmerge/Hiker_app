@@ -8,6 +8,6 @@ export function validateGpxContent(content: string): string | null {
 const SAFE_GPX_FILENAME = /^[\w.-]+\.gpx$/;
 
 export function isSafeGpxFilename(name: string): boolean {
-  if (!name || name.includes('..')) return false;
+  if (typeof name !== 'string' || !name || name.includes('..')) return false;
   return SAFE_GPX_FILENAME.test(name);
 }

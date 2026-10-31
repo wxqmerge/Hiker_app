@@ -119,4 +119,16 @@ describe('GPX fingerprint (gpxBytes/gpxModified/gpxSha1)', () => {
     expect(t.gpxSha1).toBeUndefined();
     expect(t.hasGpx).toBe(false);
   });
+
+  it('serves 404 (not a crash) for inherited-object ids on public GET /gpx/:id', async () => {
+    // gpxIndex['__proto__'] used to return Object.prototype (truthy) ->
+    // isSafeGpxFilename type error -> unhandled rejection -> process crash.
+    for (const id of ['__proto__', 'constructor', 'toString']) {
+      const res = await fetch(`${base}/api/trails/gpx/${id}`);
+      expect(res.status, id).toBe(404);
+    }
+    // Process survived the requests: a follow-up still answers.
+    const ok = await fetch(`${base}/api/trails/gpx/zion`);
+    expect([200, 404]).toContain(ok.status);
+  });
 });

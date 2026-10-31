@@ -69,7 +69,9 @@ router.put('/:id', requireAdminKey, withErrorTag('TRAILS')(async (req, res) => {
   res.json({ success: true, trail: getTrailById(req.params.id) });
 }));
 
-router.get('/gpx/:id', async (req, res) => {
+// Public route: withErrorTag ensures async rejections (e.g. a bad trail id)
+// become a 500 response instead of an unhandled rejection that kills Node.
+router.get('/gpx/:id', withErrorTag('TRAILS')(async (req, res) => {
   const gpxFile = getGpxFileName(req.params.id);
   if (!gpxFile) {
     return res.status(404).json({ success: false, error: { message: 'GPX not found for this trail' } });
@@ -101,7 +103,7 @@ router.get('/gpx/:id', async (req, res) => {
   } catch {
     res.status(404).json({ success: false, error: { message: 'GPX file not found' } });
   }
-});
+}));
 
 router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('TRAILS')(async (req, res) => {
   if (!req.file) {
