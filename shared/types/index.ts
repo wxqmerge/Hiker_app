@@ -37,8 +37,15 @@ export interface Trail {
   tideStationId?: string;
   hasGpx?: boolean;
   gpxFile?: string;
+  // Server-managed fingerprint of the served GPX file, stamped on every trail
+  // write (dataService.stampGpxFingerprint). Used to detect file swaps/confusion.
+  gpxBytes?: number;
+  gpxModified?: string;
+  gpxSha1?: string;
   trailHeadLat?: number;
   trailHeadLon?: number;
+  durationMinutes?: number;
+  duration?: string;
 }
 
 export interface TrailDetail {

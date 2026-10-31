@@ -1,12 +1,13 @@
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { Trail, TrailDetail, ScheduleData, LookupData, TrailsData, TrailDetailsData } from '@shared/types/index.js';
 import { MONTH_ABBR, resolveScheduleMonthKey } from '../utils/monthUtils.js';
 import { generateEtag } from '../utils/etag.js';
 import { isSafeGpxFilename } from '../utils/gpxValidation.js';
 import { extractDurationFromGpxContent } from '../utils/gpxDuration.js';
-import { DATA_DIR, HISTORY_DIR } from '../utils/paths.js';
+import { DATA_DIR, HISTORY_DIR, GPX_DIR } from '../utils/paths.js';
 import { getCurrentDir } from '../utils/path.js';
 
 // Cache for GPX durations
@@ -266,6 +267,28 @@ async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: st
   return !!gpxIndex[trailId];
 }
 
+// Stamp (or clear) the GPX fingerprint fields on a trail record from the file
+// that would actually be served (upload dir first, then original GPX dir —
+// same order as trails.routes.ts resolveGpxPath). Cleared, not left stale,
+// when the mapped file cannot be read.
+async function stampGpxFingerprint(trail: Trail): Promise<void> {
+  delete trail.gpxBytes;
+  delete trail.gpxModified;
+  delete trail.gpxSha1;
+  const fileName = gpxIndex[trail.id];
+  if (!fileName || !isSafeGpxFilename(fileName)) return;
+  for (const dir of [GPX_UPLOAD_DIR, GPX_DIR]) {
+    try {
+      const p = path.join(dir, fileName);
+      const [buf, st] = await Promise.all([fs.readFile(p), fs.stat(p)]);
+      trail.gpxBytes = st.size;
+      trail.gpxModified = st.mtime.toISOString();
+      trail.gpxSha1 = crypto.createHash('sha1').update(buf).digest('hex');
+      return;
+    } catch { /* not here, try next dir */ }
+  }
+}
+
 export async function updateTrail(trail: Trail & { gpxData?: string }): Promise<void> {
   const trailIdx = trails.findIndex(t => t.id === trail.id);
   const { gpxData, ...trailWithoutGpx } = trail;
@@ -278,6 +301,7 @@ export async function updateTrail(trail: Trail & { gpxData?: string }): Promise<
     updatedTrail.gpxFile === ''
   );
   updatedTrail.hasGpx = hasGpx;
+  await stampGpxFingerprint(updatedTrail);
 
   if (trailIdx >= 0) {
     trails[trailIdx] = updatedTrail;

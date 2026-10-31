@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
 import multer from 'multer';
 import {
   getTrails,
@@ -79,6 +80,18 @@ router.get('/gpx/:id', async (req, res) => {
   }
   try {
     const content = await fs.readFile(gpxPath, 'utf-8');
+    // Fingerprint check: served file must match what the trail record says it
+    // is. Mismatch means the GPX was swapped/confused on disk — serve anyway
+    // (availability first) but log loudly and flag in the response headers.
+    const trail = getTrailById(req.params.id);
+    if (trail && (trail.gpxBytes != null || trail.gpxSha1)) {
+      const bytes = Buffer.byteLength(content, 'utf-8');
+      const sha1 = crypto.createHash('sha1').update(content).digest('hex');
+      if ((trail.gpxBytes != null && bytes !== trail.gpxBytes) || (trail.gpxSha1 && sha1 !== trail.gpxSha1)) {
+        console.warn(`[GPX-INTEGRITY] trail "${req.params.id}": "${path.basename(gpxPath)}" differs from recorded fingerprint (${bytes}B/sha1=${sha1.slice(0, 8)} vs ${trail.gpxBytes ?? '?'}B/sha1=${(trail.gpxSha1 || '?').slice(0, 8)})`);
+        res.set('X-GPX-Integrity', 'mismatch');
+      }
+    }
     res.set('Content-Type', 'application/gpx+xml');
     res.set('Cache-Control', 'no-cache');
     // Lets direct-URL saves (browser download managers) name the file.

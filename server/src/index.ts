@@ -1,5 +1,6 @@
 import './utils/env.js';
 import path from 'path';
+import crypto from 'crypto';
 import { getCurrentDir } from './utils/path.js';
 
 const __dirname = getCurrentDir(import.meta.url);
@@ -17,7 +18,7 @@ import { router as lookupRouter } from './routes/lookup.routes.js';
 import { router as dataRouter } from './routes/data.routes.js';
 import { getWriteHealth, serverVersion, waitForDataReady, getScheduleFile } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
-import { DATA_DIR, HISTORY_DIR } from './utils/paths.js';
+import { DATA_DIR, HISTORY_DIR, GPX_DIR } from './utils/paths.js';
 import { getPublicConfig } from './utils/publicConfig.js';
 import { requireAdminKey } from './middleware/auth.middleware.js';
 
@@ -453,6 +454,27 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
         }
         if (corruptedGpx.length) {
           issues.push(`${corruptedGpx.length} corrupted GPX file(s) (too small): ${corruptedGpx.join(', ')}`);
+        }
+        // Fingerprint drift: the trail record's gpxBytes/gpxSha1 must match the
+        // file that would actually be served (upload dir first, GPX dir next).
+        // A mismatch means a GPX was swapped/confused on disk after recording.
+        const drift: string[] = [];
+        for (const t of trails) {
+          const fileName = gpxIndex[t.id] || t.gpxFile;
+          if (!fileName || (t.gpxBytes == null && !t.gpxSha1)) continue;
+          let fp = '';
+          for (const dir of [gpxDir, GPX_DIR]) {
+            try { await fs.access(path.join(dir, fileName)); fp = path.join(dir, fileName); break; } catch { /* try next */ }
+          }
+          if (!fp) continue; // already covered by the missing-file check
+          const buf = await fs.readFile(fp);
+          const hash = crypto.createHash('sha1').update(buf).digest('hex');
+          if ((t.gpxBytes != null && buf.length !== t.gpxBytes) || (t.gpxSha1 && hash !== t.gpxSha1)) {
+            drift.push(`${t.id} (${fileName})`);
+          }
+        }
+        if (drift.length) {
+          issues.push(`${drift.length} GPX file(s) differ from recorded fingerprint: ${drift.slice(0, 8).join(', ')}${drift.length > 8 ? ', ...' : ''}`);
         }
       } catch {
         // gpx dir may not exist
