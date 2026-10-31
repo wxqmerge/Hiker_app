@@ -178,6 +178,26 @@ describe('getGpx', () => {
   });
 });
 
+describe('gpx cache invalidation', () => {
+  it('refetches GPX after an upload replaces the file', async () => {
+    const { getGpx, uploadGpxFile } = await import('../../api/client');
+    const responses = [
+      { ok: true, status: 200, headers: { get: () => null }, text: () => Promise.resolve('<gpx>A</gpx>') },
+      { ok: true, status: 200, headers: { get: () => null }, json: () => Promise.resolve({ success: true }) },
+      { ok: true, status: 200, headers: { get: () => null }, text: () => Promise.resolve('<gpx>B</gpx>') },
+    ];
+    (globalThis.fetch as any).mockImplementation(() => Promise.resolve(responses.shift()));
+
+    expect(await getGpx('trail-1')).toBe('<gpx>A</gpx>');
+    expect(await getGpx('trail-1')).toBe('<gpx>A</gpx>'); // served from cache
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+    await uploadGpxFile('trail-1', new Blob(['<gpx/>'], { type: 'application/gpx+xml' }));
+    expect(await getGpx('trail-1')).toBe('<gpx>B</gpx>'); // stale entry evicted
+    expect(globalThis.fetch).toHaveBeenCalledTimes(3);
+  });
+});
+
 describe('updateTrail', () => {
   it('sends PUT request with trail data', async () => {
     (globalThis.fetch as any).mockResolvedValue({

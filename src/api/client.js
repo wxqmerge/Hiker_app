@@ -84,17 +84,37 @@ export async function getTrails() {
   return data.trails || [];
 }
 
+// Bounded LRU of fetched GPX bodies. Entries must be evicted whenever the
+// server-side file changes (upload/delete), otherwise a session keeps
+// downloading stale tracks after a re-upload.
 const gpxCache = new Map();
+const GPX_CACHE_MAX = 20;
+
+function gpxCacheSet(trailId, value) {
+  gpxCache.delete(trailId);
+  gpxCache.set(trailId, value);
+  if (gpxCache.size > GPX_CACHE_MAX) {
+    gpxCache.delete(gpxCache.keys().next().value);
+  }
+}
+
+export function invalidateGpxCache(trailId) {
+  gpxCache.delete(trailId);
+}
 
 export async function getGpx(trailId) {
-  if (gpxCache.has(trailId)) return gpxCache.get(trailId);
+  if (gpxCache.has(trailId)) {
+    const cached = gpxCache.get(trailId);
+    gpxCacheSet(trailId, cached); // mark most-recently-used
+    return cached;
+  }
   try {
     const result = await request(`/api/trails/gpx/${trailId}`, { responseType: 'text' });
-    gpxCache.set(trailId, result);
+    gpxCacheSet(trailId, result);
     return result;
   } catch (err) {
     if (err.status === 404) {
-      gpxCache.set(trailId, null);
+      gpxCacheSet(trailId, null);
       return null;
     }
     throw err;
@@ -109,6 +129,7 @@ export async function uploadGpxFile(trailId, file) {
     body: formData,
     apiKey: true,
   });
+  invalidateGpxCache(trailId);
   gpxCache.delete(trailId);
   return result;
 }
@@ -217,7 +238,7 @@ export async function restoreSchedule(timestamp) {
 
 export async function ensureScheduleWritable() {
   try {
-    return await request('/api/schedule/ensure-writable', { apiKey: true });
+    return await request('/api/schedule/ensure-writable', { method: 'POST', apiKey: true });
   } catch {
     console.warn('[CLIENT] Failed to ensure schedule files are writable');
     return null;

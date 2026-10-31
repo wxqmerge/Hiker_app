@@ -7,6 +7,7 @@ import {
   hasPendingApiKeyFromHash,
   removeApiKeyFromLocation,
   isStoredApiKeyVerified,
+  API_KEY_TTL_MS,
 } from '../../utils/apiKey';
 
 describe('apiKey utils', () => {
@@ -143,5 +144,30 @@ describe('apiKey utils', () => {
       expect(window.location.hash).toBe('');
       expect(getStoredApiKey()).toBe('');
     });
+  });
+});
+
+describe('apiKey TTL', () => {
+  it('expires a stored key after the TTL and clears storage', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      storeApiKey('ttl-key', { verified: true });
+      expect(getStoredApiKey()).toBe('ttl-key');
+
+      vi.setSystemTime(new Date(Date.now() + API_KEY_TTL_MS + 1000));
+      expect(getStoredApiKey()).toBe('');
+      expect(hasStoredApiKey()).toBe(false);
+      expect(localStorage.getItem('hiker-api-key')).toBeNull();
+      expect(localStorage.getItem('hiker-api-key-ts')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stamps and accepts keys stored before the TTL existed', () => {
+    localStorage.setItem('hiker-api-key', 'legacy-key');
+    expect(getStoredApiKey()).toBe('legacy-key');
+    expect(localStorage.getItem('hiker-api-key-ts')).toBeTruthy();
   });
 });

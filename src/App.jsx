@@ -21,12 +21,26 @@ import { ensureScheduleWritable, request, verifyAdminKey } from './api/client.js
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Toast.jsx';
 import { setGroupConfig, getGroupName } from './utils/config';
-import { storeApiKey, hasStoredApiKey, getApiKeyFromHash, removeApiKeyFromLocation, hasPendingApiKeyFromHash } from './utils/apiKey';
+import { storeApiKey, hasStoredApiKey, getStoredApiKey, isStoredApiKeyVerified, getApiKeyFromHash, removeApiKeyFromLocation, hasPendingApiKeyFromHash } from './utils/apiKey';
 import SplashScreen from './components/SplashScreen';
 import { hasVisited } from './utils/visited';
 
 function ApiKeySync({ showToast }) {
   const { search } = useLocation();
+
+  // A key restored from localStorage is re-verified against the server on
+  // startup; the server may have rotated it since.
+  useEffect(() => {
+    const saved = getStoredApiKey();
+    if (!saved || isStoredApiKeyVerified()) return;
+    verifyAdminKey(saved)
+      .then((result) => {
+        if (result.valid) storeApiKey(saved, { verified: true });
+        else storeApiKey('');
+      })
+      .catch(() => { /* server unreachable: keep the key for a later retry */ });
+  }, []);
+
   useEffect(() => {
     const candidate = getApiKeyFromHash().trim();
     if (!candidate) return;

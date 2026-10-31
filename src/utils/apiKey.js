@@ -1,10 +1,28 @@
 export const API_KEY_STORAGE_KEY = 'hiker-api-key';
+const API_KEY_TS_KEY = 'hiker-api-key-ts';
+// Admin key stays usable for this long before a fresh /api/auth/verify is
+// required; it should not sit in localStorage indefinitely.
+export const API_KEY_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
 const listeners = new Set();
 let verifiedStoredApiKey = '';
 
 export function getStoredApiKey() {
-  return (localStorage.getItem(API_KEY_STORAGE_KEY) || '').trim();
+  const key = (localStorage.getItem(API_KEY_STORAGE_KEY) || '').trim();
+  if (!key) return '';
+  let storedAt = Number(localStorage.getItem(API_KEY_TS_KEY));
+  if (!Number.isFinite(storedAt) || storedAt <= 0) {
+    // Key saved before TTL existed: stamp it now, expire from then on.
+    storedAt = Date.now();
+    localStorage.setItem(API_KEY_TS_KEY, String(storedAt));
+  }
+  if (Date.now() - storedAt > API_KEY_TTL_MS) {
+    localStorage.removeItem(API_KEY_STORAGE_KEY);
+    localStorage.removeItem(API_KEY_TS_KEY);
+    verifiedStoredApiKey = '';
+    return '';
+  }
+  return key;
 }
 
 export function hasStoredApiKey() {
@@ -15,8 +33,10 @@ export function storeApiKey(key, options = {}) {
   const trimmedKey = String(key || '').trim();
   if (trimmedKey) {
     localStorage.setItem(API_KEY_STORAGE_KEY, trimmedKey);
+    localStorage.setItem(API_KEY_TS_KEY, String(Date.now()));
   } else {
     localStorage.removeItem(API_KEY_STORAGE_KEY);
+    localStorage.removeItem(API_KEY_TS_KEY);
   }
   verifiedStoredApiKey = options.verified && trimmedKey ? trimmedKey : '';
   listeners.forEach((fn) => fn());

@@ -131,7 +131,9 @@ export function getWriteHealth(): WriteHealth {
 }
 
 async function writeWithHealth(filePath: string, data: unknown): Promise<void> {
-  const tmpPath = `${filePath}.tmp`;
+  // Unique tmp name: concurrent saves of the same file must not share one
+  // temp path between the awaited write and rename.
+  const tmpPath = `${filePath}.tmp.${process.pid}.${Math.random().toString(36).slice(2, 8)}`;
   try {
     await fs.writeFile(tmpPath, JSON.stringify(data, null, 2));
     await fs.rename(tmpPath, filePath);
@@ -410,8 +412,11 @@ export async function restoreScheduleByTimestamp(timestamp: string): Promise<Sch
       const content = await fs.readFile(path.join(HISTORY_DIR, f), 'utf-8');
       const parsed = JSON.parse(content);
       if (parsed.timestamp === timestamp && parsed.schedule) {
-        schedule = normalizeSchedule(parsed.schedule);
-        await writeWithHealth(path.join(DATA_DIR, getScheduleFile()), schedule);
+        const restored = normalizeSchedule(parsed.schedule);
+        // Persist first: if the write fails, memory keeps serving the old
+        // schedule instead of diverging from disk.
+        await writeWithHealth(path.join(DATA_DIR, getScheduleFile()), restored);
+        schedule = restored;
         return schedule;
       }
     } catch (err) {

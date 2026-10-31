@@ -21,14 +21,21 @@ const TRAIL_DETAIL_FIELDS = new Set([
 
 // --- Schedule entry schema ---
 const ScheduleEntrySchema = z.object({
-  day: z.number().int().positive(),
+  day: z.number().int().min(1).max(31),
   slot: z.number().int().nonnegative().max(MAX_SLOT).default(0),
   trail_id: z.string().default(''),
   early_start: z.union([z.boolean(), z.number()]).default(0),
   leader: z.string().default(''),
 });
 
-export const ScheduleSchema = z.record(z.string(), z.array(ScheduleEntrySchema));
+// Month keys are 'YYYY-MM' (getMonthKey). The strict key pattern also keeps
+// __proto__ and similar exotic keys out of the parsed schedule object.
+export const SCHEDULE_MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
+const ScheduleSchema = z.record(
+  z.string().regex(SCHEDULE_MONTH_KEY, 'month key must be YYYY-MM'),
+  z.array(ScheduleEntrySchema),
+);
+export { ScheduleSchema };
 
 // --- Restore timestamp schema ---
 export const RestoreTimestampSchema = z.object({

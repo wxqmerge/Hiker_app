@@ -94,7 +94,7 @@ router.post('/history/restore', requireAdminKey, withErrorTag('SCHEDULE')(async 
   res.json({ success: true, schedule: restored, etag: `"${getScheduleVersion()}"` });
 }));
  
-router.get('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
+router.post('/ensure-writable', requireAdminKey, withErrorTag('SCHEDULE')(async (_req, res) => {
   const dataDir = DATA_DIR;
   const files = await fs.promises.readdir(dataDir);
   const results: Array<{ file: string; success: boolean; error?: string }> = [];

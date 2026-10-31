@@ -176,4 +176,35 @@ describe('schedule history + restore', () => {
     await expect(readScheduleFile()).resolves.toMatchObject({ '2026-06': [expect.objectContaining({ trail_id: 'trail-1' })] });
     expect(getSchedule()).toMatchObject({ '2026-06': [expect.objectContaining({ trail_id: 'trail-1' })] });
   });
+
+  it('rejects out-of-range day values with 400', async () => {
+    const res = await req('PUT', '/api/schedule', {
+      body: { '2026-06': [{ day: 45, slot: 0, trail_id: 'trail-1', early_start: 0, leader: '' }] },
+      key: ADMIN_KEY,
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects non YYYY-MM month keys (incl. __proto__) with 400', async () => {
+    const protoBody = JSON.parse('{"__proto__":[{"day":1,"slot":0,"trail_id":"trail-1","early_start":0,"leader":""}]}');
+    const protoRes = await req('PUT', '/api/schedule', { body: protoBody, key: ADMIN_KEY });
+    expect(protoRes.status).toBe(400);
+
+    const legacyRes = await req('PUT', '/api/schedule', {
+      body: { Jun: [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: 0, leader: '' }] },
+      key: ADMIN_KEY,
+    });
+    expect(legacyRes.status).toBe(400);
+  });
+
+  it('ensure-writable is POST (state-changing) and rejects GET', async () => {
+    const post = await req('POST', '/api/schedule/ensure-writable', { key: ADMIN_KEY });
+    expect(post.status).toBe(200);
+    // Express answers unmatched routes with its HTML 404 page — use a raw
+    // fetch instead of req() (which JSON-parses every response body).
+    const get = await fetch(`${base}/api/schedule/ensure-writable`, {
+      headers: { 'X-API-Key': ADMIN_KEY },
+    });
+    expect(get.status).toBe(404);
+  });
 });
