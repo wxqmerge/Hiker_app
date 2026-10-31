@@ -7,6 +7,7 @@ import { MonthContextProvider } from './contexts/MonthContext';
 import { DayContextProvider } from './contexts/DayContext';
 
 const Calendar = lazy(() => import('./pages/Calendar'));
+const Descriptions = lazy(() => import('./pages/Descriptions'));
 const Home = lazy(() => import('./pages/Home'));
 const TrailDetail = lazy(() => import('./pages/TrailDetail'));
 const ScheduleBuilder = lazy(() => import('./pages/ScheduleBuilder'));
@@ -131,6 +132,7 @@ function App() {
           <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<PageLazy><Calendar /></PageLazy>} />
+            <Route path="/descriptions" element={<PageLazy><Descriptions /></PageLazy>} />
             <Route path="/browse" element={<PageLazy><Home /></PageLazy>} />
             <Route path="/trail/:id" element={<PageLazy><TrailDetail /></PageLazy>} />
             <Route path="/trails" element={<Navigate to="/browse" replace />} />

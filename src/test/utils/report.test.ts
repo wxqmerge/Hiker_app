@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateReportHtml, getRideCost, copyToClipboard } from '../../utils/report';
+import { generateReportHtml, generateDescriptionsPrintHtml, generatePrintableScheduleHtml, getRideCost, copyToClipboard } from '../../utils/report';
 
 describe('getRideCost', () => {
   it('returns ride-$3 for range < 30', () => {
@@ -261,5 +261,77 @@ describe('copyToClipboard', () => {
     const setCopied = vi.fn();
     const result = await copyToClipboard('test text', setCopied, null);
     expect(result).toBe(true);
+  });
+});
+
+describe('generateDescriptionsPrintHtml', () => {
+  const trail = {
+    id: 'trail-1', name: 'Rainier', fullName: 'Mount Rainier', difficulty: 'Moderate',
+    distance: 5.5, distanceExtended: 6.0, elevationStart: 2000, elevationMax: 4000,
+    parking: 'Lot', range: 45, webLink: 'https://example.com/rainier', hasGpx: true,
+  };
+
+  it('renders month sections with report-format entries', () => {
+    const html = generateDescriptionsPrintHtml({
+      title: 'Club Hike Descriptions',
+      monthGroups: [{
+        label: 'November, 2026',
+        entries: [{ dateStr: 'Wed, November 4', trail, trailDetails: null, earlyStart: -50 }],
+      }],
+    });
+    expect(html).toContain('November, 2026');
+    expect(html).toContain('Wed, November 4');
+    expect(html).toContain('Mount Rainier');
+    expect(html).toContain('(50m early)');
+    expect(html).toContain('GPX: available');
+  });
+
+  it('shows an empty-month message and the footer notes', () => {
+    const html = generateDescriptionsPrintHtml({
+      title: 'Club Hike Descriptions',
+      monthGroups: [{ label: 'December, 2026', entries: [] }],
+      notes: [
+        { heading: 'NOTE:', text: 'Always carry your Hiking Essentials.' },
+        { heading: 'WILDERNESS HIKE:', text: 'Any hike with a \u25C6\uFE0E goes into the Wilderness.' },
+      ],
+    });
+    expect(html).toContain('No hikes scheduled.');
+    expect(html).toContain('Always carry your Hiking Essentials.');
+    expect(html).toContain('WILDERNESS HIKE:');
+  });
+
+  it('includes print CSS with a no-print toolbar', () => {
+    const html = generateDescriptionsPrintHtml({ title: 'T', monthGroups: [] });
+    expect(html).toContain('@media print');
+    expect(html).toContain('break-inside: avoid');
+    expect(html).toContain('class="toolbar no-print"');
+  });
+});
+
+describe('generatePrintableScheduleHtml', () => {
+  it('renders one row per hike with leader and early-start', () => {
+    const html = generatePrintableScheduleHtml({
+      title: 'Club Hiking Schedule',
+      monthGroups: [{
+        label: 'November, 2026',
+        rows: [
+          { dateStr: 'Wed, November 4', trailName: 'Madison Falls\u25C6\uFE0E', difficulty: '[Easy to Mod]', earlyLabel: '45m early', leader: 'Al' },
+          { dateStr: 'Fri, November 6', trailName: 'Burnt Hill', difficulty: '[Mod to Diff]', earlyLabel: '', leader: '' },
+        ],
+      }],
+    });
+    expect(html).toContain('November, 2026');
+    expect(html).toContain('<td class="date">Wed, November 4</td>');
+    expect(html).toContain('Leader: Al');
+    expect(html).toContain('(45m early)');
+    expect(html).toContain('Burnt Hill');
+  });
+
+  it('handles an empty month', () => {
+    const html = generatePrintableScheduleHtml({
+      title: 'T',
+      monthGroups: [{ label: 'December, 2026', rows: [] }],
+    });
+    expect(html).toContain('No hikes scheduled.');
   });
 });
