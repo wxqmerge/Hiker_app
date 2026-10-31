@@ -423,6 +423,9 @@ export function downloadBlob(data, filename, type = 'application/json') {
 }
 
 // Open HTML content in a new browser tab
+// SECURITY: blob: documents run SAME-ORIGIN with this app and carry no CSP.
+// Callers must fully escape all interpolated data (report.js esc()) or the
+// opened page could read the API key from localStorage.
 export function openHtmlInNewTab(html) {
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);

@@ -146,15 +146,17 @@ app.get('/api/tide-proxy', async (req, res) => {
   url.searchParams.set('units', 'english');
   url.searchParams.set('format', 'json');
   try {
-    const upstream = await fetch(url);
+    // Bounded wait: a stalled NOAA connection must not pin sockets open.
+    const upstream = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!upstream.ok) {
       res.status(upstream.status).json({ error: 'Upstream error' });
       return;
     }
     const data = await upstream.json();
     res.json(data);
-  } catch {
-    res.status(502).json({ error: 'Failed to fetch from NOAA' });
+  } catch (err) {
+    const timedOut = (err as Error)?.name === 'TimeoutError';
+    res.status(timedOut ? 504 : 502).json({ error: timedOut ? 'Upstream timeout' : 'Failed to fetch from NOAA' });
   }
 });
 
