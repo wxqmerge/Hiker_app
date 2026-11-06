@@ -113,7 +113,7 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
   } else {
     try {
       const ptRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
-        headers: { 'Accept': 'application/geo+json', 'User-Agent': 'Hiker-App' }
+        headers: { 'Accept': 'application/geo+json' }
       });
       if (!ptRes.ok) {
         if (ptRes.status === 404) _nwsMissCache.set(cacheKey, { ts: Date.now() });
@@ -125,7 +125,7 @@ export async function fetchNwsForecastForDate(lat, lon, targetDate) {
       const gridY = pt.properties.gridY;
       const fcRes = await fetch(
         `https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}/forecast`,
-        { headers: { 'Accept': 'application/geo+json', 'User-Agent': 'Hiker-App' } }
+        { headers: { 'Accept': 'application/geo+json' } }
       );
       if (!fcRes.ok) {
         if (fcRes.status === 404) _nwsMissCache.set(cacheKey, { ts: Date.now() });
@@ -195,7 +195,7 @@ export async function fetchOpenMeteoForDate(lat, lon, targetDate) {
     `&temperature_unit=fahrenheit&timezone=auto` +
     `&start_date=${dateStr}&end_date=${dateStr}`;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'Hiker-App' } });
+    const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
     const daily = data?.daily;
@@ -423,11 +423,22 @@ export function downloadBlob(data, filename, type = 'application/json') {
 }
 
 // Open HTML content in a new browser tab
-// SECURITY: blob: documents run SAME-ORIGIN with this app and carry no CSP.
-// Callers must fully escape all interpolated data (report.js esc()) or the
-// opened page could read the API key from localStorage.
+// SECURITY: blob: documents run SAME-ORIGIN with this app. Report data is
+// escaped by report.js esc(), and as defense-in-depth we stamp a strict CSP
+// meta (blocks network exfil and inline scripts) plus an external print
+// handler so an injection there could not read the API key and phone it home.
 export function openHtmlInNewTab(html) {
-  const blob = new Blob([html], { type: 'text/html' });
+  const cspMeta = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; script-src \'self\'">';
+  // BASE_URL is the deploy root (e.g. /sothh-dev/); resolving against
+  // document.baseURI would pick up the SPA route path instead.
+  const printScript = '<script src="' + (import.meta.env.BASE_URL || '/') + 'print-report.js"></script>';
+  const hardened = html.includes('<head>')
+    ? html.replace('<head>', '<head>' + cspMeta)
+    : cspMeta + html;
+  const withPrint = hardened.includes('</body>')
+    ? hardened.replace('</body>', printScript + '</body>')
+    : hardened + printScript;
+  const blob = new Blob([withPrint], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   window.open(url, '_blank');
   setTimeout(() => URL.revokeObjectURL(url), 10000);

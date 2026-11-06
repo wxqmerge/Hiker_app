@@ -27,14 +27,16 @@ describe('PWA', () => {
     const sw = readFileSync(resolve(publicDir, 'sw.js'), 'utf-8');
     expect(sw).toContain('hiker-shell-');
     expect(sw).toContain('hiker-api-');
-    expect(sw).toContain('hiker-tide-');
+    expect(sw).toContain('hiker-weather-');
     expect(sw).toContain('skipWaiting');
     expect(sw).toContain('clients.claim');
     expect(sw).toContain('/api/schedule');
     expect(sw).toContain('NO_CACHE_API');
     expect(sw).toContain('/api/data/export-zip');
     expect(sw).toContain('/api/schedule/history');
-    expect(sw).toContain('api.tidesandcurrents.noaa.gov');
+    // Tides are fetched through the same-origin /api/tide-proxy, so the SW
+    // must not hold a tide-host branch.
+    expect(sw).not.toContain('api.tidesandcurrents.noaa.gov');
     expect(sw).toContain('api.weather.gov');
   });
 
@@ -59,7 +61,11 @@ describe('PWA', () => {
 
   it('index.html references the manifest, theme color, and iOS meta tags', () => {
     const html = readFileSync(resolve(projectRoot, 'index.html'), 'utf-8');
-    expect(html).toContain('manifest.webmanifest');
+    // The manifest link is injected by a module file: the server CSP
+    // (script-src 'self') forbids the inline script that used to do this.
+    expect(html).toContain('manifest-loader');
+    const loader = readFileSync(resolve(projectRoot, 'src', 'manifest-loader.js'), 'utf-8');
+    expect(loader).toContain('manifest.webmanifest');
     expect(html).toContain('theme-color');
     expect(html).toContain('apple-mobile-web-app-capable');
     expect(html).toContain('apple-touch-icon');

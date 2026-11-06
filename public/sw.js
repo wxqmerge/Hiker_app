@@ -5,7 +5,7 @@
 //   - Static assets (JS/CSS/images/fonts): cache-first, populated on first fetch.
 //     Hashed bundles are served by the server with immutable long-cache headers.
 //   - Navigation (SPA routes): network-first, falling back to cached index.html.
-//   - Same-origin API reads and external weather/tides: network-first with cache
+//   - Same-origin API reads and external NWS weather: network-first with cache
 //     fallback. If-None-Match from the page is passed through so unchanged data
 //     costs a server 304 and the cached copy is served in response. Freshness is
 //     bounded by the server's Cache-Control instead of a never-revalidating cache.
@@ -14,10 +14,10 @@
 //     are invalidated so the next load (e.g. after an Import ZIP reload) refetches.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v10';
+const VERSION = 'v11';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
-const TIDE_CACHE = `hiker-tide-${VERSION}`;
+const WEATHER_CACHE = `hiker-weather-${VERSION}`;
 
 // Base path prefix (e.g. "/sothh-dev/") derived from the SW's own location.
 // In a subpath deployment the SW lives at /<base>/sw.js, so API requests
@@ -62,10 +62,8 @@ const DATA_WRITE_PREFIXES = ['/api/trails', '/api/schedule', '/api/data', '/api/
 
 
 
-function isTideUrl(url) {
-  return url.hostname === 'api.tidesandcurrents.noaa.gov';
-}
-
+// The page fetches NWS forecasts cross-origin (io.js); tides go through the
+// same-origin /api/tide-proxy, so no tide host is matched here.
 function isWeatherUrl(url) {
   return url.hostname === 'api.weather.gov';
 }
@@ -112,8 +110,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.origin !== self.location.origin) {
-    if (isTideUrl(url) || isWeatherUrl(url)) {
-      event.respondWith(networkFirstWithCache(request, TIDE_CACHE));
+    if (isWeatherUrl(url)) {
+      event.respondWith(networkFirstWithCache(request, WEATHER_CACHE));
     }
     return;
   }

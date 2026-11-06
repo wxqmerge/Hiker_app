@@ -5,7 +5,7 @@
 - `shared/types/`: Shared TypeScript interfaces, compiled to JS via `scripts/compile-shared.js`
 - `scripts/`: Build helpers (`compile-shared.js`, `patch-shared-imports.js`, `flatten-server-dist.js`)
 - `tools/`: One-off data/utility scripts (Python, PowerShell, CJS) — not part of the build; the documented pipeline scripts `extract_trails_xls.py` / `match_schedule.py` / `export_to_xls.py` stay at the repo root
-- `deploy/`: Deployment scripts (never commit)
+- `deploy/`: Deployment scripts (committed; the secrets `deploy/.env` and `deploy/hiker.conf` are never committed)
 - `exported_data/`: Server-side JSON data (never commit)
 - **Never commit**: `*.xls*`, `exported_data/`, `node_modules/`, `dist/`, `server/dist/`, `deploy/.env`, `deploy/hiker.conf`, `server/.env`
 
@@ -17,7 +17,7 @@ npm run test:run       # Client tests only (Vitest + jsdom, src/**)
 npm run test:server    # Server route tests only (Vitest + node env, server/test)
 npm run test:all       # Client then server tests
 npm run test:coverage  # Client tests with V8 coverage
-npm run lint           # ESLint on src/ only
+npm run lint           # ESLint via flat config (src/, public/, root configs; .js/.jsx only)
 ```
 
 ## Architecture
@@ -66,7 +66,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - Dev: Vite proxies `/api` and `/health` to `localhost:3000`
 - Dev: Express proxies non-API routes to `localhost:5173` (Vite)
 - Production: Express serves `dist/` static files and falls back to `index.html` for SPA routing
-- Production port is `$PORT` env var (default 3000), not hardcoded. The server binds `$HOST` (default `127.0.0.1`); set `HOST=0.0.0.0` only when intentionally exposing the Node process directly.
+- Production port is `$PORT` env var (default 3000), not hardcoded. The server binds `$HOST` (default `127.0.0.1`); set `HOST=0.0.0.0` only when intentionally exposing the Node process directly. In that case also set `TRUST_PROXY=0` — otherwise clients can spoof `X-Forwarded-For` past the rate limiter.
 - CORS is disabled unless `CORS_ORIGINS` is explicitly set to a comma-separated origin list.
 
 ## Testing
@@ -76,7 +76,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - Mock data in `src/test/setup.ts`: 3 trails (`trail-1`, `trail-2`, `trail-3`)
 - `globalThis.__TEST_MOCK_DATA__` exposes mock data for test modifications
 - `src/test/setup.ts` installs the fetch mock BEFORE loading the store (the store runs `initSharedState()` at module-load, so it must not be a static import)
-- ESLint ignores `server/`, `scripts/`, `shared/` — only lints `src/`
+- ESLint ignores `server/`, `scripts/`, `shared/`, `dist/`; it lints `.js/.jsx` only (ESLint config has no TS parser — `*.ts` in `src/` are type-checked by Vitest/esbuild instead; server TS via `server: typecheck`)
 
 ## Deployment
 - Nginx serves subpath `/<SUBDOMAIN>/` from `/var/www/html` with `root` and SPA `try_files` fallback — not `alias`. Access via `https://main-domain/<SUBDOMAIN>/`, NOT `https://<SUBDOMAIN>.main-domain/`

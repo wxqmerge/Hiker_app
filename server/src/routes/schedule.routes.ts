@@ -58,7 +58,11 @@ router.put('/', requireAdminKey, withErrorTag('SCHEDULE')(async (req, res) => {
   const ifMatch = req.headers['if-match'];
   if (typeof ifMatch === 'string' && ifMatch.trim()) {
     const currentVersion = getScheduleVersion();
-    if (currentVersion && !etagMatches(ifMatch, currentVersion)) {
+    if (!currentVersion) {
+      // Fail open (write proceeds) so a corrupted schedule file stays recoverable,
+      // but make the skipped precondition visible in logs.
+      console.warn('[SCHEDULE] Cannot read current schedule version; If-Match precondition skipped');
+    } else if (!etagMatches(ifMatch, currentVersion)) {
       console.warn('[SCHEDULE] 412 precondition failed - stale If-Match rejected');
       return res.status(412).set('ETag', `"${currentVersion}"`).json({
         success: false,

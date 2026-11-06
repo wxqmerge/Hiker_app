@@ -122,6 +122,9 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Admin-only recovery endpoint — anonymous visitors would only generate a
+    // guaranteed 401 (plus server-side delay and admin auth log noise).
+    if (!hasStoredApiKey()) return;
     ensureScheduleWritable().then((result) => {
       if (result && !result.success) {
         const failed = result.results?.filter(r => !r.success);

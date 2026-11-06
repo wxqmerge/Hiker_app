@@ -98,7 +98,7 @@ function gpxCacheSet(trailId, value) {
   }
 }
 
-export function invalidateGpxCache(trailId) {
+function invalidateGpxCache(trailId) {
   gpxCache.delete(trailId);
 }
 
@@ -130,7 +130,6 @@ export async function uploadGpxFile(trailId, file) {
     apiKey: true,
   });
   invalidateGpxCache(trailId);
-  gpxCache.delete(trailId);
   return result;
 }
 

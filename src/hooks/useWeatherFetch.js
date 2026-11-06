@@ -13,8 +13,13 @@ export function useWeatherFetch(target, fetchFn) {
     if (!target) return;
     let cancelled = false;
     (async () => {
-      const results = await fetchFn(target);
-      if (!cancelled) setWeather({ key: target.key, map: results });
+      try {
+        const results = await fetchFn(target);
+        if (!cancelled) setWeather({ key: target.key, map: results });
+      } catch (err) {
+        console.warn('[useWeatherFetch] fetch failed:', err);
+        if (!cancelled) setWeather({ key: target.key, map: {} });
+      }
     })();
     return () => { cancelled = true; };
   }, [target, fetchFn]);

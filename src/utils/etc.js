@@ -31,9 +31,10 @@ export function formatStartOffset(earlyStart) {
 
 export function getEtcBounds(distance) {
   const dist = Math.max(distance || 0, 0);
-  const minSpeed = getMinSpeedMph();
-  const maxSpeed = getMaxSpeedMph();
-  const [slow, fast] = [minSpeed, maxSpeed].sort((a, b) => a - b);
+  // Normalize in case a group's config has min/max swapped: slow is always
+  // the lower speed (longer bound), fast the higher (shorter bound).
+  const slow = Math.min(getMinSpeedMph(), getMaxSpeedMph());
+  const fast = Math.max(getMinSpeedMph(), getMaxSpeedMph());
   return {
     minMinutes: (dist / fast) * 60,
     maxMinutes: (dist / slow) * 60,

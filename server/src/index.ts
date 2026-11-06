@@ -1,4 +1,5 @@
 import './utils/env.js';
+import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { getCurrentDir } from './utils/path.js';
@@ -24,13 +25,24 @@ import { requireAdminKey } from './middleware/auth.middleware.js';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
+// Only trust X-Forwarded-For when a reverse proxy sits in front (the normal
+// deployment). With the Node process bound to 0.0.0.0 directly, set
+// TRUST_PROXY=0 or every client can spoof its IP past the rate limiter.
+const TRUST_PROXY = !['0', 'false'].includes((process.env.TRUST_PROXY || '').toLowerCase());
+
+// Header-derived names reach JSON bodies and logs; keep them path-segment safe.
+function sanitizeAppName(value: unknown): string {
+  const s = String(value ?? '').trim().replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 40);
+  return s || 'hiker';
+}
+
 const { hash: buildHash, ts: buildTs, full: buildFull } = buildVersion();
 
 const app: Application = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST?.trim() || '127.0.0.1';
 
-app.set('trust proxy', 1);
+app.set('trust proxy', TRUST_PROXY ? 1 : false);
 
 app.use((_req, res, next) => {
   res.set('X-Build-Version', buildHash);
@@ -88,7 +100,9 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'blob:'],
-      connectSrc: ["'self'"],
+      // The page fetches NWS/Open-Meteo forecasts directly (io.js); tides go
+      // through /api/tide-proxy so they stay same-origin.
+      connectSrc: ["'self'", 'https://api.weather.gov', 'https://api.open-meteo.com'],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
     },
@@ -116,9 +130,9 @@ app.get('/health', (_req: Request, res: Response) => {
 
 app.get('/api/config', (req, res) => {
   res.set('Cache-Control', 'no-cache');
-  const appName = req.headers['x-app-name'] || 'hiker';
+  const appName = sanitizeAppName(req.headers['x-app-name'] ?? 'hiker');
   res.json({
-    appName: String(appName),
+    appName,
     ...getPublicConfig(),
   });
 });
@@ -133,6 +147,11 @@ app.get('/api/tide-proxy', async (req, res) => {
   const endDate = String(req.query.end_date || '');
   if (!station || !beginDate || !endDate) {
     res.status(400).json({ error: 'station, begin_date, and end_date are required' });
+    return;
+  }
+  // NOAA expects YYYYMMDD; anything else is a guaranteed upstream error.
+  if (!/^\d{8}$/.test(beginDate) || !/^\d{8}$/.test(endDate)) {
+    res.status(400).json({ error: 'begin_date and end_date must be YYYYMMDD' });
     return;
   }
   const url = new URL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter');
@@ -165,8 +184,8 @@ app.get(/manifest\.webmanifest$/, (req, res) => {
   // Fall back to X-App-Name header, then "hiker"
   const pathMatch = req.path.match(/^\/([^/]+)\/manifest\.webmanifest$/);
   const appName = pathMatch
-    ? pathMatch[1]
-    : String(req.headers['x-app-name'] || 'hiker');
+    ? sanitizeAppName(pathMatch[1])
+    : sanitizeAppName(req.headers['x-app-name'] ?? 'hiker');
   const basePath = `/${appName}`;
   const manifest = {
     name: appName,
@@ -185,7 +204,7 @@ app.get(/manifest\.webmanifest$/, (req, res) => {
       { src: `${basePath}/icons/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
-  console.log(`[manifest] req.path=${req.path} x-app-name=${req.headers['x-app-name'] || 'none'} → appName=${appName} basePath=${basePath}`);
+  console.log(`[manifest] req.path=${req.path} → appName=${appName} basePath=${basePath}`);
   res.set('Content-Type', 'application/manifest+json');
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
@@ -552,6 +571,9 @@ if (isMainModule) {
       console.log(`========================================\n`);
       console.log(`✓ Server running on http://${HOST}:${PORT}`);
       console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+      if (isDev && fs.existsSync(path.join(__dirname, '../../dist/index.html'))) {
+        console.warn('⚠️  NODE_ENV is not "production": non-API requests will proxy to the Vite dev server (localhost:5173) instead of serving dist/. Set NODE_ENV=production for production deploys.');
+      }
       console.log(`✓ Build: ${buildFull}`);
       console.log(`✓ CORS Origins: ${process.env.CORS_ORIGINS || 'same-origin only'}`);
       console.log(`✓ Admin API Key: ${process.env.ADMIN_API_KEY ? 'Enabled' : '⚠️  NOT SET'}`);

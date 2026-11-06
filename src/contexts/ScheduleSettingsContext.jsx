@@ -102,8 +102,16 @@ export function ScheduleSettingsProvider({ children }) {
 
   // Save schedule to server (debounced 1s)
   const savingRef = useRef(false);
+  const pendingSaveRef = useRef(false);
+  const saveScheduleRef = useRef(null);
   const saveScheduleToServer = useCallback(async () => {
-    if (!hasApiKey || savingRef.current) return;
+    if (!hasApiKey) return;
+    if (savingRef.current) {
+      // A PUT is in flight — remember to re-check after it completes so edits
+      // made during the request are not silently dropped.
+      pendingSaveRef.current = true;
+      return;
+    }
     const currentStoreJson = JSON.stringify(scheduleStore);
     if (lastSavedStoreRef.current === currentStoreJson) {
       return;
@@ -111,6 +119,11 @@ export function ScheduleSettingsProvider({ children }) {
     const serverData = storeToServerSchedule(scheduleStore);
     const entryCount = Object.values(serverData).reduce((sum, entries) => sum + normalizeServerMonthEntries(entries).length, 0);
     if (entryCount === 0) {
+      // Auto-save must never push an empty schedule; make the divergence known
+      // instead of leaving local state stranded against the server.
+      if (lastSavedStoreRef.current !== null) {
+        showToast('Schedule is empty — use "Clear Schedule" to remove all hikes from the server.', 'error');
+      }
       return;
     }
     savingRef.current = true;
@@ -131,8 +144,15 @@ export function ScheduleSettingsProvider({ children }) {
       showToast('Failed to save schedule: ' + err.message, 'error');
     } finally {
       savingRef.current = false;
+      if (pendingSaveRef.current) {
+        pendingSaveRef.current = false;
+        // Always retry with the latest scheduleStore snapshot, not the one
+        // captured by this invocation's closure.
+        saveScheduleRef.current?.();
+      }
     }
   }, [scheduleStore, debugMode, hasApiKey, showToast]);
+  saveScheduleRef.current = saveScheduleToServer;
 
   useEffect(() => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);

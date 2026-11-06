@@ -1,168 +1,75 @@
 # Deployment Guide - Hike Database Web App
 
-This guide covers deploying the hiking trail database app.
+This app is **not static**: an Express server (`server/`) reads/writes JSON files in
+`exported_data/` and serves the built SPA from `dist/`. The server is the source of
+truth — the client has no local persistence.
 
 ---
 
-## Quick Deploy Options
+## Production Deploy (Ubuntu + nginx)
 
-### Option 1: Vercel (Easiest)
+Nginx proxies each subdomain to its Node service (see
+`deploy/nginx/subdomain.conf.template`); Express serves `dist/` and the `/api`
+routes with helmet CSP headers.
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# First-time setup (users, systemd units, env files): run deploy/hiker-env.sh steps
+# Ongoing update (build + restart, runs as the deploy user):
+./deploy/update.sh [service-name] [--force|--force-critical]
 
-# Login (first time only)
-vercel login
-
-# Deploy
-cd hiker-app
-vercel --prod
+# Version management / rollback helpers: deploy/manage_versions.sh
 ```
 
-Output will give you a URL like: `https://hiker-app.vercel.app`
+Per deployment (sothh, ramblers, …) the server reads root `.env`
+(`ADMIN_API_KEY`, `SCHEDULE_NAME`, `HIKE_DAYS`, `MAX_HIKES_PER_DAY`, `PORT`, …).
+`server/.env` is ignored — local only, never committed. With `TRUST_PROXY=0` the
+server stops trusting `X-Forwarded-For` (only set it when Node is exposed
+directly, i.e. no nginx in front).
 
----
-
-### Option 2: Netlify Drop (No CLI needed)
-
-1. Go to https://app.netlify.com/drop
-2. Drag and drop the `dist` folder from `hiker-app/dist`
-3. Get your URL instantly!
-
----
-
-### Option 3: GitHub Pages
+## Quick Local Test
 
 ```bash
-# Install gh-pages
-npm install -D gh-pages
-
-# Update package.json with these lines:
-"homepage": "https://YOUR_USERNAME.github.io/hiker-app",
-"scripts": {
-  "predeploy": "npm run build",
-  "deploy": "gh-pages -d dist"
-}
-
-# Deploy
-npm run deploy
-```
-
----
-
-## Local Testing Before Deploy
-
-### Test the build locally:
-
-```bash
-cd hiker-app
-npm run build
-npm run preview
-```
-
-This serves the production build at `http://localhost:4173`
-
-### Run Tests
-
-```bash
-cd hiker-app
-npm run test
-```
-
-### Run Linter
-
-```bash
-cd hiker-app
+npm run dev:all        # Vite (5173) + Express (3000)
+npm run build:all      # client dist/ + server build
+npm run test:all
 npm run lint
 ```
 
 ---
 
-## What Gets Deployed
+## Updating Data After Deploy
 
+The Excel pipeline lives at the repo root (see AGENTS.md):
+
+```bash
+python D:\projects\hiker\extract_trails_xls.py   # Excel → exported_data/*.json
+python D:\projects\hiker\match_schedule.py       # schedule scores
 ```
-hiker-app/dist/
-├── index.html          (~587 KB)  - Entry point with embedded data
-```
 
-**Total size: ~587 KB** (gzipped to ~144 KB)
-
----
-
-## Updating After Deploy
-
-### To add/update trails:
-
-1. Edit `Hike Data Base.xls`
-2. Run extraction:
-   ```bash
-   python D:\hiker\extract_trails_xls.py
-   ```
-3. Match schedule hikes to trails:
-   ```bash
-   python D:\hiker\match_schedule.py
-   ```
-4. Copy new data files:
-   ```bash
-   copy D:\hiker\exported_data\*.json D:\hiker\hiker-app\public\data\
-   ```
-5. Rebuild and redeploy:
-   ```bash
-   cd hiker-app
-   npm run build
-   vercel --prod  # or your deploy method
-   ```
-
-**Note:** Existing trail edits in IndexedDB are preserved across rebuilds (smart merge). New trails from embedded data are added; existing trail edits are kept.
+Copy the resulting `exported_data/*.json` to the server and restart, or push them
+through the admin API (`POST /api/data/import-zip`). There is no client-side cache
+of trail data; edits live in `exported_data/` on the server.
 
 ### To export trail data to Excel:
 
 1. In Trail Manager (`/trails`), click "Export for Excel"
-2. Run `python D:\hiker\export_to_xls.py` to convert `export_for_excel.json` back to Excel format
-
----
-
-## Environment Variables (Not Needed)
-
-This app is fully static - no environment variables required!
-
----
-
-## Custom Domain
-
-### Vercel:
-1. Go to project settings → Domains
-2. Add your custom domain
-3. Update DNS as instructed
-
-### Netlify:
-1. Go to site settings → Domain management
-2. Add custom domain
-3. Update DNS as instructed
+2. Run `python D:\projects\hiker\export_to_xls.py` to convert `export_for_excel.json` back to Excel format
 
 ---
 
 ## Troubleshooting
 
-### Build fails with Tailwind error:
-```bash
-npm install @tailwindcss/postcss
-```
+### Data not loading
+- Check the server process (`systemctl status hiker-*`) and `[API]` request logs.
+- Verify the JSON files in `exported_data/` on the server.
 
-### Data not loading:
-- Check that `public/data/trails.json` exists
-- Verify JSON is valid
-- Check browser console for 404 errors
+### Filters not working
+- Clear browser cache / service worker (the SW uses network-first for API reads).
 
-### Filters not working:
-- Clear browser cache
-- Check that data was extracted correctly
-
-### Schedule Builder issues:
-- Verify `schedule.json` was copied to `public/data/`
-- Check browser console for errors
-- Clear localStorage if schedule data is corrupted: `localStorage.removeItem('hiker-schedule')`
+### Schedule Builder issues
+- Schedule state is server-side; check `GET /api/schedule` returns the expected JSON.
+- A 412 on save means another editor changed the schedule first — the app
+  reloads the latest version automatically.
 
 ---
 
@@ -173,9 +80,7 @@ Excel Files → extract_trails_xls.py → exported_data/*.json
               ↓
 match_schedule.py → updated trails.json + schedule.json
               ↓
-copy to hiker-app/public/data/
+npm run build:all → dist/ (client) + server build
               ↓
-npm run build → dist/index.html (~590 KB)
-              ↓
-App load → IndexedDB smart merge (preserves edits, adds new trails)
+deploy/update.sh → systemd restart → nginx serves /<SUBDOMAIN>/
 ```

@@ -108,8 +108,9 @@ export function getAvailableMonthsFromSeasonal(seasonal) {
 export function getTrailDetailsById(details, trailId) {
   if (!details || !trailId) return null;
 
-  // Try exact match first
-  if (details[trailId]) {
+  // Try exact match first (own-property only: 'constructor', '__proto__' etc.
+  // must not resolve through the prototype chain).
+  if (Object.prototype.hasOwnProperty.call(details, trailId) && details[trailId]) {
     return { [trailId]: details[trailId] };
   }
 
@@ -117,7 +118,7 @@ export function getTrailDetailsById(details, trailId) {
   const segments = trailId.split('-');
   if (segments.length > 1) {
     const baseId = segments.slice(0, -1).join('-');
-    if (details[baseId]) {
+    if (Object.prototype.hasOwnProperty.call(details, baseId) && details[baseId]) {
       return { [trailId]: details[baseId] };
     }
   }

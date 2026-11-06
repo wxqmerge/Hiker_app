@@ -1,10 +1,10 @@
 import { z } from 'zod';
+import { parseMaxHikesPerDay } from '../utils/slotCap.js';
 
 // --- Slot cap (derived from MAX_HIKES_PER_DAY, default 3) ---
 // Enforces the per-day slot limit at the API write boundary. Slots are 0-based,
 // so a group allowing N hikes/day accepts slot indices 0..N-1.
-const maxHikesPerDay = Math.min(7, Math.max(1, parseInt(process.env.MAX_HIKES_PER_DAY || '3', 10) || 3));
-const MAX_SLOT = maxHikesPerDay - 1;
+const MAX_SLOT = parseMaxHikesPerDay() - 1;
 
 // --- Trail field whitelist ---
 const TRAIL_FIELDS = new Set([
@@ -30,7 +30,7 @@ const ScheduleEntrySchema = z.object({
 
 // Month keys are 'YYYY-MM' (getMonthKey). The strict key pattern also keeps
 // __proto__ and similar exotic keys out of the parsed schedule object.
-export const SCHEDULE_MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
+const SCHEDULE_MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
 const ScheduleSchema = z.record(
   z.string().regex(SCHEDULE_MONTH_KEY, 'month key must be YYYY-MM'),
   z.array(ScheduleEntrySchema),

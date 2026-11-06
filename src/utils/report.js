@@ -102,7 +102,9 @@ const printCss = (breakSelectors) => `  @media print {
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }`;
 
-const PRINT_TOOLBAR = '<div class="toolbar no-print"><button onclick="window.print()">Print</button></div>';
+// CSP-safe: no inline handlers; print-report.js (served from our origin)
+// attaches the click handler via [data-print].
+const PRINT_TOOLBAR = '<div class="toolbar no-print"><button type="button" data-print>Print</button></div>';
 
 function renderNotesHtml(notes) {
   return notes.length

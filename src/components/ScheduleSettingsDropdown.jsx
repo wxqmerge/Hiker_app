@@ -15,6 +15,48 @@ const TABS = [
   { id: 'admin', label: 'Admin' },
 ];
 
+// One dropdown row in the Schedule tab: icon + label with the shared
+// enabled/disabled/danger/active styling (was copy-pasted per button).
+function MenuButton({ onClick, disabled, title, icon, variant = 'default', children }) {
+  const tone = disabled
+    ? 'text-gray-300 cursor-not-allowed'
+    : variant === 'danger'
+      ? 'text-red-600 hover:bg-red-50'
+      : variant === 'active'
+        ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100'
+        : 'text-gray-700 hover:bg-gray-100';
+  const paths = Array.isArray(icon) ? icon : [icon];
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${tone}`}
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {paths.map((d, i) => (
+          <path key={i} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} />
+        ))}
+      </svg>
+      {children}
+    </button>
+  );
+}
+
+const keyRequiredTitle = (enabled) => enabled ? undefined : 'API key required';
+
+const ICONS = {
+  weather: 'M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4',
+  exportHtml: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12',
+  exportXlsx: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+  importTsv: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+  history: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+  verify: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+  debug: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548.547z',
+  reload: ['M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2', 'M4 4v5h.582m0 0a8.003 8.003 0 0113.385-4.368l-.707.707'],
+  clear: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
+};
+
 export default function ScheduleSettingsDropdown() {
   const {
     showSettings, setShowSettings,
@@ -31,7 +73,6 @@ export default function ScheduleSettingsDropdown() {
   if (!fetchWeatherForAll) return null;
 
   const close = () => setShowSettings(false);
-  const keyRequiredTitle = (enabled) => enabled ? undefined : 'API key required';
   const section = (title) => (
     <div className="px-3 py-2 border-t border-b border-gray-100 mt-1 first:mt-0">
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
@@ -43,103 +84,65 @@ export default function ScheduleSettingsDropdown() {
   const scheduleTab = (
     <div className="max-h-[70vh] overflow-y-auto">
       {section('Weather')}
-      <button
+      <MenuButton
         onClick={fetchWeatherForAll}
         disabled={fetchingWeather || !nextHikeDate}
-        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-          fetchingWeather || !nextHikeDate
-            ? 'text-gray-300 cursor-not-allowed'
-            : 'text-gray-700 hover:bg-gray-100'
-        }`}
+        icon={ICONS.weather}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004-4h1a4 4 0 003.77-5.53A6 6 0 0018 11h1a4 4 0 004-4" />
-        </svg>
         {fetchingWeather ? 'Fetching Weather…' : !nextHikeDate ? 'No Upcoming Hike Date' : 'Fetch Weather for All'}
-      </button>
+      </MenuButton>
       {section('Publish')}
-      <button onClick={handleExport} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" />
-        </svg>
+      <MenuButton onClick={handleExport} icon={ICONS.exportHtml}>
         Export Monthly HTML
-      </button>
-      <button onClick={exportExcelSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
+      </MenuButton>
+      <MenuButton onClick={exportExcelSchedule} icon={ICONS.exportXlsx}>
         Export Quarterly Schedule
-      </button>
+      </MenuButton>
       {section('Import')}
-      <button
+      <MenuButton
         onClick={importScheduleTsv}
         disabled={!hasApiKey}
-        title={hasApiKey ? undefined : 'API key required'}
-        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}
+        title={keyRequiredTitle(hasApiKey)}
+        icon={ICONS.importTsv}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
         Import Quarterly Schedule TSV {!hasApiKey && '(need API key)'}
-      </button>
+      </MenuButton>
       {section('Maintenance')}
-      <button
+      <MenuButton
         onClick={openHistory}
         disabled={!hasApiKey}
-        title={hasApiKey ? undefined : 'API key required'}
-        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-          hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
-        }`}
+        title={keyRequiredTitle(hasApiKey)}
+        icon={ICONS.history}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
         Schedule History {!hasApiKey && '(need API key)'}
-      </button>
-      <button onClick={verifyServerSchedule} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+      </MenuButton>
+      <MenuButton onClick={verifyServerSchedule} icon={ICONS.verify}>
         Verify Pushed to Server
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={() => setDebugMode(!debugMode)}
-        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-          debugMode ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100' : 'text-gray-700 hover:bg-gray-100'
-        }`}
+        icon={ICONS.debug}
+        variant={debugMode ? 'active' : 'default'}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
         Debug Mode {debugMode ? 'ON' : 'OFF'}
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={handleReload}
         disabled={!hasApiKey}
-        title={hasApiKey ? undefined : 'API key required'}
-        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-          hasApiKey ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
-        }`}
+        title={keyRequiredTitle(hasApiKey)}
+        icon={ICONS.reload}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m0 0a8.003 8.003 0 0113.385-4.368l-.707.707" />
-        </svg>
         Reload Server Data {!hasApiKey && '(need API key)'}
-      </button>
-      <button
+      </MenuButton>
+      <MenuButton
         onClick={clearSchedule}
         disabled={!hasApiKey}
-        title={hasApiKey ? undefined : 'API key required'}
-        className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${
-          hasApiKey ? 'text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'
-        }`}
+        title={keyRequiredTitle(hasApiKey)}
+        icon={ICONS.clear}
+        variant="danger"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
         Clear Schedule {!hasApiKey && '(need API key)'}
-      </button>
+      </MenuButton>
     </div>
   );
 

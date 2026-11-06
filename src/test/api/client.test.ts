@@ -531,3 +531,92 @@ describe('updateTrailDetail', () => {
     );
   });
 });
+
+describe('api key header', () => {
+  it('sends X-API-Key from localStorage on mutating requests', async () => {
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+      headers: { get: () => null },
+      status: 200,
+    });
+    const { updateTrail } = await import('../../api/client');
+    await updateTrail({ id: 'trail-1', name: 'Updated' });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'http://test.local/api/trails/trail-1',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({ 'X-API-Key': 'test-key' }),
+        body: JSON.stringify({ id: 'trail-1', name: 'Updated' }),
+      })
+    );
+  });
+
+  it('sends an empty X-API-Key when no key is stored', async () => {
+    (localStorage.getItem as any).mockReturnValue(null);
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+      headers: { get: () => null },
+      status: 200,
+    });
+    const { updateTrail } = await import('../../api/client');
+    await updateTrail({ id: 'trail-1' });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/trails/trail-1'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'X-API-Key': '' }),
+      })
+    );
+  });
+});
+
+describe('verifyAdminKey', () => {
+  it('returns valid for a 204 response', async () => {
+    (globalThis.fetch as any).mockResolvedValue({ status: 204 });
+    const { verifyAdminKey } = await import('../../api/client');
+    const result = await verifyAdminKey('good-key');
+    expect(result).toEqual({ valid: true });
+    expect(globalThis.fetch).toHaveBeenCalledWith('http://test.local/api/auth/verify', {
+      headers: { 'X-API-Key': 'good-key' },
+    });
+  });
+
+  it('returns invalid for a 401 response', async () => {
+    (globalThis.fetch as any).mockResolvedValue({ status: 401 });
+    const { verifyAdminKey } = await import('../../api/client');
+    await expect(verifyAdminKey('bad-key')).resolves.toEqual({ valid: false, reason: 'invalid' });
+  });
+
+  it('returns a network error without throwing', async () => {
+    (globalThis.fetch as any).mockRejectedValue(new Error('offline'));
+    const { verifyAdminKey } = await import('../../api/client');
+    await expect(verifyAdminKey('good-key')).resolves.toEqual({
+      valid: false,
+      reason: 'network',
+      error: 'Unable to reach the server.',
+    });
+  });
+});
+
+describe('request error handling', () => {
+  it('throws generic error when JSON parse fails', async () => {
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.reject(new Error('Server error')),
+    });
+    const { getTrails } = await import('../../api/client');
+    await expect(getTrails()).rejects.toThrow('Request failed');
+  });
+
+  it('handles nested error message format', async () => {
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: () => Promise.resolve({ success: false, error: { message: 'Unauthorized' } }),
+    });
+    const { getTrails } = await import('../../api/client');
+    await expect(getTrails()).rejects.toThrow('Unauthorized');
+  });
+});

@@ -398,14 +398,11 @@ export function TrailActionsProvider({ children }) {
     if (requireKey('API key required to export the full data ZIP.')) return;
     try {
       const blob = await exportDataZip();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
       const date = formatDateToISO();
       const prefix = getGroupName() || 'export';
-      a.download = `${prefix}-data-${date}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // downloadBlob appends the anchor to the body — detached a.click() is
+      // silently ignored on Android browsers/WebViews.
+      downloadBlob(blob, `${prefix}-data-${date}.zip`, 'application/zip');
     } catch (err) {
       showToast('Export failed: ' + err.message, 'error');
     }
@@ -440,13 +437,8 @@ export function TrailActionsProvider({ children }) {
       return;
     }
     const blob = await zip.generateAsync({ type: 'blob' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
     const date = formatDateToISO();
-    a.download = `trails-gpx-${date}.zip`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `trails-gpx-${date}.zip`, 'application/zip');
     showToast(`Exported ${downloaded} GPX file(s).${failed > 0 ? ` (${failed} failed)` : ''}`, 'success');
   }, [trails, showToast]);
 
@@ -500,10 +492,10 @@ export function TrailActionsProvider({ children }) {
     }, true);
   }, [requireKey, askConfirm, showToast]);
 
+  // handleValidateDatabase already gates on requireKey() itself.
   const validateData = useCallback(async () => {
-    if (requireKey('API key required.')) return;
     await handleValidateDatabase();
-  }, [requireKey, handleValidateDatabase]);
+  }, [handleValidateDatabase]);
 
   const resyncCoords = useCallback(async () => {
     if (requireKey('API key required.')) return;

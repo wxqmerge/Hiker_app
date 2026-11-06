@@ -43,11 +43,11 @@ export function getGroupName() {
 }
 
 export function getMinSpeedMph() {
-  return groupConfig.minSpeedMph ?? 2.2;
+  return groupConfig.minSpeedMph ?? 1.1;
 }
 
 export function getMaxSpeedMph() {
-  return groupConfig.maxSpeedMph ?? 1.1;
+  return groupConfig.maxSpeedMph ?? 2.2;
 }
 
 export function getUnitSystem() {
