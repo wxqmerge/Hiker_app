@@ -33,13 +33,16 @@ export function useScheduleDragDrop({
 }) {
   const confirmSwap = () => {
     if (!pendingSwap) return;
-    const { sourceDay, sourceSlot, targetDay, targetSlot, targetEntry, trailId, earlyStart, leader: swapLeader } = pendingSwap;
+    const { duplicate, sourceDay, sourceSlot, targetDay, targetSlot, targetEntry, trailId, earlyStart, leader: swapLeader } = pendingSwap;
     const monthKey = getMonthKey(year, selectedMonth);
 
     updateScheduleFn(monthKey, prev => {
       let next = prev;
       next = setDayEntry(next, targetDay, targetSlot, { trail_id: trailId, early_start: earlyStart, leader: swapLeader });
-      if (sourceDay !== null && sourceDay !== undefined) {
+      // Replace semantics (duplicate copy, or drag from the Available list):
+      // there is no real source slot to move the occupant back to, so the
+      // target entry is replaced, not swapped.
+      if (!duplicate && sourceDay !== null && sourceDay !== undefined) {
         next = setDayEntry(next, sourceDay, sourceSlot, { trail_id: targetEntry.trail_id, early_start: targetEntry.early_start, leader: targetEntry.leader || '' });
       }
       return next;
@@ -68,7 +71,10 @@ export function useScheduleDragDrop({
     const sourceEntries = hasSource ? getDayEntries(monthData, sourceDay) : [];
     const sourceEntry = sourceEntries[sourceSlot] || null;
 
-    if (!duplicate && targetEntry && targetEntry.trail_id) {
+    // Overwriting an occupied slot always needs confirmation: real swap when a
+    // source slot exists, replace (occupant removed) for Available-list drags
+    // and duplicate copies.
+    if (targetEntry && targetEntry.trail_id) {
       const sourceTrail = findTrailById(trailId);
       const targetTrail = findTrailById(targetEntry.trail_id);
       const sourceTrailName = sourceTrail ? getTrailName(sourceTrail) : trailId;
@@ -90,6 +96,8 @@ export function useScheduleDragDrop({
         sourceEntry,
         targetEntry,
         trailId,
+        hasSource,
+        duplicate,
         earlyStart: sourceEarlyStart !== undefined ? sourceEarlyStart : (hasSource ? sourceEntry?.early_start || false : false),
         leader: sourceLeader || (hasSource ? sourceEntry?.leader || '' : ''),
       });

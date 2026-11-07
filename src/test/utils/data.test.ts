@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getTrailName, findTrailById, findTrailIndexById, getScoredMonths, getAvailableMonthsFromSeasonal, getTrailDetailsById } from '../../utils/data';
+import { getTrailName, findTrailById, findTrailIndexById, getScoredMonths, getAvailableMonthsFromSeasonal, getTrailDetailsById, seasonalFromMonthIndices } from '../../utils/data';
 
 describe('getTrailName', () => {
   it('returns fullName when available', () => {
@@ -203,5 +203,30 @@ describe('getAvailableMonthsFromSeasonal', () => {
 
   it('returns empty array for null seasonal', () => {
     expect(getAvailableMonthsFromSeasonal(null)).toEqual([]);
+  });
+});
+
+describe('seasonalFromMonthIndices', () => {
+  it('replaces month-abbrev keys with the checked set, defaulting new months to 1', () => {
+    const result = seasonalFromMonthIndices({ Jan: 3, Feb: 2, bestSeason: 'Spring' }, [1, 5]);
+    expect(result).toEqual({ Jan: 3, May: 1, bestSeason: 'Spring' });
+  });
+
+  it('drops the legacy availableMonths side-key (server ignores it when abbrev keys exist)', () => {
+    const result = seasonalFromMonthIndices({ availableMonths: [2, 3] }, [2]);
+    expect(result).toEqual({ Feb: 1 });
+  });
+
+  it('clears all months when the checked set is empty', () => {
+    expect(seasonalFromMonthIndices({ Jan: 3, Jul: 1 }, [])).toEqual({});
+  });
+
+  it('handles null seasonal input', () => {
+    expect(seasonalFromMonthIndices(null, [12])).toEqual({ Dec: 1 });
+  });
+
+  it('round-trips through getAvailableMonthsFromSeasonal', () => {
+    const months = [1, 3, 7];
+    expect(getAvailableMonthsFromSeasonal(seasonalFromMonthIndices({}, months))).toEqual(months);
   });
 });

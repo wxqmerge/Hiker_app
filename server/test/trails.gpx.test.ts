@@ -132,3 +132,19 @@ describe('GPX fingerprint (gpxBytes/gpxModified/gpxSha1)', () => {
     expect([200, 404]).toContain(ok.status);
   });
 });
+
+describe('gpxFile write boundary', () => {
+  it('ignores unsafe gpxFile values on PUT /:id (gpx_index stays clean)', async () => {
+    const res = await fetch(`${base}/api/trails/zion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': ADMIN_KEY },
+      body: JSON.stringify({ gpxFile: '../../evil.gpx' }),
+    });
+    expect(res.status).toBe(200); // request succeeds; the unsafe value is dropped
+
+    const index = JSON.parse(await fs.readFile(path.join(DATA_DIR, 'gpx_index.json'), 'utf-8'));
+    expect(index['zion']).toBeUndefined();
+    const gpxRes = await fetch(`${base}/api/trails/gpx/zion`);
+    expect(gpxRes.status).toBe(404);
+  });
+});

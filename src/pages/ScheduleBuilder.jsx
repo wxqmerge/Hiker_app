@@ -28,7 +28,7 @@ import { useScheduleDragDrop } from '../hooks/useScheduleDragDrop';
 import { updateLeader } from '../utils/scheduleActions';
 import { getDayName, getHikeDaysLabel, slotLetter } from '../utils/config';
 import { START_OFFSET_OPTIONS, normalizeStartOffset } from '../utils/etc';
-import { generateReportHtml } from '../utils/report';
+import { generateReportHtml, esc } from '../utils/report';
 import { openHtmlInNewTab } from '../utils/io';
 import { useDayContext } from '../contexts/DayContext';
 import { DAY_NAMES } from '../utils/constants';
@@ -412,6 +412,7 @@ export default function ScheduleBuilder() {
                                   const date = createDate(mYear, m, day);
                                   entries.push({
                                     dateStr: `${DAY_NAMES[date.getDay()]}, ${monthAbbr} ${day}`,
+                                    date,
                                     trail,
                                     trailDetails,
                                     earlyStart: entry.early_start || false,
@@ -422,15 +423,17 @@ export default function ScheduleBuilder() {
                           }
                         }
                         if (entries.length > 0) {
-                          entries.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+                          // Chronological: dateStr starts with the weekday name, so
+                          // localeCompare would order by weekday, not by date.
+                          entries.sort((a, b) => a.date - b.date);
                           const reportHtml = generateReportHtml(entries, `${leader === '' ? 'No Leader' : leader} — All Hikes`);
                           const body = reportHtml.split('<body>')[1]?.split('</body>')[0] || '';
-                          sections.push(`<h2>${leader === '' ? 'No Leader' : leader}</h2>${body.replace(/<h1>.*?<\/h1>/s, '')}`);
+                          sections.push(`<h2>${esc(leader === '' ? 'No Leader' : leader)}</h2>${body.replace(/<h1>.*?<\/h1>/s, '')}`);
                         }
                       }
                       const title = leaderFilter !== null
-                        ? `${leaderFilter === '' ? 'No Leader' : leaderFilter} — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}`
-                        : `All Leaders — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}`;
+                        ? esc(`${leaderFilter === '' ? 'No Leader' : leaderFilter} — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}`)
+                        : esc(`All Leaders — ${MONTH_ABBR[quarterMonths[0]]}–${MONTH_ABBR[quarterMonths[2]]} ${year}`);
                       const combined = `<!DOCTYPE html>
 <html lang="en">
 <head>

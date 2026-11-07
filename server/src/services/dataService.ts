@@ -186,8 +186,9 @@ export async function loadData(): Promise<void> {
   console.log(`[DATA] Loaded schedule: ${scheduleFile} (${Object.keys(schedule).length} months)`);
   gpxIndex = await loadFile('gpx_index.json', {});
 
-  // Attach gpxFile to each trail
-  trails = trails.map(t => ({ ...t, gpxFile: gpxIndex[t.id] || undefined }));
+  // Attach gpxFile to each trail (getGpxFileName has the own-string guard:
+  // exotic IDs like "__proto__" must not resolve to prototype values).
+  trails = trails.map(t => ({ ...t, gpxFile: getGpxFileName(t.id) }));
 
   // Attach durations for trails with GPX
   console.log('[DATA] Calculating hike durations from GPX files...');
@@ -258,6 +259,13 @@ async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: st
     return true;
   }
   if (gpxFile) {
+    // Write-boundary guard: gpxFile arrives via the trail PUT whitelist. All
+    // read paths validate too (resolveGpxPath/stampGpxFingerprint), but refuse
+    // to poison gpx_index.json in the first place.
+    if (!isSafeGpxFilename(gpxFile)) {
+      console.warn(`[DATA] Ignored unsafe gpxFile "${String(gpxFile).slice(0, 40)}" for trail ${trailId}`);
+      return !!gpxIndex[trailId];
+    }
     gpxIndex[trailId] = gpxFile;
     return true;
   }

@@ -99,6 +99,30 @@ export function getAvailableMonthsFromSeasonal(seasonal) {
 }
 
 /**
+ * Rebuild the canonical month-abbrev keys of a seasonal object from a set of
+ * checked 1-based months. The server's normalizeSeasonal ignores "availableMonths"
+ * whenever month-abbrev keys exist, so month edits MUST rewrite the abbrev keys
+ * themselves or they silently revert on reload. Values of months that stay in
+ * the set are preserved; newly checked months get 1. The legacy "availableMonths"
+ * side-key is dropped. Other keys (e.g. bestSeason) are untouched.
+ * @param {Object} prevSeasonal - Existing seasonal object (may be null)
+ * @param {Array<number>} monthIndices - 1-based month indices to keep
+ * @returns {Object} - New seasonal object (input not mutated)
+ */
+export function seasonalFromMonthIndices(prevSeasonal, monthIndices) {
+  const next = { ...(prevSeasonal || {}) };
+  delete next.availableMonths;
+  for (const abbr of MONTH_ABBR) delete next[abbr];
+  for (const m of monthIndices || []) {
+    const abbr = MONTH_ABBR[m - 1];
+    if (!abbr) continue;
+    const prevVal = Number((prevSeasonal || {})[abbr]);
+    next[abbr] = prevVal > 0 ? prevVal : 1;
+  }
+  return next;
+}
+
+/**
  * Get trail details with fallback for ID mismatch
  * Handles cases like "360-rd" vs "360"
  * @param {Object} details - Trail details object

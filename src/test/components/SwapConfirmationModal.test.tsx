@@ -8,6 +8,9 @@ describe('SwapConfirmationModal', () => {
     targetTrailName: 'Trail B',
     sourceDayLabel: 'Jan 15',
     targetDayLabel: 'Jan 22',
+    sourceDay: 15,
+    sourceSlot: 0,
+    duplicate: false,
   };
 
   const onConfirm = vi.fn();
@@ -86,5 +89,19 @@ describe('SwapConfirmationModal', () => {
     const modal = screen.getByText('Swap Hikes?').closest('.fixed');
     expect(modal.className).toContain('bg-black/40');
     expect(modal.className).toContain('z-50');
+  });
+
+  it('shows replace copy when the source has no real slot', () => {
+    render(<SwapConfirmationModal pendingSwap={{ ...pendingSwap, sourceDay: null }} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByText('Replace Hike?')).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes('replaces') && content.includes('will be removed'))).toBeInTheDocument();
+    expect(screen.getByText('Replace')).toBeInTheDocument();
+    expect(screen.queryByText('Swap')).not.toBeInTheDocument();
+  });
+
+  it('shows replace copy with keep-original note for duplicate copies', () => {
+    render(<SwapConfirmationModal pendingSwap={{ ...pendingSwap, duplicate: true }} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByText('Replace Hike?')).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes('The original stays where it is.'))).toBeInTheDocument();
   });
 });

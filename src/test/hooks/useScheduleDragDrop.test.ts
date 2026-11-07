@@ -201,6 +201,55 @@ describe('useScheduleDragDrop', () => {
     expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-1', early_start: 0, leader: '' }]);
   });
 
+  it('confirmSwap without a real source slot replaces the target (nothing written back)', () => {
+    scheduleStore[monthKey] = { 8: [{ trail_id: 'trail-2' }] };
+    const pendingSwap = {
+      duplicate: false,
+      sourceDay: null,
+      sourceSlot: null,
+      targetDay: 8,
+      targetSlot: 0,
+      targetEntry: { trail_id: 'trail-2', early_start: 0, leader: '' },
+      trailId: 'trail-1',
+      earlyStart: 0,
+      leader: '',
+    };
+    const deps = { ...baseDeps, pendingSwap };
+    const result = useScheduleDragDrop(deps);
+    result.confirmSwap();
+    expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-1', early_start: 0, leader: '' }]);
+    expect(scheduleStore[monthKey]['1']).toBeUndefined();
+  });
+
+  it('duplicate copy onto an occupied slot asks for replace confirmation', () => {
+    scheduleStore[monthKey] = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
+    const result = useScheduleDragDrop(baseDeps);
+    result.moveHike({ hikeIndex: null, sourceDay: 1, sourceSlot: 0, trailId: 'trail-1', earlyStart: 0, leader: '', duplicate: true }, 8, 0);
+    expect(setPendingSwap).toHaveBeenCalledTimes(1);
+    expect(setPendingSwap.mock.calls[0][0].duplicate).toBe(true);
+  });
+
+  it('confirmSwap on a duplicate keeps the source and overwrites the target', () => {
+    scheduleStore[monthKey] = { 1: [{ trail_id: 'trail-1' }], 8: [{ trail_id: 'trail-2' }] };
+    const pendingSwap = {
+      duplicate: true,
+      sourceDay: 1,
+      sourceSlot: 0,
+      targetDay: 8,
+      targetSlot: 0,
+      targetEntry: { trail_id: 'trail-2', early_start: 0, leader: '' },
+      trailId: 'trail-1',
+      earlyStart: 0,
+      leader: '',
+    };
+    const deps = { ...baseDeps, pendingSwap };
+    const result = useScheduleDragDrop(deps);
+    result.confirmSwap();
+    // Source slot keeps its original (untouched) entry object.
+    expect(scheduleStore[monthKey]['1']).toEqual([{ trail_id: 'trail-1' }]);
+    expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-1', early_start: 0, leader: '' }]);
+  });
+
   it('removeHike normalizes object-shaped entries to empty arrays', () => {
     scheduleStore[monthKey] = { 1: { trail_id: 'trail-1' } };
     const result = useScheduleDragDrop(baseDeps);

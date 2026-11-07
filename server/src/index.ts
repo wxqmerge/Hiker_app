@@ -281,6 +281,20 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
     }
   }
 
+  // Shared preamble for keyed-object data files (trail_details, gpx_index):
+  // shape check + emptiness. Returns the keys, or null when the root is invalid.
+  function checkKeyedObject(parsed: any, issues: string[]): string[] | null {
+    if (!parsed || typeof parsed !== 'object') {
+      issues.push('root must be an object keyed by trail ID');
+      return null;
+    }
+    const keys = Object.keys(parsed);
+    if (keys.length === 0) issues.push('object is empty');
+    return keys;
+  }
+  const keyedRecordCount = (parsed: any): number =>
+    parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0;
+
   let trails: any[] = [];
 
   // trails.json
@@ -310,17 +324,11 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
   {
     await checkFile('trail_details.json', path.join(DATA_DIR, 'trail_details.json'), (parsed) => {
       const issues: string[] = [];
-      if (!parsed || typeof parsed !== 'object') {
-        issues.push('root must be an object keyed by trail ID');
-      } else {
-        const keys = Object.keys(parsed);
-        if (keys.length === 0) {
-          issues.push('object is empty');
-        } else {
-          const sample = parsed[keys[0]];
-          if (!sample || typeof sample !== 'object' || Array.isArray(sample)) {
-            issues.push(`values must be objects, got ${Array.isArray(sample) ? 'array' : typeof sample}`);
-          }
+      const keys = checkKeyedObject(parsed, issues);
+      if (keys && keys.length > 0) {
+        const sample = parsed[keys[0]];
+        if (!sample || typeof sample !== 'object' || Array.isArray(sample)) {
+          issues.push(`values must be objects, got ${Array.isArray(sample) ? 'array' : typeof sample}`);
         }
         // Check for orphaned detail entries (no matching trail)
         const trailIds = new Set(Array.isArray(trails) ? trails.map((t: any) => t.id) : []);
@@ -329,7 +337,7 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
           issues.push(`${orphaned.length} orphaned detail(s): ${orphaned.join(', ')}`);
         }
       }
-      return { issues, recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0 };
+      return { issues, recordCount: keyedRecordCount(parsed) };
     });
   }
 
@@ -404,15 +412,8 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
   {
     await checkFile('gpx_index.json', path.join(DATA_DIR, 'gpx_index.json'), (parsed) => {
       const issues: string[] = [];
-      if (!parsed || typeof parsed !== 'object') {
-        issues.push('root must be an object keyed by trail ID');
-      } else {
-        const keys = Object.keys(parsed);
-        if (keys.length === 0) {
-          issues.push('object is empty');
-        }
-      }
-      return { issues, recordCount: parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0 };
+      checkKeyedObject(parsed, issues);
+      return { issues, recordCount: keyedRecordCount(parsed) };
     });
   }
 

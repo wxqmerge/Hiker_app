@@ -7,7 +7,7 @@ import { useTrailStore } from '../hooks/useTrailStore';
 import { useTooltips } from '../hooks/useTooltips';
 import { generateTrailHtml, getRideCost } from '../utils/report';
 import { useToast } from '../hooks/useToast';
-import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName } from '../utils/data';
+import { getTrailDetailsById, findTrailById, findTrailIndexById, getAvailableMonthsFromSeasonal, getTrailName, seasonalFromMonthIndices } from '../utils/data';
 import { getSeasonalInfo, computeMonthlyScores } from '../utils/score.js';
 import { clampHikeMinutes, getEtcBounds } from '../utils/etc';
 import { createFileInput, openHtmlInNewTab } from '../utils/io';
@@ -198,7 +198,7 @@ export default function TrailDetail() {
       trailHeadLat: trail.trailHeadLat,
       trailHeadLon: trail.trailHeadLon,
       bestSeason: trail.seasonal?.bestSeason || '',
-      availableMonths: trail.seasonal?.availableMonths || [],
+      availableMonths: availableMonthsFromSeasonal,
       description: trailDetailsResult?.[id]?.fullDescription || '',
       pros: trailDetailsResult?.[id]?.pros || '',
       others: trailDetailsResult?.[id]?.others || '',
@@ -244,10 +244,11 @@ export default function TrailDetail() {
         parking: editedFields.parking || '',
         range: editedFields.range || '',
         notes: editedFields.notes || '',
-        seasonal: {
-          bestSeason: normalizeSeason(editedFields.bestSeason || ''),
-          availableMonths: editedFields.availableMonths || [],
-        },
+        seasonal: (() => {
+          const s = seasonalFromMonthIndices(trail.seasonal, editedFields.availableMonths || []);
+          s.bestSeason = normalizeSeason(editedFields.bestSeason || '');
+          return s;
+        })(),
         altNames: editedFields.altNames || [],
         webLink: editedFields.webLink || '',
         tideStationId: String(editedFields.tideStationId || '').trim(),
@@ -307,10 +308,14 @@ export default function TrailDetail() {
     if (editedFields.trailHeadLat !== undefined) updatedTrail.trailHeadLat = editedFields.trailHeadLat;
     if (editedFields.trailHeadLon !== undefined) updatedTrail.trailHeadLon = editedFields.trailHeadLon;
 
-    if (editedFields.bestSeason !== undefined || editedFields.availableMonths !== undefined) {
+    // Server normalizeSeasonal ignores "availableMonths" when month-abbrev keys
+    // exist, so checked months must rewrite the canonical keys or edits revert.
+    if (editedFields.availableMonths !== undefined) {
+      updatedTrail.seasonal = seasonalFromMonthIndices(updatedTrail.seasonal, editedFields.availableMonths);
+    }
+    if (editedFields.bestSeason !== undefined) {
       if (!updatedTrail.seasonal) updatedTrail.seasonal = {};
-      if (editedFields.bestSeason !== undefined) updatedTrail.seasonal.bestSeason = normalizeSeason(editedFields.bestSeason);
-      if (editedFields.availableMonths !== undefined) updatedTrail.seasonal.availableMonths = editedFields.availableMonths;
+      updatedTrail.seasonal.bestSeason = normalizeSeason(editedFields.bestSeason);
     }
 
     await saveTrail(updatedTrail);

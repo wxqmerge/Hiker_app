@@ -5,8 +5,9 @@ import { DAY_NAMES, MONTH_ABBR } from './constants';
 import { safeWebLink } from './url';
 
 // Escape HTML special characters. Total on any input: a missing/numeric
-// field must not crash report generation.
-function esc(s) {
+// field must not crash report generation. Exported for callers that assemble
+// report HTML by hand (e.g. the combined leader report in ScheduleBuilder).
+export function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
