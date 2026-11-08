@@ -17,15 +17,32 @@ SITES_ENABLED="/etc/nginx/sites-enabled"
 HTML_BASE="/var/www/html"
 MYCONF="$SITES_DIR/mysite.conf"
 
-# Read DOMAIN from first available instance's server/.env
+# Server names: SERVER_NAMES (space-separated, first instance that declares it
+# wins) lets one vhost answer several domains, e.g. during a domain migration:
+#   SERVER_NAMES="chess4.us hiker4.us"
+# Otherwise fall back to the first DOMAIN= found.
+SERVER_NAMES=""
 for dir in "$HTML_BASE"/*/; do
     [ -d "$dir" ] || continue
-    if [ -f "$dir/server/.env" ] && grep -q '^DOMAIN=' "$dir/server/.env"; then
-        DOMAIN=$(grep '^DOMAIN=' "$dir/server/.env" | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    if [ -f "$dir/server/.env" ] && grep -q '^SERVER_NAMES=' "$dir/server/.env"; then
+        SERVER_NAMES=$(grep -m1 '^SERVER_NAMES=' "$dir/server/.env" | cut -d= -f2-)
         break
     fi
 done
-DOMAIN="${DOMAIN:-example.com}"
+if [ -z "$SERVER_NAMES" ]; then
+    for dir in "$HTML_BASE"/*/; do
+        [ -d "$dir" ] || continue
+        if [ -f "$dir/server/.env" ] && grep -q '^DOMAIN=' "$dir/server/.env"; then
+            SERVER_NAMES=$(grep '^DOMAIN=' "$dir/server/.env" | head -1 | cut -d= -f2- | tr -d '[:space:]')
+            break
+        fi
+    done
+fi
+SERVER_NAMES="${SERVER_NAMES:-example.com}"
+echo "Server names: $SERVER_NAMES"
+# Cert dir + ACME stay on the first name; the :80 redirect matches all names.
+PRIMARY_DOMAIN=${SERVER_NAMES%% *}
+HOST_REGEX=$(echo "$SERVER_NAMES" | tr ' ' '\n' | sed 's/\./\\./g' | paste -sd'|')
 
 # Collect deployment directories
 DEPLOYMENTS=()
@@ -53,7 +70,7 @@ fi
 # Generate the config
 cat > "$MYCONF" << HEADER
 server {
-    server_name $DOMAIN;
+    server_name $SERVER_NAMES;
 
     root /var/www/html;
     index index.html;
@@ -126,20 +143,20 @@ done
 
 cat >> "$MYCONF" << SSL
     listen 443 ssl;
-    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/$PRIMARY_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$PRIMARY_DOMAIN/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     client_max_body_size 20m;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
 
 server {
-    if (\$host = $DOMAIN) {
+    if (\$host ~ ^($HOST_REGEX)\$) {
         return 301 https://\$host\$request_uri;
     }
 
     listen 80;
-    server_name $DOMAIN;
+    server_name $SERVER_NAMES;
     client_max_body_size 20m;
     return 404;
 }
