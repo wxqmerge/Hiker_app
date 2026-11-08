@@ -4,12 +4,14 @@
 #
 #   cd /var/www/html/sothh-app && git pull && sudo bash deploy/migrate-hiker4.sh
 #
+# (git pull is deliberately NOT done here: this script runs as root, and a
+# root-side pull would litter the checkout with root-owned files.)
+#
 # Steps:
-#   1. git pull --ff-only (this checkout must be clean)
-#   2. ensure SERVER_NAMES="chess4.us hiker4.us" in server/.env
-#   3. regenerate mysite.conf via patch-mysite.sh (it backs up + reloads)
-#   4. add <app>.hiker4.us to every <app>.chess4.us nginx vhost
-#   5. nginx -t + reload, then local end-to-end checks for every app
+#   1. ensure SERVER_NAMES="chess4.us hiker4.us" in server/.env
+#   2. regenerate mysite.conf via patch-mysite.sh (it backs up + reloads)
+#   3. add <app>.hiker4.us to every <app>.chess4.us nginx vhost
+#   4. nginx -t + reload, then local end-to-end checks for every app
 #      on both domains (subdomain vhosts AND path-style /<app>/api/)
 
 set -euo pipefail
@@ -21,16 +23,7 @@ OLD_DOMAIN="chess4.us"
 NEW_DOMAIN="hiker4.us"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "=== [1/5] git pull --ff-only in $REPO_ROOT ==="
-cd "$REPO_ROOT"
-if ! git diff --quiet || ! git diff --cached --quiet; then
-    echo "Error: working tree has uncommitted changes. Commit or stash first."
-    exit 1
-fi
-git pull --ff-only
-
-echo
-echo "=== [2/5] SERVER_NAMES=\"$SERVER_NAMES\" in server/.env ==="
+echo "=== [1/4] SERVER_NAMES=\"$SERVER_NAMES\" in server/.env ==="
 ENV_FILE="$REPO_ROOT/server/.env"
 [ -f "$ENV_FILE" ] || { echo "Error: $ENV_FILE not found"; exit 1; }
 cp "$ENV_FILE" "$ENV_FILE.bak.hiker4"
@@ -43,11 +36,11 @@ else
 fi
 
 echo
-echo "=== [3/5] regenerate mysite.conf (patch-mysite.sh) ==="
+echo "=== [2/4] regenerate mysite.conf (patch-mysite.sh) ==="
 bash "$REPO_ROOT/deploy/patch-mysite.sh"
 
 echo
-echo "=== [4/5] extend subdomain vhosts with .$NEW_DOMAIN ==="
+echo "=== [3/4] extend subdomain vhosts with .$NEW_DOMAIN ==="
 # Collect the real files behind sites-enabled (skip mysite.conf: regenerated
 # above; skip plain-root and www server_names: not app vhosts).
 FILES=""
@@ -75,7 +68,7 @@ else
 fi
 
 echo
-echo "=== [5/5] validate + self-test ==="
+echo "=== [4/4] validate + self-test ==="
 nginx -t
 systemctl reload nginx
 sleep 1
