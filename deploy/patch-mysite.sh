@@ -5,9 +5,12 @@
 #
 # Auto-detects deployment directories under /var/www/html/
 # and generates a single mysite.conf with location blocks for each.
-# For deployments that declare PORT in server/.env, the PWA manifest is
-# proxied to that deployment's Express server so each install gets its own
-# app name; the static dist/manifest.webmanifest always says "Hiker Trail App".
+# For deployments that declare PORT in server/.env, the API routes and PWA
+# manifest are proxied to that deployment's Express server (each install gets
+# its own API + app name; the static dist/manifest.webmanifest always says
+# "Hiker Trail App"). Without the /<name>/api/ proxy the SPA try_files
+# fallback answers API calls with index.html (200 + HTML) and the app shows
+# zero data - keep these blocks in sync with deploy/hiker.conf.example.
 
 SITES_DIR="/etc/nginx/sites-available"
 SITES_ENABLED="/etc/nginx/sites-enabled"
@@ -39,6 +42,14 @@ if [ ${#DEPLOYMENTS[@]} -eq 0 ]; then
     exit 1
 fi
 
+# Back up the previous config: this script regenerates mysite.conf from
+# scratch, so any hand-edited locations are otherwise lost silently.
+if [ -f "$MYCONF" ]; then
+    cp "$MYCONF" "$MYCONF.bak.$(date +%Y%m%d-%H%M%S)"
+    cp "$MYCONF" "$MYCONF.bak"
+    echo "Backed up existing config to $MYCONF.bak"
+fi
+
 # Generate the config
 cat > "$MYCONF" << HEADER
 server {
@@ -67,6 +78,28 @@ for dep in "${DEPLOYMENTS[@]}"; do
 
     if [ -n "$port" ]; then
         cat >> "$MYCONF" << EOF
+    # API + health -> Express (prefix /$name stripped by proxy_pass URI)
+    location /$name/api/ {
+        proxy_pass http://127.0.0.1:$port/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-App-Name $name;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+
+    location /$name/health {
+        proxy_pass http://127.0.0.1:$port/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
     # PWA manifest -> Express (dynamic app name)
     location ~ ^/$name/manifest\\.webmanifest\$ {
         proxy_pass http://127.0.0.1:$port;
