@@ -25,7 +25,9 @@ SERVER_NAMES=""
 for dir in "$HTML_BASE"/*/; do
     [ -d "$dir" ] || continue
     if [ -f "$dir/server/.env" ] && grep -q '^SERVER_NAMES=' "$dir/server/.env"; then
-        SERVER_NAMES=$(grep -m1 '^SERVER_NAMES=' "$dir/server/.env" | cut -d= -f2-)
+        # strip surrounding quotes a .env may use (SERVER_NAMES="a b");
+        # hostnames never contain quotes, spaces between names are kept
+        SERVER_NAMES=$(grep -m1 '^SERVER_NAMES=' "$dir/server/.env" | cut -d= -f2- | tr -d "\"'")
         break
     fi
 done
