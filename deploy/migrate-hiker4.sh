@@ -70,7 +70,7 @@ fi
 echo
 echo "=== [4/4] validate + self-test ==="
 nginx -t
-systemctl reload nginx
+systemctl reload-or-restart nginx
 sleep 1
 
 APPS=$(grep -rhoE "server_name [a-z0-9-]+\.${OLD_DOMAIN}([ ;])" /etc/nginx/sites-enabled/ 2>/dev/null \

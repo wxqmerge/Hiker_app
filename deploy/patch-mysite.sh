@@ -165,5 +165,5 @@ server {
 SSL
 
 sudo ln -sf "$MYCONF" "$SITES_ENABLED/mysite.conf"
-sudo nginx -t 2>&1 && sudo systemctl reload nginx
+sudo nginx -t 2>&1 && sudo systemctl reload-or-restart nginx
 echo "Generated $MYCONF with ${#DEPLOYMENTS[@]} deployment(s)"
