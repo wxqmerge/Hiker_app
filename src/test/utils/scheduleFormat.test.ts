@@ -7,6 +7,7 @@ import {
   setDayEntry,
   clearDayEntry,
   normalizeServerMonthEntries,
+  getNextScheduledDateForTrail,
 } from '../../utils/scheduleFormat';
 import { DAY_NAMES, CURRENT_YEAR } from '../../utils/constants';
 import { getMonthKey } from '../../utils/dateUtils';
@@ -382,5 +383,46 @@ describe('schedule entry normalization', () => {
       { day: 5, slot: 0, trail_id: 'trail-1', early_start: 0, leader: 'Alice' },
       { day: 5, slot: 1, trail_id: 'trail-2', early_start: -30, leader: 'Bob' },
     ]);
+  });
+});
+
+describe('getNextScheduledDateForTrail', () => {
+  const today = new Date(2026, 10, 7); // Nov 7, 2026 (fixed)
+
+  it('returns the earliest future date the trail is scheduled', () => {
+    const schedule = {
+      '2026-11': [
+        { day: 20, slot: 0, trail_id: 'miller', early_start: 0, leader: 'A' },
+        { day: 13, slot: 0, trail_id: 'miller', early_start: 0, leader: 'A' },
+        { day: 6, slot: 0, trail_id: 'miller', early_start: 0, leader: 'A' },
+      ],
+    };
+    expect(getNextScheduledDateForTrail(schedule, 'miller', today)).toEqual(new Date(2026, 10, 13));
+  });
+
+  it('searches across months and years', () => {
+    const schedule = {
+      '2026-11': [{ day: 30, slot: 0, trail_id: 't', early_start: 0, leader: '' }],
+      '2026-12': [{ day: 4, slot: 0, trail_id: 't', early_start: 0, leader: '' }],
+    };
+    // Nov 30 already passed → Dec 4 is the upcoming date
+    expect(getNextScheduledDateForTrail(schedule, 't', new Date(2026, 11, 2))).toEqual(new Date(2026, 11, 4));
+  });
+
+  it('falls back to the latest past date when nothing is upcoming', () => {
+    const schedule = {
+      '2026-09': [{ day: 5, slot: 0, trail_id: 't', early_start: 0, leader: '' }],
+      '2026-10': [{ day: 3, slot: 0, trail_id: 't', early_start: 0, leader: '' }],
+    };
+    expect(getNextScheduledDateForTrail(schedule, 't', today)).toEqual(new Date(2026, 9, 3));
+  });
+
+  it('ignores other trails and returns null without schedule or trail', () => {
+    const schedule = {
+      '2026-11': [{ day: 13, slot: 0, trail_id: 'other', early_start: 0, leader: '' }],
+    };
+    expect(getNextScheduledDateForTrail(schedule, 't', today)).toBeNull();
+    expect(getNextScheduledDateForTrail(null, 't', today)).toBeNull();
+    expect(getNextScheduledDateForTrail(schedule, null, today)).toBeNull();
   });
 });

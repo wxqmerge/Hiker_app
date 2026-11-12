@@ -1,5 +1,5 @@
 import { MONTH_NAMES, MONTH_ABBR, CURRENT_YEAR } from './constants';
-import { getMonthKey } from './dateUtils';
+import { getMonthKey, createDate } from './dateUtils';
 import { normalizeStartOffset } from './etc';
 
 const YEAR_MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -134,4 +134,36 @@ export function storeToServerSchedule(store) {
     serverData[monthKey].sort((a, b) => a.day - b.day || a.slot - b.slot);
   }
   return serverData;
+}
+
+/**
+ * Earliest future date a trail is scheduled (falls back to the latest past
+ * date when everything already happened). Used so tide links open NOAA on
+ * the hike's day instead of today.
+ * @param {Object} serverSchedule - raw /api/schedule data ({ "YYYY-MM": [entries] })
+ * @param {string} trailId
+ * @param {Date} [today]
+ * @returns {Date|null}
+ */
+export function getNextScheduledDateForTrail(serverSchedule, trailId, today = new Date()) {
+  if (!serverSchedule || !trailId) return null;
+  const store = serverScheduleToStore(serverSchedule);
+  const midnight = new Date(today);
+  midnight.setHours(0, 0, 0, 0);
+  let upcoming = null;
+  let latest = null;
+  for (const [monthKey, monthData] of Object.entries(store)) {
+    const [y, m] = monthKey.split('-').map(Number);
+    if (!y || !m) continue;
+    for (const [day, entries] of Object.entries(monthData || {})) {
+      for (const e of normalizeDayEntries(entries)) {
+        if (e.trail_id !== trailId) continue;
+        const d = createDate(y, m - 1, Number(day));
+        if (isNaN(d.getTime())) continue;
+        if (!latest || d > latest) latest = d;
+        if (d >= midnight && (!upcoming || d < upcoming)) upcoming = d;
+      }
+    }
+  }
+  return upcoming || latest;
 }

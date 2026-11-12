@@ -16,6 +16,7 @@ import { useGpxActions } from '../hooks/useGpxActions';
 import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
 import { createDate } from '../utils/dateUtils';
+import { getNextScheduledDateForTrail } from '../utils/scheduleFormat';
 import { MONTH_ABBR, DIFFICULTY_COLORS } from '../utils/constants';
 import { getGoogleAllTrailsSearchUrl, getNoaaTideUrl, safeWebLink } from '../utils/url.js';
 import { hasStoredApiKey } from '../utils/apiKey';
@@ -82,11 +83,17 @@ export default function TrailDetail() {
     const d = new Date(hikeDateParam);
     return Number.isNaN(d.getTime()) ? null : d;
   }, [hikeDateParam]);
-  const { trails, loading } = useTrails();
+  const { trails, loading, schedule } = useTrails();
   const { trailDetails, saveTrail, saveTrailDetail, deleteTrail } = useTrailStore();
   const { title: tt } = useTooltips();
   const showToast = useToast();
   const hasApiKey = useApiKey();
+  // NOAA tide links should open on the hike's day: prefer a ?date= deep link
+  // from a scheduled hike, else the trail's earliest upcoming scheduled day.
+  const tideLinkDate = useMemo(
+    () => hikeDate || getNextScheduledDateForTrail(schedule, id),
+    [hikeDate, schedule, id]
+  );
   const [isEditMode, setIsEditMode] = useState(() => searchParams.get('edit') === 'true' && hasStoredApiKey());
   const [editedFields, setEditedFields] = useState({});
   const [isDuplicate, setIsDuplicate] = useState(false);
@@ -733,7 +740,7 @@ export default function TrailDetail() {
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Tide Station</h3>
               <a
-                href={getNoaaTideUrl(getEditedValue('tideStationId'))}
+                href={getNoaaTideUrl(getEditedValue('tideStationId'), tideLinkDate || undefined)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline"

@@ -243,7 +243,15 @@ export default function ScheduleBuilder() {
               aria-label={`Drag ${getTrailName(trail)} to schedule on a date`}
            >
              <div className="relative">
-                <TrailCard trail={trail} isActive={false} selectedMonths={filters.months} weather={weatherMap[trail.id]} />
+                <TrailCard
+                   trail={trail}
+                   isActive={false}
+                   selectedMonths={filters.months}
+                   weather={weatherMap[trail.id]}
+                   hikeDate={scheduledDays && scheduledDays.length
+                     ? createDate(year, selectedMonth, Math.min(...scheduledDays))
+                     : undefined}
+                 />
              {debugMode && (
                <div className="absolute top-2 left-2 bg-gray-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                  {item.hikeIndex}
@@ -269,7 +277,7 @@ export default function ScheduleBuilder() {
        );
        return cards;
      }, []);
-  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, weatherMap, hasApiKey, scheduledMap]);
+  }, [filteredHikes, handleDragStart, handleDragEnd, debugMode, filters.months, tt, weatherMap, hasApiKey, scheduledMap, year, selectedMonth]);
 
   if (loading) {
     return <LoadingSpinner message="Loading trails..." />;
