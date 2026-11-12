@@ -23,8 +23,32 @@ router.get('/tide-proxy', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'begin_date and end_date must be YYYYMMDD' });
     return;
   }
+  // NOAA station IDs are numeric; refuse anything else rather than proxying it.
+  if (!/^\d{1,10}$/.test(station)) {
+    res.status(400).json({ error: 'station must be a numeric NOAA station ID' });
+    return;
+  }
   if (!TIDE_MODES.has(mode)) {
     res.status(400).json({ error: 'mode must be one of: hilo, levels' });
+    return;
+  }
+  // Calendar-valid dates, ordered, and within the NOAA predictions product
+  // limit (31 days) so no request can make us buffer a giant upstream body.
+  const toDay = (s: string) => {
+    const y = Number(s.slice(0, 4));
+    const mo = Number(s.slice(4, 6));
+    const d = Number(s.slice(6, 8));
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    return Date.UTC(y, mo - 1, d) / 86400000;
+  };
+  const bDay = toDay(beginDate);
+  const eDay = toDay(endDate);
+  if (bDay == null || eDay == null) {
+    res.status(400).json({ error: 'begin_date and end_date must be valid calendar dates' });
+    return;
+  }
+  if (eDay < bDay || eDay - bDay > 31) {
+    res.status(400).json({ error: 'end_date must be on or after begin_date, within 31 days' });
     return;
   }
   const url = new URL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter');

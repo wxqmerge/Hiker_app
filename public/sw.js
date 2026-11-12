@@ -14,7 +14,7 @@
 //     are invalidated so the next load (e.g. after an Import ZIP reload) refetches.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v11';
+const VERSION = 'v12';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const WEATHER_CACHE = `hiker-weather-${VERSION}`;
@@ -47,12 +47,17 @@ const API_READ_PATHS = new Set([
 ]);
 
 // Admin-only API reads must never be served from or written to the offline cache.
+// /api/tide-proxy is here because NOAA answers 200 with {"error":...} bodies
+// during maintenance windows; caching those would pin a "no data" response for
+// a station+date until the next VERSION bump. Predictions themselves are static
+// per date, but the error bodies make this endpoint unsafe to cache.
 const NO_CACHE_API = new Set([
   '/api/auth/verify',
   '/api/data/export-zip',
   '/api/validate',
   '/api/schedule/history',
   '/api/schedule/ensure-writable',
+  '/api/tide-proxy',
 ]);
 
 // Cached API reads to drop whenever a data-mutating write succeeds.

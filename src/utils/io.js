@@ -324,7 +324,9 @@ export async function fetchTideForCoords(trailCoords, date) {
   const results = {};
   await Promise.allSettled(Object.entries(trailCoords).map(async ([trailId, info]) => {
     if (!info?.stationId) return;
-    const res = await fetchTideAtHike(info.stationId, date, info.tideInfo);
+    // withTimeout matches fetchWeatherAndTide: a stalled proxy call must not
+    // hang the whole month's tide fetch (allSettled absorbs the rejection).
+    const res = await withTimeout(fetchTideAtHike(info.stationId, date, info.tideInfo));
     if (res) {
       results[trailId] = {
         tide: res.height,
@@ -392,9 +394,11 @@ async function tideJson(url) {
 }
 
 async function tideLevelAtTurnaround(apiBase, stationId, dateStr, midnight, turnaround) {
+  // Admin-entered station IDs must never break out of the query param.
+  const stationQ = `station=${encodeURIComponent(stationId)}`;
   // 1) Exact 6-minute level series when the station publishes one.
   const levelPreds = await tideJson(
-    `${apiBase}/api/tide-proxy?station=${stationId}&begin_date=${dateStr}&end_date=${dateStr}&mode=levels`
+    `${apiBase}/api/tide-proxy?${stationQ}&begin_date=${dateStr}&end_date=${dateStr}&mode=levels`
   );
   if (levelPreds) {
     const series = levelPreds
@@ -422,7 +426,7 @@ async function tideLevelAtTurnaround(apiBase, stationId, dateStr, midnight, turn
   const nextDay = new Date(midnight);
   nextDay.setDate(nextDay.getDate() + 1);
   const hilo3 = await tideJson(
-    `${apiBase}/api/tide-proxy?station=${stationId}&begin_date=${formatDateCompact(prevDay)}&end_date=${formatDateCompact(nextDay)}&mode=hilo`
+    `${apiBase}/api/tide-proxy?${stationQ}&begin_date=${formatDateCompact(prevDay)}&end_date=${formatDateCompact(nextDay)}&mode=hilo`
   );
   const events = (hilo3 || [])
     .map(p => ({ min: parseTideTime(p.t, midnight), v: parseFloat(p.v), type: p.type }))
@@ -459,9 +463,9 @@ export async function fetchTideAtHike(stationId, targetDate, tideInfo = {}) {
   const d = new Date(targetDate);
   const midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const dateStr = formatDateCompact(d);
-  const startMinutes = Number.isFinite(Number(tideInfo.startMinutes))
+  const startMinutes = tideInfo.startMinutes != null && Number.isFinite(Number(tideInfo.startMinutes))
     ? Number(tideInfo.startMinutes) : DEFAULT_START_MINUTES;
-  const hikeMinutes = Number.isFinite(Number(tideInfo.hikeMinutes))
+  const hikeMinutes = tideInfo.hikeMinutes != null && Number.isFinite(Number(tideInfo.hikeMinutes))
     ? Math.max(Number(tideInfo.hikeMinutes), 0) : 0;
   const turnaround = Math.round(startMinutes + hikeMinutes / 2);
   const cacheKey = `${stationId}:${dateStr}:${startMinutes}:${hikeMinutes}`;
@@ -471,7 +475,7 @@ export async function fetchTideAtHike(stationId, targetDate, tideInfo = {}) {
     const { getApiBase } = await import('./url');
     const apiBase = getApiBase();
     const preds = (await tideJson(
-      `${apiBase}/api/tide-proxy?station=${stationId}&begin_date=${dateStr}&end_date=${dateStr}&mode=hilo`
+      `${apiBase}/api/tide-proxy?station=${encodeURIComponent(stationId)}&begin_date=${dateStr}&end_date=${dateStr}&mode=hilo`
     )) || [];
     const events = [];
     for (const p of preds) {

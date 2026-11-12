@@ -50,6 +50,36 @@ describe('GET /api/tide-proxy', () => {
     expect(fn).not.toHaveBeenCalled();
   });
 
+  it('rejects non-numeric station IDs without touching the network', async () => {
+    const fn = stubUpstream();
+    for (const bad of ['abc', '9444705;rm', '9444705 9444090', '9'.repeat(11)]) {
+      const res = await realFetch(`${base}/api/tide-proxy?station=${encodeURIComponent(bad)}&begin_date=20261113&end_date=20261113`);
+      expect(res.status, bad).toBe(400);
+    }
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid calendar dates, reversed ranges, and ranges over 31 days', async () => {
+    const fn = stubUpstream();
+    const bad = [
+      ['20261340', '20261341'], // month 13 does not exist
+      ['20261113', '20261112'], // end before begin
+      ['20250101', '20260101'], // a whole year
+    ];
+    for (const [b, e] of bad) {
+      const res = await realFetch(`${base}/api/tide-proxy?station=9444705&begin_date=${b}&end_date=${e}`);
+      expect(res.status, `${b}..${e}`).toBe(400);
+    }
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('accepts a 3-day interpolation window', async () => {
+    const fn = stubUpstream();
+    const res = await realFetch(`${base}/api/tide-proxy?station=9444705&begin_date=20261112&end_date=20261114&mode=hilo`);
+    expect(res.status).toBe(200);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
   it('defaults to interval=hilo upstream', async () => {
     const fn = stubUpstream();
     const res = await realFetch(`${base}/api/tide-proxy?station=9444705&begin_date=20261113&end_date=20261113`);

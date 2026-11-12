@@ -147,7 +147,8 @@ describe('NextHikeBanner', () => {
     fireEvent.doubleClick(screen.getByText('Low tide 10:53a · 0.5 ft'));
     expect(openSpy).toHaveBeenCalledWith(
       'https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9447130&bdate=20240115',
-      '_blank'
+      '_blank',
+      'noopener'
     );
     openSpy.mockRestore();
   });

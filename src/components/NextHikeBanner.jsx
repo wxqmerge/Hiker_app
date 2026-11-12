@@ -70,7 +70,7 @@ function NextHikeCard({ hike, idx, weather }) {
   // Double-click on the tide chip opens the NOAA predictions page for the
   // hike's station + date (TrailCard's chip does the same with a single click).
   const openNoaaTide = trail.tideStationId
-    ? () => window.open(getNoaaTideUrl(trail.tideStationId, hike.date), '_blank')
+    ? () => window.open(getNoaaTideUrl(trail.tideStationId, hike.date), '_blank', 'noopener')
     : null;
 
   return (

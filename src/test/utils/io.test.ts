@@ -350,6 +350,24 @@ describe('fetchTideAtHike', () => {
     expect(fn.mock.calls.length).toBeGreaterThan(first);
   });
 
+  it('URL-encodes the station ID in every request', async () => {
+    const fn = stubRoutes({ hilo: { predictions: [{ t: at(10, 0), v: '0.5', type: 'L' }] } });
+    await fetchTideAtHike('944 4705&x=1', targetDate, tideInfo);
+    const urls = fn.mock.calls.map((c: [string]) => String(c[0]));
+    expect(urls[0]).toContain('station=944%204705%26x%3D1');
+    expect(urls[0]).not.toContain('&x=1');
+  });
+
+  it('falls back to the default start when startMinutes is null', async () => {
+    stubRoutes({
+      hilo: { predictions: [{ t: at(23, 31), v: '0.4', type: 'L' }] },
+      levels: { predictions: [{ t: at(9, 30), v: '5.00' }] },
+    });
+    // null must not coerce to midnight: default 8:30 + 2h hike → 9:30 turnaround
+    const result = await fetchTideAtHike(stationId, targetDate, { startMinutes: null, hikeMinutes: 120 } as never);
+    expect(result).toEqual({ mode: 'level', height: 5, time: '9:30a', rising: true });
+  });
+
   it('returns null when stationId is missing', async () => {
     const fn = stubRoutes({});
     const result = await fetchTideAtHike(null as unknown as string, targetDate, tideInfo);
