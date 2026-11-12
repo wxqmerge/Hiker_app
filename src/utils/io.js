@@ -1,5 +1,6 @@
 import { getTrailName } from './data';
 import { formatDateCompact, formatDateToISO, isWithin7Days } from './dateUtils';
+import { DEFAULT_START_MINUTES } from './etc';
 
 // Sanitize a string for use as a filename
 export function sanitizeFilename(name, fallback = 'file') {
@@ -228,7 +229,7 @@ export async function openWeatherForTrail(getGpxFn, trailId) {
  * @param {Array} trails
  * @returns {Object<string, {lat: number|null, lon: number|null, stationId: string|null}>}
  */
-export function buildTrailCoords(trailIds, trails) {
+export function buildTrailCoords(trailIds, trails, tideInfoById = {}) {
   const trailById = new Map((trails || []).map(t => [t.id, t]));
   const trailCoords = {};
   for (const id of trailIds) {
@@ -241,6 +242,7 @@ export function buildTrailCoords(trailIds, trails) {
         lon: t.trailHeadLon ?? null,
         stationId: t.tideStationId || null,
       };
+      if (tideInfoById?.[id]) trailCoords[id].tideInfo = tideInfoById[id];
     }
   }
   return trailCoords;
@@ -264,7 +266,7 @@ function withTimeout(promise, ms = FETCH_TIMEOUT_MS) {
   ]);
 }
 
-export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
+export async function fetchWeatherAndTide(lat, lon, targetDate, stationId, tideInfo = {}) {
   try {
     const hasCoords = hasValidCoords(lat, lon);
     const tasks = [];
@@ -276,7 +278,7 @@ export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
         ? fetchNwsForecastForDate(lat, lon, targetDate)
         : fetchOpenMeteoForDate(lat, lon, targetDate)));
     }
-    if (stationId) tasks.push(withTimeout(fetchTideHeightAt(stationId, targetDate)));
+    if (stationId) tasks.push(withTimeout(fetchTideAtHike(stationId, targetDate, tideInfo)));
     if (tasks.length === 0) return null;
 
     const results = await Promise.allSettled(tasks);
@@ -284,8 +286,11 @@ export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
     if (hasCoords && results[0].status === 'fulfilled' && results[0].value) Object.assign(entry, results[0].value);
     const tideIdx = hasCoords ? 1 : 0;
     if (stationId && results[tideIdx]?.status === 'fulfilled' && results[tideIdx]?.value) {
-      entry.tide = results[tideIdx].value.height;
-      entry.tideTime = results[tideIdx].value.time;
+      const tide = results[tideIdx].value;
+      entry.tide = tide.height;
+      entry.tideTime = tide.time;
+      entry.tideMode = tide.mode;
+      if (tide.mode === 'level') entry.tideRising = !!tide.rising;
     }
 
     return Object.keys(entry).length > 0 ? entry : null;
@@ -303,7 +308,7 @@ export async function fetchWeatherAndTide(lat, lon, targetDate, stationId) {
 export async function fetchWeatherForCoords(trailCoords, date) {
   const results = {};
   await Promise.allSettled(Object.entries(trailCoords).map(async ([trailId, info]) => {
-    const res = await fetchWeatherAndTide(info.lat, info.lon, date, info.stationId);
+    const res = await fetchWeatherAndTide(info.lat, info.lon, date, info.stationId, info.tideInfo);
     if (res) results[trailId] = res;
   }));
   return results;
@@ -319,18 +324,38 @@ export async function fetchTideForCoords(trailCoords, date) {
   const results = {};
   await Promise.allSettled(Object.entries(trailCoords).map(async ([trailId, info]) => {
     if (!info?.stationId) return;
-    const res = await fetchTideHeightAt(info.stationId, date);
-    if (res) results[trailId] = { tide: res.height, tideTime: res.time };
+    const res = await fetchTideAtHike(info.stationId, date, info.tideInfo);
+    if (res) {
+      results[trailId] = {
+        tide: res.height,
+        tideTime: res.time,
+        tideMode: res.mode,
+        ...(res.mode === 'level' ? { tideRising: !!res.rising } : {}),
+      };
+    }
   }));
   return results;
 }
 
 /**
- * Fetch the nearest low tide (feet, MLLW datum) to the given local hour.
+ * Tide info for a scheduled hike date, from the station serving the trail.
+ *
+ * Two outcomes:
+ *  - mode 'low': the day has at least one low tide inside the hiking window
+ *    (06:00–18:00) → { mode, height, time }, nearest to 10am.
+ *  - mode 'level': no low tide in that window (diurnal-tide days). Report the
+ *    WATER LEVEL at the estimated farthest point of the hike — turnaround =
+ *    start + hikeMinutes/2 (same speed out and back) — plus the trend
+ *    (rising/falling). The trend is the signal that the hike is tide-gated.
+ *    Level source: NOAA's 6-minute series when the station publishes one,
+ *    otherwise a half-cosine interpolation between the bracketing high/low
+ *    events (fetched day ±1 to always find a bracket).
+ *
  * @param {string} stationId - NOAA tide station ID
  * @param {Date} targetDate
- * @param {number} [hour] - Local hour 0-23 (default 10 = 10am)
- * @returns {{height: number, time: string}|null}
+ * @param {{startMinutes?: number, hikeMinutes?: number}} [tideInfo] - hike
+ *        start as minutes since midnight and hike duration in minutes
+ * @returns {{mode: 'low'|'level', height: number, time: string, rising?: boolean}|null}
  */
 const _tideCache = new Map();
 const _tideTTL = 6 * 60 * 60 * 1000; // 6 hours — tide predictions are stable
@@ -339,42 +364,132 @@ export function clearTideCache() {
   _tideCache.clear();
 }
 
-export async function fetchTideHeightAt(stationId, targetDate, hour = 10) {
+// "YYYY-MM-DD HH:MM" (station local time) → minutes since targetDate midnight.
+function parseTideTime(tStr, targetMidnight) {
+  const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(tStr || '');
+  if (!m) return null;
+  const day = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (isNaN(day.getTime())) return null;
+  const dayDiff = Math.round((day.getTime() - targetMidnight.getTime()) / 86400000);
+  return dayDiff * 1440 + Number(m[4]) * 60 + Number(m[5]);
+}
+
+function formatTideClock(minFromMidnight) {
+  const wrapped = ((Math.round(minFromMidnight) % 1440) + 1440) % 1440;
+  const hh = Math.floor(wrapped / 60);
+  const mm = wrapped % 60;
+  return `${hh % 12 || 12}:${String(mm).padStart(2, '0')}${hh >= 12 ? 'p' : 'a'}`;
+}
+
+// NOAA answers 200 with {"error":...} when a product has no data (e.g. the
+// 6-minute series for hilo-only stations) — treat both shapes as unavailable.
+async function tideJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data || data.error || !Array.isArray(data.predictions)) return null;
+  return data.predictions;
+}
+
+async function tideLevelAtTurnaround(apiBase, stationId, dateStr, midnight, turnaround) {
+  // 1) Exact 6-minute level series when the station publishes one.
+  const levelPreds = await tideJson(
+    `${apiBase}/api/tide-proxy?station=${stationId}&begin_date=${dateStr}&end_date=${dateStr}&mode=levels`
+  );
+  if (levelPreds) {
+    const series = levelPreds
+      .map(p => ({ min: parseTideTime(p.t, midnight), v: parseFloat(p.v) }))
+      .filter(s => s.min != null && !isNaN(s.v))
+      .sort((a, b) => a.min - b.min);
+    if (series.length) {
+      let idx = 0;
+      for (let i = 1; i < series.length; i++) {
+        if (Math.abs(series[i].min - turnaround) < Math.abs(series[idx].min - turnaround)) idx = i;
+      }
+      // Trend over ±5 samples (~30 min at 6-min spacing); immediate neighbors
+      // when the turnaround sits at the series edge.
+      let from = Math.max(0, idx - 5);
+      let to = Math.min(series.length - 1, idx + 5);
+      if (from === to) { from = Math.max(0, idx - 1); to = Math.min(series.length - 1, idx + 1); }
+      const rising = to > from ? series[to].v >= series[from].v : true;
+      return { mode: 'level', height: Math.round(series[idx].v * 10) / 10, time: formatTideClock(turnaround), rising };
+    }
+  }
+
+  // 2) Half-cosine interpolation between the bracketing high/low events.
+  const prevDay = new Date(midnight);
+  prevDay.setDate(prevDay.getDate() - 1);
+  const nextDay = new Date(midnight);
+  nextDay.setDate(nextDay.getDate() + 1);
+  const hilo3 = await tideJson(
+    `${apiBase}/api/tide-proxy?station=${stationId}&begin_date=${formatDateCompact(prevDay)}&end_date=${formatDateCompact(nextDay)}&mode=hilo`
+  );
+  const events = (hilo3 || [])
+    .map(p => ({ min: parseTideTime(p.t, midnight), v: parseFloat(p.v), type: p.type }))
+    .filter(e => e.min != null && !isNaN(e.v))
+    .sort((a, b) => a.min - b.min);
+  if (!events.length) return null;
+  let before = null;
+  let after = null;
+  for (const e of events) {
+    if (e.min <= turnaround) before = e;
+    else if (!after) { after = e; break; }
+  }
+  if (!before && !after) return null;
+  let height;
+  let rising;
+  if (before && after && after.min > before.min) {
+    const frac = (turnaround - before.min) / (after.min - before.min);
+    const mid = (before.v + after.v) / 2;
+    const amp = (before.v - after.v) / 2;
+    height = mid + amp * Math.cos(Math.PI * frac);
+    rising = after.v > before.v;
+  } else if (before) {
+    height = before.v;
+    rising = before.type === 'L';
+  } else {
+    height = after.v;
+    rising = after.type === 'H';
+  }
+  return { mode: 'level', height: Math.round(height * 10) / 10, time: formatTideClock(turnaround), rising };
+}
+
+export async function fetchTideAtHike(stationId, targetDate, tideInfo = {}) {
   if (!stationId || !targetDate) return null;
   const d = new Date(targetDate);
+  const midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const dateStr = formatDateCompact(d);
-  const cacheKey = `${stationId}:${dateStr}:${hour}`;
+  const startMinutes = Number.isFinite(Number(tideInfo.startMinutes))
+    ? Number(tideInfo.startMinutes) : DEFAULT_START_MINUTES;
+  const hikeMinutes = Number.isFinite(Number(tideInfo.hikeMinutes))
+    ? Math.max(Number(tideInfo.hikeMinutes), 0) : 0;
+  const turnaround = Math.round(startMinutes + hikeMinutes / 2);
+  const cacheKey = `${stationId}:${dateStr}:${startMinutes}:${hikeMinutes}`;
   const cached = _tideCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < _tideTTL) return cached.value;
   try {
     const { getApiBase } = await import('./url');
-    const res = await fetch(
-      `${getApiBase()}/api/tide-proxy?station=${stationId}&begin_date=${dateStr}&end_date=${dateStr}`
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const preds = (data.predictions || []).filter(p => p.type === 'L');
-    if (!preds.length) return null;
-    const target = new Date(targetDate);
-    target.setHours(hour, 0, 0, 0);
-    let best = null;
+    const apiBase = getApiBase();
+    const preds = (await tideJson(
+      `${apiBase}/api/tide-proxy?station=${stationId}&begin_date=${dateStr}&end_date=${dateStr}&mode=hilo`
+    )) || [];
+    const events = [];
     for (const p of preds) {
-      // API returns "YYYY-MM-DD HH:MM" in local station time
-      const [datePart, timePart] = p.t.split(' ');
-      const [y, mo, dd] = datePart.split('-').map(Number);
-      const [hh, mm] = timePart.split(':').map(Number);
-      const t = new Date(y, mo - 1, dd, hh, mm);
-      if (isNaN(t.getTime())) continue;
-      const diff = Math.abs(t.getTime() - target.getTime());
-      if (!best || diff < best.diff) best = { diff, v: p.v, hh, mm };
+      const min = parseTideTime(p.t, midnight);
+      const v = parseFloat(p.v);
+      if (min != null && !isNaN(v)) events.push({ min, v, type: p.type });
     }
-    if (!best) return null;
-    const height = parseFloat(best.v);
-    if (isNaN(height)) return null;
-    const h12 = best.hh % 12 || 12;
-    const time = `${h12}:${String(best.mm).padStart(2, '0')}${best.hh >= 12 ? 'p' : 'a'}`;
-    const result = { height, time };
-    _tideCache.set(cacheKey, { value: result, ts: Date.now() });
+    const lows = events.filter(e => e.type === 'L' && e.min >= 6 * 60 && e.min < 18 * 60);
+    let result;
+    if (lows.length) {
+      const reference = 10 * 60;
+      const best = lows.reduce((a, b) =>
+        Math.abs(b.min - reference) < Math.abs(a.min - reference) ? b : a);
+      result = { mode: 'low', height: Math.round(best.v * 10) / 10, time: formatTideClock(best.min) };
+    } else {
+      result = await tideLevelAtTurnaround(apiBase, stationId, dateStr, midnight, turnaround);
+    }
+    if (result) _tideCache.set(cacheKey, { value: result, ts: Date.now() });
     return result;
   } catch {
     return null;

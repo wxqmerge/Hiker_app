@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateETC, normalizeStartOffset, extractStartOffset } from '../../utils/etc';
+import { calculateETC, normalizeStartOffset, extractStartOffset, tideInfoForEntry, DEFAULT_START_MINUTES } from '../../utils/etc';
 
 // Formula: total = round(8*60 + startMin + hikeMinutes + range*2)
 // hikeMinutes = gpx > 0 ? clamp(gpx, dist/2.2*60, dist/1.1*60) : dist/2.2*60
@@ -140,5 +140,36 @@ describe('extractStartOffset', () => {
   });
   it('handles mixed case', () => {
     expect(extractStartOffset('Trail (30M Early)')).toBe(-30);
+  });
+});
+
+describe('tideInfoForEntry', () => {
+  it('defaults to an 8:30 start', () => {
+    const info = tideInfoForEntry({ distance: 5 }, false);
+    expect(info.startMinutes).toBe(DEFAULT_START_MINUTES);
+    expect(DEFAULT_START_MINUTES).toBe(510);
+  });
+
+  it('shifts the start by the early_start offset', () => {
+    expect(tideInfoForEntry({ distance: 5 }, true).startMinutes).toBe(480);
+    expect(tideInfoForEntry({ distance: 5 }, -60).startMinutes).toBe(450);
+    expect(tideInfoForEntry({ distance: 5 }, 30).startMinutes).toBe(540);
+  });
+
+  it('uses the same clamped hike minutes as the ETC display', () => {
+    // 5 mi @ default speeds → clampHikeMinutes(5, null) = 5/2.2*60 = 136.36
+    const info = tideInfoForEntry({ distance: 5 }, false);
+    expect(info.hikeMinutes).toBeCloseTo(5 / 2.2 * 60, 2);
+    // GPX duration within bounds is used directly
+    expect(tideInfoForEntry({ distance: 5, durationMinutes: 200 }, false).hikeMinutes).toBe(200);
+    // longer extended distance wins: 8mi bounds [218.2..436.4], GPX 200 < min → clamped up
+    const ext = tideInfoForEntry({ distance: 5, distanceExtended: 8, durationMinutes: 200 }, false);
+    expect(ext.hikeMinutes).toBeCloseTo(8 / 2.2 * 60, 2);
+  });
+
+  it('survives a null trail', () => {
+    const info = tideInfoForEntry(null, null);
+    expect(info.startMinutes).toBe(510);
+    expect(info.hikeMinutes).toBe(0);
   });
 });

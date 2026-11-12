@@ -3,6 +3,8 @@ const START_MINUTE = 30;
 
 import { getMinSpeedMph, getMaxSpeedMph } from './config';
 
+export const DEFAULT_START_MINUTES = START_HOUR * 60 + START_MINUTE;
+
 export const START_OFFSET_OPTIONS = [
   { value: 0, label: '8:30 AM' },
   { value: -30, label: '8:00 AM (30m early)' },
@@ -88,4 +90,17 @@ export function calculateETC(distance, range, earlyStart, durationMinutes) {
   const ampm = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours % 12 || 12;
   return `${displayHours}:${String(mins).padStart(2, '0')} ${ampm}`;
+}
+
+/**
+ * Tide lookup parameters for a scheduled hike: when it starts and how long
+ * the hike itself takes (drive time excluded — the tide question is about
+ * the trailhead). Callers pass this to io.js; io.js must not import config.
+ */
+export function tideInfoForEntry(trail, earlyStart) {
+  const distance = Math.max(trail?.distance || 0, trail?.distanceExtended || 0);
+  return {
+    startMinutes: DEFAULT_START_MINUTES + normalizeStartOffset(earlyStart),
+    hikeMinutes: clampHikeMinutes(distance, trail?.durationMinutes).minutes,
+  };
 }

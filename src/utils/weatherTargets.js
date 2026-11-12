@@ -1,6 +1,7 @@
 import { buildTrailCoords } from './io';
 import { MS_PER_DAY, getTodayHikeRef } from './dateUtils';
 import { normalizeDayEntries } from './scheduleFormat';
+import { tideInfoForEntry } from './etc';
 
 export const getTodayMidnight = getTodayHikeRef;
 
@@ -15,10 +16,17 @@ export function getTrailIdsFromEntries(entries) {
   return [...new Set(normalizeDayEntries(entries).map(e => e.trail_id).filter(Boolean))];
 }
 
-export function buildWeatherTarget(date, trailIds, trails, today = getTodayMidnight()) {
+export function buildWeatherTarget(date, trailIds, trails, today = getTodayMidnight(), entries = null) {
+  const trailById = new Map((trails || []).map(t => [t.id, t]));
+  const tideInfoById = {};
+  for (const e of normalizeDayEntries(entries || [])) {
+    if (e.trail_id && trailById.has(e.trail_id) && !tideInfoById[e.trail_id]) {
+      tideInfoById[e.trail_id] = tideInfoForEntry(trailById.get(e.trail_id), e.early_start);
+    }
+  }
   return {
     date,
-    trailCoords: buildTrailCoords(trailIds, trails),
+    trailCoords: buildTrailCoords(trailIds, trails, tideInfoById),
     isTodayOrFuture: isTodayOrFuture(date, today),
   };
 }

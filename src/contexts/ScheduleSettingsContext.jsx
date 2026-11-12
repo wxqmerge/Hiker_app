@@ -16,7 +16,7 @@ import { getHikeDays, getDayName, getGroupName, slotLetter, getMaxHikesPerDay } 
 import { useHikeDays } from '../hooks/useHikeDays';
 import { createDate, getDaysInMonth, getTodayHikeRef, getHikeDaysForMonth, getMonthKey, countPerDow } from '../utils/dateUtils';
 import { serverScheduleToStore, storeToServerSchedule, getDayEntries, normalizeServerMonthEntries } from '../utils/scheduleFormat';
-import { extractStartOffset } from '../utils/etc';
+import { extractStartOffset, tideInfoForEntry } from '../utils/etc';
 import { generateReportHtml } from '../utils/report';
 import { downloadBlob, createFileInput, fetchWeatherAndTide, openHtmlInNewTab, hasValidCoords } from '../utils/io';
 import { updateSchedule, getScheduleHistory, restoreSchedule, getSchedule, getTrails, reloadSchedule } from '../api/client';
@@ -287,7 +287,7 @@ export function ScheduleSettingsProvider({ children }) {
       const batch = items.slice(i, i + concurrency);
       await Promise.allSettled(batch.map(async (item) => {
         const trail = item.trail;
-        const w = await fetchWeatherAndTide(trail.trailHeadLat, trail.trailHeadLon, targetDate, trail.tideStationId || null);
+        const w = await fetchWeatherAndTide(trail.trailHeadLat, trail.trailHeadLon, targetDate, trail.tideStationId || null, tideInfoForEntry(trail, 0));
         if (w) {
           results[trail.id] = w;
           successCount++;

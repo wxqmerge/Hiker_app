@@ -110,7 +110,7 @@ describe('useDayWeather', () => {
       expect(result.current['trail-1']).toEqual({ tide: 2.5, tideTime: '9:30a' });
     });
     expect(fetchWeatherAndTide).not.toHaveBeenCalled();
-    expect(fetchTideForCoords).toHaveBeenCalledWith({ 'trail-1': { lat: null, lon: null, stationId: '9447130' } }, expect.any(Date));
+    expect(fetchTideForCoords).toHaveBeenCalledWith({ 'trail-1': { lat: null, lon: null, stationId: '9447130', tideInfo: { startMinutes: 510, hikeMinutes: 0 } } }, expect.any(Date));
   });
 
   it('returns empty map when nothing scheduled on the day', () => {

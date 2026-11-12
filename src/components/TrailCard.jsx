@@ -161,12 +161,16 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                         href={getNoaaTideUrl(trail.tideStationId, hikeDate)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        title={`Low tide ${weather.tideTime}: ${weather.tide} ft — view NOAA predictions`}
-                        aria-label={`Low tide for ${trailName} at ${weather.tideTime}: ${weather.tide} ft, view NOAA predictions`}
+                        title={weather.tideMode === 'level'
+                          ? `Tide at turnaround ~${weather.tideTime}: ${weather.tide} ft, ${weather.tideRising ? 'rising' : 'falling'} (no low tide 6am-6pm) — view NOAA predictions`
+                          : `Low tide ${weather.tideTime}: ${weather.tide} ft — view NOAA predictions`}
+                        aria-label={weather.tideMode === 'level'
+                          ? `Tide for ${trailName} at turnaround about ${weather.tideTime}: ${weather.tide} ft, ${weather.tideRising ? 'rising' : 'falling'}, view NOAA predictions`
+                          : `Low tide for ${trailName} at ${weather.tideTime}: ${weather.tide} ft, view NOAA predictions`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Icon size="w-3.5 h-3.5" className="flex-shrink-0" path="M3 15c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
-                        <span>{weather.tideTime} · {weather.tide} ft</span>
+                        <span>{weather.tideMode === 'level' ? '~' : ''}{weather.tideTime} · {weather.tide} ft{weather.tideMode === 'level' ? (weather.tideRising ? ' ↑' : ' ↓') : ''}</span>
                       </a>
                     )}
                   </>

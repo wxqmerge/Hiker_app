@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import NextHikeBanner from '../../components/NextHikeBanner';
 
 const { mockHandleGpxShare } = vi.hoisted(() => ({ mockHandleGpxShare: vi.fn() }));
@@ -106,6 +106,34 @@ describe('NextHikeBanner', () => {
   it('renders distance', () => {
     render(<NextHikeBanner nextHikes={nextHikes} />);
     expect(screen.getByText('5.5 mi')).toBeInTheDocument();
+  });
+
+  it('renders low-tide chip when the day has an in-window low tide', async () => {
+    const io = await import('../../utils/io');
+    (io.fetchWeatherAndTide as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ temp: 60, rain: 10, tide: 0.5, tideTime: '10:53a', tideMode: 'low' });
+    render(<NextHikeBanner nextHikes={nextHikes} />);
+    await waitFor(() =>
+      expect(screen.getByText('Low tide 10:53a · 0.5 ft')).toBeInTheDocument());
+  });
+
+  it('renders turnaround level chip with falling arrow on no-low-tide days', async () => {
+    const io = await import('../../utils/io');
+    (io.fetchWeatherAndTide as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ temp: 60, rain: 10, tide: 8.3, tideTime: '10:19a', tideMode: 'level', tideRising: false });
+    render(<NextHikeBanner nextHikes={nextHikes} />);
+    await waitFor(() =>
+      expect(screen.getByText('Tide ~10:19a · 8.3 ft ↓')).toBeInTheDocument());
+    expect(screen.queryByText(/^Low tide/)).not.toBeInTheDocument();
+  });
+
+  it('renders rising arrow for rising turnaround level', async () => {
+    const io = await import('../../utils/io');
+    (io.fetchWeatherAndTide as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ temp: 60, rain: 10, tide: 1.3, tideTime: '9:30a', tideMode: 'level', tideRising: true });
+    render(<NextHikeBanner nextHikes={nextHikes} />);
+    await waitFor(() =>
+      expect(screen.getByText('Tide ~9:30a · 1.3 ft ↑')).toBeInTheDocument());
   });
 
   it('renders elevation', () => {

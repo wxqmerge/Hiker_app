@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideHeightAt, fetchNwsForecastForDate, fetchOpenMeteoForDate, fetchWeatherAndTide, clearNwsCache, clearTideCache, clearOmCache, openWeatherUrl, hasValidCoords, isNoaaRegion, downloadBlob, createImportFileInput } from '../../utils/io';
+import { sanitizeFilename, getFirstCoordinateFromGpx, exportTrailTsv, parseTrailTsv, fetchTideAtHike, fetchNwsForecastForDate, fetchOpenMeteoForDate, fetchWeatherAndTide, clearNwsCache, clearTideCache, clearOmCache, openWeatherUrl, hasValidCoords, isNoaaRegion, downloadBlob, createImportFileInput } from '../../utils/io';
 
 describe('sanitizeFilename', () => {
   it('replaces non-alphanumeric characters with underscores', () => {
@@ -186,18 +186,29 @@ describe('parseTrailTsv', () => {
   });
 });
 
-describe('fetchTideHeightAt', () => {
+describe('fetchTideAtHike', () => {
   const stationId = '9414290';
   const targetDate = new Date(2026, 7, 15); // Aug 15, 2026
   const datePrefix = '2026-08-15';
+  // start 8:30 + 2h hike → turnaround 9:30 (570 min)
+  const tideInfo = { startMinutes: 510, hikeMinutes: 120 };
 
   const at = (h: number, m = 0) => `${datePrefix} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 
-  const stubFetch = (payload: unknown, ok = true) => {
-    const fn = vi.fn(async () => ({
-      ok,
-      json: async () => payload,
-    }));
+  // Routes stubbed payloads by request kind: the day's hilo, the levels
+  // series, and the ±1-day hilo used for interpolation.
+  const stubRoutes = (routes: { hilo?: unknown; levels?: unknown; hilo3?: unknown; fail?: 'hilo' | 'levels' | 'hilo3' }) => {
+    const fn = vi.fn(async (url: unknown) => {
+      const u = String(url);
+      const isLevels = u.includes('mode=levels');
+      const isHilo3 = !isLevels && u.includes('begin_date=20260814');
+      const kind = isLevels ? 'levels' : isHilo3 ? 'hilo3' : 'hilo';
+      const ok = routes.fail !== kind;
+      const payload = kind === 'levels' ? (routes.levels ?? { error: 'none' })
+        : kind === 'hilo3' ? (routes.hilo3 ?? { predictions: [] })
+        : (routes.hilo ?? { predictions: [] });
+      return { ok, json: async () => payload };
+    });
     vi.stubGlobal('fetch', fn);
     return fn;
   };
@@ -207,78 +218,172 @@ describe('fetchTideHeightAt', () => {
     clearTideCache();
   });
 
-  it('returns the low tide nearest 10am with formatted time', async () => {
-    stubFetch({
-      predictions: [
-        { t: at(4, 28), v: '6.0', type: 'H' },
-        { t: at(9, 30), v: '0.5', type: 'L' },
-        { t: at(11, 11), v: '0.2', type: 'L' },
-        { t: at(17, 51), v: '6.6', type: 'H' },
-      ],
+  it('returns the in-window low tide nearest 10am with formatted time', async () => {
+    stubRoutes({
+      hilo: {
+        predictions: [
+          { t: at(4, 28), v: '6.0', type: 'H' },
+          { t: at(9, 30), v: '0.5', type: 'L' },
+          { t: at(11, 11), v: '0.2', type: 'L' },
+          { t: at(17, 51), v: '6.6', type: 'H' },
+        ],
+      },
     });
-    const result = await fetchTideHeightAt(stationId, targetDate);
-    expect(result).toEqual({ height: 0.5, time: '9:30a' });
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
+    expect(result).toEqual({ mode: 'low', height: 0.5, time: '9:30a' });
   });
 
-  it('picks the closest low tide when no exact 10am exists', async () => {
-    stubFetch({
-      predictions: [
-        { t: at(8, 0), v: '1.0', type: 'L' },
-        { t: at(14, 0), v: '0.3', type: 'L' },
-      ],
+  it('picks the closest in-window low tide when no exact 10am exists', async () => {
+    stubRoutes({
+      hilo: {
+        predictions: [
+          { t: at(8, 0), v: '1.0', type: 'L' },
+          { t: at(14, 0), v: '0.3', type: 'L' },
+        ],
+      },
     });
-    const result = await fetchTideHeightAt(stationId, targetDate);
-    expect(result).toEqual({ height: 1.0, time: '8:00a' });
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
+    expect(result).toEqual({ mode: 'low', height: 1.0, time: '8:00a' });
   });
 
-  it('ignores high tides', async () => {
-    stubFetch({
-      predictions: [
-        { t: at(10, 0), v: '6.5', type: 'H' },
-        { t: at(16, 0), v: '0.1', type: 'L' },
-      ],
+  it('ignores low tides outside the 6am-6pm window and falls back to the level series', async () => {
+    stubRoutes({
+      hilo: {
+        predictions: [
+          { t: at(2, 10), v: '7.2', type: 'H' },
+          { t: at(23, 31), v: '0.4', type: 'L' },
+        ],
+      },
+      levels: {
+        predictions: [
+          { t: at(9, 0), v: '6.00' },
+          { t: at(9, 30), v: '5.44' },
+          { t: at(10, 0), v: '5.00' },
+        ],
+      },
     });
-    const result = await fetchTideHeightAt(stationId, targetDate);
-    expect(result).toEqual({ height: 0.1, time: '4:00p' });
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
+    expect(result).toEqual({ mode: 'level', height: 5.4, time: '9:30a', rising: false });
   });
 
-  it('includes station and begin_date/end_date in the request URL', async () => {
-    stubFetch({ predictions: [{ t: at(10), v: '0.5', type: 'L' }] });
-    const fn = await (async () => {
-      const f = vi.fn(async () => ({ ok: true, json: async () => ({ predictions: [{ t: at(10), v: '0.5', type: 'L' }] }) }));
-      vi.stubGlobal('fetch', f);
-      await fetchTideHeightAt(stationId, targetDate);
-      return f;
-    })();
-    const url = fn.mock.calls[0][0] as string;
-    expect(url).toContain('/api/tide-proxy');
-    expect(url).toContain(`station=${stationId}`);
-    expect(url).toContain('begin_date=20260815');
-    expect(url).toContain('end_date=20260815');
+  it('reports rising from the level series', async () => {
+    stubRoutes({
+      hilo: { predictions: [{ t: at(23, 31), v: '0.4', type: 'L' }] },
+      levels: {
+        predictions: [
+          { t: at(9, 0), v: '2.00' },
+          { t: at(9, 30), v: '3.10' },
+          { t: at(10, 0), v: '4.50' },
+        ],
+      },
+    });
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
+    expect(result).toEqual({ mode: 'level', height: 3.1, time: '9:30a', rising: true });
+  });
+
+  it('interpolates between bracketing highs/lows when the station has no level series', async () => {
+    // Diurnal day like 9444705 on 2026-11-13: single 07:40 HIGH.
+    stubRoutes({
+      hilo: { predictions: [{ t: at(7, 40), v: '8.5', type: 'H' }] },
+      levels: { error: { message: 'No Predictions data was found.' } },
+      hilo3: {
+        predictions: [
+          { t: '2026-08-14 18:20', v: '0.3', type: 'L' },
+          { t: at(7, 40), v: '8.5', type: 'H' },
+          { t: '2026-08-16 01:10', v: '0.5', type: 'L' },
+        ],
+      },
+    });
+    // turnaround 9:30 (570): between H 07:40 (460, 8.5ft) and L 25:10 (1510, 0.5ft)
+    // mid 4.5, amp 4.0, cos(pi*110/1050)=0.9463 → 8.285 → 8.3
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
+    expect(result).toEqual({ mode: 'level', height: 8.3, time: '9:30a', rising: false });
+  });
+
+  it('interpolation reports a rising trend from L to H', async () => {
+    stubRoutes({
+      hilo: { predictions: [{ t: at(4, 50), v: '0.5', type: 'L' }] },
+      levels: { error: { message: 'No Predictions data was found.' } },
+      hilo3: {
+        predictions: [
+          { t: at(4, 50), v: '0.5', type: 'L' },
+          { t: '2026-08-16 03:15', v: '8.0', type: 'H' },
+        ],
+      },
+    });
+    // turnaround 570 between L 290 (0.5) and H 1635 (8.0): mid 4.25, amp -3.75,
+    // cos(pi*280/1345)=0.7933 → 1.275 → 1.3, rising
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
+    expect(result).toEqual({ mode: 'level', height: 1.3, time: '9:30a', rising: true });
+  });
+
+  it('requests mode=hilo for the day and mode=levels for the fallback', async () => {
+    const fn = stubRoutes({
+      hilo: { predictions: [{ t: at(23, 31), v: '0.4', type: 'L' }] },
+      levels: { predictions: [{ t: at(9, 30), v: '5.00' }] },
+    });
+    await fetchTideAtHike(stationId, targetDate, tideInfo);
+    const urls = fn.mock.calls.map((c: [string]) => String(c[0]));
+    expect(urls).toContainEqual(expect.stringContaining('/api/tide-proxy'));
+    expect(urls).toContainEqual(expect.stringContaining('mode=hilo'));
+    expect(urls).toContainEqual(expect.stringContaining('mode=levels'));
+    expect(urls).toContainEqual(expect.stringContaining('begin_date=20260815'));
+    expect(urls).toContainEqual(expect.stringContaining('station=' + stationId));
+  });
+
+  it('does not fetch the level series when an in-window low tide exists', async () => {
+    const fn = stubRoutes({ hilo: { predictions: [{ t: at(10, 0), v: '0.5', type: 'L' }] } });
+    await fetchTideAtHike(stationId, targetDate, tideInfo);
+    const urls = fn.mock.calls.map((c: [string]) => String(c[0]));
+    expect(urls).not.toContainEqual(expect.stringContaining('mode=levels'));
+  });
+
+  it('caches by station, date and hike timing', async () => {
+    const fn = stubRoutes({ hilo: { predictions: [{ t: at(10, 0), v: '0.5', type: 'L' }] } });
+    await fetchTideAtHike(stationId, targetDate, tideInfo);
+    const first = fn.mock.calls.length;
+    const again = await fetchTideAtHike(stationId, targetDate, tideInfo);
+    expect(fn.mock.calls.length).toBe(first);
+    expect(again).toEqual({ mode: 'low', height: 0.5, time: '10:00a' });
+    // different hike timing → different turnaround → cache miss
+    await fetchTideAtHike(stationId, targetDate, { startMinutes: 510, hikeMinutes: 240 });
+    expect(fn.mock.calls.length).toBeGreaterThan(first);
   });
 
   it('returns null when stationId is missing', async () => {
-    const fn = stubFetch({ predictions: [] });
-    const result = await fetchTideHeightAt(null as unknown as string, targetDate);
+    const fn = stubRoutes({});
+    const result = await fetchTideAtHike(null as unknown as string, targetDate, tideInfo);
     expect(result).toBeNull();
     expect(fn).not.toHaveBeenCalled();
   });
 
-  it('returns null when the response is not ok', async () => {
-    stubFetch({}, false);
-    const result = await fetchTideHeightAt(stationId, targetDate);
+  it('returns null when every request path fails', async () => {
+    const fn = vi.fn(async () => ({ ok: false, json: async () => ({}) }));
+    vi.stubGlobal('fetch', fn);
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
     expect(result).toBeNull();
+    // tried hilo, then levels, then the ±1-day hilo
+    expect(fn).toHaveBeenCalledTimes(3);
   });
 
-  it('returns null when there are no low tides', async () => {
-    stubFetch({ predictions: [{ t: at(10), v: '6.0', type: 'H' }] });
-    const result = await fetchTideHeightAt(stationId, targetDate);
+  it('still finds a level when only the day hilo fails', async () => {
+    stubRoutes({
+      fail: 'hilo',
+      levels: { predictions: [{ t: at(9, 30), v: '4.25' }] },
+    });
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
+    expect(result).toEqual({ mode: 'level', height: 4.3, time: '9:30a', rising: true });
+  });
+
+  it('returns null when no data is available anywhere', async () => {
+    stubRoutes({ hilo: { predictions: [] }, levels: { error: {} }, hilo3: { predictions: [] } });
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
     expect(result).toBeNull();
   });
 
   it('returns null when fetch throws', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network'); }));
-    const result = await fetchTideHeightAt(stationId, targetDate);
+    const result = await fetchTideAtHike(stationId, targetDate, tideInfo);
     expect(result).toBeNull();
   });
 });
@@ -482,6 +587,7 @@ describe('fetchWeatherAndTide', () => {
     vi.unstubAllGlobals();
     vi.clearAllMocks();
     clearNwsCache();
+    clearTideCache();
   });
 
   it('skips tide fetch when stationId is null', async () => {
@@ -499,6 +605,32 @@ describe('fetchWeatherAndTide', () => {
     const urls = fetchFn.mock.calls.map((c: [string]) => c[0]);
     expect(urls).toContainEqual(expect.stringContaining('/api/tide-proxy'));
     expect(urls).toContainEqual(expect.stringContaining('station=9447130'));
+  });
+
+  it('passes tide mode through to the weather entry', async () => {
+    const fetchFn = vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => (String(url).includes('/api/tide-proxy')
+        ? { predictions: [{ t: '2026-08-14 10:53', v: '6.7', type: 'L' }] }
+        : {}),
+    }));
+    vi.stubGlobal('fetch', fetchFn);
+    const result = await fetchWeatherAndTide(null, null, targetDate, '9447130', { startMinutes: 510, hikeMinutes: 120 });
+    expect(result).toEqual({ tide: 6.7, tideTime: '10:53a', tideMode: 'low' });
+  });
+
+  it('passes the level fallback (turnaround + trend) through to the weather entry', async () => {
+    const fetchFn = vi.fn(async (url: string) => {
+      const u = String(url);
+      if (!u.includes('/api/tide-proxy')) return { ok: true, json: async () => ({}) };
+      if (u.includes('mode=levels')) {
+        return { ok: true, json: async () => ({ predictions: [{ t: '2026-08-14 09:00', v: '6.00' }, { t: '2026-08-14 09:30', v: '5.50' }, { t: '2026-08-14 10:00', v: '5.10' }] }) };
+      }
+      return { ok: true, json: async () => ({ predictions: [{ t: '2026-08-14 07:40', v: '8.5', type: 'H' }] }) };
+    });
+    vi.stubGlobal('fetch', fetchFn);
+    const result = await fetchWeatherAndTide(null, null, targetDate, '9447130', { startMinutes: 510, hikeMinutes: 120 });
+    expect(result).toEqual({ tide: 5.5, tideTime: '9:30a', tideMode: 'level', tideRising: false });
   });
 
   it('does not request NWS weather when coordinates are invalid', async () => {

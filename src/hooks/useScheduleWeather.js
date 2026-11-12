@@ -7,7 +7,7 @@ import { getTodayMidnight, getTrailIdsFromEntries, buildWeatherTarget } from '..
 import { useWeatherFetch } from './useWeatherFetch';
 
 /**
- * Fetch NWS weather and 10am tide for trails scheduled on any day of the
+ * Fetch NWS weather and hike tide info for trails scheduled on any day of the
  * selected month. Weather is fetched only for days within the next 7 days
  * (NWS forecast range). Tide can be fetched for any past or future date.
  * Uses trail.trailHeadLat/trailHeadLon from trail data.
@@ -23,10 +23,11 @@ export function useScheduleWeather({ schedule, selectedMonth, trails, year = CUR
 
     const days = {};
     for (let day = 1; day <= daysInMonth; day++) {
-      const trailIds = getTrailIdsFromEntries(getDayEntries(monthData, day));
+      const entries = getDayEntries(monthData, day);
+      const trailIds = getTrailIdsFromEntries(entries);
       if (trailIds.length === 0) continue;
       const date = createDate(year, selectedMonth, day);
-      days[day] = buildWeatherTarget(date, trailIds, trails, today);
+      days[day] = buildWeatherTarget(date, trailIds, trails, today, entries);
     }
     if (Object.keys(days).length === 0) return null;
 

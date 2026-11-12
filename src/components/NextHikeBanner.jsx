@@ -4,7 +4,7 @@ import { DAY_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getTrailName } from '../utils/data';
 import { openWeatherForTrail, fetchWeatherAndTide, hasValidCoords } from '../utils/io';
 import { getGpx } from '../api/client';
-import { calculateETC, formatStartOffset } from '../utils/etc';
+import { calculateETC, formatStartOffset, tideInfoForEntry } from '../utils/etc';
 import { useGpxActions } from '../hooks/useGpxActions';
 import TrailStats from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
@@ -26,7 +26,8 @@ export default function NextHikeBanner({ nextHikes }) {
           hasCoords ? trail.trailHeadLat : null,
           hasCoords ? trail.trailHeadLon : null,
           hike.date,
-          trail.tideStationId || null
+          trail.tideStationId || null,
+          tideInfoForEntry(trail, hike.earlyStart)
         )
           .then(w => ({ idx, w }))
           .catch(() => null);
@@ -111,9 +112,18 @@ function NextHikeCard({ hike, idx, weather }) {
                   {weather?.tide != null && (
                     <>
                       <span className="text-green-300">•</span>
-                      <span title={`Low tide ${weather.tideTime}: ${weather.tide} ft`} aria-label={`Low tide ${weather.tideTime}: ${weather.tide} ft`}>
-                        Low tide {weather.tideTime} · {weather.tide} ft
-                      </span>
+                      {weather.tideMode === 'level' ? (
+                        <span
+                          title={`Tide at turnaround ~${weather.tideTime}: ${weather.tide} ft, ${weather.tideRising ? 'rising' : 'falling'} (no low tide 6am-6pm)`}
+                          aria-label={`Tide at turnaround about ${weather.tideTime}: ${weather.tide} feet, ${weather.tideRising ? 'rising' : 'falling'}`}
+                        >
+                          Tide ~{weather.tideTime} · {weather.tide} ft {weather.tideRising ? '↑' : '↓'}
+                        </span>
+                      ) : (
+                        <span title={`Low tide ${weather.tideTime}: ${weather.tide} ft`} aria-label={`Low tide ${weather.tideTime}: ${weather.tide} ft`}>
+                          Low tide {weather.tideTime} · {weather.tide} ft
+                        </span>
+                      )}
                     </>
                   )}
                   {etc && (

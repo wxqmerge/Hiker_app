@@ -123,7 +123,21 @@ describe('useScheduleWeather', () => {
       expect(result.current[String(past.getDate())]).toEqual({ 'trail-1': { tide: 2.5, tideTime: '9:30a' } });
     });
     expect(fetchWeatherAndTide).not.toHaveBeenCalled();
-    expect(fetchTideForCoords).toHaveBeenCalledWith({ 'trail-1': { lat: null, lon: null, stationId: '9447130' } }, expect.any(Date));
+    expect(fetchTideForCoords).toHaveBeenCalledWith({ 'trail-1': { lat: null, lon: null, stationId: '9447130', tideInfo: { startMinutes: 510, hikeMinutes: 0 } } }, expect.any(Date));
+  });
+
+  it('builds tideInfo from the entry start offset and trail distance', async () => {
+    const past = new Date(now);
+    past.setDate(past.getDate() - 10);
+    renderHook(() => useScheduleWeather({
+      schedule: { [MONTH_ABBR[past.getMonth()]]: { [past.getDate()]: [{ trail_id: 'trail-1', early_start: -30 }] } },
+      selectedMonth: past.getMonth(),
+      trails: [{ id: 'trail-1', tideStationId: '9447130', distance: 5 }],
+    }));
+    await waitFor(() => expect(fetchTideForCoords).toHaveBeenCalled());
+    const info = fetchTideForCoords.mock.calls.at(-1)[0]['trail-1'].tideInfo;
+    expect(info.startMinutes).toBe(480); // 8:30 start, 30m early
+    expect(info.hikeMinutes).toBeCloseTo(5 / 2.2 * 60, 2); // same clamp as ETC
   });
 
   it('skips entries without a trail id', async () => {

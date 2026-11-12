@@ -17,6 +17,7 @@ import { router as trailsRouter } from './routes/trails.routes.js';
 import { router as scheduleRouter } from './routes/schedule.routes.js';
 import { router as lookupRouter } from './routes/lookup.routes.js';
 import { router as dataRouter } from './routes/data.routes.js';
+import { router as tideRouter } from './routes/tide.routes.js';
 import { getWriteHealth, serverVersion, waitForDataReady, getScheduleFile } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
 import { DATA_DIR, HISTORY_DIR, GPX_DIR } from './utils/paths.js';
@@ -141,44 +142,6 @@ app.get('/api/auth/verify', adminKeyVerifyLimiter, requireAdminKey, (_req: Reque
   res.status(204).end();
 });
 
-app.get('/api/tide-proxy', async (req, res) => {
-  const station = String(req.query.station || '');
-  const beginDate = String(req.query.begin_date || '');
-  const endDate = String(req.query.end_date || '');
-  if (!station || !beginDate || !endDate) {
-    res.status(400).json({ error: 'station, begin_date, and end_date are required' });
-    return;
-  }
-  // NOAA expects YYYYMMDD; anything else is a guaranteed upstream error.
-  if (!/^\d{8}$/.test(beginDate) || !/^\d{8}$/.test(endDate)) {
-    res.status(400).json({ error: 'begin_date and end_date must be YYYYMMDD' });
-    return;
-  }
-  const url = new URL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter');
-  url.searchParams.set('product', 'predictions');
-  url.searchParams.set('datum', 'MLLW');
-  url.searchParams.set('interval', 'hilo');
-  url.searchParams.set('begin_date', beginDate);
-  url.searchParams.set('end_date', endDate);
-  url.searchParams.set('station', station);
-  url.searchParams.set('time_zone', 'lst_ldt');
-  url.searchParams.set('units', 'english');
-  url.searchParams.set('format', 'json');
-  try {
-    // Bounded wait: a stalled NOAA connection must not pin sockets open.
-    const upstream = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!upstream.ok) {
-      res.status(upstream.status).json({ error: 'Upstream error' });
-      return;
-    }
-    const data = await upstream.json();
-    res.json(data);
-  } catch (err) {
-    const timedOut = (err as Error)?.name === 'TimeoutError';
-    res.status(timedOut ? 504 : 502).json({ error: timedOut ? 'Upstream timeout' : 'Failed to fetch from NOAA' });
-  }
-});
-
 app.get(/manifest\.webmanifest$/, (req, res) => {
   // Derive app name from URL path (e.g. /sothh-dev/manifest.webmanifest → "sothh-dev")
   // Fall back to X-App-Name header, then "hiker"
@@ -216,6 +179,7 @@ app.use('/api/trails', trailsRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/lookup', lookupRouter);
 app.use('/api/data', dataRouter);
+app.use('/api', tideRouter);
 
 app.post('/api/cleanup/orphaned-details', requireAdminKey, async (_req, res) => {
   try {
