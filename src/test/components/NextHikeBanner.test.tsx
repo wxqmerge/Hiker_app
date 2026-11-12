@@ -136,6 +136,22 @@ describe('NextHikeBanner', () => {
       expect(screen.getByText('Tide ~9:30a · 1.3 ft ↑')).toBeInTheDocument());
   });
 
+  it('opens the NOAA predictions page when the tide chip is double-clicked', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const io = await import('../../utils/io');
+    (io.fetchWeatherAndTide as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ temp: 60, rain: 10, tide: 0.5, tideTime: '10:53a', tideMode: 'low' });
+    const hikes = [{ ...nextHikes[0], trail: { ...trail, tideStationId: '9447130' } }];
+    render(<NextHikeBanner nextHikes={hikes} />);
+    await waitFor(() => expect(screen.getByText('Low tide 10:53a · 0.5 ft')).toBeInTheDocument());
+    fireEvent.doubleClick(screen.getByText('Low tide 10:53a · 0.5 ft'));
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9447130&bdate=20240115',
+      '_blank'
+    );
+    openSpy.mockRestore();
+  });
+
   it('renders elevation', () => {
     render(<NextHikeBanner nextHikes={nextHikes} />);
     expect(screen.getByText('1000 ft - 2000 ft')).toBeInTheDocument();

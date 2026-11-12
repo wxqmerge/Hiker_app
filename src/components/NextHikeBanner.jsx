@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { DAY_NAMES, DIFFICULTY_COLORS } from '../utils/constants';
 import { getTrailName } from '../utils/data';
 import { openWeatherForTrail, fetchWeatherAndTide, hasValidCoords } from '../utils/io';
+import { getNoaaTideUrl } from '../utils/url';
 import { getGpx } from '../api/client';
 import { calculateETC, formatStartOffset, tideInfoForEntry } from '../utils/etc';
 import { useGpxActions } from '../hooks/useGpxActions';
@@ -66,6 +67,12 @@ function NextHikeCard({ hike, idx, weather }) {
   // available, otherwise estimate from the longest route distance at 2 mph.
   const etc = calculateETC(Math.max(trail.distance, trail.distanceExtended || 0), trail.range, hike.earlyStart, trail.durationMinutes);
 
+  // Double-click on the tide chip opens the NOAA predictions page for the
+  // hike's station + date (TrailCard's chip does the same with a single click).
+  const openNoaaTide = trail.tideStationId
+    ? () => window.open(getNoaaTideUrl(trail.tideStationId, hike.date), '_blank')
+    : null;
+
   return (
           <div className={`mb-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg ${idx > 0 ? 'mt-4' : ''}`}>
             <div className="p-5 md:p-7">
@@ -114,13 +121,20 @@ function NextHikeCard({ hike, idx, weather }) {
                       <span className="text-green-300">•</span>
                       {weather.tideMode === 'level' ? (
                         <span
-                          title={`Tide at turnaround ~${weather.tideTime}: ${weather.tide} ft, ${weather.tideRising ? 'rising' : 'falling'} (no low tide 6am-6pm)`}
-                          aria-label={`Tide at turnaround about ${weather.tideTime}: ${weather.tide} feet, ${weather.tideRising ? 'rising' : 'falling'}`}
+                          className={openNoaaTide ? 'cursor-pointer hover:text-white' : undefined}
+                          onDoubleClick={openNoaaTide || undefined}
+                          title={`Tide at turnaround ~${weather.tideTime}: ${weather.tide} ft, ${weather.tideRising ? 'rising' : 'falling'} (no low tide 6am-6pm) — double-click for NOAA predictions`}
+                          aria-label={`Tide at turnaround about ${weather.tideTime}: ${weather.tide} feet, ${weather.tideRising ? 'rising' : 'falling'}. Double-click to open NOAA predictions.`}
                         >
                           Tide ~{weather.tideTime} · {weather.tide} ft {weather.tideRising ? '↑' : '↓'}
                         </span>
                       ) : (
-                        <span title={`Low tide ${weather.tideTime}: ${weather.tide} ft`} aria-label={`Low tide ${weather.tideTime}: ${weather.tide} ft`}>
+                        <span
+                          className={openNoaaTide ? 'cursor-pointer hover:text-white' : undefined}
+                          onDoubleClick={openNoaaTide || undefined}
+                          title={`Low tide ${weather.tideTime}: ${weather.tide} ft — double-click for NOAA predictions`}
+                          aria-label={`Low tide ${weather.tideTime}: ${weather.tide} ft. Double-click to open NOAA predictions.`}
+                        >
                           Low tide {weather.tideTime} · {weather.tide} ft
                         </span>
                       )}
