@@ -46,6 +46,19 @@ echo "Server names: $SERVER_NAMES"
 PRIMARY_DOMAIN=${SERVER_NAMES%% *}
 HOST_REGEX=$(echo "$SERVER_NAMES" | tr ' ' '\n' | sed 's/\./\\./g' | paste -sd'|')
 
+# Legacy-domain migration: hiker apps (those carrying deploy/hiker.conf.example)
+# get their chess4.us PAGE paths 302'd to the second SERVER_NAMES domain
+# (hiker4.us), same path + query. Their /api/ and /health paths KEEP serving on
+# the old domain: 301/302 turns PUT/POST into GET when followed, and installed
+# PWAs keep calling the old origin until they are re-added.
+# Use 302, not 301, while the new domain is young: browsers cache permanent
+# redirects forever, and new domains sit in DNS blocklists (NextDNS nrd~month
+# sinkholed hiker4.us until allowlisted) - a cached 301 would strand those
+# users even on the old domain that still works. Flip to 301 once the new
+# domain has aged out of the block feeds (~60 days).
+SECOND_DOMAIN=$(echo "$SERVER_NAMES" | tr ' ' '\n' | sed -n '2p')
+LEGACY_REDIRECT_STATUS=302
+
 # Collect deployment directories
 DEPLOYMENTS=()
 for dir in "$HTML_BASE"/*/; do
@@ -133,13 +146,28 @@ for dep in "${DEPLOYMENTS[@]}"; do
 EOF
     fi
 
+    # Legacy-domain redirect for hiker apps (see LEGACY_REDIRECT_STATUS above).
+    redirect_block=""
+    dist_block=""
+    if [ -n "$SECOND_DOMAIN" ] && [ -f "$HTML_BASE/$name/deploy/hiker.conf.example" ]; then
+        redirect_block="
+        if (\$host = $PRIMARY_DOMAIN) { return $LEGACY_REDIRECT_STATUS https://$SECOND_DOMAIN\$request_uri; }"
+        # exact-match so it wins over the shared /<app>/dist/ regex shortcut above
+        dist_block="
+    location = /$name/dist/ {
+        if (\$host = $PRIMARY_DOMAIN) { return $LEGACY_REDIRECT_STATUS https://$SECOND_DOMAIN\$request_uri; }
+        rewrite ^ /$name/dist/index.html break;
+    }
+"
+    fi
+
     cat >> "$MYCONF" << EOF
-    location /$name/ {
+    location /$name/ {$redirect_block
         alias $path/;
         access_log off;
         try_files \$uri \$uri/ /$name/index.html;
     }
-
+$dist_block
 EOF
 done
 
