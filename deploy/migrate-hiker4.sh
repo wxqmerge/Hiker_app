@@ -82,7 +82,7 @@ nginx -t
 systemctl reload-or-restart nginx
 sleep 1
 
-APPS=$(grep -rhoE "server_name [a-z0-9-]+\.${OLD_DOMAIN}([ ;])" /etc/nginx/sites-enabled/ 2>/dev/null \
+APPS=$(grep -RhoE "server_name [a-z0-9-]+\.${OLD_DOMAIN}([ ;])" /etc/nginx/sites-enabled/ 2>/dev/null \
     | sed -E "s/server_name ([a-z0-9-]+)\.${OLD_DOMAIN}.*/\1/" | grep -vx www | sort -u)
 [ -n "$APPS" ] || { echo "Error: no app vhosts detected to test"; exit 1; }
 
