@@ -241,6 +241,19 @@ fi
 FULL_DOMAIN="$(basename "$DIR").$DOMAIN"
 echo "  DOMAIN: $FULL_DOMAIN"
 
+# Secondary domains (e.g. hiker4.us during the chess4.us transition): mirror
+# this app's subdomain on every additional SERVER_NAMES entry so a deploy
+# never drops them from the vhost again. The origin LE cert only covers
+# $FULL_DOMAIN; Cloudflare SSL mode Full (not Full-strict) accepts it.
+DOMAIN_ALTS=""
+if grep -q '^SERVER_NAMES=' "$ENV_FILE"; then
+    for alt in $(grep -m1 '^SERVER_NAMES=' "$ENV_FILE" | cut -d= -f2- | tr -d "\"'" ); do
+        [ "$alt" = "$DOMAIN" ] && continue
+        DOMAIN_ALTS="$DOMAIN_ALTS $(basename "$DIR").$alt"
+    done
+    [ -n "$DOMAIN_ALTS" ] && echo "  ALT server names:$DOMAIN_ALTS"
+fi
+
 if grep -q '^PORT=' "$ENV_FILE"; then
     SERVER_PORT=$(grep '^PORT=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]')
 else
@@ -460,6 +473,7 @@ if [ ! -f "$TEMPLATE" ]; then
 fi
 
 sed -e "s|<DOMAIN>|$FULL_DOMAIN|g" \
+    -e "s|<DOMAIN_ALTS>|$DOMAIN_ALTS|g" \
     -e "s|<PORT>|$SERVER_PORT|g" \
     -e "s|<APP_NAME>|$APP_NAME|g" \
     "$TEMPLATE" | sudo tee "$NGINX_CONF" > /dev/null

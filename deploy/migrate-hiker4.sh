@@ -23,17 +23,26 @@ OLD_DOMAIN="chess4.us"
 NEW_DOMAIN="hiker4.us"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "=== [1/4] SERVER_NAMES=\"$SERVER_NAMES\" in server/.env ==="
-ENV_FILE="$REPO_ROOT/server/.env"
-[ -f "$ENV_FILE" ] || { echo "Error: $ENV_FILE not found"; exit 1; }
-cp "$ENV_FILE" "$ENV_FILE.bak.hiker4"
-if grep -q '^SERVER_NAMES=' "$ENV_FILE"; then
-    sed -i "s/^SERVER_NAMES=.*/SERVER_NAMES=\"$SERVER_NAMES\"/" "$ENV_FILE"
-    echo "  updated existing SERVER_NAMES"
-else
-    printf 'SERVER_NAMES="%s"\n' "$SERVER_NAMES" >> "$ENV_FILE"
-    echo "  appended SERVER_NAMES"
-fi
+echo "=== [1/4] SERVER_NAMES=\"$SERVER_NAMES\" in every hiker app's server/.env ==="
+# Stamp ALL hiker checkouts (not just this one): update.sh derives each app's
+# nginx server_name list from its own server/.env, so every instance must know
+# about hiker4.us or its next deploy wipes the hiker4 subdomain again.
+STAMPED=0
+for ENV_FILE in /var/www/html/*/server/.env; do
+    [ -f "$ENV_FILE" ] || continue
+    APP_DIR="$(dirname "$(dirname "$ENV_FILE")")"
+    [ -f "$APP_DIR/deploy/hiker.conf.example" ] || continue  # not a hiker app checkout
+    cp "$ENV_FILE" "$ENV_FILE.bak.hiker4"
+    if grep -q '^SERVER_NAMES=' "$ENV_FILE"; then
+        sed -i "s/^SERVER_NAMES=.*/SERVER_NAMES=\"$SERVER_NAMES\"/" "$ENV_FILE"
+        echo "  $(basename "$APP_DIR"): updated existing SERVER_NAMES"
+    else
+        printf 'SERVER_NAMES="%s"\n' "$SERVER_NAMES" >> "$ENV_FILE"
+        echo "  $(basename "$APP_DIR"): appended SERVER_NAMES"
+    fi
+    STAMPED=$((STAMPED+1))
+done
+[ "$STAMPED" -gt 0 ] || { echo "Error: no hiker app server/.env found under /var/www/html"; exit 1; }
 
 echo
 echo "=== [2/4] regenerate mysite.conf (patch-mysite.sh) ==="
