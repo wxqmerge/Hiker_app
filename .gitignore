@@ -81,3 +81,6 @@ hiker-bookmarks*.html
 tmp/
 /*.bat
 deploy/*.bat
+
+# Cloudflare API token dump - never commit
+cloudflare.txt

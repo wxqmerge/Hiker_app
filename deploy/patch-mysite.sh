@@ -101,6 +101,26 @@ server {
         try_files \$uri \$uri/ =404;
     }
 
+    # Belt for the apex vhost (subdomain vhosts already do this via
+    # hiker.conf.example): the checkout IS the web root (dist is copied over
+    # it), so server/.env (ADMIN_API_KEY), exported_data/, .git, etc. sit under
+    # the docroot. Deny them by config instead of relying on file permissions.
+    # Only the SECOND path segment is matched, so legitimate endpoints
+    # (/NAME/api/, /NAME/health, /NAME/manifest.webmanifest, /NAME/dist/,
+    # /NAME/assets/...) never match. Regex locations win over the /NAME/
+    # prefix alias, so these run before any alias try_files could serve them.
+    location ~ ^/[a-z0-9-]+/(server|deploy|src|shared|scripts|node_modules|exported_data|tmp|\.git)(/|\$) {
+        access_log off;
+        return 404;
+    }
+
+    # Dotfiles (.env, .git anywhere) - no legitimate URL has a path segment
+    # starting with a dot (manifest.webmanifest has no slash before its dot).
+    location ~ /\\. {
+        access_log off;
+        return 404;
+    }
+
 HEADER
 
 for dep in "${DEPLOYMENTS[@]}"; do
