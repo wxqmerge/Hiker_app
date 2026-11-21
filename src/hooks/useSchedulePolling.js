@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { getApiBase } from '../utils/url.js';
 import { deepEqual } from '../utils/object.js';
-import { setScheduleEtag } from '../api/client.js';
+import { setScheduleEtag, isScheduleSaveInFlight } from '../api/client.js';
 
 export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
   const prevDataRef = useRef(null);
@@ -18,10 +18,14 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
   const pollSchedule = useCallback(async () => {
     if (!mountedRef.current) return;
     if (inFlightRef.current) return;
+    // A save in flight changes the server version mid-request; a GET issued
+    // now can answer from pre-save state and poison the If-Match precondition.
+    if (isScheduleSaveInFlight()) return;
     if (typeof document !== 'undefined' && document.hidden) return;
     inFlightRef.current = true;
 
     try {
+      const startedAt = Date.now();
       const headers = {};
       if (etagRef.current) {
         headers['If-None-Match'] = etagRef.current;
@@ -51,8 +55,9 @@ export function useSchedulePolling(scheduleStore, pollingInterval = 5000) {
       if (newEtag) {
         etagRef.current = newEtag;
         // Keep the save-path precondition (If-Match) current even when the
-        // data itself is unchanged and setSchedule is skipped.
-        setScheduleEtag(newEtag);
+        // data itself is unchanged and setSchedule is skipped. The client
+        // ignores this when the GET raced a completed save.
+        setScheduleEtag(newEtag, { startedAt });
       }
 
       const data = await response.json();

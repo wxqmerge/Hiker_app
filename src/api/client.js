@@ -183,13 +183,27 @@ export async function getSchedule() {
 // ETag of the most recently seen server schedule. Sent as If-Match on saves so
 // a stale editor gets 412 instead of silently overwriting newer server state.
 let currentScheduleEtag = null;
+let saveInFlight = 0;
+let lastSaveCompletedAt = 0;
 
-export function setScheduleEtag(etag) {
+export function setScheduleEtag(etag, { startedAt } = {}) {
+  // A poll GET that started before our own save completed may have been served
+  // from pre-save state; adopting its ETag would rewind the If-Match
+  // precondition and make the next save fail with a spurious 412 even though
+  // the previous save succeeded.
+  if (typeof startedAt === 'number' && startedAt <= lastSaveCompletedAt) return false;
   currentScheduleEtag = etag || null;
+  return true;
 }
 
 export function getScheduleEtag() {
   return currentScheduleEtag;
+}
+
+// Pollers use this to stand down while a save is in flight (the server version
+// changes underneath the GET mid-request).
+export function isScheduleSaveInFlight() {
+  return saveInFlight > 0;
 }
 
 function getScheduleEntryCount(schedule) {
@@ -204,6 +218,7 @@ export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
   const headers = {};
   if (confirmEmpty) headers['X-Confirm-Empty'] = 'true';
   if (currentScheduleEtag) headers['If-Match'] = currentScheduleEtag;
+  saveInFlight++;
   try {
     const result = await request('/api/schedule', {
       method: 'PUT',
@@ -218,6 +233,9 @@ export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
     // retry sends the right precondition instead of failing in a loop.
     if (err.status === 412 && err.etag) currentScheduleEtag = err.etag;
     throw err;
+  } finally {
+    lastSaveCompletedAt = Date.now();
+    saveInFlight--;
   }
 }
 

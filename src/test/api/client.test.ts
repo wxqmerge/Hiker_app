@@ -367,6 +367,60 @@ describe('schedule etag precondition (If-Match)', () => {
     await restoreSchedule('1700000000000');
     expect(getScheduleEtag()).toBe('v3');
   });
+
+  it('ignores a poll ETag from a GET issued before a completed save', async () => {
+    (globalThis.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ Jan: [] }),
+        headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+      })
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: true, etag: 'v2' }),
+        headers: { get: () => null },
+      });
+    const { getSchedule, updateSchedule, getScheduleEtag, setScheduleEtag } = await import('../../api/client');
+    await getSchedule();
+    await updateSchedule({ Jan: [{ day: 1, trail_id: 'trail-1' }] });
+    expect(getScheduleEtag()).toBe('v2');
+
+    // A poll GET started before the save may answer with the pre-save ETag;
+    // adopting it would make the next save a spurious 412.
+    expect(setScheduleEtag('v1', { startedAt: Date.now() - 60_000 })).toBe(false);
+    expect(getScheduleEtag()).toBe('v2');
+
+    // A poll GET started after the save is adopted normally.
+    expect(setScheduleEtag('v3', { startedAt: Date.now() + 5_000 })).toBe(true);
+    expect(getScheduleEtag()).toBe('v3');
+
+    // A legacy call without startedAt (bootstrap paths) is unrestricted.
+    expect(setScheduleEtag('v4')).toBe(true);
+    expect(getScheduleEtag()).toBe('v4');
+  });
+
+  it('reports save-in-flight only while the PUT is pending', async () => {
+    let resolvePut: (v: unknown) => void;
+    (globalThis.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ Jan: [] }),
+        headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+      })
+      .mockImplementationOnce(() => new Promise((resolve) => { resolvePut = resolve; }));
+    const { getSchedule, updateSchedule, isScheduleSaveInFlight } = await import('../../api/client');
+    await getSchedule();
+    expect(isScheduleSaveInFlight()).toBe(false);
+    const put = updateSchedule({ Jan: [{ day: 1, trail_id: 'trail-1' }] });
+    expect(isScheduleSaveInFlight()).toBe(true);
+    resolvePut!({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ success: true, etag: 'v2' }),
+      headers: { get: () => null },
+    });
+    await put;
+    expect(isScheduleSaveInFlight()).toBe(false);
+  });
 });
 
 describe('getTrailDetails', () => {

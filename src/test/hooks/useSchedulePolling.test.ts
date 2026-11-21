@@ -4,7 +4,11 @@ import { useSchedulePolling } from '../../hooks/useSchedulePolling';
 import { setScheduleEtag } from '../../api/client';
 
 vi.mock('../../utils/url', () => ({ getApiBase: () => '' }));
-vi.mock('../../api/client', () => ({ setScheduleEtag: vi.fn() }));
+const pollingMocks = vi.hoisted(() => ({ saveInFlight: false }));
+vi.mock('../../api/client', () => ({
+  setScheduleEtag: vi.fn(),
+  isScheduleSaveInFlight: () => pollingMocks.saveInFlight,
+}));
 
 describe('useSchedulePolling', () => {
   let calls: string[];
@@ -82,7 +86,7 @@ describe('useSchedulePolling etag + interval', () => {
 
     expect(setSchedule).toHaveBeenCalledTimes(1);
     expect(setSchedule).toHaveBeenCalledWith(scheduleA);
-    expect(setScheduleEtag).toHaveBeenCalledWith('v1');
+    expect(setScheduleEtag).toHaveBeenCalledWith('v1', expect.objectContaining({ startedAt: expect.any(Number) }));
   });
 
   it('sends If-None-Match after the first etag and applies nothing on 304', async () => {
@@ -113,7 +117,7 @@ describe('useSchedulePolling etag + interval', () => {
 
     expect(setSchedule).toHaveBeenCalledTimes(1);
     // Etag still advanced even though data was skipped.
-    expect(setScheduleEtag).toHaveBeenCalledWith('v2');
+    expect(setScheduleEtag).toHaveBeenCalledWith('v2', expect.objectContaining({ startedAt: expect.any(Number) }));
   });
 
   it('survives network errors and keeps polling', async () => {
@@ -130,5 +134,21 @@ describe('useSchedulePolling etag + interval', () => {
 
     expect(setSchedule).toHaveBeenCalledTimes(2);
     expect(setSchedule).toHaveBeenLastCalledWith(scheduleB);
+  });
+
+  it('skips a poll cycle while a schedule save is in flight', async () => {
+    pollingMocks.saveInFlight = true;
+    try {
+      const setSchedule = vi.fn();
+      (globalThis.fetch as any).mockResolvedValue(jsonResponse(scheduleA, 'v1'));
+      renderHook(() => useSchedulePolling({ setSchedule }, 1000));
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+      expect(setScheduleEtag).not.toHaveBeenCalled();
+    } finally {
+      pollingMocks.saveInFlight = false;
+    }
   });
 });
