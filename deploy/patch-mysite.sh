@@ -131,10 +131,52 @@ for dep in "${DEPLOYMENTS[@]}"; do
     path="${dep##*:}"
     port=$(grep -m1 '^PORT=' "$HTML_BASE/$name/server/.env" 2>/dev/null | cut -d= -f2- | tr -dc '0-9')
 
+    # Host policy inside this block. This vhost is default_server, so EVERY
+    # host without a dedicated vhost lands here too (e.g. NAME.hiker4.us once
+    # its subdomain alias is trimmed). Serving must not fall out of matching
+    # by accident:
+    #  - migrated apps: PAGES on PRIMARY redirect to SECOND; served elsewhere
+    #    (apps answer on both domains' vhosts anyway)
+    #  - *-dev instances live on PRIMARY only: PAGES serve for $host exactly
+    #    PRIMARY, any other host 302s there; api/health/manifest 404 for every
+    #    host under SECOND (their chess4 subdomains have dedicated vhosts).
+    # if+return only - no other directives inside if (nginx "if is evil" rule).
+    api_guard=""
+    redirect_block=""
+    dist_block=""
+    if [ -n "$SECOND_DOMAIN" ] && [ -f "$HTML_BASE/$name/deploy/hiker.conf.example" ]; then
+        case "$name" in
+            *-dev)
+                redirect_block="
+        if (\$host != $PRIMARY_DOMAIN) { return $LEGACY_REDIRECT_STATUS https://$PRIMARY_DOMAIN\$request_uri; }"
+                # exact-match so it wins over the shared /<app>/dist/ regex shortcut above
+                dist_block="
+    location = /$name/dist/ {
+        if (\$host != $PRIMARY_DOMAIN) { return $LEGACY_REDIRECT_STATUS https://$PRIMARY_DOMAIN\$request_uri; }
+        rewrite ^ /$name/dist/index.html break;
+    }
+"
+                sd_re=$(echo "$SECOND_DOMAIN" | sed 's/\./\\./g')
+                api_guard="
+        if (\$host ~* \\.${sd_re}\$) { return 404; }"
+                ;;
+            *)
+                redirect_block="
+        if (\$host = $PRIMARY_DOMAIN) { return $LEGACY_REDIRECT_STATUS https://$SECOND_DOMAIN\$request_uri; }"
+                dist_block="
+    location = /$name/dist/ {
+        if (\$host = $PRIMARY_DOMAIN) { return $LEGACY_REDIRECT_STATUS https://$SECOND_DOMAIN\$request_uri; }
+        rewrite ^ /$name/dist/index.html break;
+    }
+"
+                ;;
+        esac
+    fi
+
     if [ -n "$port" ]; then
         cat >> "$MYCONF" << EOF
     # API + health -> Express (prefix /$name stripped by proxy_pass URI)
-    location /$name/api/ {
+    location /$name/api/ {$api_guard
         proxy_pass http://127.0.0.1:$port/api/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
@@ -146,7 +188,7 @@ for dep in "${DEPLOYMENTS[@]}"; do
         proxy_send_timeout 86400;
     }
 
-    location /$name/health {
+    location /$name/health {$api_guard
         proxy_pass http://127.0.0.1:$port/health;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
@@ -156,7 +198,7 @@ for dep in "${DEPLOYMENTS[@]}"; do
     }
 
     # PWA manifest -> Express (dynamic app name)
-    location ~ ^/$name/manifest\\.webmanifest\$ {
+    location ~ ^/$name/manifest\\.webmanifest\$ {$api_guard
         proxy_pass http://127.0.0.1:$port;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
@@ -167,28 +209,6 @@ for dep in "${DEPLOYMENTS[@]}"; do
     }
 
 EOF
-    fi
-
-    # Legacy-domain redirect for hiker apps (see LEGACY_REDIRECT_STATUS above).
-    # Direction is per-app: *-dev instances stay on the OLD domain by owner
-    # request, so their PAGES get redirected back to chess4.us; migrated apps
-    # redirect away from chess4.us. API/health paths are never redirected.
-    redirect_block=""
-    dist_block=""
-    if [ -n "$SECOND_DOMAIN" ] && [ -f "$HTML_BASE/$name/deploy/hiker.conf.example" ]; then
-        case "$name" in
-            *-dev) redir_from="$SECOND_DOMAIN"; redir_to="$PRIMARY_DOMAIN" ;;
-            *)     redir_from="$PRIMARY_DOMAIN"; redir_to="$SECOND_DOMAIN" ;;
-        esac
-        redirect_block="
-        if (\$host = $redir_from) { return $LEGACY_REDIRECT_STATUS https://$redir_to\$request_uri; }"
-        # exact-match so it wins over the shared /<app>/dist/ regex shortcut above
-        dist_block="
-    location = /$name/dist/ {
-        if (\$host = $redir_from) { return $LEGACY_REDIRECT_STATUS https://$redir_to\$request_uri; }
-        rewrite ^ /$name/dist/index.html break;
-    }
-"
     fi
 
     cat >> "$MYCONF" << EOF
