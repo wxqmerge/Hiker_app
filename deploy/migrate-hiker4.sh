@@ -86,6 +86,47 @@ else
                 # "server_name <app>.chess4.us;" alone.
                 perl -pi -e "s/[ ]+\Q${base}\E\.${NEW_DOMAIN}(?= *[;.])//g if /server_name .*\.${OLD_DOMAIN}/;" "$f"
                 echo "  trimmed $NEW_DOMAIN alias from $base vhost (backup: $f.bak.hiker4)"
+                # The trim alone is NOT enough: with no server block matching,
+                # the host falls through to nginx's 443 default_server - here
+                # the bughouse-ladder vhost, which serves its chess SPA to any
+                # unknown host (verified: ramblers-dev.hiker4.us/api/config
+                # answered with bughouse's HTML). Give the dev hiker4 hosts an
+                # explicit exact-match tombstone that bounces them to the real
+                # chess4 subdomain. 302 not 301: very few users ever saw these
+                # URLs, and a stale cached redirect must never outlive the
+                # policy. Certs: reuse the pair the dev vhost already serves
+                # these names with (issued while the alias existed).
+                app="${base%.conf}"
+                cert=$(grep -m1 '^[[:space:]]*ssl_certificate ' "$f" | awk '{print $2}' | tr -d ';\r' || true)
+                key=$(grep -m1 '^[[:space:]]*ssl_certificate_key ' "$f" | awk '{print $2}' | tr -d ';\r' || true)
+                tomb="/etc/nginx/sites-available/${app}.${NEW_DOMAIN}.conf"
+                if [ -n "$cert" ] && [ -f "$cert" ] && [ -n "$key" ] && [ -f "$key" ]; then
+                    cat > "$tomb" << TOMB
+# managed by deploy/migrate-hiker4.sh: this *-dev instance lives on ${OLD_DOMAIN}.
+# Exact-match server_name beats the default_server fallback (which would
+# otherwise serve the bughouse chess SPA on this host). Do not delete unless
+# the hiker4 alias is meant to serve something again.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${app}.${NEW_DOMAIN};
+    return 302 https://${app}.${OLD_DOMAIN}\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name ${app}.${NEW_DOMAIN};
+    ssl_certificate     ${cert};
+    ssl_certificate_key ${key};
+    return 302 https://${app}.${OLD_DOMAIN}\$request_uri;
+}
+TOMB
+                    ln -sf "$tomb" "/etc/nginx/sites-enabled/${app}.${NEW_DOMAIN}.conf"
+                    echo "  tombstone ${app}.${NEW_DOMAIN} -> 302 https://${app}.${OLD_DOMAIN}/ ($tomb)"
+                else
+                    echo "  WARN: $app: no usable cert pair ($cert) - tombstone NOT created; host falls through to default vhost"
+                fi
                 ;;
             *)
                 # "server_name X.chess4.us;" -> "server_name X.chess4.us X.hiker4.us;"
