@@ -64,7 +64,11 @@ for link in /etc/nginx/sites-enabled/*; do
     [ "$base" = "mysite.conf" ] && continue
     case "$base" in *.bak*) continue ;; esac
     echo "$FILES" | grep -qx "$real" && continue
-    grep -Eq "server_name[[:space:]]+[a-z0-9-]+\.${OLD_DOMAIN}([;.])" "$real" || continue
+    # Accept both the bare form "server_name X.chess4.us;" and the already
+    # extended form "server_name X.chess4.us X.hiker4.us;" - the old pattern
+    # required the chess4 name to end the list, so re-runs saw no vhosts and
+    # skipped the *-dev alias trim entirely.
+    grep -Eq "server_name[[:space:]]+[a-z0-9-]+\.${OLD_DOMAIN}([ ;.])" "$real" || continue
     FILES="$FILES$real"$'\n'
 done
 
