@@ -17,18 +17,21 @@ SITES_ENABLED="/etc/nginx/sites-enabled"
 HTML_BASE="/var/www/html"
 MYCONF="$SITES_DIR/mysite.conf"
 
-# Server names: SERVER_NAMES (space-separated, first instance that declares it
-# wins) lets one vhost answer several domains, e.g. during a domain migration:
-#   SERVER_NAMES="chess4.us hiker4.us"
-# Otherwise fall back to the first DOMAIN= found.
+# Server names: SERVER_NAMES (space-separated) lets one vhost answer several
+# domains, e.g. during a domain migration:  SERVER_NAMES="chess4.us hiker4.us"
+# The declaration with the MOST names wins: *-dev instances now carry
+# chess4-only on purpose, and must never get to define the apex vhost just
+# because their directory sorts first. Otherwise fall back to first DOMAIN=.
 SERVER_NAMES=""
 for dir in "$HTML_BASE"/*/; do
     [ -d "$dir" ] || continue
     if [ -f "$dir/server/.env" ] && grep -q '^SERVER_NAMES=' "$dir/server/.env"; then
         # strip surrounding quotes a .env may use (SERVER_NAMES="a b");
         # hostnames never contain quotes, spaces between names are kept
-        SERVER_NAMES=$(grep -m1 '^SERVER_NAMES=' "$dir/server/.env" | cut -d= -f2- | tr -d "\"'")
-        break
+        cand=$(grep -m1 '^SERVER_NAMES=' "$dir/server/.env" | cut -d= -f2- | tr -d "\"'")
+        cand_count=$(echo "$cand" | wc -w)
+        best_count=$(echo "$SERVER_NAMES" | wc -w)
+        if [ "$cand_count" -gt "$best_count" ]; then SERVER_NAMES="$cand"; fi
     fi
 done
 if [ -z "$SERVER_NAMES" ]; then
@@ -167,15 +170,22 @@ EOF
     fi
 
     # Legacy-domain redirect for hiker apps (see LEGACY_REDIRECT_STATUS above).
+    # Direction is per-app: *-dev instances stay on the OLD domain by owner
+    # request, so their PAGES get redirected back to chess4.us; migrated apps
+    # redirect away from chess4.us. API/health paths are never redirected.
     redirect_block=""
     dist_block=""
     if [ -n "$SECOND_DOMAIN" ] && [ -f "$HTML_BASE/$name/deploy/hiker.conf.example" ]; then
+        case "$name" in
+            *-dev) redir_from="$SECOND_DOMAIN"; redir_to="$PRIMARY_DOMAIN" ;;
+            *)     redir_from="$PRIMARY_DOMAIN"; redir_to="$SECOND_DOMAIN" ;;
+        esac
         redirect_block="
-        if (\$host = $PRIMARY_DOMAIN) { return $LEGACY_REDIRECT_STATUS https://$SECOND_DOMAIN\$request_uri; }"
+        if (\$host = $redir_from) { return $LEGACY_REDIRECT_STATUS https://$redir_to\$request_uri; }"
         # exact-match so it wins over the shared /<app>/dist/ regex shortcut above
         dist_block="
     location = /$name/dist/ {
-        if (\$host = $PRIMARY_DOMAIN) { return $LEGACY_REDIRECT_STATUS https://$SECOND_DOMAIN\$request_uri; }
+        if (\$host = $redir_from) { return $LEGACY_REDIRECT_STATUS https://$redir_to\$request_uri; }
         rewrite ^ /$name/dist/index.html break;
     }
 "
