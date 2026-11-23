@@ -44,9 +44,17 @@ describe('TrailCard', () => {
     expect(screen.getByText('Lot')).toBeInTheDocument();
   });
 
-  it('renders ride cost', () => {
-    renderWithRouter();
-    expect(screen.getByText('ride-$5')).toBeInTheDocument();
+  it('renders ride cost in the right column, not the stats grid', () => {
+    const { container } = renderWithRouter();
+    const cost = screen.getByText('ride-$5');
+    expect(cost).toBeInTheDocument();
+    // the left stats column (first child of the two-col grid) must not
+    // contain it anymore...
+    const leftColumn = container.querySelector('.grid.grid-cols-2')?.firstElementChild;
+    expect(leftColumn ? leftColumn.contains(cost) : false).toBe(false);
+    // ...it sits in the right-hand flex-col column (with weather/ETC)
+    const rightColumn = cost.closest('.flex-col');
+    expect(rightColumn).not.toBeNull();
   });
 
   it('does not render seasonal section when no seasonal data', () => {

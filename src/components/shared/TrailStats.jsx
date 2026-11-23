@@ -5,9 +5,25 @@ import { getRideCost } from '../../utils/report';
 import { clampHikeMinutes } from '../../utils/etc';
 import { formatDistance, formatElevation } from '../../utils/units';
 
-export default function TrailStats({ trail, className = '', itemClassName = '', iconSize = 'w-3.5 h-3.5', rideFormat = 'range', inline = false }) {
+// Standalone ride-cost row: TrailCard renders this in its right column
+// (suppressing it inside TrailStats via hideRide) so the cost lines up with
+// weather/ETC instead of widening the left stats column.
+export function RideCostRow({ trail, itemClassName = '', iconSize = 'w-3.5 h-3.5', rideFormat = 'range' }) {
   const rideCost = trail.range ? getRideCost(parseInt(trail.range, 10)) : null;
+  if (!(trail.range || rideCost)) return null;
+  return (
+    <div className={itemClassName}>
+      <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+      </svg>
+      <span className="truncate">
+        {rideFormat === 'cost' ? (rideCost || `Range: ${trail.range}`) : `${trail.range} min${rideCost ? ` / ${rideCost}` : ''}`}
+      </span>
+    </div>
+  );
+}
 
+export default function TrailStats({ trail, className = '', itemClassName = '', iconSize = 'w-3.5 h-3.5', rideFormat = 'range', inline = false, hideRide = false }) {
   const wrapperClass = inline ? `${className} contents` : className;
   return (
     <div className={wrapperClass}>
@@ -44,15 +60,8 @@ export default function TrailStats({ trail, className = '', itemClassName = '', 
       )}
 
       {/* Ride */}
-      {(trail.range || rideCost) && (
-        <div className={itemClassName}>
-          <svg className={`${iconSize} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-          </svg>
-          <span className="truncate">
-            {rideFormat === 'cost' ? (rideCost || `Range: ${trail.range}`) : `${trail.range} min${rideCost ? ` / ${rideCost}` : ''}`}
-          </span>
-        </div>
+      {!hideRide && (
+        <RideCostRow trail={trail} itemClassName={itemClassName} iconSize={iconSize} rideFormat={rideFormat} />
       )}
 
       {/* Duration */}

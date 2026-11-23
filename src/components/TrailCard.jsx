@@ -14,7 +14,7 @@ import { calculateETC } from '../utils/etc';
 import { useMonthContext } from '../contexts/MonthContext';
 import { useDayContext } from '../contexts/DayContext';
 import { createDate } from '../utils/dateUtils';
-import TrailStats from './shared/TrailStats';
+import TrailStats, { RideCostRow } from './shared/TrailStats';
 import TrailActionButtons from './shared/TrailActionButtons';
 import LeaderEdit from './LeaderEdit';
 import { Icon } from './ui';
@@ -136,8 +136,16 @@ const TrailCard = memo(function TrailCard({ trail, isActive = false, selectedMon
                 trail={trail}
                 itemClassName="flex items-center gap-1 text-gray-700 whitespace-nowrap"
                 rideFormat="cost"
+                hideRide
               />
                <div className="flex flex-col gap-1 overflow-x-auto">
+                 {/* Ride cost lives in the right column so the left stats
+                     column stays narrow (weather/ETC align under it). */}
+                 <RideCostRow
+                   trail={trail}
+                   itemClassName="flex items-center gap-1 text-gray-700 whitespace-nowrap"
+                   rideFormat="cost"
+                 />
                  {weather && (
                   <>
                     <a

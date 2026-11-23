@@ -14,7 +14,7 @@
 //     are invalidated so the next load (e.g. after an Import ZIP reload) refetches.
 //   - API keys are never stored in cache names or cached payloads.
 
-const VERSION = 'v15';
+const VERSION = 'v16';
 const SHELL_CACHE = `hiker-shell-${VERSION}`;
 const API_CACHE = `hiker-api-${VERSION}`;
 const WEATHER_CACHE = `hiker-weather-${VERSION}`;
