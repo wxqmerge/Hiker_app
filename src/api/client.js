@@ -174,8 +174,13 @@ export async function getLookup() {
 }
 
 export async function getSchedule() {
+  const startedAt = Date.now();
   const data = await request('/api/schedule');
-  if (data && data._etag) currentScheduleEtag = data._etag;
+  // Adopt the ETag only through the same staleness guard the poller uses:
+  // a GET that started before our latest save completed may have been served
+  // pre-save state, and adopting its ETag would rewind If-Match into a
+  // spurious 412 on the next save.
+  if (data && data._etag) setScheduleEtag(data._etag, { startedAt });
   const { _etag, _status, ...rest } = data;
   return rest;
 }
@@ -211,10 +216,11 @@ function getScheduleEntryCount(schedule) {
   return Object.values(schedule).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
 }
 
-export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
-  if (getScheduleEntryCount(schedule) === 0 && !confirmEmpty) {
-    throw new Error('Refusing to save an empty schedule. Use an explicit clear action to confirm.');
-  }
+let saveChainTail = null; // pending PUT chain (null = queue idle)
+let queuedSaves = 0;
+let identicalInFlight = null; // { key, promise } while a PUT is pending
+
+async function doPutSchedule(schedule, confirmEmpty) {
   const headers = {};
   if (confirmEmpty) headers['X-Confirm-Empty'] = 'true';
   if (currentScheduleEtag) headers['If-Match'] = currentScheduleEtag;
@@ -238,6 +244,42 @@ export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
     saveInFlight--;
   }
 }
+
+export async function updateSchedule(schedule, { confirmEmpty = false } = {}) {
+  if (getScheduleEntryCount(schedule) === 0 && !confirmEmpty) {
+    throw new Error('Refusing to save an empty schedule. Use an explicit clear action to confirm.');
+  }
+  // A single UI action can trigger the same full-schedule write through two
+  // paths (e.g. leader edit PUTs while the debounced autosave PUTs the same
+  // snapshot seconds later). Two PUTs carrying the same If-Match guarantee
+  // the loser a 412 even though the data DID save - which surfaced to users
+  // as a false "Save failed". So: byte-identical concurrent writes JOIN the
+  // in-flight PUT, and different writes QUEUE behind it, capturing If-Match
+  // at send time - a self-race becomes impossible, while a genuine
+  // second-editor conflict still 412s correctly.
+  const key = JSON.stringify([schedule, confirmEmpty]);
+  if (identicalInFlight && identicalInFlight.key === key) return identicalInFlight.promise;
+
+  const startPut = () => doPutSchedule(schedule, confirmEmpty);
+  let promise;
+  if (queuedSaves === 0) {
+    promise = startPut(); // idle queue: start synchronously (isScheduleSaveInFlight contract)
+  } else {
+    promise = saveChainTail.then(startPut, startPut);
+  }
+  queuedSaves++;
+  saveChainTail = promise.then(noop, noop);
+  const settle = () => {
+    queuedSaves--;
+    if (queuedSaves === 0) saveChainTail = null;
+    if (identicalInFlight && identicalInFlight.promise === promise) identicalInFlight = null;
+  };
+  promise.then(settle, settle).then(noop, noop);
+  identicalInFlight = { key, promise };
+  return promise;
+}
+
+function noop() {}
 
 export async function getScheduleHistory() {
   return request('/api/schedule/history', { apiKey: true });

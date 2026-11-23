@@ -421,6 +421,112 @@ describe('schedule etag precondition (If-Match)', () => {
     await put;
     expect(isScheduleSaveInFlight()).toBe(false);
   });
+
+  it('joins a concurrent identical save instead of racing it (false "Save failed" fix)', async () => {
+    let resolvePut: (v: unknown) => void;
+    (globalThis.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ Jan: [] }),
+        headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+      })
+      .mockImplementationOnce(() => new Promise((resolve) => { resolvePut = resolve; }));
+    const { getSchedule, updateSchedule, getScheduleEtag } = await import('../../api/client');
+    await getSchedule();
+
+    // Same snapshot from two paths (leader PUT + debounced autosave):
+    // the second call must JOIN the in-flight PUT, not race it with the
+    // same If-Match (the loser of that race used to 412 despite the data
+    // having saved - the user-visible false failure).
+    const payload = { Jan: [{ day: 1, trail_id: 'trail-1' }] };
+    const a = updateSchedule(payload);
+    const b = updateSchedule(JSON.parse(JSON.stringify(payload)));
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2); // GET + exactly ONE PUT
+
+    resolvePut!({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ success: true, etag: 'v2' }),
+      headers: { get: () => null },
+    });
+    const [ra, rb] = await Promise.all([a, b]);
+    expect(ra).toMatchObject({ success: true, etag: 'v2' });
+    expect(rb).toBe(ra);
+    expect(getScheduleEtag()).toBe('v2');
+  });
+
+  it('queues a different payload behind the in-flight save and sends the refreshed If-Match', async () => {
+    let resolve1: (v: unknown) => void;
+    let resolve2: (v: unknown) => void;
+    (globalThis.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ Jan: [] }),
+        headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+      })
+      .mockImplementationOnce(() => new Promise((resolve) => { resolve1 = resolve; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolve2 = resolve; }));
+    const { getSchedule, updateSchedule, getScheduleEtag } = await import('../../api/client');
+    await getSchedule();
+
+    const a = updateSchedule({ Jan: [{ day: 1, trail_id: 'trail-1' }] });
+    const b = updateSchedule({ Jan: [{ day: 2, trail_id: 'trail-2' }] });
+    // second, DIFFERENT payload is queued, not fired with a stale If-Match
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+
+    resolve1!({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ success: true, etag: 'v2' }),
+      headers: { get: () => null },
+    });
+    await a;
+    await new Promise((r) => setTimeout(r, 0)); // let the queued PUT start
+
+    const put2 = (globalThis.fetch as any).mock.calls[2];
+    expect(put2).toBeDefined();
+    expect(put2[1].headers['If-Match']).toBe('v2'); // captured at send time
+
+    resolve2!({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ success: true, etag: 'v3' }),
+      headers: { get: () => null },
+    });
+    await b;
+    expect(getScheduleEtag()).toBe('v3');
+  });
+
+  it('getSchedule does not rewind the ETag when a save completed while it was in flight', async () => {
+    let resolveStaleGet: (v: unknown) => void;
+    let resolvePut: (v: unknown) => void;
+    (globalThis.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ Jan: [] }),
+        headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+      })
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveStaleGet = resolve; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolvePut = resolve; }));
+    const { getSchedule, updateSchedule, getScheduleEtag } = await import('../../api/client');
+    await getSchedule();
+
+    const staleGet = getSchedule(); // served pre-save state once it resolves
+    const put = updateSchedule({ Jan: [{ day: 1, trail_id: 'trail-1' }] });
+    resolvePut!({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ success: true, etag: 'v2' }),
+      headers: { get: () => null },
+    });
+    await put;
+
+    resolveStaleGet!({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ Feb: [] }),
+      headers: { get: (h: string) => (h === 'etag' ? 'v1' : null) },
+    });
+    const data = await staleGet;
+    expect(data).toEqual({ Feb: [] }); // payload still returned to the caller
+    expect(getScheduleEtag()).toBe('v2'); // but the stale ETag was not adopted
+  });
 });
 
 describe('getTrailDetails', () => {
