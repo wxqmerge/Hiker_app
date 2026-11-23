@@ -655,6 +655,25 @@ describe('uploadGpxFile', () => {
       expect.objectContaining({ method: 'POST' })
     );
   });
+
+  it('appends ?force=true only when the duplicate override is confirmed', async () => {
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+      headers: { get: () => null },
+      status: 200,
+    });
+    const { uploadGpxFile } = await import('../../api/client');
+    const file = new File(['test'], 'test.gpx', { type: 'application/gpx+xml' });
+    await uploadGpxFile('trail-1', file, { force: true });
+    expect(globalThis.fetch).toHaveBeenLastCalledWith(
+      expect.stringContaining('/api/trails/gpx/trail-1?force=true'),
+      expect.objectContaining({ method: 'POST' })
+    );
+    await uploadGpxFile('trail-1', file);
+    const plainUrl = (globalThis.fetch as any).mock.calls.at(-1)[0];
+    expect(plainUrl).not.toContain('force=');
+  });
 });
 
 describe('importDataZip', () => {

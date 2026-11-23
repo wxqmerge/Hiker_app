@@ -26,10 +26,10 @@ async function readTrail(id: string) {
   return data.trails.find((t: { id: string }) => t.id === id);
 }
 
-async function uploadGpx(id: string, content: string) {
+async function uploadGpx(id: string, content: string, force = false) {
   const fd = new FormData();
   fd.append('gpx', new Blob([content], { type: 'application/gpx+xml' }), 'upload.gpx');
-  const res = await fetch(`${base}/api/trails/gpx/${id}`, {
+  const res = await fetch(`${base}/api/trails/gpx/${id}${force ? '?force=true' : ''}`, {
     method: 'POST',
     headers: { 'X-API-Key': ADMIN_KEY },
     body: fd,
@@ -52,7 +52,7 @@ beforeAll(async () => {
 
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.mkdir(path.join(DATA_DIR, 'schedule_history'), { recursive: true });
-  await fs.writeFile(trailFile(), JSON.stringify({ trails: [{ id: 'zion', name: 'MtZion', fullName: 'Mt. Zion' }] }));
+  await fs.writeFile(trailFile(), JSON.stringify({ trails: [{ id: 'zion', name: 'MtZion', fullName: 'Mt. Zion' }, { id: 'zion2', name: 'MtZion2', fullName: 'Mt. Zion 2' }] }));
   await fs.writeFile(path.join(DATA_DIR, getScheduleFile()), JSON.stringify({}));
   await fs.writeFile(path.join(DATA_DIR, 'gpx_index.json'), JSON.stringify({}));
   await loadData();
@@ -105,6 +105,26 @@ describe('GPX fingerprint (gpxBytes/gpxModified/gpxSha1)', () => {
 
     const res = await fetch(`${base}/api/trails/gpx/zion`);
     expect(res.headers.get('x-gpx-integrity')).toBeNull();
+  });
+
+  it('names downloads after the hike, not the disk filename (Content-Disposition)', async () => {
+    const res = await fetch(`${base}/api/trails/gpx/zion`);
+    expect(res.status).toBe(200);
+    // 'Mt. Zion' -> 'Mt._Zion' (only [\w.-] allowed in download names)
+    expect(res.headers.get('content-disposition')).toContain('filename="Mt._Zion.gpx"');
+  });
+
+  it('rejects uploading a byte-identical GPX to a second trail (409) unless forced', async () => {
+    const dupe = await uploadGpx('zion2', GPX_A);
+    expect(dupe.status).toBe(409);
+    expect(dupe.json.error.message).toContain('Mt. Zion');
+    expect(dupe.json.error.duplicateOf).toBe('zion');
+
+    const forced = await uploadGpx('zion2', GPX_A, true);
+    expect(forced.status).toBe(200);
+    const t = await readTrail('zion2');
+    expect(t.gpxFile).toBe('zion2.gpx');
+    expect(t.gpxSha1).toBe(sha1hex(GPX_A));
   });
 
   it('is cleared when the GPX is removed from the trail', async () => {

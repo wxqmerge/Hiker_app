@@ -121,10 +121,10 @@ export async function getGpx(trailId) {
   }
 }
 
-export async function uploadGpxFile(trailId, file) {
+export async function uploadGpxFile(trailId, file, { force = false } = {}) {
   const formData = new FormData();
   formData.append('gpx', file);
-  const result = await request(`/api/trails/gpx/${trailId}`, {
+  const result = await request(`/api/trails/gpx/${trailId}${force ? '?force=true' : ''}`, {
     method: 'POST',
     body: formData,
     apiKey: true,

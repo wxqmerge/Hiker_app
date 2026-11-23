@@ -45,31 +45,45 @@ process_instance() {
     local dir="$1"
     local name
     name=$(basename "$dir")
-    local gpx_dir="$dir/exported_data/gpx"
-    local trails_file="$dir/exported_data/trails.json"
+    # Respect the instance's DATA_DIR (.env at instance root is the runtime
+    # source of truth; travel uses travel_data).
+    local data_dir_name
+    data_dir_name=$(grep -E '^\s*DATA_DIR=' "$dir/.env" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '"'"'"' \r')
+    data_dir_name="${data_dir_name:-exported_data}"
+    local gpx_dir="$dir/$data_dir_name/gpx"
+    local trails_file="$dir/$data_dir_name/trails.json"
+    local index_file="$dir/$data_dir_name/gpx_index.json"
     local orphan_dir
     orphan_dir="$dir/orphan"
 
     if [ ! -d "$gpx_dir" ]; then
-        echo "[$name] no exported_data/gpx dir — skipping"
+        echo "[$name] no $data_dir_name/gpx dir — skipping"
         return
     fi
     if [ ! -f "$trails_file" ]; then
-        echo "[$name] no exported_data/trails.json — skipping"
+        echo "[$name] no $data_dir_name/trails.json — skipping"
         return
     fi
 
-    # Collect referenced gpx filenames from trails.json
+    # Collect referenced gpx filenames: the server serves what gpx_index.json
+    # maps, while trails.json mirrors it — treat the UNION as referenced so a
+    # transient disagreement can never cause a live file to be moved.
     local ref_file
     ref_file=$(mktemp)
     if ! python3 -c "
 import json
-d = json.load(open('$trails_file'))
 refs = set()
+d = json.load(open('$trails_file'))
 for t in d.get('trails', []):
     g = t.get('gpxFile')
     if g:
         refs.add(g)
+try:
+    for tid, g in json.load(open('$index_file')).items():
+        if g:
+            refs.add(g)
+except FileNotFoundError:
+    pass
 print('\n'.join(sorted(refs)))
 " > "$ref_file"; then
         echo "[$name] ERROR: failed to parse $trails_file — skipping"

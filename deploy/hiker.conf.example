@@ -24,7 +24,9 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
 
-    client_max_body_size 20m;
+    # Data zip import (export-zip contains every GPX: ~40MB compressed).
+    # Keep in sync with the multer 200MB cap in server/src/routes/data.routes.ts.
+    client_max_body_size 200m;
 
     # Proxy API routes to Express
     location /api/ {

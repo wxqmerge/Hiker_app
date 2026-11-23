@@ -96,8 +96,11 @@ router.get('/gpx/:id', withErrorTag('TRAILS')(async (req, res) => {
     }
     res.set('Content-Type', 'application/gpx+xml');
     res.set('Cache-Control', 'no-cache');
-    // Lets direct-URL saves (browser download managers) name the file.
-    const safeName = path.basename(gpxFile, '.gpx').replace(/[^a-zA-Z0-9._-]/g, '_');
+    // Lets direct-URL saves (browser download managers) name the file after
+    // the HIKE, not the internal disk filename (which may predate a Strava
+    // rename). Underscore-joined \w only, so the header stays ASCII-safe.
+    const hikeName = (trail && (trail.fullName || trail.name)) || path.basename(gpxFile, '.gpx');
+    const safeName = String(hikeName).replace(/[^\w.-]+/g, '_').replace(/^[._]+|[._]+$/g, '') || 'route';
     res.set('Content-Disposition', `attachment; filename="${safeName}.gpx"`);
     res.send(content);
   } catch {
@@ -126,6 +129,38 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
   if (validationError) {
     await fs.unlink(req.file.path).catch(() => {});
     return res.status(400).json({ success: false, error: { message: validationError } });
+  }
+
+  // Same-bytes guard: every GPX mixup we have traced (the OAT trio, the
+  // olympics mislabels) started with one activity file attached to several
+  // trails. Refuse a re-attachment unless the caller confirms ?force=true.
+  const incomingSha1 = crypto.createHash('sha1').update(content).digest('hex');
+  if (req.query.force !== 'true') {
+    const idx = getGpxIndex();
+    for (const t of getTrails()) {
+      if (t.id === req.params.id) continue;
+      let isSame = t.gpxSha1 === incomingSha1;
+      if (!isSame && !t.gpxSha1) {
+        // Legacy bindings carry no fingerprint — compare the file on disk.
+        const otherFile = typeof idx[t.id] === 'string' ? idx[t.id] : t.gpxFile;
+        if (otherFile && isSafeGpxFilename(otherFile)) {
+          try {
+            const otherBuf = await fs.readFile(await resolveGpxPath(otherFile) as string);
+            isSame = crypto.createHash('sha1').update(otherBuf).digest('hex') === incomingSha1;
+          } catch { /* missing/unresolvable — not a duplicate */ }
+        }
+      }
+      if (isSame) {
+        await fs.unlink(req.file.path).catch(() => {});
+        return res.status(409).json({
+          success: false,
+          error: {
+            message: `This exact GPX is already attached to "${t.fullName || t.name || t.id}"`,
+            duplicateOf: t.id,
+          },
+        });
+      }
+    }
   }
 
   // Ensure upload directory exists
@@ -160,8 +195,22 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
     trailUpdates.trailHeadLat = coord.lat;
     trailUpdates.trailHeadLon = coord.lon;
   }
+  // If this trail already had a parking location and the new file's first
+  // point is far from it, the wrong activity may be getting attached —
+  // surface the distance so the uploader can double-check (non-blocking).
+  let trailheadMovedKm: number | undefined;
+  const prevLat = Number(existing.trailHeadLat), prevLon = Number(existing.trailHeadLon);
+  if (coord && Number.isFinite(prevLat) && Number.isFinite(prevLon) && (prevLat || prevLon)) {
+    const R = 6371;
+    const dLat = ((coord.lat - prevLat) * Math.PI) / 180;
+    const dLon = ((coord.lon - prevLon) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos((prevLat * Math.PI) / 180) * Math.cos((coord.lat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    const km = 2 * R * Math.asin(Math.sqrt(a));
+    if (km > 5) trailheadMovedKm = Math.round(km * 10) / 10;
+  }
   await updateTrail((existing ? { ...existing, ...whitelisted, ...trailUpdates } : { ...whitelisted, id: req.params.id, ...trailUpdates }) as any);
-  res.json({ success: true, gpxFile: gpxFileName, trailHeadLat: coord?.lat ?? null, trailHeadLon: coord?.lon ?? null, duration: duration?.formatted ?? null, durationMinutes: duration?.minutes ?? null });
+  res.json({ success: true, gpxFile: gpxFileName, trailHeadLat: coord?.lat ?? null, trailHeadLon: coord?.lon ?? null, duration: duration?.formatted ?? null, durationMinutes: duration?.minutes ?? null, ...(trailheadMovedKm ? { trailheadMovedKm } : {}) });
 }));
 
 router.post('/resync-gpx-coords', requireAdminKey, withErrorTag('TRAILS')(async (_req, res) => {

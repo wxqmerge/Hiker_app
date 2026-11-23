@@ -18,7 +18,7 @@ import { router as scheduleRouter } from './routes/schedule.routes.js';
 import { router as lookupRouter } from './routes/lookup.routes.js';
 import { router as dataRouter } from './routes/data.routes.js';
 import { router as tideRouter } from './routes/tide.routes.js';
-import { getWriteHealth, serverVersion, waitForDataReady, getScheduleFile } from './services/dataService.js';
+import { getWriteHealth, serverVersion, waitForDataReady, getScheduleFile, getGpxUploadFileName } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
 import { DATA_DIR, HISTORY_DIR, GPX_DIR } from './utils/paths.js';
 import { getPublicConfig } from './utils/publicConfig.js';
@@ -461,6 +461,28 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
         }
         if (drift.length) {
           issues.push(`${drift.length} GPX file(s) differ from recorded fingerprint: ${drift.slice(0, 8).join(', ')}${drift.length > 8 ? ', ...' : ''}`);
+        }
+        // Byte-identical GPX attached to different trails: historically the
+        // first stage of every GPX mixup (one activity filed under several
+        // trail names). Uploads now block this without ?force=true.
+        const hashGroups = new Map<string, string[]>();
+        for (const [id, fileName] of Object.entries(gpxIndex)) {
+          if (!gpxFilesOnDisk.includes(fileName)) continue;
+          try {
+            const h = crypto.createHash('sha1').update(await fs.readFile(path.join(gpxDir, fileName))).digest('hex');
+            if (!hashGroups.has(h)) hashGroups.set(h, []);
+            hashGroups.get(h)!.push(id);
+          } catch { /* missing file already reported above */ }
+        }
+        const dupGroups = [...hashGroups.values()].filter(ids => ids.length > 1);
+        if (dupGroups.length) {
+          issues.push(`${dupGroups.length} byte-identical GPX binding group(s): ${dupGroups.slice(0, 5).map(g => g.join(' = ')).join('; ')}`);
+        }
+        // Naming convention: app uploads save as <trailId>.gpx; any other name
+        // is a legacy import that cannot be eyeballed for correctness.
+        const legacyNames = Object.entries(gpxIndex).filter(([id, f]) => f !== getGpxUploadFileName(id));
+        if (legacyNames.length) {
+          issues.push(`${legacyNames.length} GPX file(s) not named <trailId>.gpx: ${legacyNames.slice(0, 5).map(([id, f]) => `${id} -> ${f}`).join(', ')}${legacyNames.length > 5 ? ', ...' : ''}`);
         }
       } catch {
         // gpx dir may not exist

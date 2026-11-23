@@ -1192,8 +1192,7 @@ export default function TrailDetail() {
                             createFileInput({
                               accept: '.gpx',
                               onFile: async (file) => {
-                                try {
-                                  const result = await uploadGpxFile(trail.id, file);
+                                const applyResult = (result) => {
                                   updateField('gpxFile', result.gpxFile);
                                   updateField('hasGpx', true);
                                   if (result.trailHeadLat != null) updateField('trailHeadLat', result.trailHeadLat);
@@ -1201,9 +1200,29 @@ export default function TrailDetail() {
                                   if (result.durationMinutes != null) {
                                     updateField('durationMinutes', result.durationMinutes);
                                   }
-                                  showToast('GPX uploaded successfully');
+                                  if (result.trailheadMovedKm) {
+                                    showToast(`GPX uploaded, but its start point is ${result.trailheadMovedKm} km from the saved trailhead — double-check this is the right activity`, 'error');
+                                  } else {
+                                    showToast('GPX uploaded successfully');
+                                  }
+                                };
+                                try {
+                                  const result = await uploadGpxFile(trail.id, file);
+                                  applyResult(result);
                                 } catch (err) {
                                   console.error('[TrailDetail] GPX upload error:', err);
+                                  if (err.status === 409) {
+                                    // Same bytes already attached to another trail —
+                                    // every historical GPX mixup started this way.
+                                    if (window.confirm(`${err.message}\n\nAttach this file to this trail anyway?`)) {
+                                      try {
+                                        applyResult(await uploadGpxFile(trail.id, file, { force: true }));
+                                      } catch (err2) {
+                                        showToast(err2.message, 'error');
+                                      }
+                                    }
+                                    return;
+                                  }
                                   showToast(err.message, 'error');
                                 }
                               }
