@@ -93,8 +93,41 @@ export function filterTrails(items, filters, trailDetails) {
   });
 }
 
+// Map trailId -> timestamp (ms) of the most recent PAST scheduled date for
+// that trail, from a server-format schedule ({ "YYYY-MM": [entries] }).
+// Future entries are ignored: this answers "how long ago was it done".
+export function buildLastHikeMap(schedule, now = new Date()) {
+  const map = {};
+  if (!schedule || typeof schedule !== 'object') return map;
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+  for (const [monthKey, entries] of Object.entries(schedule)) {
+    if (!Array.isArray(entries)) continue;
+    const [y, m] = String(monthKey).split('-').map(Number);
+    if (!y || !m) continue;
+    for (const entry of entries) {
+      const id = entry?.trail_id;
+      const day = Number(entry?.day);
+      if (!id || !day) continue;
+      const ts = new Date(y, m - 1, day, 12, 0, 0).getTime();
+      if (Number.isNaN(ts) || ts > endOfToday) continue;
+      if (!map[id] || ts > map[id]) map[id] = ts;
+    }
+  }
+  return map;
+}
+
+function getTrailLastHikeTs(map, id) {
+  if (!map || !id) return null;
+  if (map[id] != null) return map[id];
+  const lower = String(id).toLowerCase();
+  for (const key in map) {
+    if (key.toLowerCase() === lower) return map[key];
+  }
+  return null;
+}
+
 // Sort logic shared by browse and schedule modes
-export function sortTrails(items, filters, trailDetails, weatherMap) {
+export function sortTrails(items, filters, trailDetails, weatherMap, lastHikeMap) {
   const sorted = [...items];
 
   if (filters.sortBy === 'name') {
@@ -149,6 +182,21 @@ export function sortTrails(items, filters, trailDetails, weatherMap) {
       const bWild = isWilderness(tb) ? 1 : 0;
       if (aWild !== bWild) return aWild - bWild;
       return getTrailName(ta).localeCompare(getTrailName(tb));
+    });
+  } else if (filters.sortBy === 'date') {
+    // Longest since last hiked first (rotation view); trails with no past
+    // schedule entry (unknown) sink to the bottom, mirroring the 'rain'
+    // no-data convention.
+    const getLast = (item) => {
+      const t = item.trail || item;
+      const ts = getTrailLastHikeTs(lastHikeMap, t.id);
+      return ts == null ? Infinity : ts;
+    };
+    sorted.sort((a, b) => {
+      const da = getLast(a);
+      const db = getLast(b);
+      if (da !== db) return da - db;
+      return getTrailName(a.trail || a).localeCompare(getTrailName(b.trail || b));
     });
   } else if (filters.sortBy === 'rain') {
     // Lowest forecast rain first; trails without weather data sink to the bottom.

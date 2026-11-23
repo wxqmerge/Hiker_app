@@ -65,12 +65,17 @@ describe('TrailList', () => {
     expect(buttons.length).toBe(2);
   });
 
-  it('renders responsive grid', () => {
+  it('renders balanced multi-column layout with unbreakable cards', () => {
     const { container } = render(
       <MemoryRouter initialEntries={['/']}>
         <TrailList trails={mockTrails} />
       </MemoryRouter>
     );
-    expect(container.firstChild).toHaveClass('grid');
+    const columns = container.firstChild as HTMLElement;
+    expect(columns).toHaveClass('columns-1', 'md:columns-2', 'lg:columns-3');
+    // each card wrapper must avoid column breaks so cards stay whole
+    Array.from(columns.children).forEach(card => {
+      expect(card).toHaveClass('break-inside-avoid');
+    });
   });
 });

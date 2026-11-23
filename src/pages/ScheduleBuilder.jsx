@@ -16,7 +16,7 @@ import SwapConfirmationModal from '../components/SwapConfirmationModal';
 import MoveHikeModal from '../components/MoveHikeModal';
 import { MONTH_NAMES, MONTH_ABBR, DEFAULT_FILTERS } from '../utils/constants';
 import LeaderEdit from '../components/LeaderEdit';
-import { filterTrails, sortTrails } from '../utils/filterTrails';
+import { filterTrails, sortTrails, buildLastHikeMap } from '../utils/filterTrails';
 import { getNoaaTideUrl, safeWebLink } from '../utils/url.js';
 import { createDate, getMonthKey, getHikeSlotsForMonth } from '../utils/dateUtils';
 import { useHikeDays, useMaxHikesPerDay } from '../hooks/useHikeDays';
@@ -201,9 +201,9 @@ export default function ScheduleBuilder() {
 
   const filteredHikes = useMemo(() => {
     const filtered = filterTrails(hikeTrailMap, filters, trailDetails);
-    const sorted = sortTrails(filtered, filters, trailDetails, weatherMap);
+    const sorted = sortTrails(filtered, filters, trailDetails, weatherMap, buildLastHikeMap(scheduleData));
     return sorted;
-  }, [hikeTrailMap, filters, trailDetails, weatherMap]);
+  }, [hikeTrailMap, filters, trailDetails, weatherMap, scheduleData]);
 
   const {
     confirmSwap,
@@ -238,7 +238,7 @@ export default function ScheduleBuilder() {
               draggable={hasApiKey}
                onDragStart={hasApiKey ? () => handleDragStart(item.hikeIndex, null, null, trail.id, false, '') : undefined}
               onDragEnd={handleDragEnd}
-              className={hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}
+              className={`mb-3 break-inside-avoid ${hasApiKey ? 'cursor-grab active:cursor-grabbing' : ''}`}
               title={hasApiKey ? tt('Drag to schedule on a date') : 'API key required to schedule hikes'}
               aria-label={`Drag ${getTrailName(trail)} to schedule on a date`}
            >
@@ -355,7 +355,7 @@ export default function ScheduleBuilder() {
                     <p className="mt-1 text-sm text-gray-500">Try adjusting your filters or search terms.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pr-1">
+                  <div className="columns-1 md:columns-2 lg:columns-3 gap-3 pr-1">
                     {hikeCards}
                   </div>
                 )}

@@ -13,16 +13,20 @@ export default function TrailList({ trails, selectedMonths, weatherMap, hikeDate
     );
   }
 
+  // CSS multi-column instead of grid: cards pack densely (no row-height gaps)
+  // and the columns stay balanced in height. break-inside-avoid keeps each
+  // card whole; vertical rhythm comes from the card wrapper margins.
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="columns-1 md:columns-2 lg:columns-3 gap-3">
       {trails.map((trail) => (
-        <TrailCard 
-          key={trail.id} 
-          trail={trail}
-          selectedMonths={selectedMonths}
-          weather={weatherMap?.[trail.id]}
-          hikeDate={hikeDate}
-        />
+        <div key={trail.id} className="mb-3 break-inside-avoid">
+          <TrailCard 
+            trail={trail}
+            selectedMonths={selectedMonths}
+            weather={weatherMap?.[trail.id]}
+            hikeDate={hikeDate}
+          />
+        </div>
       ))}
     </div>
   );

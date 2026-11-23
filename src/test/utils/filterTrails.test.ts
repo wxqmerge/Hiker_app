@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterTrails, sortTrails } from '../../utils/filterTrails';
+import { filterTrails, sortTrails, buildLastHikeMap } from '../../utils/filterTrails';
 import { DEFAULT_FILTERS } from '../../utils/constants';
 
 const baseTrails = globalThis.__TEST_MOCK_DATA__.trails;
@@ -249,5 +249,56 @@ describe('sortTrails', () => {
     expect(result[1].trail.fullName).toBe('Easy Path Trail');
     expect(result[2].trail.fullName).toBe('Mount Rainier');
     expect(result[3].trail.fullName).toBe('Stevens Ridge');
+  });
+});
+
+describe('buildLastHikeMap', () => {
+  it('maps each trail to its most recent past date, ignoring future entries', () => {
+    const now = new Date(2026, 10, 21); // Nov 21 2026
+    const schedule = {
+      '2026-01': [{ day: 10, trail_id: 'trail-1' }, { day: 24, trail_id: 'trail-1' }],
+      '2026-03': [{ day: 5, trail_id: 'trail-2' }],
+      '2026-12': [{ day: 15, trail_id: 'trail-3' }], // future: not "done" yet
+    };
+    const map = buildLastHikeMap(schedule, now);
+    expect(new Date(map['trail-1']).getMonth()).toBe(0);
+    expect(new Date(map['trail-1']).getDate()).toBe(24); // latest past wins
+    expect(new Date(map['trail-2']).getMonth()).toBe(2);
+    expect(map['trail-3']).toBeUndefined();
+  });
+
+  it('tolerates junk schedule shapes', () => {
+    expect(buildLastHikeMap(null)).toEqual({});
+    expect(buildLastHikeMap({ bogus: 'x', '2026-05': [{ nope: true }, { day: 3 }] })).toEqual({});
+  });
+});
+
+describe('sortTrails by date last hiked', () => {
+  const now = new Date(2026, 10, 21);
+  const lastHikeMap = {
+    'trail-1': new Date(2026, 0, 24).getTime(),   // long ago
+    'trail-2': new Date(2026, 9, 5).getTime(),    // recent
+    'trail-3': new Date(2026, 10, 1).getTime(),   // most recent
+    // trail-4 never hiked
+  };
+
+  it('longest-ago first, never-hiked last', () => {
+    const filters = { ...mockFilters, sortBy: 'date' };
+    const ids = sortTrails(mockTrails, filters, null, null, lastHikeMap).map(t => t.id);
+    expect(ids).toEqual(['trail-1', 'trail-2', 'trail-3', 'trail-4']);
+  });
+
+  it('all-unknown order falls back to name (stable, no crash)', () => {
+    const filters = { ...mockFilters, sortBy: 'date' };
+    const ids = sortTrails(mockTrails, filters, null, null, {}).map(t => t.id);
+    const names = sortTrails(mockTrails, { ...mockFilters, sortBy: 'name' }, null, null, {}).map(t => t.id);
+    expect(ids).toEqual(names);
+  });
+
+  it('works on schedule-mode wrapper items', () => {
+    const filters = { ...mockFilters, sortBy: 'date' };
+    const items = mockTrails.map(t => ({ trail: t }));
+    const ids = sortTrails(items, filters, null, null, lastHikeMap).map(i => i.trail.id);
+    expect(ids[0]).toBe('trail-1');
   });
 });

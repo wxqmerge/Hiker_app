@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useTrails } from '../hooks/useTrails';
+import { buildLastHikeMap } from '../utils/filterTrails';
 import { useTrailStore } from '../hooks/useTrailStore';
 import { useFilters } from '../hooks/useFilters';
 import { useMonthContext } from '../contexts/MonthContext';
@@ -18,7 +19,8 @@ export default function Home() {
   const hikeDate = useMemo(() => createDate(selectedYear, selectedMonth, parseInt(selectedDay) || 1), [selectedYear, selectedMonth, selectedDay]);
   const trailIds = useMemo(() => trails.map(t => t.id), [trails]);
   const weatherMap = useDayWeather({ schedule, selectedMonth, selectedDay, trailIds, trails, year: selectedYear });
-  const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails, trailDetails, weatherMap);
+  const lastHikeMap = useMemo(() => buildLastHikeMap(schedule), [schedule]);
+  const { filters, setFilters, sortedTrails, resetFilters } = useFilters(trails, trailDetails, weatherMap, lastHikeMap);
 
   if (loading) {
     return <LoadingSpinner message="Loading trails..." />;
