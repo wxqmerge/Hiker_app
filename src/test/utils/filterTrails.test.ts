@@ -282,10 +282,10 @@ describe('sortTrails by date last hiked', () => {
     // trail-4 never hiked
   };
 
-  it('longest-ago first, never-hiked last', () => {
+  it('never-hiked first, then longest-ago first', () => {
     const filters = { ...mockFilters, sortBy: 'date' };
     const ids = sortTrails(mockTrails, filters, null, null, lastHikeMap).map(t => t.id);
-    expect(ids).toEqual(['trail-1', 'trail-2', 'trail-3', 'trail-4']);
+    expect(ids).toEqual(['trail-4', 'trail-1', 'trail-2', 'trail-3']);
   });
 
   it('all-unknown order falls back to name (stable, no crash)', () => {
@@ -299,6 +299,6 @@ describe('sortTrails by date last hiked', () => {
     const filters = { ...mockFilters, sortBy: 'date' };
     const items = mockTrails.map(t => ({ trail: t }));
     const ids = sortTrails(items, filters, null, null, lastHikeMap).map(i => i.trail.id);
-    expect(ids[0]).toBe('trail-1');
+    expect(ids[0]).toBe('trail-4'); // never-hiked leads
   });
 });

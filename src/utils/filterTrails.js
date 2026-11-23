@@ -184,13 +184,13 @@ export function sortTrails(items, filters, trailDetails, weatherMap, lastHikeMap
       return getTrailName(ta).localeCompare(getTrailName(tb));
     });
   } else if (filters.sortBy === 'date') {
-    // Longest since last hiked first (rotation view); trails with no past
-    // schedule entry (unknown) sink to the bottom, mirroring the 'rain'
-    // no-data convention.
+    // Trails never in the schedule (unknown date) go FIRST - they are the
+    // extreme of "longest ago" and the most useful picks. Then longest-
+    // since-last-hike first, most recent last.
     const getLast = (item) => {
       const t = item.trail || item;
       const ts = getTrailLastHikeTs(lastHikeMap, t.id);
-      return ts == null ? Infinity : ts;
+      return ts == null ? -Infinity : ts;
     };
     sorted.sort((a, b) => {
       const da = getLast(a);
