@@ -135,17 +135,23 @@ echo "  Done: $OK OK, $FAIL failed, $SKIP skipped"
 echo "========================================"
 
 # Apex vhost (mysite.conf) is a single generated file, not per-instance:
-# regenerate it here so changes to deploy/patch-mysite.sh ship with a normal
-# update-all run (it used to need a separate manual 'sudo bash
-# deploy/patch-mysite.sh'). patch-mysite.sh backs up mysite.conf, runs
+# regenerate it here so changes to deploy/patch-mysite-all.sh ship with a
+# normal update-all run (it used to need a separate manual 'sudo bash
+# deploy/patch-mysite-all.sh'). The script backs up mysite.conf, runs
 # nginx -t, and only reloads nginx when the config is valid. Guarded by
-# existence: other projects sharing update-all.sh have no patch-mysite.sh.
-if [ -f "$SCRIPT_DIR/patch-mysite.sh" ]; then
+# existence: other projects sharing update-all.sh have no such script.
+# The old-name fallback covers the run where this file was renamed but the
+# checkout has not re-pulled yet (or the reverse) - never skip regen.
+MYSITE_SCRIPT=""
+for candidate in patch-mysite-all.sh patch-mysite.sh; do
+    if [ -f "$SCRIPT_DIR/$candidate" ]; then MYSITE_SCRIPT="$SCRIPT_DIR/$candidate"; break; fi
+done
+if [ -n "$MYSITE_SCRIPT" ]; then
     echo ""
     echo "========================================"
     echo "  Regenerating apex vhost (mysite.conf)"
     echo "========================================"
-    if sudo bash "$SCRIPT_DIR/patch-mysite.sh"; then
+    if sudo bash "$MYSITE_SCRIPT"; then
         echo "  Apex vhost OK"
     else
         echo "  WARNING: apex vhost regeneration failed - inspect above; mysite.conf.bak has the previous config"

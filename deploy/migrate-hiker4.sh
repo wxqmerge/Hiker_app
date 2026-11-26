@@ -9,7 +9,7 @@
 #
 # Steps:
 #   1. ensure SERVER_NAMES="chess4.us hiker4.us" in server/.env
-#   2. regenerate mysite.conf via patch-mysite.sh (it backs up + reloads)
+#   2. regenerate mysite.conf via patch-mysite-all.sh (it backs up + reloads)
 #   3. add <app>.hiker4.us to every <app>.chess4.us nginx vhost
 #   4. nginx -t + reload, then local end-to-end checks for every app
 #      on both domains (subdomain vhosts AND path-style /<app>/api/)
@@ -50,8 +50,8 @@ done
 [ "$STAMPED" -gt 0 ] || { echo "Error: no hiker app server/.env found under /var/www/html"; exit 1; }
 
 echo
-echo "=== [2/4] regenerate mysite.conf (patch-mysite.sh) ==="
-bash "$REPO_ROOT/deploy/patch-mysite.sh"
+echo "=== [2/4] regenerate mysite.conf (patch-mysite-all.sh) ==="
+bash "$REPO_ROOT/deploy/patch-mysite-all.sh"
 
 echo
 echo "=== [3/4] extend subdomain vhosts with .$NEW_DOMAIN ==="

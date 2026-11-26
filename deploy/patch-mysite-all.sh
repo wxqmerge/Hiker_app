@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Generate /etc/nginx/sites-available/mysite.conf
-# Run on the server: bash deploy/patch-mysite.sh
+# Generate /etc/nginx/sites-available/mysite.conf (the SHARED apex vhost for
+# every deployment - affects all instances, hence the -all name)
+# Run on the server: sudo bash deploy/patch-mysite-all.sh
 #
 # Auto-detects deployment directories under /var/www/html/
 # and generates a single mysite.conf with location blocks for each.
