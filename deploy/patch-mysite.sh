@@ -226,7 +226,7 @@ cat >> "$MYCONF" << SSL
     ssl_certificate /etc/letsencrypt/live/$PRIMARY_DOMAIN/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$PRIMARY_DOMAIN/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
-    client_max_body_size 20m;
+    client_max_body_size 200m;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
 
@@ -237,7 +237,7 @@ server {
 
     listen 80;
     server_name $SERVER_NAMES;
-    client_max_body_size 20m;
+    client_max_body_size 200m;
     return 404;
 }
 SSL
