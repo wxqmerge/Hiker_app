@@ -248,16 +248,12 @@ export async function removeUploadedGpxFile(fileName: string | undefined | null)
   await fs.unlink(gpxPath).catch(() => {});
 }
 
-async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: string, gpxFileRemoved?: boolean): Promise<boolean> {
-  if (gpxData) {
-    await fs.mkdir(GPX_UPLOAD_DIR, { recursive: true });
-    const gpxFileName = getGpxUploadFileName(trailId);
-    const gpxFilePath = path.join(GPX_UPLOAD_DIR, gpxFileName);
-    await fs.writeFile(gpxFilePath, gpxData, 'utf-8');
-    durationCache.delete(gpxFilePath);
-    gpxIndex[trailId] = gpxFileName;
-    return true;
-  }
+// NB: the legacy gpxData parameter (raw GPX text from a trail PUT) was
+// removed - it wrote request bytes straight into gpx/ with no content
+// validation and no same-bytes guard. GPX files arrive ONLY via
+// POST /api/trails/gpx/:id (multer + validateGpxContent + fingerprint
+// dedupe) or the PUT gpxFile binding below (name-safe, file must exist).
+async function updateGpxForTrail(trailId: string, gpxFile?: string, gpxFileRemoved?: boolean): Promise<boolean> {
   if (gpxFile) {
     // Write-boundary guard: gpxFile arrives via the trail PUT whitelist. All
     // read paths validate too (resolveGpxPath/stampGpxFingerprint), but refuse
@@ -269,7 +265,7 @@ async function updateGpxForTrail(trailId: string, gpxData?: string, gpxFile?: st
     gpxIndex[trailId] = gpxFile;
     return true;
   }
-  if (gpxFileRemoved || gpxData === '') {
+  if (gpxFileRemoved) {
     const oldGpxFile = gpxIndex[trailId];
     await removeUploadedGpxFile(oldGpxFile);
     delete gpxIndex[trailId];
@@ -300,14 +296,13 @@ async function stampGpxFingerprint(trail: Trail): Promise<void> {
   }
 }
 
-export async function updateTrail(trail: Trail & { gpxData?: string }): Promise<void> {
+export async function updateTrail(trail: Trail): Promise<void> {
   const trailIdx = trails.findIndex(t => t.id === trail.id);
-  const { gpxData, ...trailWithoutGpx } = trail;
+  const { gpxData: _legacyGpxData, ...trailWithoutGpx } = trail as Trail & { gpxData?: string };
   const updatedTrail: Trail = { ...trailWithoutGpx };
 
   const hasGpx = await updateGpxForTrail(
     trail.id,
-    gpxData,
     updatedTrail.gpxFile || undefined,
     updatedTrail.gpxFile === ''
   );
@@ -429,8 +424,8 @@ export async function restoreScheduleByTimestamp(timestamp: string): Promise<Sch
         return schedule;
       }
     } catch (err) {
-        console.warn(`[DATA] Skipping corrupt history file ${f} during restore:`, (err as Error).message);
-      }
+      console.warn(`[DATA] Skipping corrupt history file ${f} during restore:`, (err as Error).message);
+    }
   }
   throw new Error(`No history entry found for timestamp: ${timestamp}`);
 }

@@ -812,9 +812,34 @@ export function ScheduleSettingsProvider({ children }) {
       });
     });
 
+    // Bonus display hike (quarter boundary): when the month following this
+    // quarter-ending month starts with hikes on day 1 or 2, they ride along at
+    // the end of this report - the same boundary rule the ScheduleBuilder grid
+    // and the TSV export use (e.g. the December report shows the Jan 1 hike).
+    if (selectedMonth % 3 === 2) {
+      const nextMIdx = (selectedMonth + 1) % 12;
+      const nextYear = selectedMonth === 11 ? year + 1 : year;
+      for (let day = 1; day <= 2; day++) {
+        const date = createDate(nextYear, nextMIdx, day);
+        const dowNum = date.getDay();
+        if (!hikeDays.includes(dowNum)) continue;
+        const monthData = scheduleStore[getMonthKey(nextYear, nextMIdx)] || {};
+        const dayEntries = getDayEntries(monthData, day);
+        if (!dayEntries.some(e => e && e.trail_id)) continue;
+        const hikesForThisDow = Math.min(hikesPerDowExport[dowNum] || 1, maxPerDay);
+        for (let slot = 0; slot < hikesForThisDow; slot++) {
+          const entry = dayEntries[slot];
+          if (!entry || !entry.trail_id) continue; // bonus report lists real hikes only
+          const trail = findTrailById(entry.trail_id);
+          const dateStr = `${DAY_NAMES[dowNum]}, ${MONTH_NAMES[nextMIdx]} ${day}`;
+          entries.push({ dateStr, trail: trail || null, trailDetails, earlyStart: normalizeStartOffset(entry.early_start) });
+        }
+      }
+    }
+
     const html = generateReportHtml(entries, title);
     openHtmlInNewTab(html);
-  }, [selectedMonth, year, assignedHikes, findTrailById, trailDetails]);
+  }, [selectedMonth, year, assignedHikes, scheduleStore, findTrailById, trailDetails]);
 
   const value = {
     showSettings, setShowSettings,

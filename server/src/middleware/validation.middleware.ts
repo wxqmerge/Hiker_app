@@ -7,11 +7,15 @@ import { parseMaxHikesPerDay } from '../utils/slotCap.js';
 const MAX_SLOT = parseMaxHikesPerDay() - 1;
 
 // --- Trail field whitelist ---
+// gpxData was the pre-file-upload embedded-GPX field: it wrote raw request
+// text straight to the gpx/ dir, bypassing upload validation and the
+// same-bytes guard, and no client sends it anymore - removed. hasGpx is
+// server-derived (dataService recomputes it from the binding on every write).
 const TRAIL_FIELDS = new Set([
   'name', 'fullName', 'distance', 'distanceExtended',
   'elevationStart', 'elevationMax', 'difficulty',
   'parking', 'range', 'notes', 'altNames', 'difficultyOrder',
-  'seasonal', 'webLink', 'tideStationId', 'gpxData', 'hasGpx', 'gpxFile', 'trailHeadLat', 'trailHeadLon',
+  'seasonal', 'webLink', 'tideStationId', 'gpxFile', 'trailHeadLat', 'trailHeadLon',
 ]);
 
 const TRAIL_DETAIL_FIELDS = new Set([

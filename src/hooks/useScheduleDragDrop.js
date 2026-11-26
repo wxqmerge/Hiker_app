@@ -38,12 +38,20 @@ export function useScheduleDragDrop({
 
     updateScheduleFn(monthKey, prev => {
       let next = prev;
-      next = setDayEntry(next, targetDay, targetSlot, { trail_id: trailId, early_start: earlyStart, leader: swapLeader });
-      // Replace semantics (duplicate copy, or drag from the Available list):
-      // there is no real source slot to move the occupant back to, so the
-      // target entry is replaced, not swapped.
-      if (!duplicate && sourceDay !== null && sourceDay !== undefined) {
+      const isSwap = !duplicate && sourceDay !== null && sourceDay !== undefined;
+      if (isSwap) {
+        next = setDayEntry(next, targetDay, targetSlot, { trail_id: trailId, early_start: earlyStart, leader: swapLeader });
         next = setDayEntry(next, sourceDay, sourceSlot, { trail_id: targetEntry.trail_id, early_start: targetEntry.early_start, leader: targetEntry.leader || '' });
+      } else {
+        // Replace semantics (duplicate copy, or drag from the Available list):
+        // there is no real source slot, so the occupant is removed. The slot
+        // keeps its leader and start time - changing the HIKE does not change
+        // who is leading it.
+        next = setDayEntry(next, targetDay, targetSlot, {
+          trail_id: trailId,
+          early_start: targetEntry.early_start || false,
+          leader: targetEntry.leader || '',
+        });
       }
       return next;
     });

@@ -20,11 +20,17 @@ vi.mock('../../api/client', () => ({
 vi.mock('../../hooks/useSchedulePolling', () => ({ useSchedulePolling: () => {} }));
 vi.mock('../../hooks/useApiKey', () => ({ useApiKey: () => ui.key.has }));
 vi.mock('../../hooks/useToast', () => ({ useToast: () => ui.toast }));
+vi.mock('../../utils/io', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/io')>()),
+  openHtmlInNewTab: vi.fn(),
+}));
 
 import { ScheduleSettingsProvider, useScheduleSettings } from '../../contexts/ScheduleSettingsContext';
-import { MonthContextProvider } from '../../contexts/MonthContext';
+import { MonthContextProvider, useMonthContext } from '../../contexts/MonthContext';
 import { setSchedule } from '../../hooks/useTrailStore';
 import { updateSchedule } from '../../api/client';
+import { setGroupConfig } from '../../utils/config';
+import { openHtmlInNewTab } from '../../utils/io';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <MonthContextProvider>
@@ -114,5 +120,61 @@ describe('ScheduleSettingsContext save flow', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(1100); });
 
     expect(updateSchedule).not.toHaveBeenCalled();
+  });
+});
+
+describe('ScheduleSettingsContext monthly HTML export', () => {
+  // Quarter-boundary bonus: the December report must show a Jan 1 hike that
+  // lives in the 2027-01 bucket, matching the ScheduleBuilder boundary column.
+  let monthSetter: ((key: string) => void) | null = null;
+  function MonthProbe() {
+    const { setSelectedMonthKey } = useMonthContext();
+    monthSetter = setSelectedMonthKey;
+    return null;
+  }
+  const exportWrapper = ({ children }: { children: React.ReactNode }) => (
+    <MonthContextProvider>
+      <ScheduleSettingsProvider>
+        <MonthProbe />
+        {children}
+      </ScheduleSettingsProvider>
+    </MonthContextProvider>
+  );
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    ui.key.has = true;
+    monthSetter = null;
+    setGroupConfig({ hikeDays: '3,5', maxHikesPerDay: 3 });
+    // Trails are the setup.ts module-store fixtures (trail-1 = Mount Rainier).
+    setSchedule({
+      '2026-12': [{ day: 25, slot: 0, trail_id: 'trail-2', early_start: 0, leader: 'Matt' }],
+      '2027-01': [{ day: 1, slot: 0, trail_id: 'trail-1', early_start: 0, leader: 'Beth/Brennan' }],
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  async function exportForMonth(monthKey: string) {
+    const { result } = renderHook(() => useScheduleSettings(), { wrapper: exportWrapper });
+    await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+    act(() => { monthSetter?.(monthKey); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+    act(() => { result.current.handleExport(); });
+    const calls = vi.mocked(openHtmlInNewTab).mock.calls;
+    return calls.length ? String(calls[calls.length - 1][0]) : '';
+  }
+
+  it('December export includes the Jan 1 bonus hike from next quarter', async () => {
+    const html = await exportForMonth('2026-12');
+    expect(html).toMatch(/January 1[\s\S]{0,60}Mount Rainier/); // bonus boundary day + hike
+  });
+
+  it('non-quarter-ending month (November) does not pull in boundary hikes', async () => {
+    const html = await exportForMonth('2026-11');
+    expect(html).not.toContain('January 1');
   });
 });

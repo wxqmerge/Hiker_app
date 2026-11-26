@@ -441,38 +441,38 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
         if (corruptedGpx.length) {
           issues.push(`${corruptedGpx.length} corrupted GPX file(s) (too small): ${corruptedGpx.join(', ')}`);
         }
-        // Fingerprint drift: the trail record's gpxBytes/gpxSha1 must match the
-        // file that would actually be served (upload dir first, GPX dir next).
-        // A mismatch means a GPX was swapped/confused on disk after recording.
+        // Single pass over every bound trail: read + hash each GPX ONCE and
+        // feed both checks. (1) Fingerprint drift: the trail record's
+        // gpxBytes/gpxSha1 must match the file that would actually be served
+        // (upload dir first, GPX dir next) - a mismatch means a GPX was
+        // swapped/confused on disk after recording. (2) Byte-identical GPX
+        // attached to different trails: historically the first stage of every
+        // GPX mixup (one activity filed under several trail names). Uploads
+        // now block this without ?force=true. Grouping covers gpx_index
+        // bindings present in the upload dir only - a legacy GPX_DIR copy
+        // legitimately coexists with the uploaded file it duplicates.
         const drift: string[] = [];
+        const hashGroups = new Map<string, string[]>();
         for (const t of trails) {
           const fileName = gpxIndex[t.id] || t.gpxFile;
-          if (!fileName || (t.gpxBytes == null && !t.gpxSha1)) continue;
-          let fp = '';
+          if (!fileName) continue;
+          let fpPath = '';
           for (const dir of [gpxDir, GPX_DIR]) {
-            try { await fs.access(path.join(dir, fileName)); fp = path.join(dir, fileName); break; } catch { /* try next */ }
+            try { await fs.access(path.join(dir, fileName)); fpPath = path.join(dir, fileName); break; } catch { /* try next */ }
           }
-          if (!fp) continue; // already covered by the missing-file check
-          const buf = await fs.readFile(fp);
+          if (!fpPath) continue; // already covered by the missing-file check
+          const buf = await fs.readFile(fpPath);
           const hash = crypto.createHash('sha1').update(buf).digest('hex');
           if ((t.gpxBytes != null && buf.length !== t.gpxBytes) || (t.gpxSha1 && hash !== t.gpxSha1)) {
             drift.push(`${t.id} (${fileName})`);
           }
+          if (gpxIndex[t.id] && gpxFilesOnDisk.includes(fileName)) {
+            if (!hashGroups.has(hash)) hashGroups.set(hash, []);
+            hashGroups.get(hash)!.push(t.id);
+          }
         }
         if (drift.length) {
           issues.push(`${drift.length} GPX file(s) differ from recorded fingerprint: ${drift.slice(0, 8).join(', ')}${drift.length > 8 ? ', ...' : ''}`);
-        }
-        // Byte-identical GPX attached to different trails: historically the
-        // first stage of every GPX mixup (one activity filed under several
-        // trail names). Uploads now block this without ?force=true.
-        const hashGroups = new Map<string, string[]>();
-        for (const [id, fileName] of Object.entries(gpxIndex)) {
-          if (!gpxFilesOnDisk.includes(fileName)) continue;
-          try {
-            const h = crypto.createHash('sha1').update(await fs.readFile(path.join(gpxDir, fileName))).digest('hex');
-            if (!hashGroups.has(h)) hashGroups.set(h, []);
-            hashGroups.get(h)!.push(id);
-          } catch { /* missing file already reported above */ }
         }
         const dupGroups = [...hashGroups.values()].filter(ids => ids.length > 1);
         if (dupGroups.length) {

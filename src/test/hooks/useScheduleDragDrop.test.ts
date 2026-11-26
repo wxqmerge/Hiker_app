@@ -250,6 +250,50 @@ describe('useScheduleDragDrop', () => {
     expect(scheduleStore[monthKey]['8']).toEqual([{ trail_id: 'trail-1', early_start: 0, leader: '' }]);
   });
 
+  it('REPLACE keeps the target slot\'s leader and start time (hike changes, leader stays)', () => {
+    scheduleStore[monthKey] = { 8: [{ trail_id: 'trail-2', early_start: -30, leader: 'Marilyn Snook' }] };
+    const pendingSwap = {
+      duplicate: false,
+      sourceDay: null, // drag from Available list -> replace
+      sourceSlot: null,
+      targetDay: 8,
+      targetSlot: 0,
+      targetEntry: { trail_id: 'trail-2', early_start: -30, leader: 'Marilyn Snook' },
+      trailId: 'trail-1',
+      earlyStart: false, // source-side values that must NOT win
+      leader: '',
+    };
+    const deps = { ...baseDeps, pendingSwap };
+    const result = useScheduleDragDrop(deps);
+    result.confirmSwap();
+    expect(scheduleStore[monthKey]['8']).toEqual([
+      { trail_id: 'trail-1', early_start: -30, leader: 'Marilyn Snook' },
+    ]);
+  });
+
+  it('real SWAP still moves leaders with their entries both ways', () => {
+    scheduleStore[monthKey] = {
+      1: [{ trail_id: 'trail-1', early_start: false, leader: 'Alice' }],
+      8: [{ trail_id: 'trail-2', early_start: false, leader: 'Bob' }],
+    };
+    const pendingSwap = {
+      duplicate: false,
+      sourceDay: 1,
+      sourceSlot: 0,
+      targetDay: 8,
+      targetSlot: 0,
+      targetEntry: { trail_id: 'trail-2', early_start: false, leader: 'Bob' },
+      trailId: 'trail-1',
+      earlyStart: false,
+      leader: 'Alice',
+    };
+    const deps = { ...baseDeps, pendingSwap };
+    const result = useScheduleDragDrop(deps);
+    result.confirmSwap();
+    expect(scheduleStore[monthKey]['1'][0]).toMatchObject({ trail_id: 'trail-2', leader: 'Bob' });
+    expect(scheduleStore[monthKey]['8'][0]).toMatchObject({ trail_id: 'trail-1', leader: 'Alice' });
+  });
+
   it('removeHike normalizes object-shaped entries to empty arrays', () => {
     scheduleStore[monthKey] = { 1: { trail_id: 'trail-1' } };
     const result = useScheduleDragDrop(baseDeps);

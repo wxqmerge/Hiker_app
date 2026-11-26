@@ -167,4 +167,33 @@ describe('gpxFile write boundary', () => {
     const gpxRes = await fetch(`${base}/api/trails/gpx/zion`);
     expect(gpxRes.status).toBe(404);
   });
+
+  it('ignores the legacy gpxData field on PUT /:id (no raw write, no binding)', async () => {
+    // gpxData used to write request text straight into gpx/ - bypassing
+    // content validation and the same-bytes guard. It is no longer whitelisted.
+    const res = await fetch(`${base}/api/trails/zion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': ADMIN_KEY },
+      body: JSON.stringify({ gpxData: '<?xml version="1.0"?><gpx>evil</gpx>' }),
+    });
+    expect(res.status).toBe(200);
+
+    const index = JSON.parse(await fs.readFile(path.join(DATA_DIR, 'gpx_index.json'), 'utf-8'));
+    expect(index['zion']).toBeUndefined();
+    await expect(fs.stat(path.join(DATA_DIR, 'gpx', 'zion.gpx'))).rejects.toThrow();
+    const t = await readTrail('zion');
+    expect(t.hasGpx).toBeFalsy();
+    expect(t.gpxData).toBeUndefined();
+  });
+
+  it('ignores client-sent hasGpx (the flag stays server-derived)', async () => {
+    const res = await fetch(`${base}/api/trails/zion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': ADMIN_KEY },
+      body: JSON.stringify({ hasGpx: true }),
+    });
+    expect(res.status).toBe(200);
+    const t = await readTrail('zion');
+    expect(t.hasGpx).toBeFalsy(); // recomputed from the (absent) binding
+  });
 });

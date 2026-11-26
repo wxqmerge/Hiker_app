@@ -209,7 +209,8 @@ router.post('/gpx/:id', requireAdminKey, gpxUpload.single('gpx'), withErrorTag('
     const km = 2 * R * Math.asin(Math.sqrt(a));
     if (km > 5) trailheadMovedKm = Math.round(km * 10) / 10;
   }
-  await updateTrail((existing ? { ...existing, ...whitelisted, ...trailUpdates } : { ...whitelisted, id: req.params.id, ...trailUpdates }) as any);
+  // `existing` is guaranteed by the 404 check at the top of this handler.
+  await updateTrail({ ...existing, ...whitelisted, ...trailUpdates } as any);
   res.json({ success: true, gpxFile: gpxFileName, trailHeadLat: coord?.lat ?? null, trailHeadLon: coord?.lon ?? null, duration: duration?.formatted ?? null, durationMinutes: duration?.minutes ?? null, ...(trailheadMovedKm ? { trailheadMovedKm } : {}) });
 }));
 

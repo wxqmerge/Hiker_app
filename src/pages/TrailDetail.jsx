@@ -156,7 +156,6 @@ export default function TrailDetail() {
       const availableMonths = getEditedValue('availableMonths') || [];
       return computeMonthlyScores(monthly, availableMonths, hasQuarterData);
     }
-    if (field === 'gpxData') return (editedFields.gpxData ?? trail.gpxData) || '';
     if (field === 'tideStationId') return editedFields.tideStationId ?? trail.tideStationId;
     if (field === 'durationMinutes') return editedFields.durationMinutes ?? trail.durationMinutes;
 
@@ -306,10 +305,6 @@ export default function TrailDetail() {
    if (editedFields.altNames !== undefined) updatedTrail.altNames = editedFields.altNames;
     if (editedFields.webLink !== undefined) updatedTrail.webLink = editedFields.webLink;
     if (editedFields.tideStationId !== undefined) updatedTrail.tideStationId = String(editedFields.tideStationId).trim();
-    if (editedFields.gpxData !== undefined) {
-      if (editedFields.gpxData === '') delete updatedTrail.gpxData;
-      else updatedTrail.gpxData = editedFields.gpxData;
-    }
     if (editedFields.gpxFile !== undefined) updatedTrail.gpxFile = editedFields.gpxFile;
     if (editedFields.hasGpx !== undefined) updatedTrail.hasGpx = editedFields.hasGpx;
     if (editedFields.trailHeadLat !== undefined) updatedTrail.trailHeadLat = editedFields.trailHeadLat;

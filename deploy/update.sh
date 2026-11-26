@@ -184,11 +184,35 @@ echo ""
 echo "To trace live logs: sudo journalctl -u $SERVICE -f"
 echo ""
 
+# If this run stashed the deployed build files (they are perpetually "dirty"
+# because step 7b copies dist over tracked files) and then dies mid-way, the
+# checkout stays at the raw dev templates and the site serves a black screen -
+# this exact failure blacked out a live app during a GitHub network blip.
+# The trap restores the stash on ANY nonzero exit. HIKER_UPDATE_STASHED lets a
+# re-exec (below) inherit the fact that a stash is outstanding.
+STASHED="${HIKER_UPDATE_STASHED:-false}"
+on_update_exit() {
+    local rc=$?
+    if [ $rc -ne 0 ] && [ "$STASHED" = true ]; then
+        echo ""
+        echo "!! update.sh failed (exit $rc) with the build files stashed."
+        echo "   Restoring the stash so the site keeps serving its previous build..."
+        if git stash pop; then
+            echo "   Restored. Fix the failure and re-run update.sh."
+        else
+            echo "   !! git stash pop FAILED - your files are still in 'git stash list'."
+            echo "   !! Restore them manually before the site can be updated again."
+        fi
+    fi
+}
+trap on_update_exit EXIT
+
 # 1. Stash any local changes
 echo "[1/13] Stashing local changes..."
 if ! git diff --quiet 2>/dev/null; then
     if git stash; then
         echo "  Changes stashed."
+        STASHED=true
     else
         echo "  ERROR: Failed to stash changes."
         echo "  Aborting. Fix your local changes and try again."
@@ -200,6 +224,12 @@ fi
 
 # 2. Pull latest code
 echo "[2/13] Pulling latest code..."
+# update.sh pulls ITS OWN source. If the pull changes this file, the running
+# process would otherwise keep executing the OLD text against NEW templates on
+# disk - the combination that once rendered a literal <DOMAIN_ALTS> into a
+# nginx server_name. Detect the self-update and re-exec the new script.
+SELF_SCRIPT="$DEPLOY_DIR/update.sh"
+SELF_HASH_BEFORE=$(sha1sum "$SELF_SCRIPT" 2>/dev/null | cut -d' ' -f1)
 if git pull --rebase 2>/dev/null; then
     echo "  Pulled successfully."
 elif git fetch origin main && git reset --hard origin/main; then
@@ -207,8 +237,16 @@ elif git fetch origin main && git reset --hard origin/main; then
 else
     echo "  ERROR: Failed to update from remote. Restoring stash..."
     git stash pop 2>/dev/null || true
+    STASHED=false
     echo "  Aborting."
     exit 1
+fi
+SELF_HASH_AFTER=$(sha1sum "$SELF_SCRIPT" 2>/dev/null | cut -d' ' -f1)
+if [ -n "$SELF_HASH_BEFORE" ] && [ -n "$SELF_HASH_AFTER" ] && [ "$SELF_HASH_AFTER" != "$SELF_HASH_BEFORE" ] && [ -z "$HIKER_UPDATE_REEXEC" ]; then
+    echo "  update.sh updated itself during the pull - restarting the deploy with the NEW script."
+    export HIKER_UPDATE_REEXEC=1
+    [ "$STASHED" = true ] && export HIKER_UPDATE_STASHED=true
+    exec bash "$SELF_SCRIPT" "$@"
 fi
 
 # 3. Validate API keys
