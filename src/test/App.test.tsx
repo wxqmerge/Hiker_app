@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '../App';
+import { isEmbedded } from '../utils/embed';
+
+// Controllable iframe flag for the PopOutButton integration test.
+vi.mock('../utils/embed', () => ({
+  isEmbedded: vi.fn(() => false),
+}));
 
 describe('App', () => {
   beforeEach(() => {
@@ -29,5 +35,15 @@ describe('App', () => {
   it('renders all routes', () => {
     render(<App />);
     expect(screen.getByText('Browse Trails')).toBeInTheDocument();
+  });
+
+  it('shows the "Full site" pop-out link only when embedded (regression: must be in render tree)', () => {
+    const { unmount } = render(<App />);
+    expect(screen.queryByText('Full site')).not.toBeInTheDocument();
+    unmount();
+
+    vi.mocked(isEmbedded).mockReturnValue(true);
+    render(<App />);
+    expect(screen.getByText('Full site')).toBeInTheDocument();
   });
 });
