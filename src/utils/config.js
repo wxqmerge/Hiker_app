@@ -76,7 +76,7 @@ try {
 
 const GROUP_URLS = {
   ramblers: 'https://mondayramblers.bravesites.com/hike-schedule-descriptions-',
-  sothh: 'https://sites.google.com/view/overthehillhikers/hike-descriptions_1',
+  sothh: 'https://www.sequimothh.org/hike-descriptions_1',
 };
 
 /**
