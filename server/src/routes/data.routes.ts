@@ -15,6 +15,15 @@ await fs.mkdir(TMP_DIR, { recursive: true });
 const router = Router();
 const upload = multer({ dest: TMP_DIR, limits: { fileSize: 200 * 1024 * 1024 } });
 
+// Decompression guards: multer caps the COMPRESSED upload at 200MB, but
+// AdmZip expands each entry fully in memory - a high-ratio zip could still
+// OOM the Pi. Cap per-entry declared size and abort the import once total
+// expanded bytes exceed the (env-tunable) budget. Real export zips are
+// ~40MB total, so the 1 GiB default never bites legitimate imports.
+const MAX_ENTRY_UNCOMPRESSED_BYTES = 200 * 1024 * 1024;
+const MAX_TOTAL_UNCOMPRESSED_BYTES =
+  Math.max(1, Number(process.env.MAX_IMPORT_UNCOMPRESSED_MB) || 1024) * 1024 * 1024;
+
 const JSON_FILES = ['trails.json', 'trail_details.json', 'lookup.json', getScheduleFile(), 'gpx_index.json'];
 
 async function collectFiles(): Promise<Map<string, Buffer>> {
@@ -99,6 +108,7 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
   }
 
   let imported = 0;
+  let totalUncompressed = 0;
   const errors: string[] = [];
 
   for (const entry of entries) {
@@ -125,7 +135,28 @@ router.post('/import-zip', requireAdminKey, upload.single('zip'), withErrorTag('
       continue;
     }
 
+    // Decompression-budget checks BEFORE expanding the entry (see caps
+    // above): declared size first, actual expanded size as the backstop for
+    // a lying zip header.
+    const declaredSize = entry.header.size;
+    if (declaredSize > MAX_ENTRY_UNCOMPRESSED_BYTES) {
+      console.warn(`[DATA] Skipping oversized entry: ${name} (${declaredSize} bytes declared)`);
+      errors.push(`${name}: exceeds per-file uncompressed limit`);
+      continue;
+    }
+    if (totalUncompressed + declaredSize > MAX_TOTAL_UNCOMPRESSED_BYTES) {
+      console.warn(`[DATA] Stopping import at "${name}": total uncompressed cap exceeded`);
+      errors.push('import stopped: total uncompressed size cap exceeded');
+      break;
+    }
+
     const content = entry.getData();
+    if (content.length > MAX_ENTRY_UNCOMPRESSED_BYTES) {
+      console.warn(`[DATA] Skipping entry with lying header: ${name} (${content.length} actual bytes)`);
+      errors.push(`${name}: exceeds per-file uncompressed limit`);
+      continue;
+    }
+    totalUncompressed += content.length;
     // Validate JSON files
     if (ext === '.json') {
       try {

@@ -14,15 +14,28 @@ import { getCurrentDir } from '../utils/path.js';
 const durationCache = new Map<string, { minutes: number; formatted: string }>();
 
 async function extractDurationFromGpx(gpxPath: string): Promise<{ minutes: number; formatted: string } | null> {
-  if (durationCache.has(gpxPath)) {
-    return durationCache.get(gpxPath)!;
+  // Fingerprint the cache key (size + mtime): when a GPX is REPLACED
+  // (upload copyFile, import-zip write, manual swap), the next loadData()
+  // must recompute from the new bytes instead of re-attaching the stale
+  // duration cached under the old file's identity.
+  let stat: Awaited<ReturnType<typeof fs.stat>>;
+  try {
+    stat = await fs.stat(gpxPath);
+  } catch (error) {
+    console.warn(`[DATA] Could not stat ${gpxPath}:`, (error as Error).message);
+    return null;
   }
-  
+  const cacheKey = `${gpxPath}:${stat.size}:${Math.round(stat.mtimeMs)}`;
+  const cached = durationCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const content = await fs.readFile(gpxPath, 'utf-8');
     const result = extractDurationFromGpxContent(content);
     if (result) {
-      durationCache.set(gpxPath, result);
+      durationCache.set(cacheKey, result);
     }
     return result;
   } catch (error) {
@@ -240,11 +253,14 @@ export function getSchedule(): ScheduleData {
   return { ...schedule };
 }
 
-// Delete an uploaded GPX file (if present) and drop its cached duration.
+// Delete an uploaded GPX file (if present) and drop its cached durations.
 export async function removeUploadedGpxFile(fileName: string | undefined | null): Promise<void> {
   if (!fileName || !isSafeGpxFilename(fileName)) return;
   const gpxPath = path.join(GPX_UPLOAD_DIR, fileName);
-  durationCache.delete(gpxPath);
+  // Cache keys are `${path}:${size}:${mtime}` - drop every generation.
+  for (const key of durationCache.keys()) {
+    if (key === gpxPath || key.startsWith(`${gpxPath}:`)) durationCache.delete(key);
+  }
   await fs.unlink(gpxPath).catch(() => {});
 }
 

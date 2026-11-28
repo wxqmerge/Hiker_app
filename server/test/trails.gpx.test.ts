@@ -197,3 +197,54 @@ describe('gpxFile write boundary', () => {
     expect(t.hasGpx).toBeFalsy(); // recomputed from the (absent) binding
   });
 });
+
+describe('GPX duration recalculation', () => {
+  it('does not re-attach a stale cached duration after the GPX is replaced', async () => {
+    // Seed: zion2 gets GPX_A (25 min); loadData() warms the duration cache
+    // from those bytes.
+    const up1 = await uploadGpx('zion2', GPX_A, true);
+    expect(up1.status).toBe(200);
+    await loadData();
+
+    // Replace on disk with GPX_B (40 min) and reload again. Pre-fingerprinted
+    // cache keys, loadData() re-attached the cached 25m over the fresh 40m.
+    const up2 = await uploadGpx('zion2', GPX_B);
+    expect(up2.status).toBe(200);
+    await loadData();
+
+    const res = await fetch(`${base}/api/trails`);
+    const { trails } = await res.json();
+    const t = trails.find((x: { id: string }) => x.id === 'zion2');
+    expect(t.durationMinutes).toBe(40);
+    expect(t.duration).toBe('40m');
+  });
+});
+
+describe('trail detail id guard', () => {
+  for (const id of ['__proto__', 'constructor', 'prototype']) {
+    it(`rejects PUT /details/${id} with 400 (no prototype write)`, async () => {
+      const res = await fetch(`${base}/api/trails/details/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': ADMIN_KEY },
+        body: JSON.stringify({ pros: 'pollution attempt' }),
+      });
+      expect(res.status).toBe(400);
+    });
+  }
+
+  it('leaves trail_details.json untouched by rejected ids, accepts normal ones', async () => {
+    const good = await fetch(`${base}/api/trails/details/zion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': ADMIN_KEY },
+      body: JSON.stringify({ pros: 'swans' }),
+    });
+    expect(good.status).toBe(200);
+
+    const details = JSON.parse(
+      await fs.readFile(path.join(DATA_DIR, 'trail_details.json'), 'utf-8'),
+    );
+    expect(details.zion?.pros).toBe('swans');
+    // Own-property semantics survived: the guard names never became entries.
+    expect(Object.keys(details)).toEqual(['zion']);
+  });
+});

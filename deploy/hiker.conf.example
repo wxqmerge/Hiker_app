@@ -28,6 +28,16 @@ server {
     # Keep in sync with the multer 200MB cap in server/src/routes/data.routes.ts.
     client_max_body_size 200m;
 
+    # Security headers for the SPA (this vhost, not Node, serves the HTML -
+    # the helmet CSP in server/src/index.ts only covers /api responses here).
+    # Mirrors helmet's directives in index.ts. Deliberately NO
+    # X-Frame-Options / frame-ancestors: the app MUST stay frameable by the
+    # club's Google Sites page (www.sequimothh.org/hiker-app).
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.weather.gov https://api.open-meteo.com; font-src 'self'; object-src 'none'; base-uri 'self'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
     # Proxy API routes to Express
     location /api/ {
         proxy_pass http://127.0.0.1:<PORT>;

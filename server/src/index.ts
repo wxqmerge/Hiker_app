@@ -20,16 +20,27 @@ import { router as dataRouter } from './routes/data.routes.js';
 import { router as tideRouter } from './routes/tide.routes.js';
 import { getWriteHealth, serverVersion, waitForDataReady, getScheduleFile, getGpxUploadFileName } from './services/dataService.js';
 import { buildVersion } from './utils/version.js';
+import { logSafe } from './utils/logSafe.js';
 import { DATA_DIR, HISTORY_DIR, GPX_DIR } from './utils/paths.js';
 import { getPublicConfig } from './utils/publicConfig.js';
 import { requireAdminKey } from './middleware/auth.middleware.js';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-// Only trust X-Forwarded-For when a reverse proxy sits in front (the normal
-// deployment). With the Node process bound to 0.0.0.0 directly, set
-// TRUST_PROXY=0 or every client can spoof its IP past the rate limiter.
-const TRUST_PROXY = !['0', 'false'].includes((process.env.TRUST_PROXY || '').toLowerCase());
+// Number of proxy hops to trust for X-Forwarded-For. Production topology is
+// Cloudflare -> nginx -> Node, so rp5 sets TRUST_PROXY=2: with 1, Express
+// picks nginx's peer (a Cloudflare SHARED egress IP) as req.ip, collapsing
+// the per-IP rate limiters into one global bucket and recording Cloudflare
+// IPs in [ADMIN_AUTH] lines. TRUST_PROXY=0 disables trust entirely (Node
+// bound directly); anything unparsable falls back to 1 (lone nginx hop).
+function parseTrustProxy(): number | false {
+  const raw = (process.env.TRUST_PROXY || '').trim().toLowerCase();
+  if (raw === '' || raw === 'true') return 1;
+  if (raw === '0' || raw === 'false') return false;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+const TRUST_PROXY = parseTrustProxy();
 
 // Header-derived names reach JSON bodies and logs; keep them path-segment safe.
 function sanitizeAppName(value: unknown): string {
@@ -43,7 +54,7 @@ const app: Application = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST?.trim() || '127.0.0.1';
 
-app.set('trust proxy', TRUST_PROXY ? 1 : false);
+app.set('trust proxy', TRUST_PROXY);
 
 app.use((_req, res, next) => {
   res.set('X-Build-Version', buildHash);
@@ -58,7 +69,7 @@ app.use((req, res, next) => {
   res.end = function(chunk?: any, encoding?: any, callback?: any) {
     const duration = Date.now() - startTime;
     const status = res.statusCode;
-    console.log(`[API] ${clientIp} ${req.method.padEnd(4)} ${req.path.padEnd(35)} ${status.toString().padStart(3)} ${duration}ms`);
+    console.log(`[API] ${clientIp} ${req.method.padEnd(4)} ${logSafe(req.path).padEnd(35)} ${status.toString().padStart(3)} ${duration}ms`);
     return originalEnd.call(res, chunk, encoding, callback);
   };
   next();
@@ -203,7 +214,9 @@ app.post('/api/cleanup/orphaned-details', requireAdminKey, async (_req, res) => 
       }
     }
     if (orphaned.length > 0) {
-      const tmpPath = `${detailsPath}.tmp`;
+      // Unique tmp name (same pattern as dataService.writeWithHealth): two
+      // concurrent cleanups must not share one temp path.
+      const tmpPath = `${detailsPath}.tmp.${process.pid}.${Math.random().toString(36).slice(2, 8)}`;
       await fs.writeFile(tmpPath, JSON.stringify(cleaned, null, 2) + '\n', 'utf-8');
       await fs.rename(tmpPath, detailsPath);
     }
@@ -506,7 +519,7 @@ app.get('/api/validate', requireAdminKey, async (_req, res) => {
 });
 
 if (isDev) {
-  app.use((_req, _res, next) => {
+  app.use((_req, _res, _next) => {
     const req = _req as http.IncomingMessage;
     const res = _res as http.ServerResponse;
     const proxyReq = http.request(
@@ -563,6 +576,7 @@ if (isMainModule) {
       }
       console.log(`✓ Build: ${buildFull}`);
       console.log(`✓ CORS Origins: ${process.env.CORS_ORIGINS || 'same-origin only'}`);
+      console.log(`✓ Trust proxy: ${TRUST_PROXY === false ? 'DISABLED (direct)' : `${TRUST_PROXY} hop(s)`}`);
       console.log(`✓ Admin API Key: ${process.env.ADMIN_API_KEY ? 'Enabled' : '⚠️  NOT SET'}`);
       console.log(`========================================\n`);
     });

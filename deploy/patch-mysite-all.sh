@@ -94,6 +94,16 @@ server {
     root /var/www/html;
     index index.html;
 
+    # Security headers for every app served by this apex vhost (nginx, not
+    # Node, serves the HTML - helmet in server/src/index.ts only covers /api
+    # proxied to Express). Mirrors the helmet CSP. Deliberately NO
+    # X-Frame-Options / frame-ancestors: the app MUST stay frameable by the
+    # club's Google Sites page. Keep in sync with hiker.conf.example.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.weather.gov https://api.open-meteo.com; font-src 'self'; object-src 'none'; base-uri 'self'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
     # keep ?key= config URLs out of access.log (serve index.html in this
     # location via break, so access_log off applies to the whole request)
     location ~ ^/(?<app>[a-z0-9-]+)/dist/$ {

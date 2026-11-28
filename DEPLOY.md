@@ -22,9 +22,11 @@ routes with helmet CSP headers.
 
 Per deployment (sothh, ramblers, …) the server reads root `.env`
 (`ADMIN_API_KEY`, `SCHEDULE_NAME`, `HIKE_DAYS`, `MAX_HIKES_PER_DAY`, `PORT`, …).
-`server/.env` is ignored — local only, never committed. With `TRUST_PROXY=0` the
-server stops trusting `X-Forwarded-For` (only set it when Node is exposed
-directly, i.e. no nginx in front).
+`server/.env` is ignored — local only, never committed. `TRUST_PROXY` is a hop
+count: `TRUST_PROXY=2` behind Cloudflare + nginx (the rp5 topology — with `1`
+the rate limiters key on Cloudflare's shared egress IP instead of members'
+IPs); `TRUST_PROXY=0` only when Node is exposed directly, with no nginx in
+front.
 
 ## Quick Local Test
 

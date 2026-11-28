@@ -67,6 +67,7 @@ All writes go to `exported_data/` JSON files via `dataService.ts` — **not Inde
 - Dev: Express proxies non-API routes to `localhost:5173` (Vite)
 - Production: Express serves `dist/` static files and falls back to `index.html` for SPA routing
 - Production port is `$PORT` env var (default 3000), not hardcoded. The server binds `$HOST` (default `127.0.0.1`); set `HOST=0.0.0.0` only when intentionally exposing the Node process directly. In that case also set `TRUST_PROXY=0` — otherwise clients can spoof `X-Forwarded-For` past the rate limiter.
+- `TRUST_PROXY` is a **hop count**: behind Cloudflare → nginx (all rp5 deployments) set `TRUST_PROXY=2` in root `.env`. With `1`, `req.ip` is a shared Cloudflare egress IP, which collapses the per-IP rate limiters into one global bucket and records Cloudflare IPs in `[ADMIN_AUTH]`/`[API]` log lines.
 - CORS is disabled unless `CORS_ORIGINS` is explicitly set to a comma-separated origin list.
 
 ## Testing

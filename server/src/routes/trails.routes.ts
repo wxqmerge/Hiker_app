@@ -21,6 +21,7 @@ import { validateGpxContent, isSafeGpxFilename } from '../utils/gpxValidation.js
 import {
   whitelistTrailFields,
   whitelistTrailDetailFields,
+  isSafeTrailId,
 } from '../middleware/validation.middleware.js';
 import { extractFirstCoordinateFromGpx } from '../utils/gpxCoord.js';
 import { extractDurationFromGpxContent } from '../utils/gpxDuration.js';
@@ -55,6 +56,11 @@ router.get('/details', (req, res) => {
 });
  
 router.put('/details/:id', requireAdminKey, withErrorTag('TRAILS')(async (req, res) => {
+  // Guard the trailDetails[id] write: '__proto__' would replace the object's
+  // prototype instead of creating an entry.
+  if (!isSafeTrailId(req.params.id)) {
+    return res.status(400).json({ success: false, error: { message: 'Invalid trail detail id' } });
+  }
   const existing = getTrailDetailById(req.params.id);
   const whitelisted = whitelistTrailDetailFields(req.body);
   await updateTrailDetail(req.params.id, (existing ? { ...existing, ...whitelisted } : whitelisted) as any);

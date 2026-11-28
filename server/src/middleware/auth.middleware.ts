@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
+import { logSafe } from '../utils/logSafe.js';
 
 interface AuthRequest extends Request {
   role?: 'admin';
@@ -34,7 +35,7 @@ function keysMatch(expected: string, provided: string): boolean {
 }
 
 function sendAuthError(res: Response, req: Request, status: number, message: string): void {
-  console.warn(`[ADMIN_AUTH] ${status} - ${message} | IP: ${req.ip} | Path: ${req.path}`);
+  console.warn(`[ADMIN_AUTH] ${status} - ${message} | IP: ${req.ip} | Path: ${logSafe(req.path)}`);
   res.status(status).json({
     success: false,
     error: { message },

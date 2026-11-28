@@ -46,6 +46,24 @@ export const RestoreTimestampSchema = z.object({
   timestamp: z.string(),
 });
 
+// --- Trail/detail ID safety ---
+// URL :id values reach object-key writes (trailDetails[id] = ...). The
+// prototype-hitchhiking names (__proto__/constructor/prototype) would hit
+// setters instead of creating entries. All 200+ real trail IDs are ASCII
+// slug-safe, so [\w.-]+ costs nothing; '..' is rejected for path-shaped
+// noise. Keyed-object READ paths keep their own independent guards.
+const SAFE_TRAIL_ID = /^[\w.-]+$/;
+const UNSAFE_ID_NAMES = new Set(['__proto__', 'constructor', 'prototype']);
+
+export function isSafeTrailId(id: string): boolean {
+  return (
+    typeof id === 'string' &&
+    SAFE_TRAIL_ID.test(id) &&
+    !id.includes('..') &&
+    !UNSAFE_ID_NAMES.has(id)
+  );
+}
+
 // --- Helper: whitelist req.body fields ---
 function whitelistFields(body: Record<string, unknown>, allowed: Set<string>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
